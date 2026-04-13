@@ -253,6 +253,12 @@ const SettingsExperience = lazy(() =>
   })),
 );
 
+const SettingsAboutExeCRM = lazy(() =>
+  import('~/pages/settings/SettingsAboutExeCRM').then((module) => ({
+    default: module.SettingsAboutExeCRM,
+  })),
+);
+
 const SettingsAccounts = lazy(() =>
   import('~/pages/settings/accounts/SettingsAccounts').then((module) => ({
     default: module.SettingsAccounts,
@@ -474,6 +480,7 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
         element={<SettingsTwoFactorAuthenticationMethod />}
       />
       <Route path={SettingsPath.Experience} element={<SettingsExperience />} />
+      <Route path={SettingsPath.About} element={<SettingsAboutExeCRM />} />
       <Route
         element={
           <SettingsProtectedRouteWrapper

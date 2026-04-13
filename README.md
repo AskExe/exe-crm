@@ -1,3 +1,11 @@
+# Exe CRM
+
+Exe CRM is a modified version of [Twenty](https://github.com/twentyhq/twenty),
+originally created by Twenty.inc. Licensed under AGPLv3.
+See [NOTICE](./NOTICE) for a list of modifications.
+
+---
+
 <p align="center">
   <a href="https://www.twenty.com">
     <img src="./packages/twenty-website/public/images/core/logo.svg" width="100px" alt="Twenty logo" />

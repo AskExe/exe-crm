@@ -74,4 +74,9 @@ export enum SettingsPath {
   RoleDetail = 'roles/:roleId',
   RoleObjectLevel = 'roles/:roleId/object/:objectMetadataId',
   RoleAddObjectLevel = 'roles/:roleId/add-object-permission',
+
+  // AGPL §5 attribution surface — required for distributing the modified
+  // version. Renders the SettingsAboutExeCRM page; do not remove without
+  // legal review.
+  About = 'about',
 }

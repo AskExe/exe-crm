@@ -16,3 +16,9 @@ UPSTREAM.md
 
 # This allowlist itself documents permitted occurrences and references upstream.
 .brand-drift-allowlist.txt
+
+# AGPL §5 attribution preamble — modification notice naming the upstream work.
+README.md
+
+# AGPL §5 attribution — list of modifications and upstream source URL.
+NOTICE

@@ -26,6 +26,7 @@ import {
   IconDoorEnter,
   IconHelpCircle,
   IconHierarchy2,
+  IconInfoCircle,
   IconKey,
   IconLock,
   IconMail,
@@ -229,6 +230,11 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               '_blank',
             ),
           Icon: IconHelpCircle,
+        },
+        {
+          label: t`About`,
+          path: SettingsPath.About,
+          Icon: IconInfoCircle,
         },
         {
           label: t`Logout`,

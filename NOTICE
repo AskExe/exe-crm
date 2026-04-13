@@ -1,0 +1,13 @@
+Exe CRM is based on Twenty (https://github.com/twentyhq/twenty).
+Original copyright: Twenty.inc
+License: AGPL-3.0
+
+Modifications by AskExe:
+- Renamed package namespace `twenty-*` → `exe-crm-*`
+- Rebranded UI to Exe Foundry Bold design system (Phase 2)
+- Deleted twenty-docs, twenty-website, twenty-website-new subpackages
+- Self-hosted deployment at crm.askexe.com (Phase 3)
+- Integrated as Tauri webview tab in exe-os-desktop (Phase 4)
+
+Upstream source: https://github.com/twentyhq/twenty
+This fork: https://github.com/AskExe/exe-crm
