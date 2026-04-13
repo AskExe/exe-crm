@@ -1,0 +1,18 @@
+# Brand-drift allowlist — files allowed to contain the literal "twenty" (case-insensitive)
+#
+# Rules:
+#   - One path per line. Blank lines and lines starting with '#' are comments.
+#   - Globs are NOT supported — list each file explicitly so reviewers see what
+#     they're approving.
+#   - Every entry must be paired with a comment line above it explaining WHY.
+#   - The CI check (.github/workflows/ci-brand-drift.yaml) reads this file to
+#     decide which files to skip when scanning PR-added lines.
+
+# AGPL §5 attribution — original Twenty copyright must be preserved.
+LICENSE
+
+# This document IS the upstream sync runbook — references upstream by name.
+UPSTREAM.md
+
+# This allowlist itself documents permitted occurrences and references upstream.
+.brand-drift-allowlist.txt
