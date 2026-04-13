@@ -62,9 +62,11 @@ When merging upstream, the highest-conflict areas are:
   branding.
 - `README.md`, `NOTICE` — keep fork copy. AskExe attribution + AGPL
   acknowledgment must stay.
-- Workflows under `.github/workflows/` — `cd-deploy-*` were removed in T1-05;
-  do not let upstream re-add them. Our deploy pipeline lives separately
-  (Phase 3).
+- Workflows under `.github/workflows/` — `cd-deploy-main.yaml` and
+  `cd-deploy-tag.yaml` were disabled in T1-05 (replaced with a
+  manual-only `workflow_dispatch` stub so they no longer auto-fire on
+  push). Do not let upstream re-enable them by overwriting the stub
+  during a sync. Our self-hosted deploy pipeline lands in Phase 3.
 
 ## Brand-drift CI
 

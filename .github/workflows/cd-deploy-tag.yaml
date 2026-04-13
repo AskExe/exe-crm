@@ -1,22 +1,24 @@
-name: CD deploy tag
+# DISABLED in Phase 1 (T1-05): Twenty's cross-repo deploy targets
+# twentyhq/twenty-infra, which we don't have access to. Self-hosted deploy
+# pipeline lands in Phase 3.
+#
+# Original content preserved in git history (commit before T1-05) for the
+# Phase 3 rewrite reference. The stub below makes the workflow valid YAML
+# and switches the trigger to manual-only (workflow_dispatch) so tag pushes
+# no longer attempt to dispatch to twentyhq/twenty-infra.
+
+name: CD deploy tag (DISABLED)
 
 permissions:
   contents: read
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
-  deploy-tag:
-    timeout-minutes: 3
+  noop:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     steps:
-      - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.TWENTY_INFRA_TOKEN }}
-          repository: twentyhq/twenty-infra
-          event-type: auto-deploy-tag
-          client-payload: '{"github": ${{ toJson(github) }}}' # Passes the entire github context to the downstream workflow
+      - name: Workflow disabled
+        run: echo "cd-deploy-tag is disabled — see header comment in this file."
