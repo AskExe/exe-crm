@@ -1,24 +1,64 @@
-# DISABLED in Phase 1 (T1-05): Twenty's cross-repo deploy targets
-# twentyhq/twenty-infra, which we don't have access to. Self-hosted deploy
-# pipeline lands in Phase 3.
+# Build and push Docker images to GHCR on push to main.
 #
-# Original content preserved in git history (commit before T1-05) for the
-# Phase 3 rewrite reference. The stub below makes the workflow valid YAML
-# and switches the trigger to manual-only (workflow_dispatch) so pushes to
-# main no longer attempt to dispatch to twentyhq/twenty-infra.
+# Builds the unified "twenty" target (server + frontend static files) from
+# packages/twenty-docker/twenty/Dockerfile and pushes to GHCR.
+#
+# SSH deploy to VPS is DEFERRED — this workflow only builds and pushes images.
 
-name: CD deploy main (DISABLED)
+name: CD deploy main
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.vscode/**'
 
 permissions:
   contents: read
+  packages: write
 
-on:
-  workflow_dispatch:
+concurrency:
+  group: cd-deploy-main
+  cancel-in-progress: true
 
 jobs:
-  noop:
+  build-and-push:
+    name: Build & push to GHCR
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 45
     steps:
-      - name: Workflow disabled
-        run: echo "cd-deploy-main is disabled — see header comment in this file."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/askexe/exe-crm
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/twenty-docker/twenty/Dockerfile
+          target: twenty
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
