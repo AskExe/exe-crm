@@ -130,3 +130,45 @@ git push origin --delete sync/${SYNC_DATE}
 ```
 
 Local fork main remains untouched until the sync PR is merged.
+
+## Upstream sync mechanism audit — 2026-04-14
+
+Context: 160 upstream commits (2026-03-29 → 2026-04-04) landed on `origin/main` between Phase 1 cleanup and this audit. Lane C resolution: cherry-picked 4 security fixes, force-pushed, then audited the ingestion path.
+
+**Findings:**
+
+- **No scheduled sync workflow exists.** `ls .github/workflows/ | grep -iE "sync|upstream|mirror|pull"` returns only disabled i18n pulls (Crowdin translations, not upstream code). No `sync-upstream.yml`, `pull-twentyhq.yml`, `mirror.yml` has ever existed in this repo. → No action needed.
+- **No cron-triggered workflows.** `grep -l "schedule:" .github/workflows/*.{yml,yaml}` returns zero matches. → No action needed.
+- **No rebrand/sync scripts pull upstream.** `scripts/rebrand/rebrand.sh` is our own rename replay — it assumes upstream code is already present, doesn't fetch it. → No action needed.
+- **Fork-sync UI action is the likely ingestion path.** `gh api repos/AskExe/exe-crm` confirms `fork: true`, `parent: twentyhq/twenty`. GitHub's web UI "Sync fork" button pulls upstream/main into our origin/main on click. This cannot be disabled via API without unforking the repo.
+- **Active workflows now limited to 2 (+ guard).** `gh workflow list` returns: `CD deploy main (DISABLED)`, `CD deploy tag (DISABLED)`, `Brand drift check (active guard)`. 28 upstream workflows were `.disabled` in Phase 1 (commit 06527318bf). → No further disable needed.
+- **Pre-push git hook blocks local→upstream pushes** (installed in 32a92eb4fe). Does not block the GitHub UI "Sync fork" action — that's a server-side operation.
+
+**Actions taken:**
+
+- None required — no running automation found. The 160-commit drift came from either (a) a manual click of "Sync fork" in the GitHub UI, or (b) an older tom session that ran `git fetch upstream && git merge && git push origin main` before the pre-push guard was installed.
+
+**Remaining risk + mitigation:**
+
+- **GitHub "Sync fork" button** remains clickable by any collaborator with push access. Mitigation options (not taken — await founder/exe call):
+  - Unfork via GitHub support (irreversible; loses "fork of twentyhq/twenty" attribution)
+  - Restrict push access to main (branch protection) so "Sync fork" requires PR review
+  - Document in CONTRIBUTING.md that "Sync fork" is forbidden; rely on social contract
+- Recommend: branch protection + explicit CONTRIBUTING prohibition. Founder to decide.
+
+**Evidence:**
+
+```
+$ gh api repos/AskExe/exe-crm --jq '{fork, parent: .parent.full_name, source: .source.full_name}'
+{"fork":true,"parent":"twentyhq/twenty","source":"twentyhq/twenty"}
+
+$ gh workflow list -R AskExe/exe-crm
+CD deploy main (DISABLED)    active    260588064
+CD deploy tag (DISABLED)     active    260588065
+Brand drift check            active    260588066
+
+$ ls .github/workflows/*.yaml | grep -v disabled
+cd-deploy-main.yaml         # disabled via `if: false` per 06527318bf
+cd-deploy-tag.yaml          # disabled via `if: false` per 06527318bf
+ci-brand-drift.yaml         # our guard
+```
