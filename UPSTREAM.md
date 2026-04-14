@@ -16,6 +16,31 @@ git remote -v
 git remote add upstream https://github.com/twentyhq/twenty.git
 ```
 
+`main` must always track `origin/main`, never `upstream/main`. Verify after
+clone:
+
+```bash
+git config --get branch.main.remote   # → origin
+```
+
+If it shows `upstream`, rebind immediately:
+
+```bash
+git branch --set-upstream-to=origin/main main
+```
+
+## Post-clone setup (run once)
+
+`.git/hooks/` isn't versioned, so every fresh clone must install local hooks:
+
+```bash
+./tools/setup-hooks.sh
+```
+
+This installs a `pre-push` hook that refuses any push whose remote is
+`upstream`. It is the safety net against a bare `git push` accidentally
+firing branded commits at the public `twentyhq/twenty` repo.
+
 ## Sync flow (quarterly)
 
 ```bash
