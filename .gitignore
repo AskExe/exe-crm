@@ -52,3 +52,6 @@ mcp.json
 /.junie/
 TRANSLATION_QA_REPORT.md
 .playwright-mcp/
+
+# Employee task assignments (private)
+/exe/
