@@ -1,14 +1,16 @@
+// Exe Foundry Bold dark grayscale — void (#0F0E1A) to bone (#F0EDE8)
+// 12-step ramp with branded blue-purple tint instead of pure neutral gray.
 export const GRAY_SCALE_DARK = {
-  gray1: 'color(display-p3 0.09 0.09 0.09)',
-  gray2: 'color(display-p3 0.106 0.106 0.106)',
-  gray3: 'color(display-p3 0.098 0.098 0.098)',
-  gray4: 'color(display-p3 0.114 0.114 0.114)',
-  gray5: 'color(display-p3 0.133 0.133 0.133)',
-  gray6: 'color(display-p3 0.282 0.282 0.282)',
-  gray7: 'color(display-p3 0.298 0.298 0.298)',
-  gray8: 'color(display-p3 0.4 0.4 0.4)',
-  gray9: 'color(display-p3 0.506 0.506 0.506)',
-  gray10: 'color(display-p3 0.482 0.482 0.482)',
-  gray11: 'color(display-p3 0.702 0.702 0.702)',
-  gray12: 'color(display-p3 0.922 0.922 0.922)',
+  gray1: '#0F0E1A',   // void — canvas
+  gray2: '#15142A',   // secondary elevation
+  gray3: '#181630',   // between secondary and stratum
+  gray4: '#1A1832',   // stratum — cards
+  gray5: '#221F3E',   // quaternary — hover
+  gray6: '#2E2B42',   // barely visible
+  gray7: '#4A4660',   // disabled
+  gray8: '#6F6A80',   // placeholder
+  gray9: '#A09CAF',   // ash — secondary text
+  gray10: '#8A8698',  // muted
+  gray11: '#C8C4D2',  // tertiary text
+  gray12: '#F0EDE8',  // bone — primary text
 };

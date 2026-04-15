@@ -1,17 +1,21 @@
+import { exeFoundryBold } from './ExeFoundryBold';
+
+const f = exeFoundryBold.font;
+
 export const FONT_COMMON = {
   size: {
-    xxs: '0.625rem',
-    xs: '0.85rem',
-    sm: '0.92rem',
-    md: '1rem',
-    lg: '1.23rem',
-    xl: '1.54rem',
-    xxl: '1.85rem',
+    xxs: f.size.xxs,
+    xs: f.size.xs,
+    sm: f.size.sm,
+    md: f.size.md,
+    lg: f.size.lg,
+    xl: f.size.xl,
+    xxl: f.size.xxl,
   },
   weight: {
-    regular: 400,
-    medium: 500,
-    semiBold: 600,
+    regular: f.weight.regular,
+    medium: f.weight.medium,
+    semiBold: f.weight.semiBold,
   },
-  family: 'Inter, sans-serif',
+  family: f.family.body,
 };

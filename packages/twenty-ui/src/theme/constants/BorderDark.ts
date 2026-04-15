@@ -1,18 +1,18 @@
-import { COLOR_DARK } from '@ui/theme/constants/ColorsDark';
 import { BORDER_COMMON } from './BorderCommon';
-import { GRAY_SCALE_DARK } from './GrayScaleDark';
-import { TRANSPARENT_COLORS_DARK } from './TransparentColorsDark';
+import { exeFoundryBold } from './ExeFoundryBold';
+
+const b = exeFoundryBold.dark.border;
 
 export const BORDER_DARK = {
   color: {
-    strong: GRAY_SCALE_DARK.gray6,
-    medium: GRAY_SCALE_DARK.gray5,
-    light: GRAY_SCALE_DARK.gray4,
-    secondaryInverted: GRAY_SCALE_DARK.gray11,
-    inverted: GRAY_SCALE_DARK.gray12,
-    danger: COLOR_DARK.red5,
-    blue: COLOR_DARK.blue7,
-    transparentStrong: TRANSPARENT_COLORS_DARK.gray4,
+    strong: b.color.strong,
+    medium: b.color.medium,
+    light: b.color.light,
+    secondaryInverted: b.color.secondaryInverted,
+    inverted: b.color.inverted,
+    danger: b.color.danger,
+    blue: b.color.blue,
+    transparentStrong: b.color.transparentStrong,
   },
   ...BORDER_COMMON,
 };

@@ -1,16 +1,17 @@
-import { COLOR_LIGHT } from '@ui/theme/constants/ColorsLight';
+import { exeFoundryBold } from './ExeFoundryBold';
 import { FONT_COMMON } from './FontCommon';
-import { GRAY_SCALE_LIGHT } from './GrayScaleLight';
+
+const f = exeFoundryBold.light.font;
 
 export const FONT_LIGHT = {
   color: {
-    primary: GRAY_SCALE_LIGHT.gray12,
-    secondary: GRAY_SCALE_LIGHT.gray11,
-    tertiary: GRAY_SCALE_LIGHT.gray9,
-    light: GRAY_SCALE_LIGHT.gray8,
-    extraLight: GRAY_SCALE_LIGHT.gray7,
-    inverted: GRAY_SCALE_LIGHT.gray1,
-    danger: COLOR_LIGHT.red,
+    primary: f.color.primary,
+    secondary: f.color.secondary,
+    tertiary: f.color.tertiary,
+    light: f.color.light,
+    extraLight: f.color.extraLight,
+    inverted: f.color.inverted,
+    danger: f.color.danger,
   },
   ...FONT_COMMON,
 };

@@ -1,14 +1,16 @@
+// Exe Foundry Bold light grayscale — warm white (#FAF8F3) to void (#0F0E1A)
+// 12-step ramp with branded warm tint instead of pure neutral gray.
 export const GRAY_SCALE_LIGHT = {
-  gray1: 'color(display-p3 1 1 1)',
-  gray2: 'color(display-p3 0.988 0.988 0.988)',
-  gray3: 'color(display-p3 0.976 0.976 0.976)',
-  gray4: 'color(display-p3 0.945 0.945 0.945)',
-  gray5: 'color(display-p3 0.922 0.922 0.922)',
-  gray6: 'color(display-p3 0.839 0.839 0.839)',
-  gray7: 'color(display-p3 0.8 0.8 0.8)',
-  gray8: 'color(display-p3 0.702 0.702 0.702)',
-  gray9: 'color(display-p3 0.6 0.6 0.6)',
-  gray10: 'color(display-p3 0.514 0.514 0.514)',
-  gray11: 'color(display-p3 0.4 0.4 0.4)',
-  gray12: 'color(display-p3 0.2 0.2 0.2)',
+  gray1: '#FAF8F3',   // warm off-white — canvas
+  gray2: '#F0EDE8',   // secondary elevation
+  gray3: '#E8E4DC',   // subtle border
+  gray4: '#FFFFFF',   // pure white — cards
+  gray5: '#E8E4DC',   // quaternary — hover
+  gray6: '#D3D0DA',   // border
+  gray7: '#B8B4C2',   // muted border
+  gray8: '#A09CAF',   // light text
+  gray9: '#6F6A80',   // tertiary text
+  gray10: '#4A4660',  // secondary text
+  gray11: '#2E2B42',  // strong text
+  gray12: '#0F0E1A',  // void — primary text
 };

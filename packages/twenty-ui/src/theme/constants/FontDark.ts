@@ -1,16 +1,17 @@
-import { COLOR_DARK } from '@ui/theme/constants/ColorsDark';
+import { exeFoundryBold } from './ExeFoundryBold';
 import { FONT_COMMON } from './FontCommon';
-import { GRAY_SCALE_DARK } from './GrayScaleDark';
+
+const f = exeFoundryBold.dark.font;
 
 export const FONT_DARK = {
   color: {
-    primary: GRAY_SCALE_DARK.gray12,
-    secondary: GRAY_SCALE_DARK.gray11,
-    tertiary: GRAY_SCALE_DARK.gray9,
-    light: GRAY_SCALE_DARK.gray8,
-    extraLight: GRAY_SCALE_DARK.gray7,
-    inverted: GRAY_SCALE_DARK.gray1,
-    danger: COLOR_DARK.red,
+    primary: f.color.primary,
+    secondary: f.color.secondary,
+    tertiary: f.color.tertiary,
+    light: f.color.light,
+    extraLight: f.color.extraLight,
+    inverted: f.color.inverted,
+    danger: f.color.danger,
   },
   ...FONT_COMMON,
 };
