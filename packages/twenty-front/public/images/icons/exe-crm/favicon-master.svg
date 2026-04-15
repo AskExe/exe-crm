@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Exe CRM — 512×512 favicon / app-icon master
+  Rounded square (iOS-safe 22.5% radius ≈ 115px).
+  Stratum fill, Aura radial glow top-left, faint bone hairline, centered gold "E".
+  Rasterize to 16/32/64/256/512 via favicon-generation.sh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Exe CRM">
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@900&display=swap');
+      .mark { font-family: 'Epilogue', 'Inter', system-ui, sans-serif; font-weight: 900; letter-spacing: -0.04em; }
+    ]]></style>
+    <radialGradient id="aura" cx="18%" cy="8%" r="95%">
+      <stop offset="0%" stop-color="#6B4C9A" stop-opacity="0.40"/>
+      <stop offset="65%" stop-color="#1A1832" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldDepth" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FADF85"/>
+      <stop offset="100%" stop-color="#E6C54F"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="115" ry="115" fill="#1A1832"/>
+  <rect x="0" y="0" width="512" height="512" rx="115" ry="115" fill="url(#aura)"/>
+  <rect x="4" y="4" width="504" height="504" rx="111" ry="111" fill="none" stroke="#F0EDE8" stroke-opacity="0.06" stroke-width="2"/>
+  <text x="256" y="370" class="mark" font-size="340" fill="url(#goldDepth)" text-anchor="middle">E</text>
+</svg>

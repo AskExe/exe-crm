@@ -5,12 +5,14 @@ const logoStyle = {
 };
 
 export const Logo = () => {
+  const baseUrl = process.env.FRONT_BASE_URL || 'https://crm.askexe.com';
+
   return (
     <Img
-      src="https://app.twenty.com/images/icons/windows11/Square150x150Logo.scale-100.png"
-      alt="Twenty logo"
-      width="40"
-      height="40"
+      src={`${baseUrl}/images/icons/exe-crm/exe-crm-logo-480.png`}
+      alt="Exe CRM logo"
+      width="160"
+      height="37"
       style={logoStyle}
     />
   );

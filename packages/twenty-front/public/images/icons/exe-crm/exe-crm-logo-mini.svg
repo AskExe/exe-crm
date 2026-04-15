@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Exe CRM — icon-only mark (sidebar collapsed, app icon small sizes)
+  64×64 rounded-square with Stratum fill and Aura corner glow.
+  Centered "E" in Exe Gold, Epilogue 900.
+  For true app-icon rendering, use favicon-master.svg (512×512) and the generation script.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Exe CRM">
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@900&display=swap');
+      .mark { font-family: 'Epilogue', 'Inter', system-ui, sans-serif; font-weight: 900; letter-spacing: -0.04em; }
+    ]]></style>
+    <radialGradient id="aura" cx="20%" cy="10%" r="90%">
+      <stop offset="0%" stop-color="#6B4C9A" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#1A1832" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="#1A1832"/>
+  <rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="url(#aura)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" ry="13.5" fill="none" stroke="#F0EDE8" stroke-opacity="0.06" stroke-width="1"/>
+  <text x="32" y="46" class="mark" font-size="42" fill="#F5D76E" text-anchor="middle">E</text>
+</svg>

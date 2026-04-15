@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Exe CRM — loading / splash variant
+  1280×720 for Tauri WebviewWindow splash screens. Full-bleed Void canvas, Aura radial
+  gradient top-center, horizontal wordmark centered, tagline in Manrope underneath.
+  Used while the CRM WebView boots.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="Exe CRM — Hire the team you couldn't afford.">
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@900&family=Manrope:wght@400&display=swap');
+      .wordmark { font-family: 'Epilogue', 'Inter', system-ui, sans-serif; font-weight: 900; letter-spacing: -0.02em; }
+      .tagline  { font-family: 'Manrope', 'Inter', system-ui, sans-serif; font-weight: 400; }
+    ]]></style>
+    <radialGradient id="auraSplash" cx="50%" cy="20%" r="70%">
+      <stop offset="0%" stop-color="#6B4C9A" stop-opacity="0.28"/>
+      <stop offset="70%" stop-color="#0F0E1A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#0F0E1A"/>
+  <rect x="0" y="0" width="1280" height="720" fill="url(#auraSplash)"/>
+
+  <!-- Wordmark centered -->
+  <g transform="translate(640 340)">
+    <text x="-160" y="0" class="wordmark" font-size="96" fill="#F5D76E" text-anchor="start">EXE</text>
+    <line x1="82" y1="-58" x2="82" y2="8" stroke="#A09CAF" stroke-opacity="0.4" stroke-width="3"/>
+    <text x="104" y="0" class="wordmark" font-size="96" fill="#F0EDE8" text-anchor="start">CRM</text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="640" y="410" class="tagline" font-size="20" fill="#A09CAF" text-anchor="middle" letter-spacing="0.12em">HIRE THE TEAM YOU COULDN&apos;T AFFORD.</text>
+
+  <!-- Subtle loading pulse rail -->
+  <rect x="540" y="460" width="200" height="2" rx="1" fill="#F0EDE8" fill-opacity="0.06"/>
+  <rect x="540" y="460" width="64" height="2" rx="1" fill="#F5D76E" fill-opacity="0.85">
+    <animate attributeName="x" values="540;676;540" dur="1.8s" repeatCount="indefinite"/>
+  </rect>
+</svg>

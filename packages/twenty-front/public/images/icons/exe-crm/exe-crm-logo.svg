@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Exe CRM — horizontal wordmark
+  viewBox 0 0 240 56 · optical padding: 16px top/bottom, 20px left/right
+  "EXE" in Exe Gold (#F5D76E), divider in Ash (#A09CAF @ 40%), "CRM" in Bone (#F0EDE8)
+  Font: Epilogue 900 (brand) · tracking -0.02em
+  Toms: for production embeds, convert text to paths via Figma or svgo convert-to-paths.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" width="240" height="56" role="img" aria-label="Exe CRM">
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@900&display=swap');
+      .wordmark { font-family: 'Epilogue', 'Inter', system-ui, sans-serif; font-weight: 900; letter-spacing: -0.02em; }
+      .gold { fill: #F5D76E; }
+      .bone { fill: #F0EDE8; }
+    ]]></style>
+  </defs>
+  <text x="20" y="40" class="wordmark gold" font-size="32">EXE</text>
+  <line x1="104" y1="16" x2="104" y2="40" stroke="#A09CAF" stroke-opacity="0.4" stroke-width="1.5"/>
+  <text x="116" y="40" class="wordmark bone" font-size="32">CRM</text>
+</svg>
