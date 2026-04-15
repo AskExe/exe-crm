@@ -173,7 +173,7 @@ export const SettingsAIPrompts = () => {
           <Section key={section.title}>
             <H2Title
               title={section.title}
-              description={t`Read-only — managed by Twenty`}
+              description={t`Read-only — managed by Exe CRM`}
               adornment={
                 <StyledTokenBadge>
                   {formatNumber(section.estimatedTokenCount, {

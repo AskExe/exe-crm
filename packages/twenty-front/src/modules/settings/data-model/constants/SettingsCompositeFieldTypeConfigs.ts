@@ -179,14 +179,14 @@ export const SETTINGS_COMPOSITE_FIELD_TYPE_CONFIGS = {
     ],
     exampleValues: [
       {
-        primaryLinkUrl: 'twenty.com',
+        primaryLinkUrl: 'askexe.com',
         primaryLinkLabel: '',
-        secondaryLinks: [{ url: 'twenty.com', label: 'Twenty' }],
+        secondaryLinks: [{ url: 'askexe.com', label: 'Exe CRM' }],
       },
       {
-        primaryLinkUrl: 'github.com/twentyhq/twenty',
-        primaryLinkLabel: 'Twenty Repo',
-        secondaryLinks: [{ url: 'twenty.com', label: '' }],
+        primaryLinkUrl: 'github.com/AskExe/exe-crm',
+        primaryLinkLabel: 'Exe CRM Repo',
+        secondaryLinks: [{ url: 'askexe.com', label: '' }],
       },
       {
         primaryLinkUrl: 'react.dev',
