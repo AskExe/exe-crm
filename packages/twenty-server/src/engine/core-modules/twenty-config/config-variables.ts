@@ -167,10 +167,10 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ADVANCED_SETTINGS,
     description:
-      "Enable or disable requests to twenty-icons to get companies' icons",
+      "Enable or disable requests to twenty-icons to get companies' icons. OFF by default in Exe CRM: enabling this sends customer Company domain names to an upstream CDN (twenty-icons.com), which is a data-leak risk. Opt in per workspace only after confirming your privacy posture.",
     type: ConfigVariableType.BOOLEAN,
   })
-  ALLOW_REQUESTS_TO_TWENTY_ICONS = true;
+  ALLOW_REQUESTS_TO_TWENTY_ICONS = false;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.MICROSOFT_AUTH,
