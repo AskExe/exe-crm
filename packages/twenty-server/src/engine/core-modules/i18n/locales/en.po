@@ -1498,6 +1498,11 @@ msgstr "Contact auto creation policy"
 msgid "Content cannot be empty"
 msgstr "Content cannot be empty"
 
+#. js-lingui-id: 869Uds
+#: src/engine/api/common/common-args-processors/data-arg-processor/validator-utils/validate-rich-text-field-or-throw.util.ts
+msgid "Content contains a URL with a dangerous protocol."
+msgstr "Content contains a URL with a dangerous protocol."
+
 #. js-lingui-id: cmBz2p
 #: src/engine/metadata-modules/object-permission/field-permission/field-permission.service.ts
 msgid "Contradicting field permissions have been detected on a relation field."
@@ -3941,10 +3946,10 @@ msgstr "Join column name is required."
 msgid "Join table linking message channel message associations to message folders"
 msgstr "Join table linking message channel message associations to message folders"
 
-#. js-lingui-id: PviVyk
+#. js-lingui-id: jxEaf8
 #: src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts
-msgid "Join your team on Twenty"
-msgstr "Join your team on Twenty"
+msgid "Join your team on Exe CRM"
+msgstr "Join your team on Exe CRM"
 
 #. js-lingui-id: WNfJ8M
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-connected-account-standard-flat-field-metadata.util.ts
@@ -8053,10 +8058,10 @@ msgstr "Webhook not found."
 msgid "Wednesday"
 msgstr "Wednesday"
 
-#. js-lingui-id: TVkCrJ
+#. js-lingui-id: hD9bbr
 #: src/engine/core-modules/email-verification/services/email-verification.service.ts
-msgid "Welcome to Twenty: Please Confirm Your Email"
-msgstr "Welcome to Twenty: Please Confirm Your Email"
+msgid "Welcome to Exe CRM: Please Confirm Your Email"
+msgstr "Welcome to Exe CRM: Please Confirm Your Email"
 
 #. js-lingui-id: OHlJ1X
 #: src/engine/metadata-modules/page-layout-widget/utils/validate-widget-grid-position.util.ts

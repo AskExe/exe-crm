@@ -3924,7 +3924,7 @@ msgstr "crwdns112600:0crwdne112600:0"
 
 #. js-lingui-id: PviVyk
 #: src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts
-msgid "Join your team on Twenty"
+msgid "Join your team on Exe CRM"
 msgstr "crwdns4977:0crwdne4977:0"
 
 #. js-lingui-id: WNfJ8M
@@ -8032,7 +8032,7 @@ msgstr "crwdns8354:0crwdne8354:0"
 
 #. js-lingui-id: TVkCrJ
 #: src/engine/core-modules/email-verification/services/email-verification.service.ts
-msgid "Welcome to Twenty: Please Confirm Your Email"
+msgid "Welcome to Exe CRM: Please Confirm Your Email"
 msgstr "crwdns4981:0crwdne4981:0"
 
 #. js-lingui-id: OHlJ1X

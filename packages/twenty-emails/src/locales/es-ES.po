@@ -20,6 +20,65 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/emails/warn-suspended-workspace.email.tsx
+msgid "If you wish to continue using Exe CRM, please update your subscription within the next {remainingDays} {dayOrDays}."
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/send-invite-link.email.tsx
+#: src/emails/send-invite-link.email.js
+msgid "Join your team on Exe CRM"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/password-update-notify.email.tsx
+#: src/emails/password-update-notify.email.js
+msgid "Connect to Exe CRM"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/clean-suspended-workspace.email.tsx
+msgid "If you wish to use Exe CRM again, you can create a new workspace."
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsTwenty.js
+msgid "What is Exe CRM?"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's website"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's GitHub repository"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Read Exe CRM's user guide"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's developer documentation"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Exe CRM.com, Public Benefit Corporation"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/warn-suspended-workspace.email.tsx
+#: src/emails/warn-suspended-workspace.email.js
 msgid "Suspended Workspace"
 msgstr "Espacio de trabajo suspendido"
 
@@ -49,17 +108,15 @@ msgstr "El espacio de trabajo se desactivará en {remainingDays} {dayOrDays} y s
 
 #. js-lingui-explicit-id
 #: src/emails/warn-suspended-workspace.email.tsx
-msgid "If you wish to continue using Twenty, please update your subscription within the next {remainingDays} {dayOrDays}."
-msgstr "Si deseas seguir usando Twenty, actualiza tu suscripción en los próximos {remainingDays} {dayOrDays}."
-
-#. js-lingui-explicit-id
-#: src/emails/warn-suspended-workspace.email.tsx
+#: src/emails/warn-suspended-workspace.email.js
 msgid "Update your subscription"
 msgstr "Actualiza tu suscripción"
 
 #. js-lingui-explicit-id
 #: src/emails/validate-approved-access-domain.email.tsx
 #: src/emails/validate-approved-access-domain.email.tsx
+#: src/emails/validate-approved-access-domain.email.js
+#: src/emails/validate-approved-access-domain.email.js
 msgid "Validate domain"
 msgstr "Validar dominio"
 
@@ -70,13 +127,9 @@ msgstr "{senderName} (<0>{senderEmail}</0>): Por favor, valide este dominio para
 
 #. js-lingui-explicit-id
 #: src/emails/test.email.tsx
+#: src/emails/test.email.js
 msgid "Test email"
 msgstr "Correo de prueba"
-
-#. js-lingui-explicit-id
-#: src/emails/send-invite-link.email.tsx
-msgid "Join your team on Twenty"
-msgstr "Únete a tu equipo en Twenty"
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
@@ -85,31 +138,37 @@ msgstr "{senderName} (<0>{senderEmail}</0>) te ha invitado a unirte a un espacio
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
+#: src/emails/send-invite-link.email.js
 msgid "Accept invite"
 msgstr "Aceptar invitación"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm your new email address"
 msgstr "Confirma tu nueva dirección de correo electrónico"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm your email address"
 msgstr "Confirma tu dirección de correo electrónico"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm new email"
 msgstr "Confirmar nuevo correo electrónico"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Verify Email"
 msgstr "Verificar correo electrónico"
 
 #. js-lingui-explicit-id
 #: src/emails/password-update-notify.email.tsx
+#: src/emails/password-update-notify.email.js
 msgid "Password updated"
 msgstr "Contraseña actualizada"
 
@@ -124,27 +183,26 @@ msgid "If you did not initiate this change, please contact your workspace owner 
 msgstr "Si no iniciaste este cambio, contacta inmediatamente al propietario de tu espacio de trabajo."
 
 #. js-lingui-explicit-id
-#: src/emails/password-update-notify.email.tsx
-msgid "Connect to Twenty"
-msgstr "Conéctate a Twenty"
-
-#. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Reset your password 🗝"
 msgstr "Restablece tu contraseña 🗝"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Set your password 🗝"
 msgstr "Establezca su contraseña 🗝"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Reset"
 msgstr "Restablecer"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Set"
 msgstr "Establecer"
 
@@ -155,6 +213,7 @@ msgstr "Este enlace solo es válido por los próximos {duration}. Si el enlace n
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
+#: src/emails/clean-suspended-workspace.email.js
 msgid "Deleted Workspace"
 msgstr "Espacio de trabajo eliminado"
 
@@ -170,70 +229,42 @@ msgstr "Todos los datos de este espacio de trabajo han sido eliminados permanent
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
-msgid "If you wish to use Twenty again, you can create a new workspace."
-msgstr "Si deseas usar Twenty nuevamente, puedes crear un nuevo espacio de trabajo."
-
-#. js-lingui-explicit-id
-#: src/emails/clean-suspended-workspace.email.tsx
+#: src/emails/clean-suspended-workspace.email.js
 msgid "Create a new workspace"
 msgstr "Crea un nuevo espacio de trabajo"
 
 #. js-lingui-explicit-id
 #: src/components/WhatIsTwenty.tsx
-msgid "What is Twenty?"
-msgstr "¿Qué es Twenty?"
-
-#. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsTwenty.js
 msgid "It's a CRM, a software to help businesses manage their customer data and relationships efficiently."
 msgstr "Es un CRM, un software para ayudar a las empresas a gestionar eficientemente sus datos y relaciones con los clientes."
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Website"
 msgstr "Sitio web"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's website"
-msgstr "Visite el sitio web de Twenty"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Github"
 msgstr "Github"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's GitHub repository"
-msgstr "Visite el repositorio de GitHub de Twenty"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "User guide"
 msgstr "Guía del usuario"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Read Twenty's user guide"
-msgstr "Lea la guía del usuario de Twenty"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Developers"
 msgstr "Desarrolladores"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's developer documentation"
-msgstr "Visite la documentación para desarrolladores de Twenty"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
-msgid "Twenty.com, Public Benefit Corporation"
-msgstr "Twenty.com, Corporación de Beneficio Público"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "San Francisco / Paris"
 msgstr "San Francisco / París"

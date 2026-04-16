@@ -20,6 +20,65 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/emails/warn-suspended-workspace.email.tsx
+msgid "If you wish to continue using Exe CRM, please update your subscription within the next {remainingDays} {dayOrDays}."
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/send-invite-link.email.tsx
+#: src/emails/send-invite-link.email.js
+msgid "Join your team on Exe CRM"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/password-update-notify.email.tsx
+#: src/emails/password-update-notify.email.js
+msgid "Connect to Exe CRM"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/clean-suspended-workspace.email.tsx
+msgid "If you wish to use Exe CRM again, you can create a new workspace."
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsTwenty.js
+msgid "What is Exe CRM?"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's website"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's GitHub repository"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Read Exe CRM's user guide"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Visit Exe CRM's developer documentation"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/components/Footer.tsx
+#: src/components/Footer.js
+msgid "Exe CRM.com, Public Benefit Corporation"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/emails/warn-suspended-workspace.email.tsx
+#: src/emails/warn-suspended-workspace.email.js
 msgid "Suspended Workspace"
 msgstr "Felfüggesztett munkaterület"
 
@@ -49,17 +108,15 @@ msgstr "A munkaterület {remainingDays} {dayOrDays} múlva lesz deaktiválva, é
 
 #. js-lingui-explicit-id
 #: src/emails/warn-suspended-workspace.email.tsx
-msgid "If you wish to continue using Twenty, please update your subscription within the next {remainingDays} {dayOrDays}."
-msgstr "Amennyiben szeretné folytatni a Twenty használatát, kérjük frissítse előfizetését a következő {remainingDays} {dayOrDays} időszakban."
-
-#. js-lingui-explicit-id
-#: src/emails/warn-suspended-workspace.email.tsx
+#: src/emails/warn-suspended-workspace.email.js
 msgid "Update your subscription"
 msgstr "Előfizetés frissítése"
 
 #. js-lingui-explicit-id
 #: src/emails/validate-approved-access-domain.email.tsx
 #: src/emails/validate-approved-access-domain.email.tsx
+#: src/emails/validate-approved-access-domain.email.js
+#: src/emails/validate-approved-access-domain.email.js
 msgid "Validate domain"
 msgstr "Domain érvényesítése"
 
@@ -70,13 +127,9 @@ msgstr "{senderName} (<0>{senderEmail}</0>): Kérjük, érvényesítse ezt a dom
 
 #. js-lingui-explicit-id
 #: src/emails/test.email.tsx
+#: src/emails/test.email.js
 msgid "Test email"
 msgstr "Teszt e-mail"
-
-#. js-lingui-explicit-id
-#: src/emails/send-invite-link.email.tsx
-msgid "Join your team on Twenty"
-msgstr "Csatlakozzon a csapatához a Twentyn"
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
@@ -85,31 +138,37 @@ msgstr "{senderName} (<0>{senderEmail}</0>) meghívta önt, hogy csatlakozzon eg
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
+#: src/emails/send-invite-link.email.js
 msgid "Accept invite"
 msgstr "Meghívó elfogadása"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm your new email address"
 msgstr "Erősítsd meg az új e-mail címed"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm your email address"
 msgstr "Erősítse meg email címét"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Confirm new email"
 msgstr "Új e-mail megerősítése"
 
 #. js-lingui-explicit-id
 #: src/emails/send-email-verification-link.email.tsx
+#: src/emails/send-email-verification-link.email.js
 msgid "Verify Email"
 msgstr "Email ellenőrzése"
 
 #. js-lingui-explicit-id
 #: src/emails/password-update-notify.email.tsx
+#: src/emails/password-update-notify.email.js
 msgid "Password updated"
 msgstr "Jelszó frissítve"
 
@@ -124,27 +183,26 @@ msgid "If you did not initiate this change, please contact your workspace owner 
 msgstr "Amennyiben Ön nem kezdeményezte ezt a változtatást, kérjük azonnal lépjen kapcsolatba a munkaterület tulajdonosával."
 
 #. js-lingui-explicit-id
-#: src/emails/password-update-notify.email.tsx
-msgid "Connect to Twenty"
-msgstr "Csatlakozás a Twentyhez"
-
-#. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Reset your password 🗝"
 msgstr "Jelszó visszaállítása 🗝"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Set your password 🗝"
 msgstr "Adja meg a jelszavát 🗝"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Reset"
 msgstr "Visszaállítás"
 
 #. js-lingui-explicit-id
 #: src/emails/password-reset-link.email.tsx
+#: src/emails/password-reset-link.email.js
 msgid "Set"
 msgstr "Beállítás"
 
@@ -155,6 +213,7 @@ msgstr "Ez a hivatkozás csak a következő {duration} ideig érvényes. Ha a hi
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
+#: src/emails/clean-suspended-workspace.email.js
 msgid "Deleted Workspace"
 msgstr "Törölt munkaterület"
 
@@ -170,70 +229,42 @@ msgstr "A munkaterület minden adata végérvényesen törlésre került."
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
-msgid "If you wish to use Twenty again, you can create a new workspace."
-msgstr "Ha újra szeretné használni a Twenty-t, létrehozhat egy új munkaterületet."
-
-#. js-lingui-explicit-id
-#: src/emails/clean-suspended-workspace.email.tsx
+#: src/emails/clean-suspended-workspace.email.js
 msgid "Create a new workspace"
 msgstr "Hozzon létre új munkaterületet"
 
 #. js-lingui-explicit-id
 #: src/components/WhatIsTwenty.tsx
-msgid "What is Twenty?"
-msgstr "Mi az a Twenty?"
-
-#. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsTwenty.js
 msgid "It's a CRM, a software to help businesses manage their customer data and relationships efficiently."
 msgstr "Ez egy CRM, egy szoftver, amely segíti a vállalkozásokat az ügyféladataik és kapcsolataik hatékony kezelésében."
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Website"
 msgstr "Weboldal"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's website"
-msgstr "Látogasson el a Twenty weboldalára"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Github"
 msgstr "Github"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's GitHub repository"
-msgstr "Látogasson el a Twenty GitHub tárházához"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "User guide"
 msgstr "Felhasználói útmutató"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Read Twenty's user guide"
-msgstr "Olvassa el a Twenty felhasználói útmutatóját"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "Developers"
 msgstr "Fejlesztők"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's developer documentation"
-msgstr "Látogasson el a Twenty fejlesztői dokumentációjához"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
-msgid "Twenty.com, Public Benefit Corporation"
-msgstr "Twenty.com, Közhasznú Vállalat"
-
-#. js-lingui-explicit-id
-#: src/components/Footer.tsx
+#: src/components/Footer.js
 msgid "San Francisco / Paris"
 msgstr "San Francisco / Párizs"
