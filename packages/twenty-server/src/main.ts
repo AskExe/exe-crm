@@ -22,8 +22,25 @@ import './instrument';
 import { settings } from './engine/constants/settings';
 import { generateFrontConfig } from './utils/generate-front-config';
 
+const assertAppSecret = () => {
+  const secret = process.env.APP_SECRET;
+
+  if (
+    !secret ||
+    secret === 'replace_me_with_a_random_string' ||
+    secret.length < 32
+  ) {
+    throw new Error(
+      'APP_SECRET must be set to a secure random string of at least 32 chars. ' +
+        'Generate with: openssl rand -hex 32',
+    );
+  }
+};
+
 // Trigger
 const bootstrap = async () => {
+  assertAppSecret();
+
   setPgDateTypeParser();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
