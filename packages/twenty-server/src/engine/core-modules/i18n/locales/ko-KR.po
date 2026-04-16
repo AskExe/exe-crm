@@ -1503,6 +1503,11 @@ msgstr "연락처 자동 생성 정책"
 msgid "Content cannot be empty"
 msgstr "내용은 비워 둘 수 없습니다"
 
+#. js-lingui-id: 869Uds
+#: src/engine/api/common/common-args-processors/data-arg-processor/validator-utils/validate-rich-text-field-or-throw.util.ts
+msgid "Content contains a URL with a dangerous protocol."
+msgstr ""
+
 #. js-lingui-id: cmBz2p
 #: src/engine/metadata-modules/object-permission/field-permission/field-permission.service.ts
 msgid "Contradicting field permissions have been detected on a relation field."
@@ -3946,10 +3951,10 @@ msgstr "조인 열 이름이 필요합니다."
 msgid "Join table linking message channel message associations to message folders"
 msgstr ""
 
-#. js-lingui-id: PviVyk
+#. js-lingui-id: jxEaf8
 #: src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts
-msgid "Join your team on Twenty"
-msgstr "Twenty에서 팀에 합류하세요"
+msgid "Join your team on Exe CRM"
+msgstr ""
 
 #. js-lingui-id: WNfJ8M
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-connected-account-standard-flat-field-metadata.util.ts
@@ -8058,10 +8063,10 @@ msgstr "웹훅을 찾을 수 없음."
 msgid "Wednesday"
 msgstr "수요일"
 
-#. js-lingui-id: TVkCrJ
+#. js-lingui-id: hD9bbr
 #: src/engine/core-modules/email-verification/services/email-verification.service.ts
-msgid "Welcome to Twenty: Please Confirm Your Email"
-msgstr "Twenty에 오신 것을 환영합니다: 이메일을 확인해 주세요"
+msgid "Welcome to Exe CRM: Please Confirm Your Email"
+msgstr ""
 
 #. js-lingui-id: OHlJ1X
 #: src/engine/metadata-modules/page-layout-widget/utils/validate-widget-grid-position.util.ts
