@@ -46,7 +46,9 @@
     "monaco-editor": ">= 0.25.0 < 1"
   },
   "scripts": {
-    "build": "npx vite build"
+    "generate:theme": "tsx --import ./scripts/asset-stub-loader.mjs scripts/generateThemeCss.ts",
+    "prebuild": "yarn generate:theme",
+    "build": "yarn generate:theme && npx vite build"
   },
   "files": [
     "dist",
