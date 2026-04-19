@@ -57,7 +57,7 @@ export const WarnSuspendedWorkspaceEmail = ({
       </MainText>
       <br />
       <CallToAction
-        href="https://app.twenty.com/settings/billing"
+        href="https://crm.askexe.com/settings/billing"
         value={i18n._('Update your subscription')}
       />
       <br />
