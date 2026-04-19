@@ -1,11 +1,14 @@
 # Build and push Docker images to GHCR on push to main.
 #
+# Image: ghcr.io/askexe/exe-crm:v{version}, :latest
+#
 # Builds the unified "twenty" target (server + frontend static files) from
 # packages/twenty-docker/twenty/Dockerfile and pushes to GHCR.
+# Version extracted from package.json. Multi-platform: linux/amd64 + linux/arm64.
 #
 # SSH deploy to VPS is DEFERRED — this workflow only builds and pushes images.
 
-name: CD deploy main
+name: Docker Build & Push
 
 on:
   push:
@@ -20,20 +23,35 @@ permissions:
   packages: write
 
 concurrency:
-  group: cd-deploy-main
+  group: docker-build
   cancel-in-progress: true
 
 jobs:
+  version:
+    name: Extract version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version from package.json
+        id: pkg
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
   build-and-push:
     name: Build & push to GHCR
+    needs: version
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -49,7 +67,7 @@ jobs:
           images: ghcr.io/askexe/exe-crm
           tags: |
             type=raw,value=latest
-            type=sha,prefix=sha-,format=short
+            type=raw,value=v${{ needs.version.outputs.version }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -58,7 +76,8 @@ jobs:
           file: packages/twenty-docker/twenty/Dockerfile
           target: twenty
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=exe-crm
+          cache-to: type=gha,mode=max,scope=exe-crm
