@@ -76,7 +76,7 @@ export const loggerLink = (getSchemaName: (operation: Operation) => string) =>
             errors.forEach((err: any) => {
               logDebug(
                 `%c${err.message}`,
-                // oxlint-disable-next-line twenty/no-hardcoded-colors
+                // oxlint-disable-next-line exe-crm/no-hardcoded-colors
                 'color: #F51818; font-weight: lighter',
               );
             });

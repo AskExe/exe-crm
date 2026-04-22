@@ -33,7 +33,7 @@ export const MARKETPLACE_CATALOG_INDEX: CuratedAppEntry[] = [
     description: 'Enrich your data easily. Choose your provider.',
     author: 'Twenty',
     logoUrl: ENCODED_MOCK_LOGO,
-    websiteUrl: 'https://twenty.com',
+    websiteUrl: 'https://askexe.com',
     richDisplayData: {
       icon: 'IconSparkles',
       version: '1.0.0',
@@ -145,7 +145,7 @@ export const MARKETPLACE_CATALOG_INDEX: CuratedAppEntry[] = [
     name: 'Hello World',
     description: 'A simple hello world app to get started with Twenty apps.',
     author: 'Twenty',
-    websiteUrl: 'https://twenty.com',
+    websiteUrl: 'https://askexe.com',
     richDisplayData: {
       icon: 'IconWorld',
       version: '0.2.2',

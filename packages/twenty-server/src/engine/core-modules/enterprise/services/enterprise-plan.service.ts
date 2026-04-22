@@ -171,7 +171,7 @@ export class EnterprisePlanService implements OnModuleInit {
 
     this.logger.warn(
       'Unsigned enterprise keys are deprecated and will stop working ' +
-        'in a future version. Please obtain a signed key from twenty.com.',
+        'in a future version. Please obtain a signed key from askexe.com.',
     );
 
     return true;

@@ -26,7 +26,7 @@ export const PUBLIC_FEATURE_FLAGS: PublicFeatureFlag[] = [
       label: 'Row Level Permissions',
       description: 'Enable row level permission',
       imagePath:
-        'https://twenty.com/images/lab/is-row-level-permission-predicates-enabled.png',
+        'https://askexe.com/images/lab/is-row-level-permission-predicates-enabled.png',
     },
   },
   ...(process.env.CLOUDFLARE_API_KEY

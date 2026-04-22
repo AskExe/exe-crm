@@ -97,7 +97,7 @@
     }],
 
     "twenty/effect-components": "error",
-    "twenty/no-hardcoded-colors": "error",
+    "exe-crm/no-hardcoded-colors": "error",
     "twenty/matching-state-variable": "error",
     "twenty/sort-css-properties-alphabetically": "error",
     "twenty/styled-components-prefixed-with-styled": "error",

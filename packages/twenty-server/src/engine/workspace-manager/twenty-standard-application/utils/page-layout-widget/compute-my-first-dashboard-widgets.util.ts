@@ -188,7 +188,7 @@ const createWelcomeRichText = ({
             },
             {
               type: 'link',
-              href: 'https://docs.twenty.com/user-guide/introduction',
+              href: 'https://docs.askexe.com/user-guide/introduction',
               content: [
                 {
                   type: 'text',

@@ -123,7 +123,7 @@ Notes:
       termsOfService:
         'https://github.com/twentyhq/twenty?tab=coc-ov-file#readme',
       contact: {
-        email: 'felix@twenty.com',
+        email: 'contact@askexe.com',
       },
       license: {
         name: 'AGPL-3.0',
@@ -155,8 +155,8 @@ Notes:
       },
     ],
     externalDocs: {
-      description: 'Find out more about **Twenty**',
-      url: 'https://twenty.com',
+      description: 'Find out more about **Exe CRM**',
+      url: 'https://askexe.com',
     },
     paths: { [`/open-api/${schemaName}`]: computeOpenApiPath(serverUrl) },
   };

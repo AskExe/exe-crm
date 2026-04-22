@@ -21,13 +21,13 @@ See [QUICKSTART.md](QUICKSTART.md) for a simple 2-line install with your domain.
 Internal DB + Redis (default):
 ```bash
 helm install my-twenty ./packages/twenty-docker/helm/twenty \
-  --namespace twentycrm --create-namespace
+  --namespace exe-crm --create-namespace
 ```
 
 External DB/Redis:
 ```bash
 helm install my-twenty ./packages/twenty-docker/helm/twenty \
-  --namespace twentycrm --create-namespace \
+  --namespace exe-crm --create-namespace \
   --set db.enabled=false \
   --set db.external.host=db.example.com \
   --set redisInternal.enabled=false

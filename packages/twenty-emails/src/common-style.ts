@@ -1,4 +1,4 @@
-/* oxlint-disable twenty/no-hardcoded-colors */
+/* oxlint-disable exe-crm/no-hardcoded-colors */
 /*
  * Exe CRM — email theme
  * Drop into: packages/twenty-emails/src/common-style.ts
