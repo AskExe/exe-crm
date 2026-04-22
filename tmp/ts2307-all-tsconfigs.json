@@ -1,0 +1,422 @@
+[
+  {
+    "tsconfig": "packages/twenty-apps/community/activity-summary/tsconfig.json",
+    "file": "packages/twenty-apps/community/activity-summary/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/activity-summary/tsconfig.json",
+    "file": "packages/twenty-apps/community/activity-summary/serverlessFunctions/summarise-and-send/src/index.ts",
+    "line": 5,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/ai-meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/ai-meeting-transcript/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/ai-meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/ai-meeting-transcript/serverlessFunctions/ai-meeting-transcriptor/src/index.ts",
+    "line": 2,
+    "col": 20,
+    "spec": "openai"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/ai-meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/ai-meeting-transcript/serverlessFunctions/ai-meeting-transcriptor/src/index.ts",
+    "line": 3,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/apollo-enrich/tsconfig.json",
+    "file": "packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/apollo-enrich/tsconfig.json",
+    "file": "packages/twenty-apps/community/apollo-enrich/src/logic-functions/get-authentication-token-pairs.ts",
+    "line": 2,
+    "col": 35,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/apollo-enrich/tsconfig.json",
+    "file": "packages/twenty-apps/community/apollo-enrich/src/logic-functions/on-company-updated.ts",
+    "line": 6,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/application/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/application/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/application/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/application/serverlessFunctions/create-company/src/index.ts",
+    "line": 1,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/application/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/application/serverlessFunctions/create-person/src/index.ts",
+    "line": 1,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/application/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/application/serverlessFunctions/get-company/src/index.ts",
+    "line": 1,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/application/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/application/serverlessFunctions/get-person/src/index.ts",
+    "line": 1,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/chunks/moduleRunnerTransport.d.ts",
+    "line": 1,
+    "col": 28,
+    "spec": "#types/hmrPayload"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 3,
+    "col": 223,
+    "spec": "#types/hmrPayload"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 4,
+    "col": 139,
+    "spec": "#types/customEvent"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 7,
+    "col": 41,
+    "spec": "rollup/parseAst"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 21,
+    "col": 45,
+    "spec": "#types/internal/terserOptions"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 23,
+    "col": 109,
+    "spec": "#types/internal/cssPreprocessorOptions"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 24,
+    "col": 101,
+    "spec": "#types/internal/lightningcssOptions"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 25,
+    "col": 97,
+    "spec": "#types/importGlob"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/index.d.ts",
+    "line": 26,
+    "col": 56,
+    "spec": "#types/metadata"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/module-runner.d.ts",
+    "line": 2,
+    "col": 49,
+    "spec": "#types/hot"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/module-runner.d.ts",
+    "line": 3,
+    "col": 36,
+    "spec": "#types/hmrPayload"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "node_modules/vite/dist/node/module-runner.d.ts",
+    "line": 4,
+    "col": 41,
+    "spec": "#types/customEvent"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/entrypoints/add-company.content/index.tsx",
+    "line": 4,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/entrypoints/background/index.ts",
+    "line": 2,
+    "col": 36,
+    "spec": "@webext-core/messaging"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/entrypoints/popup/app.tsx",
+    "line": 2,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/utils/messaging.ts",
+    "line": 1,
+    "col": 42,
+    "spec": "@webext-core/messaging"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/vite.config.ts",
+    "line": 1,
+    "col": 19,
+    "spec": "@vitejs/plugin-react"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/tsconfig.json",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/wxt.config.ts",
+    "line": 1,
+    "col": 30,
+    "spec": "wxt"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/mailchimp-synchronizer/tsconfig.json",
+    "file": "packages/twenty-apps/community/mailchimp-synchronizer/src/index.ts",
+    "line": 8,
+    "col": 37,
+    "spec": "../generated"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/meeting-transcript/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/meeting-transcript/serverlessFunctions/process-transcript/src/index.ts",
+    "line": 2,
+    "col": 20,
+    "spec": "openai"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/meeting-transcript/tsconfig.json",
+    "file": "packages/twenty-apps/community/meeting-transcript/serverlessFunctions/process-transcript/src/index.ts",
+    "line": 3,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/rollup-engine/tsconfig.json",
+    "file": "packages/twenty-apps/community/rollup-engine/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/rollup-engine/tsconfig.json",
+    "file": "packages/twenty-apps/community/rollup-engine/serverlessFunctions/calculaterollups/src/index.ts",
+    "line": 6,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/webmetic/tsconfig.json",
+    "file": "packages/twenty-apps/community/webmetic/application.config.ts",
+    "line": 1,
+    "col": 40,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/community/webmetic/tsconfig.json",
+    "file": "packages/twenty-apps/community/webmetic/serverlessFunctions/sync-visitor-data/src/index.ts",
+    "line": 7,
+    "col": 47,
+    "spec": "twenty-sdk/application"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/hello-world/tsconfig.spec.json",
+    "file": "packages/twenty-apps/hello-world/src/__tests__/setup-test.ts",
+    "line": 1,
+    "col": 21,
+    "spec": "fs"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/hello-world/tsconfig.spec.json",
+    "file": "packages/twenty-apps/hello-world/src/__tests__/setup-test.ts",
+    "line": 2,
+    "col": 21,
+    "spec": "os"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/hello-world/tsconfig.spec.json",
+    "file": "packages/twenty-apps/hello-world/src/__tests__/setup-test.ts",
+    "line": 3,
+    "col": 23,
+    "spec": "path"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/AudioPlayer.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/CallRecordingViewerSkeleton.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/SummaryViewerSkeleton.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/VideoPlayer.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/constants/skeleton-constants.ts",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/call-recording-viewer.tsx",
+    "line": 1,
+    "col": 20,
+    "spec": "@emotion/styled"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/seed-call-recordings.tsx",
+    "line": 8,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/summarize-person-recordings.tsx",
+    "line": 9,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/hooks/useCallRecording.ts",
+    "line": 3,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/logic-functions/end-recording.ts",
+    "line": 11,
+    "col": 50,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/call-recording/tsconfig.json",
+    "file": "packages/twenty-apps/internal/call-recording/src/utils/match-participants.ts",
+    "line": 1,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/self-hosting/tsconfig.json",
+    "file": "packages/twenty-apps/internal/self-hosting/src/logic-functions/match-telemetry-event-with-people.ts",
+    "line": 8,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-apps/internal/self-hosting/tsconfig.json",
+    "file": "packages/twenty-apps/internal/self-hosting/src/logic-functions/telemetryWebhook.function.ts",
+    "line": 2,
+    "col": 31,
+    "spec": "twenty-sdk/clients"
+  },
+  {
+    "tsconfig": "packages/twenty-server/tsconfig.json",
+    "file": "packages/twenty-server/src/engine/core-modules/file/file-core-picture/services/file-core-picture.service.ts",
+    "line": 8,
+    "col": 27,
+    "spec": "@file-type/pdf"
+  },
+  {
+    "tsconfig": "packages/twenty-server/tsconfig.json",
+    "file": "packages/twenty-server/src/engine/core-modules/file/utils/extract-file-info.utils.ts",
+    "line": 12,
+    "col": 27,
+    "spec": "@file-type/pdf"
+  }
+]

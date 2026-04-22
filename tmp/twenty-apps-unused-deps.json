@@ -1,0 +1,17 @@
+[
+  {
+    "package": "fireflies",
+    "packageJson": "packages/twenty-apps/community/fireflies/package.json",
+    "dep": "axios"
+  },
+  {
+    "package": "twenty-browser-extension",
+    "packageJson": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/package.json",
+    "dep": "@emotion/react"
+  },
+  {
+    "package": "call-recording",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json",
+    "dep": "@emotion/react"
+  }
+]

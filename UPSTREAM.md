@@ -175,3 +175,14 @@ security fixes, force-pushed, then audited the ingestion path.
   - Restrict push access to main (branch protection) so "Sync fork" requires PR review
   - Document in CONTRIBUTING.md that "Sync fork" is forbidden; rely on social contract
 - Recommend: branch protection + explicit CONTRIBUTING prohibition. Founder to decide.
+
+## Internal package names (intentionally unchanged)
+
+The `packages/` directory retains upstream `twenty-*` names (`twenty-front`,
+`twenty-server`, `twenty-emails`, etc.). This is **intentional** — renaming
+these directories would break the NX monorepo build system, workspace
+references in `package.json` files, and hundreds of cross-package imports.
+
+User-visible branding (HTML titles, email copy, Docker labels, Helm charts)
+has been rebranded to "Exe CRM". Internal directory names are implementation
+detail, not user-facing.

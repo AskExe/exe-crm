@@ -1,0 +1,170 @@
+[
+  {
+    "package": "apollo-enrich",
+    "file": "packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx",
+    "line": 1,
+    "spec": "@emotion/styled",
+    "key": "@emotion/styled",
+    "packageJson": "packages/twenty-apps/community/apollo-enrich/package.json"
+  },
+  {
+    "package": "twenty-browser-extension",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/vite.config.ts",
+    "line": 1,
+    "spec": "@vitejs/plugin-react",
+    "key": "@vitejs/plugin-react",
+    "packageJson": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/package.json"
+  },
+  {
+    "package": "twenty-browser-extension",
+    "file": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/vite.config.ts",
+    "line": 3,
+    "spec": "vite",
+    "key": "vite",
+    "packageJson": "packages/twenty-apps/community/linkedin-browser-extension/browser-extension/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/navigation-menu-items/post-card-recipients.navigation-menu-item.ts",
+    "line": 2,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/navigation-menu-items/post-cards.navigation-menu-item.ts",
+    "line": 2,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/navigation-menu-items/recipients.navigation-menu-item.ts",
+    "line": 2,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/views/all-post-card-recipients.view.ts",
+    "line": 6,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/views/all-post-cards.view.ts",
+    "line": 6,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "postcard-app",
+    "file": "packages/twenty-apps/fixtures/postcard-app/src/views/all-recipients.view.ts",
+    "line": 6,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/fixtures/postcard-app/package.json"
+  },
+  {
+    "package": "hello-world",
+    "file": "packages/twenty-apps/hello-world/src/navigation-menu-items/example-navigation-menu-item.ts",
+    "line": 2,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/hello-world/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx",
+    "line": 3,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx",
+    "line": 7,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/call-recording-summary-viewer.tsx",
+    "line": 6,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/call-recording-viewer.tsx",
+    "line": 12,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/front-components/summarize-person-recordings.tsx",
+    "line": 10,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/hooks/useCallRecording.ts",
+    "line": 4,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/hooks/useTranscript.ts",
+    "line": 2,
+    "spec": "twenty-shared/utils",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/logic-functions/end-recording.ts",
+    "line": 12,
+    "spec": "zod",
+    "key": "zod",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/navigation-menu-items/call-recording-navigation-menu-item.ts",
+    "line": 3,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "call-recording",
+    "file": "packages/twenty-apps/internal/call-recording/src/roles/default-role.ts",
+    "line": 2,
+    "spec": "twenty-shared/constants",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/call-recording/package.json"
+  },
+  {
+    "package": "self-hosting",
+    "file": "packages/twenty-apps/internal/self-hosting/src/navigation-menu-items/self-host-user-navigation-menu-item.ts",
+    "line": 2,
+    "spec": "twenty-shared/types",
+    "key": "twenty-shared",
+    "packageJson": "packages/twenty-apps/internal/self-hosting/package.json"
+  }
+]

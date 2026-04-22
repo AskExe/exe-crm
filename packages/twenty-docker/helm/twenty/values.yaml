@@ -1,6 +1,6 @@
 # Default image used by all components
 image:
-  repository: twentycrm/twenty
+  repository: ghcr.io/askexe/exe-crm
   tag: ""  # defaults to Chart.yaml appVersion
   pullPolicy: IfNotPresent
 
@@ -123,7 +123,7 @@ db:
     appUser: twenty_app_user
     appPassword: ""  # random if empty
     image:
-      repository: twentycrm/twenty-postgres-spilo
+      repository: ghcr.io/askexe/exe-crm-postgres-spilo
       tag: 3.3-p2
     resources:
       requests:

@@ -1,0 +1,16 @@
+[
+  {
+    "workspace": "packages/twenty-server",
+    "file": "packages/twenty-server/src/engine/core-modules/file/file-core-picture/services/file-core-picture.service.ts",
+    "line": 8,
+    "col": 27,
+    "spec": "@file-type/pdf"
+  },
+  {
+    "workspace": "packages/twenty-server",
+    "file": "packages/twenty-server/src/engine/core-modules/file/utils/extract-file-info.utils.ts",
+    "line": 12,
+    "col": 27,
+    "spec": "@file-type/pdf"
+  }
+]
