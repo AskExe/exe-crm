@@ -142,7 +142,7 @@ export function generateFrontConfig(): void {
   };
 
   const configString = `<!-- BEGIN: Exe CRM Config -->
-    <script id="twenty-env-config">
+    <script id="exe-crm-env-config">
       window._env_ = ${JSON.stringify(configObject.window._env_, null, 2)};
     </script>
     <!-- END: Exe CRM Config -->`;

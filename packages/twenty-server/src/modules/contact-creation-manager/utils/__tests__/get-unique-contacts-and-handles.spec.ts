@@ -12,34 +12,34 @@ describe('getUniqueContactsAndHandles', () => {
 
   it('should return unique contacts and handles', () => {
     const contacts: Contact[] = [
-      { handle: 'john@twenty.com', displayName: 'John Doe' },
-      { handle: 'john@twenty.com', displayName: 'John Doe' },
-      { handle: 'jane@twenty.com', displayName: 'Jane Smith' },
-      { handle: 'jane@twenty.com', displayName: 'Jane Smith' },
-      { handle: 'jane@twenty.com', displayName: 'Jane Smith' },
+      { handle: 'john@askexe.com', displayName: 'John Doe' },
+      { handle: 'john@askexe.com', displayName: 'John Doe' },
+      { handle: 'jane@askexe.com', displayName: 'Jane Smith' },
+      { handle: 'jane@askexe.com', displayName: 'Jane Smith' },
+      { handle: 'jane@askexe.com', displayName: 'Jane Smith' },
     ];
     const result = getUniqueContactsAndHandles(contacts);
 
     expect(result.uniqueContacts).toEqual([
-      { handle: 'john@twenty.com', displayName: 'John Doe' },
-      { handle: 'jane@twenty.com', displayName: 'Jane Smith' },
+      { handle: 'john@askexe.com', displayName: 'John Doe' },
+      { handle: 'jane@askexe.com', displayName: 'Jane Smith' },
     ]);
     expect(result.uniqueHandles).toEqual([
-      'john@twenty.com',
-      'jane@twenty.com',
+      'john@askexe.com',
+      'jane@askexe.com',
     ]);
   });
 
   it('should deduplicate handles when they are in different cases', () => {
     const contacts: Contact[] = [
-      { handle: 'john@twenty.com', displayName: 'John Doe' },
-      { handle: 'John@twenty.com', displayName: 'John Doe' },
+      { handle: 'john@askexe.com', displayName: 'John Doe' },
+      { handle: 'John@askexe.com', displayName: 'John Doe' },
     ];
     const result = getUniqueContactsAndHandles(contacts);
 
     expect(result.uniqueContacts).toEqual([
-      { handle: 'john@twenty.com', displayName: 'John Doe' },
+      { handle: 'john@askexe.com', displayName: 'John Doe' },
     ]);
-    expect(result.uniqueHandles).toEqual(['john@twenty.com']);
+    expect(result.uniqueHandles).toEqual(['john@askexe.com']);
   });
 });

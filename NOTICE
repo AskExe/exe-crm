@@ -3,7 +3,7 @@ Original copyright: Twenty.inc
 License: AGPL-3.0
 
 Modifications by AskExe:
-- Renamed package namespace `twenty-*` → `exe-crm-*`
+- Internal package directories retain upstream twenty-* names (NX monorepo compat)
 - Rebranded UI to Exe Foundry Bold design system (Phase 2)
 - Deleted twenty-docs, twenty-website, twenty-website-new subpackages
 - Self-hosted deployment at crm.askexe.com (Phase 3)

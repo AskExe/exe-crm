@@ -1,0 +1,9 @@
+{
+  "companyName": "Exe CRM",
+  "logo": "/logo.svg",
+  "colors": {
+    "primary": "#F5D76E",
+    "background": "#0F0E1A"
+  },
+  "_note": "Mount this file at /app/packages/twenty-server/branding.json in Docker to customize branding at runtime. See generate-front-config.ts for implementation."
+}

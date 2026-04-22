@@ -41,8 +41,8 @@ msgid "If you wish to use Exe CRM again, you can create a new workspace."
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
-#: src/components/WhatIsTwenty.js
+#: src/components/WhatIsExeCrm.tsx
+#: src/components/WhatIsExeCrm.js
 msgid "What is Exe CRM?"
 msgstr ""
 
@@ -234,8 +234,8 @@ msgid "Create a new workspace"
 msgstr "創建新的工作區"
 
 #. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
-#: src/components/WhatIsTwenty.js
+#: src/components/WhatIsExeCrm.tsx
+#: src/components/WhatIsExeCrm.js
 msgid "It's a CRM, a software to help businesses manage their customer data and relationships efficiently."
 msgstr "它是一個CRM，是一款幫助企業有效管理客戶資料和關係的軟件。"
 

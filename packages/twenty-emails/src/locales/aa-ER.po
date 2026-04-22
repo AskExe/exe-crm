@@ -179,12 +179,12 @@ msgid "Create a new workspace"
 msgstr "crwdns4865:0crwdne4865:0"
 
 #. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsExeCrm.tsx
 msgid "What is Exe CRM?"
 msgstr "crwdns5774:0crwdne5774:0"
 
 #. js-lingui-explicit-id
-#: src/components/WhatIsTwenty.tsx
+#: src/components/WhatIsExeCrm.tsx
 msgid "It's a CRM, a software to help businesses manage their customer data and relationships efficiently."
 msgstr "crwdns5776:0crwdne5776:0"
 
