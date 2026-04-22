@@ -1,4 +1,4 @@
-pull_version=${VERSION:-$(curl -s https://api.github.com/repos/twentyhq/twenty/tags | grep '"name":' | head -n 1 | cut -d '"' -f 4)}
+pull_version=${VERSION:-$(curl -s https://api.github.com/repos/AskExe/exe-crm/tags | grep '"name":' | head -n 1 | cut -d '"' -f 4)}
 
 if [[ -z "$pull_version" ]]; then
   echo "Error: Unable to fetch the latest version tag. Please check your network connection or the GitHub API response."
@@ -11,9 +11,9 @@ target_version="0.32.4"
 
 # We moved the install script to a different location in v0.32.4
 if [[ -n "$BRANCH" ]] || [[ "$(printf '%s\n' "$target_version" "$version_num" | sort -V | head -n1)" != "$version_num" ]]; then
-  curl -sL "https://raw.githubusercontent.com/twentyhq/twenty/$pull_branch/packages/twenty-docker/scripts/install.sh" -o twenty_install.sh
+  curl -sL "https://raw.githubusercontent.com/AskExe/exe-crm/$pull_branch/packages/twenty-docker/scripts/install.sh" -o twenty_install.sh
 else
-  curl -sL "https://raw.githubusercontent.com/twentyhq/twenty/$pull_branch/install.sh" -o twenty_install.sh
+  curl -sL "https://raw.githubusercontent.com/AskExe/exe-crm/$pull_branch/install.sh" -o twenty_install.sh
 fi
 
 chmod +x twenty_install.sh

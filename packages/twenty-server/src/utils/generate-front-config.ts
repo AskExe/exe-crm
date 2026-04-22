@@ -141,11 +141,11 @@ export function generateFrontConfig(): void {
     },
   };
 
-  const configString = `<!-- BEGIN: Twenty Config -->
+  const configString = `<!-- BEGIN: Exe CRM Config -->
     <script id="twenty-env-config">
       window._env_ = ${JSON.stringify(configObject.window._env_, null, 2)};
     </script>
-    <!-- END: Twenty Config -->`;
+    <!-- END: Exe CRM Config -->`;
 
   const branding = loadBranding();
   const brandingString = generateBrandingBlock(branding);
@@ -157,7 +157,7 @@ export function generateFrontConfig(): void {
     let indexContent = fs.readFileSync(indexPath, 'utf8');
 
     indexContent = indexContent.replace(
-      /<!-- BEGIN: Twenty Config -->[\s\S]*?<!-- END: Twenty Config -->/,
+      /<!-- BEGIN: (?:Twenty|Exe CRM) Config -->[\s\S]*?<!-- END: (?:Twenty|Exe CRM) Config -->/,
       configString,
     );
 
