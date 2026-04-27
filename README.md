@@ -6,6 +6,40 @@ See [NOTICE](./NOTICE) for a list of modifications.
 
 ---
 
+## Data Ingestion
+
+Exe CRM receives structured data from the shared staging layer. It does **not** pull from external APIs directly — that's handled by [exe-gateway](https://github.com/AskExe/exe-gateway).
+
+### How data flows in
+
+```
+External APIs → exe-gateway (adapters) → staging.raw_imports → routing → crm schema
+```
+
+The staging layer (`staging.raw_imports` in Postgres) is the single audit trail. A routing script transforms raw JSON and inserts into the appropriate CRM tables.
+
+### Entity types routed to CRM
+
+| Source entity | CRM target | Notes |
+|---------------|-----------|-------|
+| Contacts (Xero, Stripe) | `contacts` | Name, email, phone, company |
+| Invoices (Xero, QuickBooks) | `deals` / `activities` | Invoice as deal or activity log |
+| Payments (Stripe, Banking) | `activities` | Payment events with amounts |
+| Tasks (Asana, Monday) | `activities` | Project tasks as activity records |
+
+### Architecture details
+
+- CRM runs in the `crm` schema (TypeORM) alongside the `wiki` schema (Prisma) in a single Postgres instance
+- All imported records trace back to `staging.raw_imports` via `source` + `external_id`
+- Routing rules are defined in [exe-wiki/ARCHITECTURE.md § Data Ingestion](https://github.com/AskExe/exe-wiki/blob/master/ARCHITECTURE.md#data-ingestion-architecture-locked-2026-04-27)
+
+### Related repos
+
+- **[exe-wiki/ARCHITECTURE.md](https://github.com/AskExe/exe-wiki/blob/master/ARCHITECTURE.md)** — Full staging/routing architecture, schema definitions, routing rules
+- **[exe-gateway](https://github.com/AskExe/exe-gateway)** — API adapters that pull from external systems into staging
+
+---
+
 <p align="center">
   <a href="https://www.twenty.com">
     <img src="./packages/twenty-website/public/images/core/logo.svg" width="100px" alt="Twenty logo" />
