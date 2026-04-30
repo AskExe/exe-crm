@@ -13,7 +13,7 @@ describe('useMapToObjectRecordIdentifier', () => {
       () => {
         const { mapToObjectRecordIdentifier } = useMapToObjectRecordIdentifier({
           objectNameSingular: 'person',
-          allowRequestsToTwentyIcons: true,
+          allowRequestsToExeIcons: true,
         });
 
         return mapToObjectRecordIdentifier({

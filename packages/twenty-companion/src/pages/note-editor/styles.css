@@ -1,11 +1,11 @@
 :root {
-  --primary-bg: #f9f9f9;
-  --card-bg: #fff;
-  --light-purple: #f3e9ff;
-  --light-green: #e8f5e9;
-  --border-color: #e0e0e0;
-  --text-primary: #000;
-  --text-secondary: #666;
+  --primary-bg: #FAF8F3;
+  --card-bg: #FFFFFF;
+  --light-purple: rgba(107, 76, 154, 0.12);
+  --light-green: rgba(22, 163, 74, 0.10);
+  --border-color: rgba(15, 14, 26, 0.10);
+  --text-primary: #0F0E1A;
+  --text-secondary: #4A4660;
   --sidebar-width: 320px;
 }
 
@@ -91,7 +91,7 @@ body {
   padding: 8px 8px 8px 35px;
   border-radius: 5px;
   border: 1px solid var(--border-color);
-  background-color: #f2f2f2;
+  background-color: #F0EDE8;
   font-size: 14px;
   -webkit-app-region: no-drag;
 }
@@ -127,7 +127,7 @@ body {
   height: 32px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #ddd;
+  background-color: #E8E4DC;
   -webkit-app-region: no-drag;
 }
 
@@ -298,13 +298,13 @@ body {
 /* Custom markdown rendering */
 .editor-preview h1, .editor-preview-side h1 {
   font-size: 22px;
-  color: #333;
+  color: #0F0E1A;
   margin: 25px 0 15px 0;
 }
 
 .editor-preview h2, .editor-preview-side h2 {
   font-size: 18px;
-  color: #444;
+  color: #4A4660;
   margin: 20px 0 10px 0;
 }
 
@@ -314,7 +314,7 @@ body {
 }
 
 .editor-preview a, .editor-preview-side a {
-  color: #0077ff;
+  color: #B8892B;
   text-decoration: none;
 }
 
@@ -324,7 +324,7 @@ body {
 
 /* Make code look nice */
 .editor-preview code, .editor-preview-side code {
-  background-color: #f4f4f4;
+  background-color: #F0EDE8;
   padding: 2px 4px;
   border-radius: 3px;
   font-family: monospace;

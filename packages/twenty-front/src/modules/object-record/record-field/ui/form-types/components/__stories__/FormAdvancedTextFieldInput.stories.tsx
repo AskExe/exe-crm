@@ -59,7 +59,7 @@ const RICH_CONTENT_VALUE = JSON.stringify({
         { type: 'text', text: 'Visit our ' },
         {
           type: 'text',
-          marks: [{ type: 'link', attrs: { href: 'https://twenty.com' } }],
+          marks: [{ type: 'link', attrs: { href: 'https://askexe.com' } }],
           text: 'website',
         },
         { type: 'text', text: ' to get started.' },

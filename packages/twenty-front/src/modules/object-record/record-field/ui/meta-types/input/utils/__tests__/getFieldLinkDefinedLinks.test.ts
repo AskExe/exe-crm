@@ -42,13 +42,13 @@ describe('getFieldLinkDefinedLinks', () => {
     it('should return primary link when primaryLinkUrl is defined but primaryLinkLabel is null', () => {
       expect(
         getFieldLinkDefinedLinks({
-          primaryLinkUrl: 'https://twenty.com',
+          primaryLinkUrl: 'https://askexe.com',
           primaryLinkLabel: null,
           secondaryLinks: [],
         }),
       ).toEqual([
         {
-          url: 'https://twenty.com',
+          url: 'https://askexe.com',
           label: null,
         },
       ]);
@@ -77,14 +77,14 @@ describe('getFieldLinkDefinedLinks', () => {
               label: 'Twenty',
             },
             {
-              url: 'https://docs.twenty.com',
+              url: 'https://docs.askexe.com',
               label: 'Documentation',
             },
           ],
         }),
       ).toEqual([
         {
-          url: 'https://docs.twenty.com',
+          url: 'https://docs.askexe.com',
           label: 'Documentation',
         },
       ]);
@@ -101,14 +101,14 @@ describe('getFieldLinkDefinedLinks', () => {
               label: 'Twenty',
             },
             {
-              url: 'https://docs.twenty.com',
+              url: 'https://docs.askexe.com',
               label: 'Documentation',
             },
           ],
         }),
       ).toEqual([
         {
-          url: 'https://docs.twenty.com',
+          url: 'https://docs.askexe.com',
           label: 'Documentation',
         },
       ]);
@@ -121,14 +121,14 @@ describe('getFieldLinkDefinedLinks', () => {
           primaryLinkLabel: '',
           secondaryLinks: [
             {
-              url: 'https://twenty.com',
+              url: 'https://askexe.com',
               label: null,
             },
           ],
         }),
       ).toEqual([
         {
-          url: 'https://twenty.com',
+          url: 'https://askexe.com',
           label: null,
         },
       ]);
@@ -137,7 +137,7 @@ describe('getFieldLinkDefinedLinks', () => {
     it('should correctly combine primary and secondary links with edge cases', () => {
       expect(
         getFieldLinkDefinedLinks({
-          primaryLinkUrl: 'https://twenty.com',
+          primaryLinkUrl: 'https://askexe.com',
           primaryLinkLabel: null,
           secondaryLinks: [
             {
@@ -145,7 +145,7 @@ describe('getFieldLinkDefinedLinks', () => {
               label: 'Invalid Link',
             },
             {
-              url: 'https://docs.twenty.com',
+              url: 'https://docs.askexe.com',
               label: null,
             },
             {
@@ -156,11 +156,11 @@ describe('getFieldLinkDefinedLinks', () => {
         }),
       ).toEqual([
         {
-          url: 'https://twenty.com',
+          url: 'https://askexe.com',
           label: null,
         },
         {
-          url: 'https://docs.twenty.com',
+          url: 'https://docs.askexe.com',
           label: null,
         },
       ]);
@@ -191,14 +191,14 @@ describe('getFieldLinkDefinedLinks', () => {
               label: 'Missing Protocol',
             },
             {
-              url: 'https://twenty.com',
+              url: 'https://askexe.com',
               label: 'Valid URL',
             },
           ],
         }),
       ).toEqual([
         {
-          url: 'https://twenty.com',
+          url: 'https://askexe.com',
           label: 'Valid URL',
         },
       ]);

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+import { allowRequestsToExeIconsState } from '@/client-config/states/allowRequestsToExeIcons';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { PreComputedChipGeneratorsContext } from '@/object-metadata/contexts/PreComputedChipGeneratorsContext';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
@@ -10,16 +10,16 @@ export const PreComputedChipGeneratorsProvider = ({
   children,
 }: React.PropsWithChildren) => {
   const objectMetadataItems = useAtomStateValue(objectMetadataItemsSelector);
-  const allowRequestsToTwentyIcons = useAtomStateValue(
-    allowRequestsToTwentyIconsState,
+  const allowRequestsToExeIcons = useAtomStateValue(
+    allowRequestsToExeIconsState,
   );
   const { chipGeneratorPerObjectPerField, identifierChipGeneratorPerObject } =
     useMemo(() => {
       return getRecordChipGenerators(
         objectMetadataItems,
-        allowRequestsToTwentyIcons,
+        allowRequestsToExeIcons,
       );
-    }, [allowRequestsToTwentyIcons, objectMetadataItems]);
+    }, [allowRequestsToExeIcons, objectMetadataItems]);
 
   return (
     <>

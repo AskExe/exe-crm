@@ -55,7 +55,7 @@ const meta: Meta<PageDecoratorArgs> = {
                 findWorkspaceFromInviteHash: {
                   __typename: 'Workspace',
                   id: '20202020-91f0-46d0-acab-cb5afef3cc3b',
-                  displayName: 'Twenty dev',
+                  displayName: 'Exe CRM dev',
                   logo: null,
                   allowImpersonation: false,
                 },
@@ -95,7 +95,7 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await canvas.findByText('Join Twenty dev team', undefined, {
+    await canvas.findByText('Join Exe CRM dev team', undefined, {
       timeout: 5000,
     });
 

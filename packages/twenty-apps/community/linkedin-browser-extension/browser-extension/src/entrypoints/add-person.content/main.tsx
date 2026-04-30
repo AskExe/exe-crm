@@ -7,7 +7,7 @@ const Main = () => {
     await sendMessage('openPopup')
   };
 
-  return <Button onClick={handleClick} data-id="twenty-btn">Add to Twenty</Button>;
+  return <Button onClick={handleClick} data-id="twenty-btn">Add to Exe CRM</Button>;
 };
 
 export default Main;

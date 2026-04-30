@@ -61,10 +61,10 @@ const PRO_METERED_MONTHLY_PRICE = PRO_METERED_PRODUCT?.prices?.find(
 export const mockCurrentWorkspace = {
   workspaceCustomApplication: CUSTOM_WORKSPACE_APPLICATION_MOCK,
   workspaceCustomApplicationId: CUSTOM_WORKSPACE_APPLICATION_MOCK.id,
-  subdomain: 'acme.twenty.com',
+  subdomain: 'acme.askexe.com',
   id: '7dfbc3f7-6e5e-4128-957e-8d86808cdf6w',
   displayName: 'Twenty',
-  inviteHash: 'twenty.com-invite-hash',
+  inviteHash: 'askexe.com-invite-hash',
   logo: workspaceLogoUrl,
   isPublicInviteLinkEnabled: true,
   allowImpersonation: true,
@@ -81,7 +81,7 @@ export const mockCurrentWorkspace = {
   isMicrosoftAuthBypassEnabled: false,
   workspaceUrls: {
     customUrl: undefined,
-    subdomainUrl: 'twenty.twenty.com',
+    subdomainUrl: 'twenty.askexe.com',
   },
   featureFlags: [],
   createdAt: '2023-04-26T10:23:42.33625+00:00',

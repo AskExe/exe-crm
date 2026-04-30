@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { type SettingsFieldType } from '@/settings/data-model/types/SettingsFieldType';
 import { getSettingsFieldTypeConfig } from '@/settings/data-model/utils/getSettingsFieldTypeConfig';
-import { type IconComponent, IconTwentyStar } from 'twenty-ui/display';
+import { type IconComponent, IconExeStar } from 'twenty-ui/display';
 import { useContext } from 'react';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -69,7 +69,7 @@ export const SettingsObjectFieldDataType = ({
   const { theme } = useContext(ThemeContext);
   const fieldTypeConfig = getSettingsFieldTypeConfig(value);
   const Icon: IconComponent =
-    IconFromProps ?? fieldTypeConfig?.Icon ?? IconTwentyStar;
+    IconFromProps ?? fieldTypeConfig?.Icon ?? IconExeStar;
   const label = labelFromProps ?? fieldTypeConfig?.label;
 
   return (

@@ -61,8 +61,8 @@ export const results = {
     workspace: {
       id: 'workspace-id',
       workspaceUrls: {
-        subdomainUrl: 'https://subdomain.twenty.com',
-        customUrl: 'https://custom.twenty.com',
+        subdomainUrl: 'https://subdomain.askexe.com',
+        customUrl: 'https://custom.askexe.com',
       },
     },
   },
@@ -96,7 +96,7 @@ export const results = {
         customDomain: null,
         workspaceUrls: {
           customUrl: undefined,
-          subdomainUrl: 'https://twenty.com',
+          subdomainUrl: 'https://askexe.com',
         },
         featureFlags: {
           id: 'id',

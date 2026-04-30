@@ -77,7 +77,7 @@ const createWindow = () => {
       nodeIntegration: false,
     },
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FAF8F3',
   });
 
   // Allow the debug panel header to act as a drag region

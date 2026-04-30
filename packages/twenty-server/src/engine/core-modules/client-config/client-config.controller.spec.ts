@@ -96,7 +96,7 @@ describe('ClientConfigController', () => {
         isImapSmtpCaldavEnabled: false,
         calendarBookingPageId: undefined,
         isTwoFactorAuthenticationEnabled: false,
-        allowRequestsToTwentyIcons: true,
+        allowRequestsToExeIcons: true,
         isCloudflareIntegrationEnabled: false,
         isClickHouseConfigured: false,
       };

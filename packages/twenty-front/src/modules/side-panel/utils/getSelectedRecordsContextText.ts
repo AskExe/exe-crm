@@ -6,13 +6,13 @@ export const getSelectedRecordsContextText = (
   objectMetadataItem: EnrichedObjectMetadataItem,
   records: ObjectRecord[],
   totalCount: number,
-  allowRequestsToTwentyIcons: boolean,
+  allowRequestsToExeIcons: boolean,
 ) => {
   return totalCount === 1
     ? getObjectRecordIdentifier({
         objectMetadataItem,
         record: records[0],
-        allowRequestsToTwentyIcons,
+        allowRequestsToExeIcons,
       }).name
     : `${totalCount} ${objectMetadataItem.labelPlural}`;
 };

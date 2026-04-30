@@ -97,7 +97,7 @@ describe('ClientConfigService', () => {
         });
 
       jest.spyOn(domainServerConfigService, 'getFrontUrl').mockReturnValue({
-        hostname: 'app.twenty.com',
+        hostname: 'app.askexe.com',
       } as URL);
     });
 
@@ -132,7 +132,7 @@ describe('ClientConfigService', () => {
         isMultiWorkspaceEnabled: true,
         isEmailVerificationRequired: true,
         defaultSubdomain: 'app',
-        frontDomain: 'app.twenty.com',
+        frontDomain: 'app.askexe.com',
         support: {
           supportDriver: 'FRONT',
           supportFrontChatId: 'chat-123',

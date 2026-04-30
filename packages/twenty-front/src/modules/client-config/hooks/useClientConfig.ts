@@ -28,7 +28,7 @@ import { domainConfigurationState } from '@/domain-manager/states/domainConfigur
 import { useCallback } from 'react';
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
 import { getClientConfig } from '@/client-config/utils/getClientConfig';
-import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+import { allowRequestsToExeIconsState } from '@/client-config/states/allowRequestsToExeIcons';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
@@ -105,8 +105,8 @@ export const useClientConfig = (): UseClientConfigResult => {
     isEmailingDomainsEnabledState,
   );
 
-  const setAllowRequestsToTwentyIcons = useSetAtomState(
-    allowRequestsToTwentyIconsState,
+  const setAllowRequestsToExeIcons = useSetAtomState(
+    allowRequestsToExeIconsState,
   );
 
   const setIsCloudflareIntegrationEnabled = useSetAtomState(
@@ -190,7 +190,7 @@ export const useClientConfig = (): UseClientConfigResult => {
       setCalendarBookingPageId(clientConfig?.calendarBookingPageId ?? null);
       setIsImapSmtpCaldavEnabled(clientConfig?.isImapSmtpCaldavEnabled);
       setIsEmailingDomainsEnabled(clientConfig?.isEmailingDomainsEnabled);
-      setAllowRequestsToTwentyIcons(clientConfig?.allowRequestsToTwentyIcons);
+      setAllowRequestsToExeIcons(clientConfig?.allowRequestsToExeIcons);
       setIsCloudflareIntegrationEnabled(
         clientConfig?.isCloudflareIntegrationEnabled,
       );
@@ -234,7 +234,7 @@ export const useClientConfig = (): UseClientConfigResult => {
     setIsMicrosoftMessagingEnabled,
     setSentryConfig,
     setSupportChat,
-    setAllowRequestsToTwentyIcons,
+    setAllowRequestsToExeIcons,
   ]);
 
   return {

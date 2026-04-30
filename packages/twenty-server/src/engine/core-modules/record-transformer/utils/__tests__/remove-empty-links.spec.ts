@@ -34,13 +34,13 @@ describe('removeEmptyLinks', () => {
   it('should keep valid primary link and remove empty secondary links', () => {
     expect(
       removeEmptyLinks({
-        primaryLinkUrl: 'https://www.twenty.com',
-        primaryLinkLabel: 'Twenty Website',
+        primaryLinkUrl: 'https://www.askexe.com',
+        primaryLinkLabel: 'Exe CRM Website',
         secondaryLinks: [],
       }),
     ).toEqual({
-      primaryLinkUrl: 'https://www.twenty.com',
-      primaryLinkLabel: 'Twenty Website',
+      primaryLinkUrl: 'https://www.askexe.com',
+      primaryLinkLabel: 'Exe CRM Website',
       secondaryLinks: [],
     });
   });
@@ -52,7 +52,7 @@ describe('removeEmptyLinks', () => {
         primaryLinkLabel: null,
         secondaryLinks: [
           {
-            url: 'https://docs.twenty.com',
+            url: 'https://docs.askexe.com',
             label: 'Documentation',
           },
           {
@@ -62,7 +62,7 @@ describe('removeEmptyLinks', () => {
         ],
       }),
     ).toEqual({
-      primaryLinkUrl: 'https://docs.twenty.com',
+      primaryLinkUrl: 'https://docs.askexe.com',
       primaryLinkLabel: 'Documentation',
       secondaryLinks: [
         {
@@ -92,8 +92,8 @@ describe('removeEmptyLinks', () => {
   it('should throw RecordTransformerException when any secondary link URL is invalid', () => {
     expect(() =>
       removeEmptyLinks({
-        primaryLinkUrl: 'https://www.twenty.com',
-        primaryLinkLabel: 'Twenty Website',
+        primaryLinkUrl: 'https://www.askexe.com',
+        primaryLinkLabel: 'Exe CRM Website',
         secondaryLinks: [
           {
             url: 'wikipedia',
@@ -134,8 +134,8 @@ describe('removeEmptyLinks', () => {
   it('should handle empty or null secondary links', () => {
     expect(
       removeEmptyLinks({
-        primaryLinkUrl: 'https://www.twenty.com',
-        primaryLinkLabel: 'Twenty Website',
+        primaryLinkUrl: 'https://www.askexe.com',
+        primaryLinkLabel: 'Exe CRM Website',
         secondaryLinks: [
           {
             url: '',
@@ -148,8 +148,8 @@ describe('removeEmptyLinks', () => {
         ],
       }),
     ).toEqual({
-      primaryLinkUrl: 'https://www.twenty.com',
-      primaryLinkLabel: 'Twenty Website',
+      primaryLinkUrl: 'https://www.askexe.com',
+      primaryLinkLabel: 'Exe CRM Website',
       secondaryLinks: [],
     });
   });
@@ -180,21 +180,21 @@ describe('removeEmptyLinks', () => {
   it('should keep valid URLs with null labels', () => {
     expect(
       removeEmptyLinks({
-        primaryLinkUrl: 'https://www.twenty.com',
+        primaryLinkUrl: 'https://www.askexe.com',
         primaryLinkLabel: null,
         secondaryLinks: [
           {
-            url: 'https://docs.twenty.com',
+            url: 'https://docs.askexe.com',
             label: null,
           },
         ],
       }),
     ).toEqual({
-      primaryLinkUrl: 'https://www.twenty.com',
+      primaryLinkUrl: 'https://www.askexe.com',
       primaryLinkLabel: null,
       secondaryLinks: [
         {
-          url: 'https://docs.twenty.com',
+          url: 'https://docs.askexe.com',
           label: null,
         },
       ],

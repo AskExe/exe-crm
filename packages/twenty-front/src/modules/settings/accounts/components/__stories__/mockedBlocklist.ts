@@ -5,7 +5,7 @@ import { type BlocklistItem } from '@/accounts/types/BlocklistItem';
 export const mockedBlocklist: BlocklistItem[] = [
   {
     id: '1',
-    handle: 'test1@twenty.com',
+    handle: 'test1@askexe.com',
     workspaceMemberId: '1',
     createdAt:
       formatISO(subHours(parseISO('2023-04-26T10:12:42.33625+00:00'), 2)) ?? '',
@@ -13,7 +13,7 @@ export const mockedBlocklist: BlocklistItem[] = [
   },
   {
     id: '2',
-    handle: 'test2@twenty.com',
+    handle: 'test2@askexe.com',
     workspaceMemberId: '1',
     createdAt:
       formatISO(subDays(parseISO('2023-04-26T10:12:42.33625+00:00'), 2)) ?? '',
@@ -21,7 +21,7 @@ export const mockedBlocklist: BlocklistItem[] = [
   },
   {
     id: '3',
-    handle: 'test3@twenty.com',
+    handle: 'test3@askexe.com',
     workspaceMemberId: '1',
     createdAt:
       formatISO(subDays(parseISO('2023-04-26T10:12:42.33625+00:00'), 3)) ?? '',
@@ -29,7 +29,7 @@ export const mockedBlocklist: BlocklistItem[] = [
   },
   {
     id: '4',
-    handle: '@twenty.com',
+    handle: '@askexe.com',
     workspaceMemberId: '1',
     createdAt:
       formatISO(subDays(parseISO('2023-04-26T10:12:42.33625+00:00'), 4)) ?? '',

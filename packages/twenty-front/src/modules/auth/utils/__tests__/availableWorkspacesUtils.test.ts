@@ -19,7 +19,7 @@ const createMockAvailableWorkspace = (
   sso: [],
   workspaceUrls: {
     customUrl: null,
-    subdomainUrl: 'https://test.twenty.com',
+    subdomainUrl: 'https://test.askexe.com',
   },
   ...overrides,
 });

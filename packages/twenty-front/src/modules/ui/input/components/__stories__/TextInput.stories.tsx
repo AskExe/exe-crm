@@ -65,6 +65,6 @@ export const WithLeftAdornment: Story = {
 
 export const WithRightAdornment: Story = {
   args: {
-    rightAdornment: '@twenty.com',
+    rightAdornment: '@askexe.com',
   },
 };

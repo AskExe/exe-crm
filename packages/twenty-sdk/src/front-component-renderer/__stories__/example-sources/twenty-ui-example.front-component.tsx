@@ -36,7 +36,7 @@ const TwentyUiComponent = () => {
     <ThemeProvider colorScheme="light">
       <div data-testid="twenty-ui-component" style={CARD_STYLE}>
         <H2Title
-          title="Twenty UI"
+          title="Exe CRM UI"
           description="The CRM's own component library with theme-aware styling."
         />
         <div style={ROW_STYLE}>
@@ -79,6 +79,6 @@ const TwentyUiComponent = () => {
 export default defineFrontComponent({
   universalIdentifier: 'test-20ui0-0000-0000-0000-000000000010',
   name: 'twenty-ui-component',
-  description: 'A front component using Twenty UI remote components',
+  description: 'A front component using Exe CRM UI remote components',
   component: TwentyUiComponent,
 });

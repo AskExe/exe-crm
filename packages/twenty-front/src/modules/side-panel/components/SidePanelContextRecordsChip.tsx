@@ -3,7 +3,7 @@ import { SidePanelContextRecordChipAvatars } from '@/side-panel/components/SideP
 import { getSelectedRecordsContextText } from '@/side-panel/utils/getSelectedRecordsContextText';
 import { useFindManyRecordsSelectedInContextStore } from '@/context-store/hooks/useFindManyRecordsSelectedInContextStore';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
-import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+import { allowRequestsToExeIconsState } from '@/client-config/states/allowRequestsToExeIcons';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 export const SidePanelContextRecordsChip = ({
@@ -16,8 +16,8 @@ export const SidePanelContextRecordsChip = ({
   const { objectMetadataItem } = useObjectMetadataItemById({
     objectId: objectMetadataItemId,
   });
-  const allowRequestsToTwentyIcons = useAtomStateValue(
-    allowRequestsToTwentyIconsState,
+  const allowRequestsToExeIcons = useAtomStateValue(
+    allowRequestsToExeIconsState,
   );
 
   const { records, loading, totalCount } =
@@ -44,7 +44,7 @@ export const SidePanelContextRecordsChip = ({
         objectMetadataItem,
         records,
         totalCount,
-        allowRequestsToTwentyIcons,
+        allowRequestsToExeIcons,
       )}
       Icons={Avatars}
     />

@@ -22,9 +22,9 @@ const config: ApplicationConfig = {
     TWENTY_API_URL: {
       universalIdentifier: '84311303-1220-440c-a4fb-0be2d74d267b',
       isSecret: false,
-      value: 'https://unpaid-interns.twenty.com',
+      value: 'https://unpaid-interns.askexe.com',
       description:
-        'The base URL for the Twenty CRM server (e.g., https://your-instance.twenty.com).',
+        'The base URL for the Twenty CRM server (e.g., https://your-instance.askexe.com).',
     },
     WEBHOOK_SECRET_TOKEN: {
       universalIdentifier: '187c39c9-8e2a-4086-94b3-59935d4e1a93',

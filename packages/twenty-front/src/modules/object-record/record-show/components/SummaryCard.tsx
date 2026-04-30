@@ -1,4 +1,4 @@
-import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+import { allowRequestsToExeIconsState } from '@/client-config/states/allowRequestsToExeIcons';
 import { useLabelIdentifierFieldMetadataItem } from '@/object-metadata/hooks/useLabelIdentifierFieldMetadataItem';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
@@ -41,8 +41,8 @@ export const SummaryCard = ({
       fieldName: 'createdAt',
     },
   ) as string | null;
-  const allowRequestsToTwentyIcons = useAtomStateValue(
-    allowRequestsToTwentyIconsState,
+  const allowRequestsToExeIcons = useAtomStateValue(
+    allowRequestsToExeIconsState,
   );
 
   const { useUpdateOneObjectRecordMutation } = useRecordShowContainerActions({
@@ -57,7 +57,7 @@ export const SummaryCard = ({
     recordStoreIdentifierFamilySelector,
     {
       recordId: objectRecordId,
-      allowRequestsToTwentyIcons,
+      allowRequestsToExeIcons,
     },
   );
 

@@ -11,7 +11,7 @@ const TWENTY_API_KEY: string = process.env.TWENTY_API_KEY ?? '';
 const TWENTY_API_URL: string =
   process.env.TWENTY_API_URL !== '' && process.env.TWENTY_API_URL !== undefined
     ? `${process.env.TWENTY_API_URL}/rest`
-    : 'https://api.twenty.com/rest';
+    : 'https://api.askexe.com/rest';
 const STRIPE_API_KEY: string = process.env.STRIPE_API_KEY ?? '';
 const STRIPE_API_URL: string = 'https://api.stripe.com/v1/customers';
 

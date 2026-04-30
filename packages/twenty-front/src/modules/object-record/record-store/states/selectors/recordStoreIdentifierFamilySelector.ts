@@ -7,7 +7,7 @@ import { uncapitalize } from 'twenty-shared/utils';
 
 type RecordStoreIdentifierFamilyKey = {
   recordId: string;
-  allowRequestsToTwentyIcons: boolean;
+  allowRequestsToExeIcons: boolean;
 };
 
 export const recordStoreIdentifierFamilySelector = createAtomFamilySelector<
@@ -18,7 +18,7 @@ export const recordStoreIdentifierFamilySelector = createAtomFamilySelector<
   get:
     ({
       recordId,
-      allowRequestsToTwentyIcons,
+      allowRequestsToExeIcons,
     }: RecordStoreIdentifierFamilyKey) =>
     ({ get }) => {
       const recordFromStore = get(recordStoreFamilyState, recordId);
@@ -39,7 +39,7 @@ export const recordStoreIdentifierFamilySelector = createAtomFamilySelector<
       return getObjectRecordIdentifier({
         objectMetadataItem: objectMetadataItem,
         record: recordFromStore,
-        allowRequestsToTwentyIcons,
+        allowRequestsToExeIcons,
       });
     },
 });

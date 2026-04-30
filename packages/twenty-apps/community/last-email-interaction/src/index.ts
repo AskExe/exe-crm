@@ -5,7 +5,7 @@ const TWENTY_API_KEY = process.env.TWENTY_API_KEY ?? '';
 const TWENTY_URL =
   process.env.TWENTY_API_URL !== '' && process.env.TWENTY_API_URL !== undefined
     ? `${process.env.TWENTY_API_URL}/rest`
-    : 'https://api.twenty.com/rest';
+    : 'https://api.askexe.com/rest';
 
 const create_last_interaction = (id: string) => {
   return {

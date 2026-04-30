@@ -699,11 +699,11 @@ export const successfulFilterInputByFieldMetadataType: {
   [FieldMetadataType.LINKS]: [
     {
       gqlFilterInput: {
-        linksField: { primaryLinkUrl: { eq: 'twenty.com' } },
+        linksField: { primaryLinkUrl: { eq: 'askexe.com' } },
       },
-      restFilterInput: 'linksField.primaryLinkUrl[eq]:"twenty.com"',
+      restFilterInput: 'linksField.primaryLinkUrl[eq]:"askexe.com"',
       validateFilter: (record: Record<string, any>) => {
-        return record.linksField.primaryLinkUrl === 'twenty.com';
+        return record.linksField.primaryLinkUrl === 'askexe.com';
       },
     },
     {

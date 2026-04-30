@@ -284,7 +284,7 @@ export class ClientConfig {
   isImapSmtpCaldavEnabled: boolean;
 
   @Field(() => Boolean)
-  allowRequestsToTwentyIcons: boolean;
+  allowRequestsToExeIcons: boolean;
 
   @Field(() => String, { nullable: true })
   calendarBookingPageId?: string;

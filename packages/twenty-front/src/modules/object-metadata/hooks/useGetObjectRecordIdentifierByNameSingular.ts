@@ -4,7 +4,7 @@ import { getObjectRecordIdentifier } from '@/object-metadata/utils/getObjectReco
 import { type ObjectRecordIdentifier } from '@/object-record/types/ObjectRecordIdentifier';
 
 export const useGetObjectRecordIdentifierByNameSingular = (
-  allowRequestsToTwentyIcons: boolean,
+  allowRequestsToExeIcons: boolean,
 ) => {
   const objectMetadataItems = useAtomStateValue(objectMetadataItemsSelector);
 
@@ -22,7 +22,7 @@ export const useGetObjectRecordIdentifierByNameSingular = (
     return getObjectRecordIdentifier({
       objectMetadataItem,
       record,
-      allowRequestsToTwentyIcons,
+      allowRequestsToExeIcons,
     });
   };
 };

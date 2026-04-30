@@ -292,7 +292,7 @@ describe('ApprovedAccessDomainService', () => {
 
       jest
         .spyOn(workspaceDomainsService, 'buildWorkspaceURL')
-        .mockReturnValue(new URL('https://sub.twenty.com'));
+        .mockReturnValue(new URL('https://sub.askexe.com'));
 
       jest
         .spyOn(twentyConfigService, 'get')

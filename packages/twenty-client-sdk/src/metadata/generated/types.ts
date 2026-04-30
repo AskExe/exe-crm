@@ -3549,7 +3549,7 @@ export default {
             "isImapSmtpCaldavEnabled": [
                 6
             ],
-            "allowRequestsToTwentyIcons": [
+            "allowRequestsToExeIcons": [
                 6
             ],
             "calendarBookingPageId": [

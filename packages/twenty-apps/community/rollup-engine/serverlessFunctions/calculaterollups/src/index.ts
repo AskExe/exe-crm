@@ -56,7 +56,7 @@ const getApiCredentials = () => {
   const baseUrl =
     typeof baseUrlRaw === 'string' && baseUrlRaw.trim().length > 0
       ? baseUrlRaw
-      : 'https://app.twenty.com/rest';
+      : 'https://app.askexe.com/rest';
 
   return { apiKey, baseUrl };
 };

@@ -1,0 +1,138 @@
+packages/twenty-front/src/pages/auth/__stories__/SignInUpWithInvite.stories.tsx:58:                  displayName: 'Twenty dev',
+packages/twenty-front/src/pages/auth/__stories__/SignInUpWithInvite.stories.tsx:98:    await canvas.findByText('Join Twenty dev team', undefined, {
+packages/twenty-front/src/pages/object-record/__stories__/RecordShowPage.stories.tsx:75://       await canvas.findByText('Twenty', undefined, {
+packages/twenty-sdk/src/front-component-renderer/__stories__/UILibraries.stories.tsx:139:export const TwentyUiReact: Story = createComponentStory('twenty-ui-example', {
+packages/twenty-sdk/src/front-component-renderer/__stories__/UILibraries.stories.tsx:142:export const TwentyUiPreact: Story = createComponentStory('twenty-ui-example', {
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/entrypoints/add-person.content/main.tsx:10:  return <Button onClick={handleClick} data-id="twenty-btn">Add to Twenty</Button>;
+packages/twenty-sdk/src/front-component-renderer/__stories__/example-sources/twenty-ui-example.front-component.tsx:32:const TwentyUiComponent = () => {
+packages/twenty-sdk/src/front-component-renderer/__stories__/example-sources/twenty-ui-example.front-component.tsx:39:          title="Twenty UI"
+packages/twenty-sdk/src/front-component-renderer/__stories__/example-sources/twenty-ui-example.front-component.tsx:82:  description: 'A front component using Twenty UI remote components',
+packages/twenty-sdk/src/front-component-renderer/__stories__/example-sources/twenty-ui-example.front-component.tsx:83:  component: TwentyUiComponent,
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/entrypoints/add-company.content/main.tsx:10:  return <Button onClick={handleClick} data-id="twenty-btn">Add to Twenty</Button>;
+packages/twenty-ui/src/display/banner/components/__stories__/Banner.stories.tsx:13:      Sync lost with mailbox hello@twenty.com. Please reconnect for updates:
+packages/twenty-front/src/pages/settings/ai/components/SettingsAIModelsTab.tsx:20:import { H2Title, IconBolt, IconTwentyStar } from 'twenty-ui/display';
+packages/twenty-front/src/pages/settings/ai/components/SettingsAIModelsTab.tsx:261:            Icon={IconTwentyStar}
+packages/twenty-ui/src/display/icon/components/IconTwentyStarFilled.tsx:3:import IconTwentyStarFilledRaw from '@assets/icons/twenty-star-filled.svg?react';
+packages/twenty-ui/src/display/icon/components/IconTwentyStarFilled.tsx:7:type IconTwentyStarFilledProps = Pick<IconComponentProps, 'size' | 'stroke'>;
+packages/twenty-ui/src/display/icon/components/IconTwentyStarFilled.tsx:9:export const IconTwentyStarFilled = (props: IconTwentyStarFilledProps) => {
+packages/twenty-ui/src/display/icon/components/IconTwentyStarFilled.tsx:15:    <IconTwentyStarFilledRaw height={size} width={size} strokeWidth={stroke} />
+packages/twenty-ui/src/display/icon/components/IconTwentyStar.tsx:3:import IconTwentyStarRaw from '@assets/icons/twenty-star.svg?react';
+packages/twenty-ui/src/display/icon/components/IconTwentyStar.tsx:7:type IconTwentyStarProps = Pick<IconComponentProps, 'size' | 'stroke'>;
+packages/twenty-ui/src/display/icon/components/IconTwentyStar.tsx:9:export const IconTwentyStar = (props: IconTwentyStarProps) => {
+packages/twenty-ui/src/display/icon/components/IconTwentyStar.tsx:14:  return <IconTwentyStarRaw height={size} width={size} strokeWidth={stroke} />;
+packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/components/__stories__/WorkflowEditActionEmailBase.stories.tsx:59:        to: 'test@twenty.com',
+packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/components/__stories__/WorkflowEditActionEmailBase.stories.tsx:63:      subject: 'Welcome to Twenty!',
+packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/components/__stories__/WorkflowEditActionEmailBase.stories.tsx:64:      body: 'Dear Tim,\n\nWelcome to Twenty! We are excited to have you on board.\n\nBest regards,\nThe Team',
+packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/components/__stories__/WorkflowEditActionEmailBase.stories.tsx:186:    const emailInput = await canvas.findByText('test@twenty.com');
+packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/components/__stories__/WorkflowEditActionEmailBase.stories.tsx:189:    const subjectInput = await canvas.findByText('Welcome to Twenty!');
+packages/twenty-front/src/modules/settings/legal/components/__tests__/AboutExeCRMAttribution.test.tsx:18:  it('renders the modification notice naming Twenty as the original work', () => {
+packages/twenty-front/src/modules/settings/legal/components/__tests__/AboutExeCRMAttribution.test.tsx:21:        'This software is a modified version of Twenty, originally created by Twenty.inc.',
+packages/twenty-front/src/modules/settings/legal/components/AboutExeCRMAttribution.tsx:17:  'This software is a modified version of Twenty, originally created by Twenty.inc.',
+packages/twenty-front/src/modules/settings/data-model/object-details/components/SettingsObjectFieldDataType.tsx:6:import { type IconComponent, IconTwentyStar } from 'twenty-ui/display';
+packages/twenty-front/src/modules/settings/data-model/object-details/components/SettingsObjectFieldDataType.tsx:72:    IconFromProps ?? fieldTypeConfig?.Icon ?? IconTwentyStar;
+packages/twenty-front/src/modules/settings/playground/components/__stories__/RestPlayground.stories.tsx:24:    title: 'Twenty Api',
+packages/twenty-front/src/modules/settings/playground/components/__stories__/RestPlayground.stories.tsx:26:      'This is a **Twenty REST/API** playground based on the **OpenAPI 3.1 specification**.',
+packages/twenty-front/src/modules/object-record/record-show/components/SummaryCard.tsx:1:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/object-record/record-show/components/SummaryCard.tsx:44:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/object-record/record-show/components/SummaryCard.tsx:45:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/object-record/record-show/components/SummaryCard.tsx:60:      allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/object-record/record-field/ui/form-types/components/__stories__/FormEmailsFieldInput.stories.tsx:23:      primaryEmail: 'tim@twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/form-types/components/__stories__/FormEmailsFieldInput.stories.tsx:32:    await canvas.findByText('tim@twenty.com');
+packages/twenty-front/src/modules/object-record/record-field/ui/form-types/components/__stories__/FormEmailsFieldInput.stories.tsx:60:      primaryEmail: 'tim@twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/form-types/components/__stories__/FormEmailsFieldInput.stories.tsx:80:    const defaultValue = await canvas.findByText('tim@twenty.com');
+packages/twenty-front/src/modules/object-record/record-field/ui/form-types/components/__stories__/FormAdvancedTextFieldInput.stories.tsx:62:          marks: [{ type: 'link', attrs: { href: 'https://twenty.com' } }],
+packages/twenty-front/src/modules/settings/accounts/components/__stories__/SettingsAccountsBlocklistInput.stories.tsx:49:    await userEvent.type(addToBlocklistInput, 'test@twenty.com');
+packages/twenty-front/src/modules/settings/accounts/components/__stories__/SettingsAccountsBlocklistInput.stories.tsx:59:      'test@twenty.com',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:48:        { url: 'https://www.twenty.com', label: 'Valid Link' },
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:62:    expect(validLink).toHaveAttribute('href', 'https://www.twenty.com');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:72:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:73:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:82:    expect(link).toHaveAttribute('href', 'https://www.twenty.com');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:83:    expect(link).toHaveTextContent('Twenty Website');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:94:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:95:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:97:        { url: 'https://docs.twenty.com', label: 'Documentation' },
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:98:        { url: 'https://blog.twenty.com', label: 'Blog' },
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:110:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:112:    expect(primaryLink).toHaveAttribute('href', 'https://www.twenty.com');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:116:    expect(docsLink).toHaveAttribute('href', 'https://docs.twenty.com');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:120:    expect(blogLink).toHaveAttribute('href', 'https://blog.twenty.com');
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:128:      primaryLinkLabel: 'Twenty on LinkedIn',
+packages/twenty-front/src/modules/ui/field/display/components/__stories__/LinksDisplay.stories.tsx:130:        { url: 'https://twitter.com/twentycrm', label: 'Twenty on Twitter' },
+packages/twenty-front/src/modules/ui/field/input/components/RatingInput.tsx:8:import { IconTwentyStarFilled } from 'twenty-ui/display';
+packages/twenty-front/src/modules/ui/field/input/components/RatingInput.tsx:80:            <IconTwentyStarFilled size={iconSizeMd} />
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:165:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:166:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:173:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:186:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:187:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:190:          url: 'https://docs.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:203:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:226:    await userEvent.type(input, 'https://www.twenty.com{enter}');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:228:    const linkDisplay = await canvas.findByText('twenty.com');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:240:    await userEvent.type(input, '  https://www.twenty.com  {enter}');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:242:    const linkDisplay = await canvas.findByText('twenty.com');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:252:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:253:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:260:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:269:    await userEvent.type(input, 'https://docs.twenty.com{enter}');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:271:    const secondaryLink = await canvas.findByText('docs.twenty.com');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:279:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:280:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:287:    const listItemToDelete = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:311:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:312:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:315:          url: 'https://docs.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:324:    const listItemToDelete = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:343:    const oldPrimaryLink = canvas.queryByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:353:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:354:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:357:          url: 'https://docs.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:383:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:456:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:457:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:460:          url: 'https://docs.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:469:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:496:      primaryLinkUrl: 'https://www.twenty.com',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:497:      primaryLinkLabel: 'Twenty Website',
+packages/twenty-front/src/modules/object-record/record-field/ui/meta-types/input/components/__stories__/LinksFieldInput.stories.tsx:504:    const primaryLink = await canvas.findByText('Twenty Website');
+packages/twenty-front/src/modules/object-record/object-filter-dropdown/components/ObjectFilterDropdownActorSelect.tsx:60:      allowRequestsToTwentyIcons: false,
+packages/twenty-front/src/modules/object-record/multiple-objects/hooks/__tests__/useCombinedFindManyRecords.test.tsx:189:              name: 'Twenty',
+packages/twenty-front/src/modules/object-record/multiple-objects/hooks/__tests__/useCombinedFindManyRecords.test.tsx:242:            name: 'Twenty',
+packages/twenty-front/src/modules/object-record/multiple-objects/hooks/__tests__/useCombinedFindManyRecords.test.tsx:472:              name: 'Twenty',
+packages/twenty-front/src/modules/object-record/multiple-objects/hooks/__tests__/useCombinedFindManyRecords.test.tsx:538:            name: 'Twenty',
+packages/twenty-front/src/modules/object-metadata/hooks/__tests__/useMapToObjectRecordIdentifier.test.tsx:16:          allowRequestsToTwentyIcons: true,
+packages/twenty-front/src/modules/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordSelect.tsx:24:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordSelect.tsx:47:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordSelect.tsx:48:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/object-record/object-filter-dropdown/components/ObjectFilterDropdownRecordSelect.tsx:130:      allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/object-metadata/components/PreComputedChipGeneratorsProvider.tsx:3:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/object-metadata/components/PreComputedChipGeneratorsProvider.tsx:13:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/object-metadata/components/PreComputedChipGeneratorsProvider.tsx:14:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/object-metadata/components/PreComputedChipGeneratorsProvider.tsx:20:        allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/object-metadata/components/PreComputedChipGeneratorsProvider.tsx:22:    }, [allowRequestsToTwentyIcons, objectMetadataItems]);
+packages/twenty-front/src/modules/ui/layout/modal/components/__stories__/Modal.stories.tsx:68:          By using Twenty, you're opting for the finest CRM experience you'll
+packages/twenty-front/src/modules/views/hooks/useComputeRecordRelationFilterLabelValue.tsx:15:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/views/hooks/useComputeRecordRelationFilterLabelValue.tsx:26:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/views/hooks/useComputeRecordRelationFilterLabelValue.tsx:27:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/views/hooks/useComputeRecordRelationFilterLabelValue.tsx:78:    allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/advanced-text-editor/components/__stories__/AdvancedTextEditor.stories.tsx:192:              marks: [{ type: 'link', attrs: { href: 'https://twenty.com' } }],
+packages/twenty-front/src/modules/advanced-text-editor/components/__stories__/AdvancedTextEditor.stories.tsx:205:                { type: 'link', attrs: { href: 'mailto:support@twenty.com' } },
+packages/twenty-front/src/modules/advanced-text-editor/components/__stories__/AdvancedTextEditor.stories.tsx:207:              text: 'support@twenty.com',
+packages/twenty-front/src/modules/activities/timeline-activities/components/EventRow.tsx:21:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/activities/timeline-activities/components/EventRow.tsx:94:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/activities/timeline-activities/components/EventRow.tsx:95:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/activities/timeline-activities/components/EventRow.tsx:126:    allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/side-panel/components/SidePanelContextRecordsChip.tsx:6:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/side-panel/components/SidePanelContextRecordsChip.tsx:19:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/side-panel/components/SidePanelContextRecordsChip.tsx:20:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/side-panel/components/SidePanelContextRecordsChip.tsx:47:        allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/side-panel/components/SidePanelRecordInfo.tsx:1:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/side-panel/components/SidePanelRecordInfo.tsx:34:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/side-panel/components/SidePanelRecordInfo.tsx:35:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/side-panel/components/SidePanelRecordInfo.tsx:60:      allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/side-panel/hooks/useSidePanelContextChips.tsx:6:import { allowRequestsToTwentyIconsState } from '@/client-config/states/allowRequestsToTwentyIcons';
+packages/twenty-front/src/modules/side-panel/hooks/useSidePanelContextChips.tsx:24:  const allowRequestsToTwentyIcons = useAtomStateValue(
+packages/twenty-front/src/modules/side-panel/hooks/useSidePanelContextChips.tsx:25:    allowRequestsToTwentyIconsState,
+packages/twenty-front/src/modules/side-panel/hooks/useSidePanelContextChips.tsx:46:      allowRequestsToTwentyIcons,
+packages/twenty-front/src/modules/ui/input/components/__stories__/TextInput.stories.tsx:68:    rightAdornment: '@twenty.com',

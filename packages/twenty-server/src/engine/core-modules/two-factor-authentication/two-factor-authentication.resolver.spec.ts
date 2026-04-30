@@ -136,7 +136,7 @@ describe('TwoFactorAuthenticationResolver', () => {
     const mockInput: InitiateTwoFactorAuthenticationProvisioningInput = {
       loginToken: 'valid-login-token',
     };
-    const origin = 'https://app.twenty.com';
+    const origin = 'https://app.askexe.com';
 
     beforeEach(() => {
       loginTokenService.verifyLoginToken.mockResolvedValue({

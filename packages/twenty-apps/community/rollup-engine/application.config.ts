@@ -10,14 +10,14 @@ const config: ApplicationConfig = {
       isSecret: true,
       value: '',
       description:
-        'Workspace API key used by the rollup engine to call the Twenty REST API.',
+        'Workspace API key used by the rollup engine to call the Exe CRM REST API.',
     },
     TWENTY_API_BASE_URL: {
       universalIdentifier: '274c512c-a870-4651-9617-2638e0def14c',
       isSecret: false,
       value: '',
       description:
-        'Optional override for the REST base URL (defaults to https://app.twenty.com/rest).',
+        'Optional override for the REST base URL (defaults to https://app.askexe.com/rest).',
     },
     ROLLUP_ENGINE_CONFIG: {
       universalIdentifier: 'a4672cd9-4081-43af-9d3b-5a8a55a72613',

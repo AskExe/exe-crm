@@ -26,7 +26,7 @@ export const TEST_IFRAME_CONFIG: IframeConfigurationDTO = {
 
 export const TEST_IFRAME_CONFIG_ALTERNATIVE: IframeConfigurationDTO = {
   configurationType: WidgetConfigurationType.IFRAME,
-  url: 'https://app.twenty.com/analytics',
+  url: 'https://app.askexe.com/analytics',
 };
 
 export const TEST_STANDALONE_RICH_TEXT_CONFIG: StandaloneRichTextConfigurationDTO =

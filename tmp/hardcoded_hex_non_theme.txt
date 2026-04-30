@@ -1,0 +1,161 @@
+packages/twenty-front/index.html:22:    <meta name="theme-color" content="#0F0E1A" />
+packages/twenty-front/index.html:90:        --theme-dark-background-tertiary: #0F0E1A;
+packages/twenty-front/index.html:92:        --theme-light-background-tertiary: #F5F5F0;
+packages/twenty-companion/src/pages/note-editor/styles.css:2:  --primary-bg: #f9f9f9;
+packages/twenty-companion/src/pages/note-editor/styles.css:3:  --card-bg: #fff;
+packages/twenty-companion/src/pages/note-editor/styles.css:4:  --light-purple: #f3e9ff;
+packages/twenty-companion/src/pages/note-editor/styles.css:5:  --light-green: #e8f5e9;
+packages/twenty-companion/src/pages/note-editor/styles.css:6:  --border-color: #e0e0e0;
+packages/twenty-companion/src/pages/note-editor/styles.css:7:  --text-primary: #000;
+packages/twenty-companion/src/pages/note-editor/styles.css:8:  --text-secondary: #666;
+packages/twenty-companion/src/pages/note-editor/styles.css:94:  background-color: #f2f2f2;
+packages/twenty-companion/src/pages/note-editor/styles.css:130:  background-color: #ddd;
+packages/twenty-companion/src/pages/note-editor/styles.css:301:  color: #333;
+packages/twenty-companion/src/pages/note-editor/styles.css:307:  color: #444;
+packages/twenty-companion/src/pages/note-editor/styles.css:317:  color: #0077ff;
+packages/twenty-companion/src/pages/note-editor/styles.css:327:  background-color: #f4f4f4;
+packages/twenty-companion/src/pages/note-editor/index.html:20:              <rect width="96" height="96" rx="11.293" fill="#000000"/>
+packages/twenty-companion/src/pages/note-editor/index.html:30:                <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#666666"/>
+packages/twenty-companion/src/pages/note-editor/index.html:39:              <path d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6V8H21V6H3Z" fill="#666666"/>
+packages/twenty-companion/src/pages/note-editor/index.html:44:              <rect width="40" height="40" rx="20" fill="#f0f0f0"/>
+packages/twenty-companion/src/pages/note-editor/index.html:45:              <path d="M20 20C22.7614 20 25 17.7614 25 15C25 12.2386 22.7614 10 20 10C17.2386 10 15 12.2386 15 15C15 17.7614 17.2386 20 20 20Z" fill="#a0a0a0"/>
+packages/twenty-companion/src/pages/note-editor/index.html:46:              <path d="M12 31C12 26.0294 15.5817 22 20 22C24.4183 22 28 26.0294 28 31" stroke="#a0a0a0" stroke-width="4"/>
+packages/twenty-companion/src/pages/note-editor/index.html:59:                  <path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8ZM9 14H7V12H9V14ZM13 14H11V12H13V14ZM17 14H15V12H17V14ZM9 18H7V16H9V18ZM13 18H11V16H13V18ZM17 18H15V16H17V18Z" fill="#6947BD"/>
+packages/twenty-companion/src/pages/note-editor/index.html:65:                  <rect width="40" height="40" rx="20" fill="#f0f0f0"/>
+packages/twenty-companion/src/pages/note-editor/index.html:66:                  <path d="M20 20C22.7614 20 25 17.7614 25 15C25 12.2386 22.7614 10 20 10C17.2386 10 15 12.2386 15 15C15 17.7614 17.2386 20 20 20Z" fill="#a0a0a0"/>
+packages/twenty-companion/src/pages/note-editor/index.html:67:                  <path d="M12 31C12 26.0294 15.5817 22 20 22C24.4183 22 28 26.0294 28 31" stroke="#a0a0a0" stroke-width="4"/>
+packages/twenty-companion/src/pages/note-editor/index.html:97:                    <path d="M3.9 12C3.9 10.29 5.29 8.9 7 8.9H11V7H7C4.24 7 2 9.24 2 12C2 14.76 4.24 17 7 17H11V15.1H7C5.29 15.1 3.9 13.71 3.9 12ZM8 13H16V11H8V13ZM17 7H13V8.9H17C18.71 8.9 20.1 10.29 20.1 12C20.1 13.71 18.71 15.1 17 15.1H13V17H17C19.76 17 22 14.76 22 12C22 9.24 19.76 7 17 7Z" fill="#666666"/>
+packages/twenty-companion/src/pages/note-editor/index.html:103:                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM7 10H9V17H7V10ZM11 7H13V17H11V7ZM15 13H17V17H15V13Z" fill="#666666"/>
+packages/twenty-companion/src/pages/note-editor/index.html:112:                    <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V8L12 13L20 8V18ZM12 11L4 6H20L12 11Z" fill="#666666"/>
+packages/twenty-companion/src/pages/note-editor/index.html:118:                    <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6ZM20 6L12 11L4 6H20ZM20 18H4V8L12 13L20 8V18Z" fill="#4285F4"/>
+packages/twenty-companion/src/pages/note-editor/index.html:141:            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="#0077FF"/>
+packages/twenty-companion/src/index.css:2:  --primary-bg: #f9f9f9;
+packages/twenty-companion/src/index.css:3:  --card-bg: #fff;
+packages/twenty-companion/src/index.css:4:  --light-purple: #f3e9ff;
+packages/twenty-companion/src/index.css:5:  --light-green: #e8f5e9;
+packages/twenty-companion/src/index.css:6:  --border-color: #e0e0e0;
+packages/twenty-companion/src/index.css:7:  --text-primary: #000;
+packages/twenty-companion/src/index.css:8:  --text-secondary: #666;
+packages/twenty-companion/src/index.css:104:  background-color: #f2f2f2;
+packages/twenty-companion/src/index.css:143:  background-color: #007aff;
+packages/twenty-companion/src/index.css:148:  background-color: #ccc;
+packages/twenty-companion/src/index.css:149:  color: #666;
+packages/twenty-companion/src/index.css:159:  background-color: #ddd;
+packages/twenty-companion/src/index.css:209:  background-color: #f5f5f5;
+packages/twenty-companion/src/index.css:238:  color: #0077ff;
+packages/twenty-companion/src/index.css:260:  color: #999;
+packages/twenty-companion/src/index.css:270:  color: #ff3b30;
+packages/twenty-companion/src/index.css:397:  color: #6947BD;
+packages/twenty-companion/src/index.css:410:  background: #e0d0f5;
+packages/twenty-companion/src/index.css:411:  color: #5235a0;
+packages/twenty-companion/src/index.css:419:  color: #333;
+packages/twenty-companion/src/index.css:533:  background: #f5f5f5;
+packages/twenty-companion/src/index.css:540:  color: #666;
+packages/twenty-companion/src/index.css:547:  background-color: #eaeaea;
+packages/twenty-companion/src/index.css:551:  color: #666;
+packages/twenty-companion/src/index.css:552:  background: #f5f5f5;
+packages/twenty-companion/src/index.css:560:  background-color: #eaeaea;
+packages/twenty-companion/src/index.css:564:  color: #fff;
+packages/twenty-companion/src/index.css:565:  background-color: #ff3b30;
+packages/twenty-companion/src/index.css:569:  background-color: #d93129;
+packages/twenty-companion/src/index.css:573:  color: #00957B;
+packages/twenty-companion/src/index.css:574:  background: #E3F3F1;
+packages/twenty-companion/src/index.css:583:  background-color: #d1eae7;
+packages/twenty-companion/src/index.css:619:  background-color: #1e1e1e;
+packages/twenty-companion/src/index.css:620:  color: #e0e0e0;
+packages/twenty-companion/src/index.css:638:  background-color: #333;
+packages/twenty-companion/src/index.css:639:  border-bottom: 1px solid #444;
+packages/twenty-companion/src/index.css:646:  color: #fff;
+packages/twenty-companion/src/index.css:652:  color: #e0e0e0;
+packages/twenty-companion/src/index.css:672:  background: #333;
+packages/twenty-companion/src/index.css:673:  color: #fff;
+packages/twenty-companion/src/index.css:686:  background: #444;
+packages/twenty-companion/src/index.css:707:  color: #4CAF50;
+packages/twenty-companion/src/index.css:730:  color: #fff;
+packages/twenty-companion/src/index.css:746:  color: #0077FF;
+packages/twenty-companion/src/index.css:755:  border-left: 3px solid #0077FF;
+packages/twenty-companion/src/index.css:759:  border-left: 3px solid #4CAF50;
+packages/twenty-companion/src/index.css:764:  color: #4CAF50;
+packages/twenty-companion/src/index.css:794:  background-color: #252525;
+packages/twenty-companion/src/index.css:809:  background-color: #333;
+packages/twenty-companion/src/index.css:810:  border-bottom: 1px solid #444;
+packages/twenty-companion/src/index.css:817:  color: #fff;
+packages/twenty-companion/src/index.css:823:  color: #e0e0e0;
+packages/twenty-companion/src/index.css:850:  color: #666;
+packages/twenty-companion/src/index.css:856:  background-color: #1a1a1a;
+packages/twenty-companion/src/index.css:872:  background-color: #2a2a2a;
+packages/twenty-companion/src/index.css:877:  background-color: #2d3b4a;
+packages/twenty-companion/src/index.css:878:  border-left: 3px solid #0077FF;
+packages/twenty-companion/src/index.css:883:  color: #0077FF;
+packages/twenty-companion/src/index.css:888:  color: #e0e0e0;
+packages/twenty-companion/src/index.css:895:  color: #888;
+packages/twenty-companion/src/index.css:913:  background-color: #2a2a2a;
+packages/twenty-companion/src/index.css:926:  color: #e0e0e0;
+packages/twenty-companion/src/index.css:932:  color: #4CAF50;
+packages/twenty-companion/src/index.css:941:  background-color: #1a1a1a;
+packages/twenty-companion/src/index.css:989:  background-color: #2a2a2a;
+packages/twenty-companion/src/index.css:990:  border-left: 3px solid #555;
+packages/twenty-companion/src/index.css:995:  border-left-color: #0077FF;
+packages/twenty-companion/src/index.css:999:  border-left-color: #4CAF50;
+packages/twenty-companion/src/index.css:1003:  border-left-color: #FF3B30;
+packages/twenty-companion/src/index.css:1008:  color: #999;
+packages/twenty-companion/src/index.css:1015:  color: #0077FF;
+packages/twenty-companion/src/index.css:1020:  color: #4CAF50;
+packages/twenty-companion/src/index.css:1025:  color: #FF3B30;
+packages/twenty-companion/src/index.css:1029:  color: #e0e0e0;
+packages/twenty-companion/src/index.html:18:              <rect width="96" height="96" rx="11.293" fill="#000000"/>
+packages/twenty-companion/src/index.html:28:                <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#666666"/>
+packages/twenty-companion/src/index.html:39:              <path d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6V8H21V6H3Z" fill="#666666"/>
+packages/twenty-companion/src/index.html:44:              <rect width="40" height="40" rx="20" fill="#f0f0f0"/>
+packages/twenty-companion/src/index.html:45:              <path d="M20 20C22.7614 20 25 17.7614 25 15C25 12.2386 22.7614 10 20 10C17.2386 10 15 12.2386 15 15C15 17.7614 17.2386 20 20 20Z" fill="#a0a0a0"/>
+packages/twenty-companion/src/index.html:46:              <path d="M12 31C12 26.0294 15.5817 22 20 22C24.4183 22 28 26.0294 28 31" stroke="#a0a0a0" stroke-width="4"/>
+packages/twenty-companion/src/index.html:76:                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#a0a0a0"/>
+packages/twenty-companion/src/index.html:83:                    <path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8ZM9 14H7V12H9V14ZM13 14H11V12H13V14ZM17 14H15V12H17V14ZM9 18H7V16H9V18ZM13 18H11V16H13V18ZM17 18H15V16H17V18Z" fill="#6947BD"/>
+packages/twenty-companion/src/index.html:89:                    <rect width="40" height="40" rx="20" fill="#f0f0f0"/>
+packages/twenty-companion/src/index.html:90:                    <path d="M20 20C22.7614 20 25 17.7614 25 15C25 12.2386 22.7614 10 20 10C17.2386 10 15 12.2386 15 15C15 17.7614 17.2386 20 20 20Z" fill="#a0a0a0"/>
+packages/twenty-companion/src/index.html:91:                    <path d="M12 31C12 26.0294 15.5817 22 20 22C24.4183 22 28 26.0294 28 31" stroke="#a0a0a0" stroke-width="4"/>
+packages/twenty-companion/src/index.html:125:                      <path d="M3.9 12C3.9 10.29 5.29 8.9 7 8.9H11V7H7C4.24 7 2 9.24 2 12C2 14.76 4.24 17 7 17H11V15.1H7C5.29 15.1 3.9 13.71 3.9 12ZM8 13H16V11H8V13ZM17 7H13V8.9H17C18.71 8.9 20.1 10.29 20.1 12C20.1 13.71 18.71 15.1 17 15.1H13V17H17C19.76 17 22 14.76 22 12C22 9.24 19.76 7 17 7Z" fill="#666666"/>
+packages/twenty-companion/src/index.html:131:                      <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM7 10H9V17H7V10ZM11 7H13V17H11V7ZM15 13H17V17H15V13Z" fill="#666666"/>
+packages/twenty-companion/src/index.html:140:                      <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 18H4V8L12 13L20 8V18ZM12 11L4 6H20L12 11Z" fill="#666666"/>
+packages/twenty-companion/src/index.html:146:                      <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6ZM20 6L12 11L4 6H20ZM20 18H4V8L12 13L20 8V18Z" fill="#4285F4"/>
+packages/twenty-companion/src/index.html:193:                <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="#0077FF"/>
+packages/twenty-companion/src/index.html:256:                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="#999"/>
+packages/twenty-companion/src/index.html:271:                <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" fill="#999"/>
+packages/twenty-sdk/src/front-component-renderer/host/components/FrontComponentRenderer.tsx:86:              backgroundColor: '#fef2f2',
+packages/twenty-sdk/src/front-component-renderer/host/components/FrontComponentRenderer.tsx:87:              border: '1px solid #fecaca',
+packages/twenty-sdk/src/front-component-renderer/host/components/FrontComponentRenderer.tsx:89:              color: '#991b1b',
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx:5:  --hover-bg-color: #378fe91a;
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx:6:  --hover-color: #004182;
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx:7:  --hover-border-color: #004182;
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx:8:  --text-color: #0a66c2;
+packages/twenty-apps/community/linkedin-browser-extension/browser-extension/src/ui/components/button.tsx:9:  --bg-color: #00000000;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:10:  background: #ffffff;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:19:  color: #333;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:48:    color: #1a1a1a;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:61:    color: #1a1a1a;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:80:    background-color: #f6f8fa;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:88:    border-left: 3px solid #d0d7de;
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewer.tsx:91:    color: #57606a;
+packages/twenty-apps/internal/call-recording/src/components/VideoPlayer.tsx:10:  background: #000;
+packages/twenty-apps/fixtures/postcard-app/src/utils/card-display.component.tsx:10:      style={{ border: '1px solid #ccc', padding: '16px', borderRadius: '8px' }}
+packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx:15:  background: #ffffff;
+packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx:33:    isActive ? '#f1f1f1' : 'transparent'};
+packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx:42:  color: #333333;
+packages/twenty-apps/internal/call-recording/src/components/TranscriptViewer.tsx:54:  color: ${({ isSpoken }) => (isSpoken ? '#333333' : '#b3b3b3')};
+packages/twenty-apps/internal/call-recording/src/components/SummaryViewerSkeleton.tsx:11:  background: #ffffff;
+packages/twenty-apps/internal/call-recording/src/components/AudioPlayer.tsx:6:  background: linear-gradient(135deg, #f8f9fb 0%, #eef0f4 100%);
+packages/twenty-apps/internal/call-recording/src/components/CallRecordingViewerSkeleton.tsx:19:  background: #ffffff;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:15:  color: #333;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:23:  color: #818181;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:32:  background: #fff;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:33:  border: 1px solid #ebebeb;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:42:  background: #f5f5f5;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:44:  color: #666;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:61:  color: #333;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:68:  color: #818181;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:75:  background: #5e5adb;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:79:  color: #fafafa;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:95:    background: #4b47b8;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:99:    background: #3c3996;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:109:  background: #10b981;
+packages/twenty-apps/community/apollo-enrich/src/front-components/apollo-oauth-cta.tsx:111:  color: #fff;
