@@ -1,7 +1,7 @@
-# Build and push Docker images to GHCR on tag push (v*).
+# Build and push Docker images to GHCR on tag push (exe-v*).
 #
-# Same build as cd-deploy-main but triggered by version tags. Tags the image
-# with the version number, SHA, and latest.
+# Triggered by Exe CRM version tags (exe-v1.0.0, exe-v1.1.0, etc.).
+# Tags the image with the version number, SHA, and latest.
 #
 # SSH deploy to VPS is DEFERRED — this workflow only builds and pushes images.
 
@@ -9,7 +9,7 @@ name: CD deploy tag
 
 on:
   push:
-    tags: ['v*']
+    tags: ['exe-v*']
 
 permissions:
   contents: read
