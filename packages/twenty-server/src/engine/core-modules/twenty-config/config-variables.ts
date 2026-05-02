@@ -776,6 +776,16 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
     description:
+      'Base URL for the GoTrue auth service used to verify external JWTs',
+    type: ConfigVariableType.STRING,
+  })
+  @IsUrl({ require_tld: false, require_protocol: true })
+  @IsOptional()
+  GOTRUE_URL?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    description:
       'Default subdomain for the frontend when multi-workspace is enabled',
     type: ConfigVariableType.STRING,
   })

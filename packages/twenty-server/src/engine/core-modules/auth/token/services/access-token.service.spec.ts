@@ -1,23 +1,28 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { randomUUID } from 'crypto';
+import { generateKeyPairSync, randomUUID } from 'crypto';
 
 import { type Request } from 'express';
+import * as jwt from 'jsonwebtoken';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
 
 import { AppTokenEntity } from 'src/engine/core-modules/app-token/app-token.entity';
 import { AuthException } from 'src/engine/core-modules/auth/auth.exception';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { CoreEntityCacheService } from 'src/engine/core-entity-cache/services/core-entity-cache.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
 import { AccessTokenService } from './access-token.service';
 
@@ -29,6 +34,11 @@ describe('AccessTokenService', () => {
   let workspaceRepository: Repository<WorkspaceEntity>;
   let globalWorkspaceOrmManager: GlobalWorkspaceOrmManager;
   let userWorkspaceRepository: Repository<UserWorkspaceEntity>;
+  let workspaceDomainsService: WorkspaceDomainsService;
+  let userWorkspaceService: UserWorkspaceService;
+  let coreEntityCacheService: CoreEntityCacheService;
+  let workspaceCacheService: WorkspaceCacheService;
+  const originalFetch = global.fetch;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -54,6 +64,32 @@ describe('AccessTokenService', () => {
           provide: TwentyConfigService,
           useValue: {
             get: jest.fn(),
+          },
+        },
+        {
+          provide: WorkspaceDomainsService,
+          useValue: {
+            getWorkspaceByOriginOrDefaultWorkspace: jest.fn(),
+          },
+        },
+        {
+          provide: UserWorkspaceService,
+          useValue: {
+            addUserToWorkspaceIfUserNotInWorkspace: jest.fn(),
+            createWorkspaceMember: jest.fn(),
+          },
+        },
+        {
+          provide: CoreEntityCacheService,
+          useValue: {
+            get: jest.fn(),
+            invalidateAndRecompute: jest.fn(),
+          },
+        },
+        {
+          provide: WorkspaceCacheService,
+          useValue: {
+            invalidateAndRecompute: jest.fn(),
           },
         },
         {
@@ -103,6 +139,22 @@ describe('AccessTokenService', () => {
     userWorkspaceRepository = module.get<Repository<UserWorkspaceEntity>>(
       getRepositoryToken(UserWorkspaceEntity),
     );
+    workspaceDomainsService = module.get<WorkspaceDomainsService>(
+      WorkspaceDomainsService,
+    );
+    userWorkspaceService = module.get<UserWorkspaceService>(
+      UserWorkspaceService,
+    );
+    coreEntityCacheService = module.get<CoreEntityCacheService>(
+      CoreEntityCacheService,
+    );
+    workspaceCacheService = module.get<WorkspaceCacheService>(
+      WorkspaceCacheService,
+    );
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it('should be defined', () => {
@@ -283,6 +335,187 @@ describe('AccessTokenService', () => {
 
       await expect(service.validateTokenByRequest(mockRequest)).rejects.toThrow(
         AuthException,
+      );
+    });
+
+    it('falls back to GoTrue JWTs and auto-provisions workspace access', async () => {
+      const gotrueUserId = randomUUID();
+      const workspaceId = randomUUID();
+      const userWorkspaceId = randomUUID();
+      const workspaceMemberId = randomUUID();
+      const email = 'gotrue@example.com';
+      const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+      });
+      const publicJwk = publicKey.export({ format: 'jwk' }) as JsonWebKey;
+      const token = jwt.sign(
+        {
+          sub: gotrueUserId,
+          email,
+          name: 'Go True',
+        },
+        privateKey,
+        {
+          algorithm: 'RS256',
+          expiresIn: '1h',
+          keyid: 'gtr-key-1',
+        },
+      );
+      const mockRequest = {
+        headers: {
+          authorization: `Bearer ${token}`,
+          origin: 'https://crm.example.com',
+        },
+        protocol: 'https',
+      } as Request;
+      const workspace = { id: workspaceId } as WorkspaceEntity;
+      let storedUser: UserEntity | null = null;
+      let hasMembership = false;
+
+      jest
+        .spyOn(jwtWrapperService, 'extractJwtFromRequest')
+        .mockReturnValue(() => token);
+      jest
+        .spyOn(jwtWrapperService, 'verifyJwtToken')
+        .mockRejectedValue(new Error('Token invalid'));
+      jest.spyOn(twentyConfigService, 'get').mockImplementation((key) => {
+        switch (key) {
+          case 'GOTRUE_URL':
+            return 'http://gotrue:9999' as any;
+          case 'FRONTEND_URL':
+            return 'https://crm.example.com' as any;
+          default:
+            return undefined as any;
+        }
+      });
+      jest
+        .spyOn(workspaceDomainsService, 'getWorkspaceByOriginOrDefaultWorkspace')
+        .mockResolvedValue(workspace);
+      jest
+        .spyOn(userRepository, 'create')
+        .mockImplementation((entity) => entity as UserEntity);
+      jest.spyOn(userRepository, 'findOne').mockImplementation(async (input) => {
+        if (
+          input?.where &&
+          'id' in input.where &&
+          input.where.id === gotrueUserId
+        ) {
+          return storedUser;
+        }
+
+        if (
+          input?.where &&
+          'email' in input.where &&
+          input.where.email === email
+        ) {
+          return storedUser;
+        }
+
+        return null;
+      });
+      jest.spyOn(userRepository, 'save').mockImplementation(async (entity) => {
+        storedUser = {
+          firstName: 'Go',
+          lastName: 'True',
+          isEmailVerified: true,
+          locale: 'en',
+          ...entity,
+        } as UserEntity;
+
+        return storedUser;
+      });
+      jest
+        .spyOn(userWorkspaceRepository, 'findOne')
+        .mockImplementation(async (input) => {
+          if (
+            hasMembership &&
+            storedUser &&
+            input?.where?.userId === storedUser.id &&
+            input?.where?.workspaceId === workspaceId
+          ) {
+            return {
+              id: userWorkspaceId,
+              userId: storedUser.id,
+              workspaceId,
+            } as UserWorkspaceEntity;
+          }
+
+          return null;
+        });
+      jest
+        .spyOn(
+          userWorkspaceService,
+          'addUserToWorkspaceIfUserNotInWorkspace',
+        )
+        .mockImplementation(async () => {
+          hasMembership = true;
+        });
+      jest
+        .spyOn(globalWorkspaceOrmManager, 'getRepository')
+        .mockResolvedValue({
+          findOne: jest.fn().mockImplementation(async () => {
+            if (!hasMembership || !storedUser) {
+              return null;
+            }
+
+            return {
+              id: workspaceMemberId,
+              userId: storedUser.id,
+            };
+          }),
+        } as any);
+      jest
+        .spyOn(coreEntityCacheService, 'invalidateAndRecompute')
+        .mockResolvedValue(undefined);
+      jest.spyOn(coreEntityCacheService, 'get').mockImplementation(async (key) => {
+        if (key === 'user') {
+          return {
+            id: storedUser?.id ?? gotrueUserId,
+            email,
+          } as any;
+        }
+
+        if (key === 'userWorkspaceEntity') {
+          return {
+            id: userWorkspaceId,
+            userId: storedUser?.id ?? gotrueUserId,
+            workspaceId,
+          } as any;
+        }
+
+        if (key === 'workspaceEntity') {
+          return {
+            id: workspaceId,
+          } as any;
+        }
+
+        return null;
+      });
+      jest
+        .spyOn(workspaceCacheService, 'invalidateAndRecompute')
+        .mockResolvedValue(undefined);
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          keys: [{ ...publicJwk, alg: 'RS256', kid: 'gtr-key-1', use: 'sig' }],
+        }),
+      } as Response) as typeof fetch;
+
+      const result = await service.validateTokenByRequest(mockRequest);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          authProvider: AuthProviderEnum.SSO,
+          userWorkspaceId,
+          workspaceMemberId,
+        }),
+      );
+      expect(
+        userWorkspaceService.addUserToWorkspaceIfUserNotInWorkspace,
+      ).toHaveBeenCalledWith(expect.objectContaining({ email }), workspace);
+      expect(workspaceCacheService.invalidateAndRecompute).toHaveBeenCalledWith(
+        workspaceId,
+        ['flatWorkspaceMemberMaps'],
       );
     });
   });
