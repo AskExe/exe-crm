@@ -1,13 +1,19 @@
+import { createPublicKey } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { msg } from '@lingui/core/macro';
 import { addMilliseconds } from 'date-fns';
 import { type Request } from 'express';
+import { In } from 'typeorm';
 import ms from 'ms';
 import { assertIsDefinedOrThrow } from 'twenty-shared/utils';
 import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
+import { SOURCE_LOCALE } from 'twenty-shared/translations';
+import { SOURCE_LOCALE as SharedSourceLocale } from 'twenty-shared/translations';
+
+import * as jwt from 'jsonwebtoken';
 
 import {
   AuthException,
@@ -31,6 +37,8 @@ import { WorkspaceNotFoundDefaultError } from 'src/engine/core-modules/workspace
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { isValidUuid } from 'twenty-shared/utils';
 
 @Injectable()
 export class AccessTokenService {

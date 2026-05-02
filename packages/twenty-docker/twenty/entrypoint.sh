@@ -1,6 +1,25 @@
 #!/bin/sh
 set -e
 
+assert_exe_license_key() {
+    license_key="${EXE_LICENSE_KEY:-${ENTERPRISE_KEY:-}}"
+
+    if [ -z "$license_key" ]; then
+        echo "EXE_LICENSE_KEY is required. Obtain a valid key from https://askexe.com before booting Exe CRM."
+        exit 1
+    fi
+
+    case "$license_key" in
+        CHANGEME*|changeme*|replace_me*|REPLACE_ME*|your_*|YOUR_*|example*|EXAMPLE*)
+            echo "EXE_LICENSE_KEY is still a placeholder value. Replace it with a real key from https://askexe.com."
+            exit 1
+            ;;
+    esac
+
+    export EXE_LICENSE_KEY="$license_key"
+    export ENTERPRISE_KEY="${ENTERPRISE_KEY:-$license_key}"
+}
+
 setup_and_migrate_db() {
     if [ "${DISABLE_DB_MIGRATIONS}" = "true" ]; then
         echo "Database setup and migrations are disabled, skipping..."
@@ -37,6 +56,7 @@ register_background_jobs() {
     fi
 }
 
+assert_exe_license_key
 setup_and_migrate_db
 register_background_jobs
 

@@ -37,9 +37,27 @@ const assertAppSecret = () => {
   }
 };
 
+const isPlaceholderValue = (value: string) =>
+  /^(changeme|replace_me|your_|example)/i.test(value);
+
+const assertExeLicenseKey = () => {
+  const licenseKey = process.env.EXE_LICENSE_KEY ?? process.env.ENTERPRISE_KEY;
+
+  if (!licenseKey || isPlaceholderValue(licenseKey)) {
+    throw new Error(
+      'EXE_LICENSE_KEY must be set to a real enterprise key before Exe CRM can boot. ' +
+        'Obtain a valid key from https://askexe.com.',
+    );
+  }
+
+  process.env.EXE_LICENSE_KEY = licenseKey;
+  process.env.ENTERPRISE_KEY = process.env.ENTERPRISE_KEY ?? licenseKey;
+};
+
 // Trigger
 const bootstrap = async () => {
   assertAppSecret();
+  assertExeLicenseKey();
 
   setPgDateTypeParser();
 
