@@ -21,6 +21,7 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { MOBILE_VIEWPORT, themeCssVariables } from 'twenty-ui/theme-constants';
 import { NavigationDrawerBackButton } from './NavigationDrawerBackButton';
 import { NavigationDrawerHeader } from './NavigationDrawerHeader';
+import { NavigationDrawerThemeToggle } from './NavigationDrawerThemeToggle';
 
 export type NavigationDrawerProps = {
   children?: ReactNode;
@@ -55,6 +56,8 @@ const StyledContainer = styled.div<{
   isMobile?: boolean;
   isExpanded?: boolean;
 }>`
+  position: relative;
+  background: ${themeCssVariables.background.secondary};
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -134,6 +137,9 @@ export const NavigationDrawer = ({
             <NavigationDrawerHeader showCollapseButton />
           )}
           {children}
+          {!isSettingsDrawer && !isMobile && (
+            <NavigationDrawerThemeToggle isExpanded={isNavigationDrawerExpanded} />
+          )}
         </StyledContainer>
 
         {isNavigationDrawerExpanded && !isMobile && !isSettingsDrawer && (
