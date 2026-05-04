@@ -18,6 +18,11 @@ const StyledContainer = styled.div`
   left: ${themeCssVariables.spacing[1]};
   right: ${themeCssVariables.spacing[1]};
   justify-content: flex-start;
+  align-items: center;
+  border-radius: ${themeCssVariables.border.radius.md};
+  z-index: 2;
+  background: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[1]};
   pointer-events: auto;
 `;
 
