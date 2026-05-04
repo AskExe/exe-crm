@@ -31,7 +31,7 @@ export const MARKETPLACE_CATALOG_INDEX: CuratedAppEntry[] = [
     isFeatured: true,
     name: 'Data Enrichment',
     description: 'Enrich your data easily. Choose your provider.',
-    author: 'Twenty',
+    author: 'Exe CRM',
     logoUrl: ENCODED_MOCK_LOGO,
     websiteUrl: 'https://askexe.com',
     richDisplayData: {
@@ -143,8 +143,8 @@ export const MARKETPLACE_CATALOG_INDEX: CuratedAppEntry[] = [
     sourcePackage: '@twentyhq/hello-world',
     isFeatured: false,
     name: 'Hello World',
-    description: 'A simple hello world app to get started with Twenty apps.',
-    author: 'Twenty',
+    description: 'A simple hello world app to get started with Exe CRM apps.',
+    author: 'Exe CRM',
     websiteUrl: 'https://askexe.com',
     richDisplayData: {
       icon: 'IconWorld',
@@ -152,7 +152,7 @@ export const MARKETPLACE_CATALOG_INDEX: CuratedAppEntry[] = [
       category: 'Getting Started',
       screenshots: [],
       aboutDescription:
-        'A minimal example app that demonstrates the Twenty app framework. Creates a PostCard object and a logic function to generate new postcards. Great starting point for building your own apps.',
+        'A minimal example app that demonstrates the Exe CRM app framework. Creates a PostCard object and a logic function to generate new postcards. Great starting point for building your own apps.',
       providers: [],
       objects: [
         {

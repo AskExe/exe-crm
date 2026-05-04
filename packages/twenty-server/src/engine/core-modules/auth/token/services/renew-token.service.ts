@@ -14,6 +14,8 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 
 @Injectable()
@@ -24,6 +26,7 @@ export class RenewTokenService {
     private readonly accessTokenService: AccessTokenService,
     private readonly workspaceAgnosticTokenService: WorkspaceAgnosticTokenService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async generateTokensFromRefreshToken(token: string): Promise<{
@@ -66,6 +69,16 @@ export class RenewTokenService {
       targetedTokenTypeFromPayload ?? JwtTokenTypeEnum.ACCESS;
 
     const resolvedAuthProvider = authProvider ?? AuthProviderEnum.Password;
+
+    if (
+      resolvedAuthProvider === AuthProviderEnum.Password &&
+      isNativePasswordAuthDisabled(this.twentyConfigService)
+    ) {
+      throw new AuthException(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
 
     const accessToken =
       isDefined(authProvider) &&

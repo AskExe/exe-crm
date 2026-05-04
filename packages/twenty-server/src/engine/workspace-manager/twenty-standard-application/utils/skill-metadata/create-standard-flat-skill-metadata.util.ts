@@ -509,9 +509,9 @@ plt.savefig('/home/user/output/analysis.png')
 print('Analysis complete!')
 \`\`\`
 
-## Calling Twenty Tools from Python (MCP Bridge)
+## Calling Exe CRM Tools from Python (MCP Bridge)
 
-A \`twenty\` helper is automatically available in your code. Use it to call any Twenty tool directly from Python:
+A \`twenty\` helper is automatically available in your code. Use it to call any Exe CRM tool directly from Python:
 
 \`\`\`python
 # Find records

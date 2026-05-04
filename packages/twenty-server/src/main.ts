@@ -14,7 +14,9 @@ import { setPgDateTypeParser } from 'src/database/pg/set-pg-date-type-parser';
 import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
+import { isOriginAllowed } from 'src/utils/cors/is-origin-allowed.util';
 
 import { AppModule } from './app.module';
 import './instrument';
@@ -62,7 +64,7 @@ const bootstrap = async () => {
   setPgDateTypeParser();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
+    cors: false,
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',
     rawBody: true,
     snapshot: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
@@ -77,6 +79,25 @@ const bootstrap = async () => {
   });
   const logger = app.get(LoggerService);
   const twentyConfigService = app.get(TwentyConfigService);
+  const workspaceDomainsService = app.get(WorkspaceDomainsService);
+
+  app.enableCors({
+    credentials: true,
+    origin: (origin, callback) => {
+      void isOriginAllowed({
+        origin,
+        twentyConfigService,
+        workspaceDomainsService,
+      })
+        .then((allowed) =>
+          callback(
+            allowed ? null : new Error('Origin not allowed by CORS'),
+            allowed,
+          ),
+        )
+        .catch((error) => callback(error, false));
+    },
+  });
 
   app.use(session(getSessionStorageOptions(twentyConfigService)));
 
@@ -86,7 +107,9 @@ const bootstrap = async () => {
   // Use our logger
   app.useLogger(logger);
 
-  app.useGlobalFilters(new UnhandledExceptionFilter());
+  app.useGlobalFilters(
+    new UnhandledExceptionFilter(twentyConfigService, workspaceDomainsService),
+  );
 
   app.useBodyParser('json', { limit: settings.storage.maxFileSize });
   app.useBodyParser('urlencoded', {

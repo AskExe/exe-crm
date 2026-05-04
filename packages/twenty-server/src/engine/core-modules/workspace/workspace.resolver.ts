@@ -35,6 +35,7 @@ import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/re
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 import { ActivateWorkspaceInput } from 'src/engine/core-modules/workspace/dtos/activate-workspace-input';
 import {
   type AuthProvidersDTO,
@@ -341,7 +342,17 @@ export class WorkspaceResolver {
   isPasswordAuthEnabled(@Parent() workspace: WorkspaceEntity) {
     return (
       workspace.isPasswordAuthEnabled &&
-      this.twentyConfigService.get('AUTH_PASSWORD_ENABLED')
+      this.twentyConfigService.get('AUTH_PASSWORD_ENABLED') &&
+      !isNativePasswordAuthDisabled(this.twentyConfigService)
+    );
+  }
+
+  @ResolveField(() => Boolean)
+  isPasswordAuthBypassEnabled(@Parent() workspace: WorkspaceEntity) {
+    return (
+      workspace.isPasswordAuthBypassEnabled &&
+      this.twentyConfigService.get('AUTH_PASSWORD_ENABLED') &&
+      !isNativePasswordAuthDisabled(this.twentyConfigService)
     );
   }
 
@@ -364,7 +375,9 @@ export class WorkspaceResolver {
       const systemEnabledProviders: AuthProvidersDTO = {
         google: this.twentyConfigService.get('AUTH_GOOGLE_ENABLED'),
         magicLink: false,
-        password: this.twentyConfigService.get('AUTH_PASSWORD_ENABLED'),
+        password:
+          this.twentyConfigService.get('AUTH_PASSWORD_ENABLED') &&
+          !isNativePasswordAuthDisabled(this.twentyConfigService),
         microsoft: this.twentyConfigService.get('AUTH_MICROSOFT_ENABLED'),
         sso: [],
       };

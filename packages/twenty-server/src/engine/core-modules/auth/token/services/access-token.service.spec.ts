@@ -39,6 +39,17 @@ describe('AccessTokenService', () => {
   let coreEntityCacheService: CoreEntityCacheService;
   let workspaceCacheService: WorkspaceCacheService;
   const originalFetch = global.fetch;
+  const mockConfig = (overrides: Record<string, unknown> = {}) => {
+    (twentyConfigService.get as jest.Mock).mockImplementation((key: string) => {
+      const values: Record<string, unknown> = {
+        ACCESS_TOKEN_EXPIRES_IN: '1h',
+        GOTRUE_JWT_AUDIENCE: 'authenticated',
+        ...overrides,
+      };
+
+      return values[key];
+    });
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -142,15 +153,15 @@ describe('AccessTokenService', () => {
     workspaceDomainsService = module.get<WorkspaceDomainsService>(
       WorkspaceDomainsService,
     );
-    userWorkspaceService = module.get<UserWorkspaceService>(
-      UserWorkspaceService,
-    );
+    userWorkspaceService =
+      module.get<UserWorkspaceService>(UserWorkspaceService);
     coreEntityCacheService = module.get<CoreEntityCacheService>(
       CoreEntityCacheService,
     );
     workspaceCacheService = module.get<WorkspaceCacheService>(
       WorkspaceCacheService,
     );
+    mockConfig();
   });
 
   afterAll(() => {
@@ -176,7 +187,6 @@ describe('AccessTokenService', () => {
       const mockWorkspaceMember = { id: randomUUID() };
       const mockToken = 'mock-token';
 
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
       jest
         .spyOn(userRepository, 'findOne')
         .mockResolvedValue(mockUser as UserEntity);
@@ -227,7 +237,6 @@ describe('AccessTokenService', () => {
       const mockWorkspaceMember = { id: randomUUID() };
       const mockToken = 'mock-token';
 
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
       jest
         .spyOn(userRepository, 'findOne')
         .mockResolvedValue(mockUser as UserEntity);
@@ -272,7 +281,6 @@ describe('AccessTokenService', () => {
     });
 
     it('should throw an error if user is not found', async () => {
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       await expect(
@@ -282,6 +290,25 @@ describe('AccessTokenService', () => {
           authProvider: AuthProviderEnum.Password,
         }),
       ).rejects.toThrow(AuthException);
+    });
+
+    it('rejects native password access tokens when GOTRUE_URL is configured', async () => {
+      mockConfig({
+        GOTRUE_URL: 'http://gotrue:9999',
+      });
+      const findOneSpy = jest.spyOn(userRepository, 'findOne');
+
+      await expect(
+        service.generateAccessToken({
+          userId: randomUUID(),
+          workspaceId: randomUUID(),
+          authProvider: AuthProviderEnum.Password,
+        }),
+      ).rejects.toThrow(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+      );
+
+      expect(findOneSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -357,7 +384,9 @@ describe('AccessTokenService', () => {
         privateKey,
         {
           algorithm: 'RS256',
+          audience: 'authenticated',
           expiresIn: '1h',
+          issuer: 'http://gotrue:9999/auth/v1',
           keyid: 'gtr-key-1',
         },
       );
@@ -378,41 +407,40 @@ describe('AccessTokenService', () => {
       jest
         .spyOn(jwtWrapperService, 'verifyJwtToken')
         .mockRejectedValue(new Error('Token invalid'));
-      jest.spyOn(twentyConfigService, 'get').mockImplementation((key) => {
-        switch (key) {
-          case 'GOTRUE_URL':
-            return 'http://gotrue:9999' as any;
-          case 'FRONTEND_URL':
-            return 'https://crm.example.com' as any;
-          default:
-            return undefined as any;
-        }
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL: 'http://gotrue:9999',
       });
       jest
-        .spyOn(workspaceDomainsService, 'getWorkspaceByOriginOrDefaultWorkspace')
+        .spyOn(
+          workspaceDomainsService,
+          'getWorkspaceByOriginOrDefaultWorkspace',
+        )
         .mockResolvedValue(workspace);
       jest
         .spyOn(userRepository, 'create')
         .mockImplementation((entity) => entity as UserEntity);
-      jest.spyOn(userRepository, 'findOne').mockImplementation(async (input) => {
-        if (
-          input?.where &&
-          'id' in input.where &&
-          input.where.id === gotrueUserId
-        ) {
-          return storedUser;
-        }
+      jest
+        .spyOn(userRepository, 'findOne')
+        .mockImplementation(async (input) => {
+          if (
+            input?.where &&
+            'id' in input.where &&
+            input.where.id === gotrueUserId
+          ) {
+            return storedUser;
+          }
 
-        if (
-          input?.where &&
-          'email' in input.where &&
-          input.where.email === email
-        ) {
-          return storedUser;
-        }
+          if (
+            input?.where &&
+            'email' in input.where &&
+            input.where.email === email
+          ) {
+            return storedUser;
+          }
 
-        return null;
-      });
+          return null;
+        });
       jest.spyOn(userRepository, 'save').mockImplementation(async (entity) => {
         storedUser = {
           firstName: 'Go',
@@ -443,54 +471,51 @@ describe('AccessTokenService', () => {
           return null;
         });
       jest
-        .spyOn(
-          userWorkspaceService,
-          'addUserToWorkspaceIfUserNotInWorkspace',
-        )
+        .spyOn(userWorkspaceService, 'addUserToWorkspaceIfUserNotInWorkspace')
         .mockImplementation(async () => {
           hasMembership = true;
         });
-      jest
-        .spyOn(globalWorkspaceOrmManager, 'getRepository')
-        .mockResolvedValue({
-          findOne: jest.fn().mockImplementation(async () => {
-            if (!hasMembership || !storedUser) {
-              return null;
-            }
+      jest.spyOn(globalWorkspaceOrmManager, 'getRepository').mockResolvedValue({
+        findOne: jest.fn().mockImplementation(async () => {
+          if (!hasMembership || !storedUser) {
+            return null;
+          }
 
-            return {
-              id: workspaceMemberId,
-              userId: storedUser.id,
-            };
-          }),
-        } as any);
+          return {
+            id: workspaceMemberId,
+            userId: storedUser.id,
+          };
+        }),
+      } as any);
       jest
         .spyOn(coreEntityCacheService, 'invalidateAndRecompute')
         .mockResolvedValue(undefined);
-      jest.spyOn(coreEntityCacheService, 'get').mockImplementation(async (key) => {
-        if (key === 'user') {
-          return {
-            id: storedUser?.id ?? gotrueUserId,
-            email,
-          } as any;
-        }
+      jest
+        .spyOn(coreEntityCacheService, 'get')
+        .mockImplementation(async (key) => {
+          if (key === 'user') {
+            return {
+              id: storedUser?.id ?? gotrueUserId,
+              email,
+            } as any;
+          }
 
-        if (key === 'userWorkspaceEntity') {
-          return {
-            id: userWorkspaceId,
-            userId: storedUser?.id ?? gotrueUserId,
-            workspaceId,
-          } as any;
-        }
+          if (key === 'userWorkspaceEntity') {
+            return {
+              id: userWorkspaceId,
+              userId: storedUser?.id ?? gotrueUserId,
+              workspaceId,
+            } as any;
+          }
 
-        if (key === 'workspaceEntity') {
-          return {
-            id: workspaceId,
-          } as any;
-        }
+          if (key === 'workspaceEntity') {
+            return {
+              id: workspaceId,
+            } as any;
+          }
 
-        return null;
-      });
+          return null;
+        });
       jest
         .spyOn(workspaceCacheService, 'invalidateAndRecompute')
         .mockResolvedValue(undefined);
@@ -517,6 +542,110 @@ describe('AccessTokenService', () => {
         workspaceId,
         ['flatWorkspaceMemberMaps'],
       );
+    });
+
+    it('rejects GoTrue JWTs with an unexpected audience', async () => {
+      const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+      });
+      const publicJwk = publicKey.export({ format: 'jwk' }) as JsonWebKey;
+      const token = jwt.sign(
+        {
+          sub: randomUUID(),
+          email: 'gotrue@example.com',
+        },
+        privateKey,
+        {
+          algorithm: 'RS256',
+          audience: 'wrong-audience',
+          expiresIn: '1h',
+          issuer: 'http://gotrue:9999/auth/v1',
+          keyid: 'gtr-key-1',
+        },
+      );
+
+      jest
+        .spyOn(jwtWrapperService, 'extractJwtFromRequest')
+        .mockReturnValue(() => token);
+      jest
+        .spyOn(jwtWrapperService, 'verifyJwtToken')
+        .mockRejectedValue(new Error('Token invalid'));
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          keys: [{ ...publicJwk, alg: 'RS256', kid: 'gtr-key-1', use: 'sig' }],
+        }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL: 'http://gotrue:9999',
+      });
+
+      await expect(
+        service.validateTokenByRequest({
+          headers: {
+            authorization: `Bearer ${token}`,
+            origin: 'https://crm.example.com',
+          },
+          protocol: 'https',
+        } as Request),
+      ).rejects.toThrow('Token invalid');
+
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects GoTrue JWTs with an unexpected issuer', async () => {
+      const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+      });
+      const publicJwk = publicKey.export({ format: 'jwk' }) as JsonWebKey;
+      const token = jwt.sign(
+        {
+          sub: randomUUID(),
+          email: 'gotrue@example.com',
+        },
+        privateKey,
+        {
+          algorithm: 'RS256',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: 'https://attacker.example.com',
+          keyid: 'gtr-key-1',
+        },
+      );
+
+      jest
+        .spyOn(jwtWrapperService, 'extractJwtFromRequest')
+        .mockReturnValue(() => token);
+      jest
+        .spyOn(jwtWrapperService, 'verifyJwtToken')
+        .mockRejectedValue(new Error('Token invalid'));
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          keys: [{ ...publicJwk, alg: 'RS256', kid: 'gtr-key-1', use: 'sig' }],
+        }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL: 'http://gotrue:9999',
+      });
+
+      await expect(
+        service.validateTokenByRequest({
+          headers: {
+            authorization: `Bearer ${token}`,
+            origin: 'https://crm.example.com',
+          },
+          protocol: 'https',
+        } as Request),
+      ).rejects.toThrow('Token invalid');
+
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
     });
   });
 });

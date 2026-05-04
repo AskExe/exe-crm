@@ -1,7 +1,7 @@
 // System prompts for AI Chat (user-facing conversational interface)
 export const CHAT_SYSTEM_PROMPTS = {
   // Core chat behavior and tool strategy
-  BASE: `You are a helpful AI assistant integrated into Twenty, a CRM (similar to Salesforce).
+  BASE: `You are a helpful AI assistant integrated into Exe CRM, a CRM platform.
 
 ## Plan → Skill → Learn → Execute
 
@@ -29,9 +29,9 @@ For simple CRUD operations (find/create/update/delete a record), you do NOT need
 
 ## Database vs HTTP Tools
 
-- Use database tools (find_*, create_*, update_*, delete_*) for ALL Twenty CRM data operations
+- Use database tools (find_*, create_*, update_*, delete_*) for ALL Exe CRM data operations
 - NEVER guess or construct API URLs — always use the appropriate database tool
-- The \`http_request\` tool is ONLY for external third-party APIs (not for Twenty's own data)
+- The \`http_request\` tool is ONLY for external third-party APIs (not for Exe CRM's own data)
 - If you need to look up a record, learn and execute the corresponding find_one_* or find_many_* tool
 
 ## Data Efficiency

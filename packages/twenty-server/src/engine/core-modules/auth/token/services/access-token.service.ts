@@ -36,6 +36,7 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 import { WorkspaceNotFoundDefaultError } from 'src/engine/core-modules/workspace/workspace.exception';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { CoreEntityCacheService } from 'src/engine/core-entity-cache/services/core-entity-cache.service';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
@@ -69,13 +70,11 @@ type GoTrueJwk = {
 export class AccessTokenService {
   private static readonly GOTRUE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
 
-  private gotrueJwksCache:
-    | {
-        url: string;
-        fetchedAt: number;
-        keys: GoTrueJwk[];
-      }
-    | null = null;
+  private gotrueJwksCache: {
+    url: string;
+    fetchedAt: number;
+    keys: GoTrueJwk[];
+  } | null = null;
 
   constructor(
     private readonly jwtWrapperService: JwtWrapperService,
@@ -105,6 +104,16 @@ export class AccessTokenService {
     AccessTokenJwtPayload,
     'type' | 'workspaceMemberId' | 'userWorkspaceId' | 'sub'
   >): Promise<AuthToken> {
+    if (
+      authProvider === AuthProviderEnum.Password &&
+      isNativePasswordAuthDisabled(this.twentyConfigService)
+    ) {
+      throw new AuthException(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
     const expiresIn = this.twentyConfigService.get('ACCESS_TOKEN_EXPIRES_IN');
 
     const expiresAt = addMilliseconds(new Date().getTime(), ms(expiresIn));
@@ -290,7 +299,10 @@ export class AccessTokenService {
     const [cachedUser, cachedUserWorkspace, cachedWorkspace] =
       await Promise.all([
         this.coreEntityCacheService.get('user', user.id),
-        this.coreEntityCacheService.get('userWorkspaceEntity', userWorkspace.id),
+        this.coreEntityCacheService.get(
+          'userWorkspaceEntity',
+          userWorkspace.id,
+        ),
         this.coreEntityCacheService.get('workspaceEntity', workspace.id),
       ]);
 
@@ -333,12 +345,10 @@ export class AccessTokenService {
     const decoded = jwt.decode(token, {
       complete: true,
       json: true,
-    }) as
-      | {
-          header?: jwt.JwtHeader;
-          payload?: string | jwt.JwtPayload | null;
-        }
-      | null;
+    }) as {
+      header?: jwt.JwtHeader;
+      payload?: string | jwt.JwtPayload | null;
+    } | null;
 
     if (!decoded?.header?.alg || !decoded.payload) {
       return null;
@@ -358,6 +368,10 @@ export class AccessTokenService {
 
     const verified = jwt.verify(token, this.getGoTrueVerificationKey(jwk), {
       algorithms: [algorithm],
+      audience: this.getGoTrueAudience(),
+      issuer: this.getGoTrueIssuers(gotrueUrl),
+      ignoreExpiration: false,
+      ignoreNotBefore: false,
     });
 
     if (typeof verified === 'string') {
@@ -460,6 +474,27 @@ export class AccessTokenService {
       'ES384',
       'ES512',
     ].includes(algorithm);
+  }
+
+  private getGoTrueAudience() {
+    return this.twentyConfigService.get('GOTRUE_JWT_AUDIENCE');
+  }
+
+  private getGoTrueIssuers(gotrueUrl: string) {
+    const configuredIssuer = this.twentyConfigService.get('GOTRUE_JWT_ISSUER');
+
+    if (configuredIssuer) {
+      return [configuredIssuer];
+    }
+
+    const normalizedGoTrueUrl = new URL(gotrueUrl)
+      .toString()
+      .replace(/\/$/, '');
+    const authV1Issuer = new URL('/auth/v1', gotrueUrl)
+      .toString()
+      .replace(/\/$/, '');
+
+    return [...new Set([normalizedGoTrueUrl, authV1Issuer])];
   }
 
   private getGoTrueEmail(claims: GoTrueJwtPayload): string | null {
@@ -648,7 +683,8 @@ export class AccessTokenService {
   } {
     const firstName =
       claims.user_metadata?.first_name ?? claims.given_name ?? '';
-    const lastName = claims.user_metadata?.last_name ?? claims.family_name ?? '';
+    const lastName =
+      claims.user_metadata?.last_name ?? claims.family_name ?? '';
     const fullName =
       claims.user_metadata?.full_name ??
       claims.user_metadata?.name ??

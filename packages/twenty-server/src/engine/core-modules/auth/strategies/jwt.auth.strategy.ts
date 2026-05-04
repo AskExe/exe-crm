@@ -28,7 +28,10 @@ import {
 import { type FlatUserWorkspace } from 'src/engine/core-modules/user-workspace/types/flat-user-workspace.type';
 import { CoreEntityCacheService } from 'src/engine/core-entity-cache/services/core-entity-cache.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 import { PermissionsService } from 'src/engine/metadata-modules/permissions/permissions.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
@@ -43,6 +46,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly permissionsService: PermissionsService,
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly coreEntityCacheService: CoreEntityCacheService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {
     const jwtFromRequestFunction = jwtWrapperService.extractJwtFromRequest();
     // @ts-expect-error legacy noImplicitAny
@@ -120,6 +124,16 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
   private async validateAccessToken(
     payload: AccessTokenJwtPayload,
   ): Promise<AuthContext> {
+    if (
+      payload.authProvider === AuthProviderEnum.Password &&
+      isNativePasswordAuthDisabled(this.twentyConfigService)
+    ) {
+      throw new AuthException(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
     let user: AuthContextUser | null = null;
     let context: AuthContext = {};
 
@@ -347,6 +361,16 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
   private async validateWorkspaceAgnosticToken(
     payload: WorkspaceAgnosticTokenJwtPayload,
   ): Promise<AuthContext> {
+    if (
+      payload.authProvider === AuthProviderEnum.Password &&
+      isNativePasswordAuthDisabled(this.twentyConfigService)
+    ) {
+      throw new AuthException(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
     const user = await this.coreEntityCacheService.get('user', payload.sub);
 
     assertIsDefinedOrThrow(
