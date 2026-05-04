@@ -57,7 +57,7 @@ const StyledContainer = styled.div<{
   isExpanded?: boolean;
 }>`
   position: relative;
-  background: ${themeCssVariables.background.secondary};
+  background: ${themeCssVariables.background.quaternary};
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -68,7 +68,7 @@ const StyledContainer = styled.div<{
       ? isMobile
         ? `${themeCssVariables.spacing[3]} 0 0 ${themeCssVariables.spacing[8]}`
         : `${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[4]} 0`
-      : `${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[4]} ${themeCssVariables.spacing[2]}`};
+      : `${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[14]} ${themeCssVariables.spacing[2]}`};
   width: ${({ isExpanded }) =>
     isExpanded ? `var(${NAVIGATION_DRAWER_WIDTH_VAR})` : '100%'};
   @media (max-width: ${MOBILE_VIEWPORT}px) {
@@ -137,8 +137,10 @@ export const NavigationDrawer = ({
             <NavigationDrawerHeader showCollapseButton />
           )}
           {children}
-          {!isSettingsDrawer && !isMobile && (
-            <NavigationDrawerThemeToggle isExpanded={isNavigationDrawerExpanded} />
+          {!isSettingsDrawer && (
+            <NavigationDrawerThemeToggle
+              isExpanded={isNavigationDrawerExpanded}
+            />
           )}
         </StyledContainer>
 
