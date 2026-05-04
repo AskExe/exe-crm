@@ -1,9 +1,10 @@
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  background: var(--t-background-primary);
+  color: var(--t-font-color-primary);
+  font-family: var(--t-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--t-background-tertiary);
 }
 
 html {
@@ -11,6 +12,7 @@ html {
 }
 
 button {
+  font-family: inherit;
   font-size: 13px;
 }
 

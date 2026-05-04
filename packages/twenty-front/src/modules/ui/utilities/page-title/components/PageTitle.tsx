@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { formatDocumentTitle } from '@/ui/utilities/page-title/utils/formatDocumentTitle';
 
 type PageTitleProps = {
   title: string;
@@ -7,7 +8,7 @@ type PageTitleProps = {
 export const PageTitle = (props: PageTitleProps) => {
   return (
     <Helmet>
-      <title>{props.title}</title>
+      <title>{formatDocumentTitle(props.title)}</title>
     </Helmet>
   );
 };

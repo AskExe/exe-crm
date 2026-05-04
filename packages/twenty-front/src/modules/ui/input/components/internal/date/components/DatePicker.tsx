@@ -41,7 +41,7 @@ const StyledContainer = styled.div<{ calendarDisabled?: boolean }>`
   & .react-datepicker {
     border-color: ${themeCssVariables.border.color.light};
     background: transparent;
-    font-family: 'Inter';
+    font-family: ${themeCssVariables.font.family};
     font-size: ${themeCssVariables.font.size.md};
     border: none;
     display: block;

@@ -37,10 +37,14 @@ const StyledAppsContainer = styled.div`
 
 const StyledText = styled.div`
   color: ${themeCssVariables.font.color.primary};
-  font-family: 'Inter';
-  font-size: ${themeCssVariables.font.size.lg};
-  font-weight: ${themeCssVariables.font.weight.semiBold};
+  font-family: 'Epilogue', ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.xl};
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: ${themeCssVariables.text.lineHeight.md};
   padding: ${themeCssVariables.spacing[6]} 0px;
+  text-align: center;
+  text-transform: uppercase;
 `;
 
 const StyledCardWrapper = styled.div`

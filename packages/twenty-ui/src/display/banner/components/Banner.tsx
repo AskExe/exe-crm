@@ -15,7 +15,7 @@ const StyledBanner = styled.div<{ variant?: BannerVariant }>`
   padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   width: 100%;
   color: ${themeCssVariables.font.color.inverted};
-  font-family: Inter;
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.md};
   font-style: normal;
   font-weight: ${themeCssVariables.font.weight.medium};

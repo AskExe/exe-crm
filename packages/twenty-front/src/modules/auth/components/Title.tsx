@@ -10,12 +10,17 @@ type TitleProps = React.PropsWithChildren & {
 
 const StyledTitle = styled.div<Pick<TitleProps, 'noMarginTop'>>`
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.xl};
-  font-weight: ${themeCssVariables.font.weight.semiBold};
+  font-family: 'Epilogue', ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.xxl};
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: ${themeCssVariables.text.lineHeight.md};
   margin-bottom: ${themeCssVariables.spacing[4]};
   margin-top: ${({ noMarginTop }) =>
     !noMarginTop ? themeCssVariables.spacing[4] : '0'};
+  max-width: 22ch;
   text-align: center;
+  text-transform: uppercase;
 `;
 
 export const Title = ({
