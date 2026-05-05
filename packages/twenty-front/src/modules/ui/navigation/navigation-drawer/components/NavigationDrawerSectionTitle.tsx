@@ -21,11 +21,11 @@ const StyledTitle = styled.div`
   padding-top: ${themeCssVariables.spacing[1]};
 
   &:hover {
-    background-color: rgba(240, 237, 232, 0.08);
+    background-color: ${themeCssVariables.background.transparent.light};
     cursor: pointer;
 
     .section-title-label {
-      color: #f0ede8;
+      color: ${themeCssVariables.font.color.primary};
     }
   }
 `;

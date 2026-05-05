@@ -23,29 +23,10 @@ import {
 } from 'twenty-ui/theme-constants';
 
 const StyledTopBarContainer = styled.div<{ isMobile: boolean }>`
-  --t-background-primary: #1a1832;
-  --t-background-secondary: #15142a;
-  --t-background-tertiary: #221f3e;
-  --t-background-quaternary: #221f3e;
-  --t-background-transparent-light: rgba(240, 237, 232, 0.08);
-  --t-background-transparent-lighter: rgba(240, 237, 232, 0.04);
-  --t-border-color-medium: rgba(240, 237, 232, 0.12);
-  --t-border-color-light: rgba(240, 237, 232, 0.08);
-  --t-font-color-primary: #f0ede8;
-  --t-font-color-secondary: #d3d0da;
-  --t-font-color-tertiary: #a09caf;
-  --t-font-color-light: #6f6a80;
-
   align-items: center;
-  background:
-    radial-gradient(
-      520px 160px at 12% 0%,
-      rgba(245, 215, 110, 0.14),
-      rgba(15, 14, 26, 0) 62%
-    ),
-    #0f0e1a;
-  border-bottom: 1px solid rgba(240, 237, 232, 0.08);
-  color: #f0ede8;
+  background: ${themeCssVariables.background.primary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
   flex-direction: row;
   font-size: ${themeCssVariables.font.size.lg};

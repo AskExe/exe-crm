@@ -84,16 +84,16 @@ type StyledItemProps = Pick<
 const StyledItem = styled.button<StyledItemProps>`
   align-items: center;
   background: ${({ active }) =>
-    active ? 'rgba(245, 215, 110, 0.14)' : 'transparent'};
+    active ? themeCssVariables.accent.quaternary : 'transparent'};
   border: ${({ isSelectedInEditMode }) =>
     isSelectedInEditMode
-      ? '1px solid rgba(245, 215, 110, 0.46)'
+      ? `1px solid ${themeCssVariables.accent.primary}`
       : '1px solid transparent'};
   border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
   color: ${({ active, isSoon, variant }) => {
     if (active === true) {
-      return '#f5d76e';
+      return themeCssVariables.accent.primary;
     }
     if (isSoon) {
       return themeCssVariables.font.color.light;
@@ -128,12 +128,12 @@ const StyledItem = styled.button<StyledItemProps>`
       : `calc(100% - ${themeCssVariables.spacing['1.5']} + ${themeCssVariables.spacing[1]} + ${hasRightOptions ? themeCssVariables.spacing['0.5'] : themeCssVariables.spacing[1]})`};
 
   &:hover {
-    background: rgba(240, 237, 232, 0.08);
-    color: #f0ede8;
+    background: ${themeCssVariables.background.transparent.light};
+    color: ${themeCssVariables.font.color.primary};
   }
 
   &:focus-visible {
-    border-color: rgba(245, 215, 110, 0.56);
+    border-color: ${themeCssVariables.accent.primary};
     outline: none;
   }
 
