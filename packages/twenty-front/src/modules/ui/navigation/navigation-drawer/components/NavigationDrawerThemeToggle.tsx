@@ -17,11 +17,11 @@ const StyledContainer = styled.div`
   right: ${themeCssVariables.spacing[2]};
   justify-content: flex-start;
   align-items: center;
-  border: 1px solid ${themeCssVariables.border.color.medium};
+  border: 1px solid rgba(240, 237, 232, 0.12);
   border-radius: ${themeCssVariables.border.radius.pill};
   z-index: 8;
-  background: ${themeCssVariables.background.quaternary};
-  box-shadow: ${themeCssVariables.boxShadow.light};
+  background: rgba(26, 24, 50, 0.92);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
   padding: ${themeCssVariables.spacing['0.5']};
   pointer-events: auto;
 `;
@@ -35,17 +35,12 @@ const StyledToggleButtonGroup = styled.div`
 const StyledThemeButton = styled.button<{ isActive: boolean }>`
   align-items: center;
   background: ${({ isActive }) =>
-    isActive
-      ? themeCssVariables.background.primary
-      : themeCssVariables.background.transparent.lighter};
+    isActive ? '#f5d76e' : 'rgba(240, 237, 232, 0.04)'};
   border: 0;
   border-radius: ${themeCssVariables.border.radius.pill};
   box-shadow: ${({ isActive }) =>
-    isActive ? themeCssVariables.boxShadow.light : 'none'};
-  color: ${({ isActive }) =>
-    isActive
-      ? themeCssVariables.font.color.primary
-      : themeCssVariables.font.color.secondary};
+    isActive ? '0 4px 12px rgba(245, 215, 110, 0.16)' : 'none'};
+  color: ${({ isActive }) => (isActive ? '#0f0e1a' : '#d3d0da')};
   cursor: pointer;
   display: flex;
   flex: 1 1 0;
@@ -59,7 +54,9 @@ const StyledThemeButton = styled.button<{ isActive: boolean }>`
   transition: ${themeCssVariables.clickableElementBackgroundTransition};
 
   &:hover {
-    background: ${themeCssVariables.background.primary};
+    background: ${({ isActive }) =>
+      isActive ? '#fadf85' : 'rgba(240, 237, 232, 0.08)'};
+    color: ${({ isActive }) => (isActive ? '#0f0e1a' : '#f0ede8')};
   }
 `;
 

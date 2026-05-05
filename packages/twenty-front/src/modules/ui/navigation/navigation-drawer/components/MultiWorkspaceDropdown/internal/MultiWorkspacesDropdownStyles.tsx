@@ -8,7 +8,7 @@ export const StyledContainer = styled.div<{
   align-items: center;
   border: 1px solid transparent;
   border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.primary};
+  color: #f0ede8;
   cursor: pointer;
   display: flex;
   gap: ${({ isNavigationDrawerExpanded }) =>
@@ -17,8 +17,8 @@ export const StyledContainer = styled.div<{
   min-width: 0;
   padding: calc(${themeCssVariables.spacing[1]} - 1px);
   &:hover {
-    background-color: ${themeCssVariables.background.transparent.lighter};
-    border: 1px solid ${themeCssVariables.border.color.medium};
+    background-color: rgba(240, 237, 232, 0.08);
+    border: 1px solid rgba(240, 237, 232, 0.12);
   }
 `;
 
@@ -38,9 +38,7 @@ export const StyledLabel = styled.div`
 const StyledIconChevronDownContainer = styled.div<{ disabled?: boolean }>`
   align-items: center;
   color: ${({ disabled }) =>
-    disabled
-      ? themeCssVariables.font.color.extraLight
-      : themeCssVariables.font.color.tertiary};
+    disabled ? 'rgba(240, 237, 232, 0.28)' : 'rgba(240, 237, 232, 0.64)'};
   display: flex;
 `;
 
