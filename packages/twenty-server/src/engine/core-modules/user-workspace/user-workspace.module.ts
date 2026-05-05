@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { NestjsQueryGraphQLModule } from '@ptc-org/nestjs-query-graphql';
 import { NestjsQueryTypeOrmModule } from '@ptc-org/nestjs-query-typeorm';
@@ -48,7 +48,7 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
         TwentyORMModule,
         UserRoleModule,
         FileModule,
-        TokenModule,
+        forwardRef(() => TokenModule),
         PermissionsModule,
         OnboardingModule,
         EnterpriseModule,
