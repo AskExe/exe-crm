@@ -59,7 +59,7 @@ export class OAuthPropagatorController {
 
     if (!isValidDomain) {
       throw new ForbiddenException(
-        `${redirectUrl.hostname} is not a valid Twenty domain`,
+        `${redirectUrl.hostname} is not a valid Exe CRM domain`,
       );
     }
 

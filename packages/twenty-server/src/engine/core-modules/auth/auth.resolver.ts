@@ -249,6 +249,10 @@ export class AuthResolver {
     @Args('origin') origin: string,
     @AuthProvider() authProvider: AuthProviderEnum,
   ) {
+    if (authProvider === AuthProviderEnum.Password) {
+      this.authService.assertNativePasswordAuthEnabledOrThrow();
+    }
+
     const appToken =
       await this.emailVerificationTokenService.validateEmailVerificationTokenOrThrow(
         getAuthTokenFromEmailVerificationTokenInput,
@@ -293,6 +297,10 @@ export class AuthResolver {
     getAuthTokenFromEmailVerificationTokenInput: GetAuthTokenFromEmailVerificationTokenInput,
     @AuthProvider() authProvider: AuthProviderEnum,
   ) {
+    if (authProvider === AuthProviderEnum.Password) {
+      this.authService.assertNativePasswordAuthEnabledOrThrow();
+    }
+
     const appToken =
       await this.emailVerificationTokenService.validateEmailVerificationTokenOrThrow(
         getAuthTokenFromEmailVerificationTokenInput,
@@ -329,12 +337,12 @@ export class AuthResolver {
           await this.workspaceAgnosticTokenService.generateWorkspaceAgnosticToken(
             {
               userId: user.id,
-              authProvider: AuthProviderEnum.Password,
+              authProvider,
             },
           ),
         refreshToken: await this.refreshTokenService.generateRefreshToken({
           userId: user.id,
-          authProvider: AuthProviderEnum.Password,
+          authProvider,
           targetedTokenType: JwtTokenTypeEnum.WORKSPACE_AGNOSTIC,
         }),
       },
@@ -384,6 +392,8 @@ export class AuthResolver {
   async signUp(
     @Args() signUpInput: UserCredentialsInput,
   ): Promise<AvailableWorkspacesAndAccessTokensDTO> {
+    this.authService.assertNativePasswordAuthEnabledOrThrow();
+
     const user = await this.signInUpService.signUpWithoutWorkspace(
       {
         email: signUpInput.email,

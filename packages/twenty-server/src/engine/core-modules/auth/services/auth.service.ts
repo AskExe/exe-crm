@@ -58,6 +58,7 @@ import {
   type SignInUpBaseParams,
   type SignInUpNewUserPayload,
 } from 'src/engine/core-modules/auth/types/signInUp.type';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 import { validateRedirectUri } from 'src/engine/core-modules/auth/utils/validate-redirect-uri.util';
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -109,6 +110,20 @@ export class AuthService {
     private readonly createSSOConnectedAccountService: CreateSSOConnectedAccountService,
   ) {}
 
+  assertNativePasswordAuthEnabledOrThrow() {
+    if (!isNativePasswordAuthDisabled(this.twentyConfigService)) {
+      return;
+    }
+
+    throw new AuthException(
+      'Native password authentication is disabled when GOTRUE_URL is configured',
+      AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      {
+        userFriendlyMessage: msg`Password authentication is unavailable. Please sign in with your identity provider.`,
+      },
+    );
+  }
+
   private async checkAccessAndUseInvitationOrThrow(
     workspace: WorkspaceEntity,
     user: UserEntity,
@@ -155,6 +170,8 @@ export class AuthService {
     input: UserCredentialsInput,
     targetWorkspace?: WorkspaceEntity,
   ) {
+    this.assertNativePasswordAuthEnabledOrThrow();
+
     const user = await this.userRepository.findOne({
       where: {
         email: input.email,
@@ -263,6 +280,7 @@ export class AuthService {
     workspace: WorkspaceEntity | undefined | null,
   ) {
     if (authParams.provider === AuthProviderEnum.Password) {
+      this.assertNativePasswordAuthEnabledOrThrow();
       await this.validatePassword(userData, authParams);
     }
 
@@ -376,6 +394,10 @@ export class AuthService {
     workspaceId: string,
     authProvider: AuthProviderEnum,
   ): Promise<AuthTokens> {
+    if (authProvider === AuthProviderEnum.Password) {
+      this.assertNativePasswordAuthEnabledOrThrow();
+    }
+
     if (!email) {
       throw new AuthException(
         'Email is required',
@@ -643,6 +665,8 @@ export class AuthService {
     userId: string,
     newPassword: string,
   ): Promise<UpdatePasswordDTO> {
+    this.assertNativePasswordAuthEnabledOrThrow();
+
     if (!userId) {
       throw new AuthException(
         'User ID is required',

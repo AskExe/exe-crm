@@ -40,6 +40,18 @@ describe('ResetPasswordService', () => {
   let emailService: EmailService;
   let twentyConfigService: TwentyConfigService;
   let workspaceDomainsService: WorkspaceDomainsService;
+  const mockConfig = (overrides: Record<string, unknown> = {}) => {
+    (twentyConfigService.get as jest.Mock).mockImplementation((key: string) => {
+      const values: Record<string, unknown> = {
+        EMAIL_FROM_ADDRESS: 'no-reply@example.com',
+        EMAIL_FROM_NAME: 'Exe CRM',
+        PASSWORD_RESET_TOKEN_EXPIRES_IN: '1h',
+        ...overrides,
+      };
+
+      return values[key];
+    });
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -102,6 +114,7 @@ describe('ResetPasswordService', () => {
     workspaceDomainsService = module.get<WorkspaceDomainsService>(
       WorkspaceDomainsService,
     );
+    mockConfig();
   });
 
   it('should be defined', () => {
@@ -119,8 +132,6 @@ describe('ResetPasswordService', () => {
       jest
         .spyOn(appTokenRepository, 'save')
         .mockResolvedValue({} as AppTokenEntity);
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
-
       const result = await service.generatePasswordResetToken(
         'test@example.com',
         'workspace-id',
@@ -151,8 +162,6 @@ describe('ResetPasswordService', () => {
       jest
         .spyOn(appTokenRepository, 'save')
         .mockResolvedValue({} as AppTokenEntity);
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
-
       const result =
         await service.generatePasswordResetToken('test@example.com');
 
@@ -171,8 +180,6 @@ describe('ResetPasswordService', () => {
         .spyOn(userService, 'findUserByEmailOrThrow')
         .mockResolvedValue(mockUser as UserEntity);
       jest.spyOn(workspaceRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
-
       await expect(
         service.generatePasswordResetToken('test@example.com'),
       ).rejects.toThrow(AuthException);
@@ -208,11 +215,23 @@ describe('ResetPasswordService', () => {
       jest
         .spyOn(appTokenRepository, 'findOne')
         .mockResolvedValue(mockExistingToken as AppTokenEntity);
-      jest.spyOn(twentyConfigService, 'get').mockReturnValue('1h');
-
       await expect(
         service.generatePasswordResetToken('test@example.com', 'workspace-id'),
       ).rejects.toThrow(AuthException);
+    });
+
+    it('rejects password reset token generation when GOTRUE_URL is configured', async () => {
+      mockConfig({
+        GOTRUE_URL: 'http://gotrue:9999',
+      });
+
+      await expect(
+        service.generatePasswordResetToken('test@example.com', 'workspace-id'),
+      ).rejects.toThrow(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+      );
+
+      expect(userService.findUserByEmailOrThrow).not.toHaveBeenCalled();
     });
   });
 
@@ -231,9 +250,10 @@ describe('ResetPasswordService', () => {
       jest
         .spyOn(workspaceRepository, 'findOneBy')
         .mockResolvedValue({ id: 'workspace-id' } as WorkspaceEntity);
-      jest
-        .spyOn(twentyConfigService, 'get')
-        .mockReturnValue('http://localhost:3000');
+      mockConfig({
+        EMAIL_FROM_ADDRESS: 'no-reply@example.com',
+        EMAIL_FROM_NAME: 'Exe CRM',
+      });
       jest
         .spyOn(workspaceDomainsService, 'buildWorkspaceURL')
         .mockReturnValue(
@@ -306,6 +326,21 @@ describe('ResetPasswordService', () => {
       await expect(
         service.validatePasswordResetToken('invalidToken'),
       ).rejects.toThrow(AuthException);
+    });
+
+    it('rejects password reset token validation when GOTRUE_URL is configured', async () => {
+      mockConfig({
+        GOTRUE_URL: 'http://gotrue:9999',
+      });
+      const findOneSpy = jest.spyOn(appTokenRepository, 'findOne');
+
+      await expect(
+        service.validatePasswordResetToken('invalidToken'),
+      ).rejects.toThrow(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+      );
+
+      expect(findOneSpy).not.toHaveBeenCalled();
     });
   });
 

@@ -36,6 +36,7 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceNotFoundDefaultError } from 'src/engine/core-modules/workspace/workspace.exception';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 
 @Injectable()
 export class ResetPasswordService {
@@ -51,10 +52,26 @@ export class ResetPasswordService {
     private readonly userService: UserService,
   ) {}
 
+  private assertNativePasswordAuthEnabledOrThrow() {
+    if (!isNativePasswordAuthDisabled(this.twentyConfigService)) {
+      return;
+    }
+
+    throw new AuthException(
+      'Native password authentication is disabled when GOTRUE_URL is configured',
+      AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      {
+        userFriendlyMessage: msg`Password authentication is unavailable. Please sign in with your identity provider.`,
+      },
+    );
+  }
+
   async generatePasswordResetToken(
     email: string,
     workspaceId?: string,
   ): Promise<PasswordResetToken> {
+    this.assertNativePasswordAuthEnabledOrThrow();
+
     const user = await this.userService.findUserByEmailOrThrow(
       email,
       new AuthException('User not found', AuthExceptionCode.INVALID_INPUT, {
@@ -196,6 +213,8 @@ export class ResetPasswordService {
   async validatePasswordResetToken(
     resetToken: string,
   ): Promise<ValidatePasswordResetTokenDTO> {
+    this.assertNativePasswordAuthEnabledOrThrow();
+
     const hashedResetToken = crypto
       .createHash('sha256')
       .update(resetToken)

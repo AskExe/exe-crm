@@ -120,7 +120,7 @@ export class TwoFactorAuthenticationService {
           this.generateOtpSecretEncryptionKey(userId, workspaceId),
         );
 
-      const issuer = `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;
+      const issuer = `Exe CRM${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;
       const reuseUri = authenticator.keyuri(userEmail, issuer, existingSecret);
 
       return reuseUri;
@@ -130,7 +130,7 @@ export class TwoFactorAuthenticationService {
       TOTP_DEFAULT_CONFIGURATION,
     ).initiate(
       userEmail,
-      `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,
+      `Exe CRM${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,
     );
 
     const encryptedSecret = await this.simpleSecretEncryptionUtil.encryptSecret(

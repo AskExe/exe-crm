@@ -30,6 +30,7 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { type ActivateWorkspaceInput } from 'src/engine/core-modules/workspace/dtos/activate-workspace-input';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -184,7 +185,9 @@ export class WorkspaceService extends TypeOrmQueryService<WorkspaceEntity> {
 
     const authProvidersBySystem = {
       google: this.twentyConfigService.get('AUTH_GOOGLE_ENABLED'),
-      password: this.twentyConfigService.get('AUTH_PASSWORD_ENABLED'),
+      password:
+        this.twentyConfigService.get('AUTH_PASSWORD_ENABLED') &&
+        !isNativePasswordAuthDisabled(this.twentyConfigService),
       microsoft: this.twentyConfigService.get('AUTH_MICROSOFT_ENABLED'),
     };
 

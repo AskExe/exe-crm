@@ -222,6 +222,27 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
+  it('blocks native password login when GOTRUE_URL is configured', async () => {
+    twentyConfigServiceGetMock.mockImplementation((key: string) =>
+      key === 'GOTRUE_URL' ? 'http://gotrue:9999' : false,
+    );
+
+    await expect(
+      service.validateLoginWithPassword({
+        email: 'email',
+        password: 'password',
+        captchaToken: 'captchaToken',
+      }),
+    ).rejects.toThrow(
+      new AuthException(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      ),
+    );
+
+    expect(userRepository.findOne).not.toHaveBeenCalled();
+  });
+
   it('challenge - user already member of workspace', async () => {
     const workspace = { isPasswordAuthEnabled: true } as WorkspaceEntity;
     const user = {

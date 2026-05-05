@@ -9,6 +9,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { type UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 
@@ -19,6 +20,7 @@ describe('RenewTokenService', () => {
   let appTokenRepository: Repository<AppTokenEntity>;
   let accessTokenService: AccessTokenService;
   let refreshTokenService: RefreshTokenService;
+  let twentyConfigService: TwentyConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +49,12 @@ describe('RenewTokenService', () => {
             generateRefreshToken: jest.fn(),
           },
         },
+        {
+          provide: TwentyConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -56,6 +64,9 @@ describe('RenewTokenService', () => {
     );
     accessTokenService = module.get<AccessTokenService>(AccessTokenService);
     refreshTokenService = module.get<RefreshTokenService>(RefreshTokenService);
+    twentyConfigService = module.get<TwentyConfigService>(TwentyConfigService);
+
+    (twentyConfigService.get as jest.Mock).mockReturnValue(undefined);
   });
 
   it('should be defined', () => {
@@ -188,6 +199,35 @@ describe('RenewTokenService', () => {
       await expect(service.generateTokensFromRefreshToken('')).rejects.toThrow(
         AuthException,
       );
+    });
+
+    it('rejects password refresh tokens when GOTRUE_URL is configured', async () => {
+      (twentyConfigService.get as jest.Mock).mockImplementation(
+        (key: string) =>
+          key === 'GOTRUE_URL' ? 'http://gotrue:9999' : undefined,
+      );
+
+      jest.spyOn(refreshTokenService, 'verifyRefreshToken').mockResolvedValue({
+        user: { id: 'user-id' } as UserEntity,
+        token: {
+          id: 'token-id',
+          workspaceId: 'workspace-id',
+        } as AppTokenEntity,
+        authProvider: AuthProviderEnum.Password,
+        targetedTokenType: JwtTokenTypeEnum.ACCESS,
+        isImpersonating: false,
+        impersonatorUserWorkspaceId: undefined,
+        impersonatedUserWorkspaceId: undefined,
+      });
+      jest.spyOn(appTokenRepository, 'update').mockResolvedValue({} as any);
+
+      await expect(
+        service.generateTokensFromRefreshToken('valid-refresh-token'),
+      ).rejects.toThrow(
+        'Native password authentication is disabled when GOTRUE_URL is configured',
+      );
+
+      expect(accessTokenService.generateAccessToken).not.toHaveBeenCalled();
     });
   });
 });
