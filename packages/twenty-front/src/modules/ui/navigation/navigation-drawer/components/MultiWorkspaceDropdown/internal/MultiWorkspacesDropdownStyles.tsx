@@ -17,7 +17,7 @@ export const StyledContainer = styled.div<{
   min-width: 0;
   padding: calc(${themeCssVariables.spacing[1]} - 1px);
   &:hover {
-    background-color: ${themeCssVariables.background.transparent.lighter};
+    background-color: ${themeCssVariables.background.transparent.light};
     border: 1px solid ${themeCssVariables.border.color.medium};
   }
 `;

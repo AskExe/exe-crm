@@ -25,7 +25,7 @@ const StyledTitle = styled.div`
     cursor: pointer;
 
     .section-title-label {
-      color: ${themeCssVariables.font.color.tertiary};
+      color: ${themeCssVariables.font.color.primary};
     }
   }
 `;

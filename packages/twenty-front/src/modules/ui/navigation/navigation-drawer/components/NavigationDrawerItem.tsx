@@ -84,16 +84,16 @@ type StyledItemProps = Pick<
 const StyledItem = styled.button<StyledItemProps>`
   align-items: center;
   background: ${({ active }) =>
-    active ? themeCssVariables.background.transparent.light : 'transparent'};
+    active ? themeCssVariables.accent.quaternary : 'transparent'};
   border: ${({ isSelectedInEditMode }) =>
     isSelectedInEditMode
-      ? `1px solid ${themeCssVariables.color.blue}`
+      ? `1px solid ${themeCssVariables.accent.primary}`
       : '1px solid transparent'};
   border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
   color: ${({ active, isSoon, variant }) => {
     if (active === true) {
-      return themeCssVariables.font.color.primary;
+      return themeCssVariables.accent.primary;
     }
     if (isSoon) {
       return themeCssVariables.font.color.light;
@@ -130,6 +130,11 @@ const StyledItem = styled.button<StyledItemProps>`
   &:hover {
     background: ${themeCssVariables.background.transparent.light};
     color: ${themeCssVariables.font.color.primary};
+  }
+
+  &:focus-visible {
+    border-color: ${themeCssVariables.accent.primary};
+    outline: none;
   }
 
   &:hover .keyboard-shortcuts {

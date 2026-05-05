@@ -11,11 +11,13 @@ type TopBarProps = {
 };
 
 const StyledContainer = styled.div`
+  background: ${themeCssVariables.background.primary};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
   flex-direction: column;
 
-  margin-left: ${themeCssVariables.spacing[3]};
+  margin-left: 0;
 `;
 
 const StyledTopBar = styled.div`
