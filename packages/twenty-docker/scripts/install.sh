@@ -96,6 +96,20 @@ echo "APP_SECRET=$(openssl rand -base64 32)" >> .env
 echo "" >> .env
 echo "PG_DATABASE_PASSWORD=$(openssl rand -hex 32)" >> .env
 
+if [ -n "$EXE_LICENSE_KEY" ]; then
+  license_key="$EXE_LICENSE_KEY"
+else
+  read -p "🔑 Enter your Exe CRM license key (required, purchase at https://askexe.com): " license_key
+fi
+
+if [ -z "$license_key" ]; then
+  echo "❌ EXE_LICENSE_KEY is required to start Exe CRM."
+  exit 1
+fi
+
+echo "" >> .env
+echo "EXE_LICENSE_KEY=$license_key" >> .env
+
 echo -e "\t• .env configuration completed"
 
 port=3000
@@ -109,12 +123,13 @@ if command -v nc &> /dev/null; then
     fi
     read -p "Enter a new port number: " new_port
     if [[ $(uname) == "Darwin" ]]; then
-      sed -i '' "s/$port:$port/$new_port:$port/g" docker-compose.yml
+      sed -i '' "/^CRM_HOST_PORT=/d" .env
       sed -E -i '' "s|^SERVER_URL=http://localhost:[0-9]+|SERVER_URL=http://localhost:$new_port|g" .env
     else
-      sed -i'' "s/$port:$port/$new_port:$port/g" docker-compose.yml
+      sed -i'' "/^CRM_HOST_PORT=/d" .env
       sed -E -i'' "s|^SERVER_URL=http://localhost:[0-9]+|SERVER_URL=http://localhost:$new_port|g" .env
     fi
+    echo "CRM_HOST_PORT=$new_port" >> .env
     port=$new_port
   done
 fi
@@ -132,7 +147,13 @@ else
   # Tail logs of the server until it's ready
   docker compose logs -f server &
   pid=$!
-  while [ ! $(docker inspect --format='{{.State.Health.Status}}' twenty-server-1) = "healthy" ]; do
+  server_container_id="$(docker compose ps -q server)"
+  if [ -z "$server_container_id" ]; then
+    echo "❌ Server container was not created. Run 'docker compose logs server' for details."
+    kill $pid
+    exit 1
+  fi
+  while [ "$(docker inspect --format='{{.State.Health.Status}}' "$server_container_id")" != "healthy" ]; do
     sleep 1
   done
   kill $pid

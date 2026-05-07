@@ -48,6 +48,7 @@ describe('exe-crm VPS regression audit', () => {
           ...process.env,
           APP_SECRET: process.env.APP_SECRET || '0123456789abcdef0123456789abcdef',
           EXE_LICENSE_KEY: process.env.EXE_LICENSE_KEY || 'exe_sk_test_license_key',
+          PG_DATABASE_PASSWORD: process.env.PG_DATABASE_PASSWORD || 'test_password',
           SERVER_URL: process.env.SERVER_URL || 'https://crm.example.com',
           STORAGE_S3_NAME: process.env.STORAGE_S3_NAME || 'bucket',
         },
@@ -65,8 +66,9 @@ describe('exe-crm VPS regression audit', () => {
     }
   });
 
-  it('PG_DATABASE_URL is parameterized with ${PG_DATABASE_NAME:-default} for server and worker', () => {
-    const matches = compose.match(/PG_DATABASE_URL: postgres:\/\/\$\{PG_DATABASE_USER:-postgres\}:\$\{PG_DATABASE_PASSWORD:-postgres\}@\$\{PG_DATABASE_HOST:-db\}:\$\{PG_DATABASE_PORT:-5432\}\/\$\{PG_DATABASE_NAME:-default\}/g);
+  it('PG_DATABASE_URL accepts a direct exe-db URL and falls back to parameterized local defaults', () => {
+    const matches = compose.match(/PG_DATABASE_URL: \$\{PG_DATABASE_URL:-postgres:\/\/\$\{PG_DATABASE_USER:-postgres\}:\$\{PG_DATABASE_PASSWORD:\?Set PG_DATABASE_PASSWORD\}@\$\{PG_DATABASE_HOST:-db\}:\$\{PG_DATABASE_PORT:-5432\}\/\$\{PG_DATABASE_NAME:-default\}\}/g);
+
     expect(matches?.length).toBe(2);
   });
 
