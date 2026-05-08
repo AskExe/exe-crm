@@ -125,7 +125,10 @@ const StyledIcon = styled.img`
   width: 24px;
 `;
 
-const APOLLO_ICON_URL = 'https://twenty-icons.com/apollo.io';
+const APOLLO_ICON_FALLBACK = '/icons/apollo-placeholder.svg';
+const APOLLO_ICON_URL = typeof process !== 'undefined' && process.env.ALLOW_REQUESTS_TO_TWENTY_ICONS === 'true'
+  ? 'https://twenty-icons.com/apollo.io'
+  : APOLLO_ICON_FALLBACK;
 
 const fetchOAuthApplicationVariables = async (): Promise<OAuthApplicationVariables> => {
   const backEndUrl = `${process.env.TWENTY_API_URL}/s/oauth/application-variables`;

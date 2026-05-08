@@ -2,7 +2,11 @@ import { getLogoUrlFromDomainName } from 'twenty-shared/utils';
 
 export const getLinkFaviconUrl = (
   link: string | null | undefined,
+  allowExternalIconRequests = false,
 ): string | undefined => {
+  if (!allowExternalIconRequests) {
+    return undefined;
+  }
   const trimmed = (link ?? '').trim();
   if (!trimmed) {
     return undefined;

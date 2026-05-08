@@ -2595,7 +2595,7 @@ msgstr "av {author}"
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Genom att använda Twenty godkänner du"
+msgstr "Genom att använda Exe godkänner du"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "Kontrollera din inkorg för att verifiera din nya e-postadress."
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Fel under betalningssession. Försök igen eller kontakta Twenty-teamet"
+msgstr "Fel under betalningssession. Försök igen eller kontakta Exe-teamet"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "Fel vid avbrytning av planbyte."
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Fel vid avslutning av provperioden. Vänligen kontakta Twenty-teamet."
+msgstr "Fel vid avslutning av provperioden. Vänligen kontakta Exe-teamet."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10898,7 +10898,7 @@ msgstr "Sidnamn"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "Sidan kunde inte hittas | Twenty"
+msgstr "Sidan kunde inte hittas | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11591,7 +11591,7 @@ msgstr "Läs din profil"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "Skrivskyddat — hanteras av Twenty"
+msgstr "Skrivskyddat — hanteras av Exe"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13893,7 +13893,7 @@ msgstr "Synkronisera med Outlook"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Synkronisera din e-post och kalender med Twenty. Välj dina sekretessinställningar."
+msgstr "Synkronisera din e-post och kalender med Exe. Välj dina sekretessinställningar."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14820,7 +14820,7 @@ msgstr "Turkos"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Twenty-fält"
+msgstr "Exe-fält"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15879,7 +15879,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Välkommen till Twenty"
+msgstr "Välkommen till Exe"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx

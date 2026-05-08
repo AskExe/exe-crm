@@ -2595,7 +2595,7 @@ msgstr "di {author}"
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Utilizzando Twenty, accetti la"
+msgstr "Utilizzando Exe, accetti la"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "Controlla la tua casella di posta per verificare il tuo nuovo indirizzo 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Errore nella sessione di pagamento. Riprova o contatta il team di Twenty"
+msgstr "Errore nella sessione di pagamento. Riprova o contatta il team di Exe"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "Errore durante l'annullamento del cambio di piano."
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Errore durante la conclusione del periodo di prova. Si prega di contattare il team di Twenty."
+msgstr "Errore durante la conclusione del periodo di prova. Si prega di contattare il team di Exe."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10896,7 +10896,7 @@ msgstr "Nome pagina"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "Pagina non trovata | Twenty"
+msgstr "Pagina non trovata | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11589,7 +11589,7 @@ msgstr "Leggere il tuo profilo"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "Sola lettura — gestito da Twenty"
+msgstr "Sola lettura — gestito da Exe"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13887,7 +13887,7 @@ msgstr "Sincronizza con Outlook"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Sincronizza le tue email e il calendario con Twenty. Scegli le tue impostazioni sulla privacy."
+msgstr "Sincronizza le tue email e il calendario con Exe. Scegli le tue impostazioni sulla privacy."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14814,7 +14814,7 @@ msgstr "Turchese"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Campi di Twenty"
+msgstr "Campi di Exe"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15873,7 +15873,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Benvenuto in Twenty"
+msgstr "Benvenuto in Exe"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx

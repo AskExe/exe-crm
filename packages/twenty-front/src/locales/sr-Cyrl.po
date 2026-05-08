@@ -2595,7 +2595,7 @@ msgstr ""
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Коришћењем Twenty, слажете се са"
+msgstr "Коришћењем Exe, слажете се са"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "Проверите пријемно сандуче да потврдит
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Грешка у сесији наплате. Молимо да покушате поново или контактирајте Twenty тим"
+msgstr "Грешка у сесији наплате. Молимо да покушате поново или контактирајте Exe тим"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "Грешка при отказивању промене плана."
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Грешка приликом завршетка пробног периода. Молимо вас контактирајте Twenty тим."
+msgstr "Грешка приликом завршетка пробног периода. Молимо вас контактирајте Exe тим."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10896,7 +10896,7 @@ msgstr "Назив странице"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "Страница није пронађена | Twenty"
+msgstr "Страница није пронађена | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11589,7 +11589,7 @@ msgstr "Читање вашег профила"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "Само за читање — управља Twenty"
+msgstr "Само за читање — управља Exe"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13887,7 +13887,7 @@ msgstr "Синхронизујте са Outlook-ом"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Синхронизујте своје имејлове и календар са Twenty. Изаберите ваша подешавања приватности."
+msgstr "Синхронизујте своје имејлове и календар са Exe. Изаберите ваша подешавања приватности."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14812,7 +14812,7 @@ msgstr "Тиркиз"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Twenty поља"
+msgstr "Exe поља"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15871,7 +15871,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Добродошли у Twenty"
+msgstr "Добродошли у Exe"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx

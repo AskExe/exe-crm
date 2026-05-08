@@ -2595,7 +2595,7 @@ msgstr "提供: {author}"
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Twentyを利用することにより、以下の事項に同意したものとみなされます。"
+msgstr "Exeを利用することにより、以下の事項に同意したものとみなされます。"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "新しいメールアドレスを確認するため、受信トレイを
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "チェックアウトセッションエラー。再試行するか、Twentyチームに連絡してください"
+msgstr "チェックアウトセッションエラー。再試行するか、Exeチームに連絡してください"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "プラン切替のキャンセル中にエラーが発生しました。
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "試用期間の終了中にエラーが発生しました。Twentyチームにお問い合わせください。"
+msgstr "試用期間の終了中にエラーが発生しました。Exeチームにお問い合わせください。"
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10896,7 +10896,7 @@ msgstr "ページ名"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "ページが見つかりません | Twenty"
+msgstr "ページが見つかりません | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11589,7 +11589,7 @@ msgstr "プロフィールを読み取る"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "読み取り専用 — Twenty によって管理されています"
+msgstr "読み取り専用 — Exe によって管理されています"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13887,7 +13887,7 @@ msgstr "Outlookと同期"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "メールとカレンダーを Twenty と同期しましょう。プライバシー設定を選択してください。"
+msgstr "メールとカレンダーを Exe と同期しましょう。プライバシー設定を選択してください。"
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14812,7 +14812,7 @@ msgstr "ターコイズ"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Twenty のフィールド"
+msgstr "Exe のフィールド"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15871,7 +15871,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Twentyへようこそ"
+msgstr "Exeへようこそ"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx

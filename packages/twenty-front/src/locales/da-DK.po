@@ -2595,7 +2595,7 @@ msgstr ""
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Ved at bruge Twenty accepterer du"
+msgstr "Ved at bruge Exe accepterer du"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "Tjek din indbakke for at bekræfte din nye e-mailadresse."
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Fejl i betalingssession. Prøv igen eller kontakt Twenty team"
+msgstr "Fejl i betalingssession. Prøv igen eller kontakt Exe team"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "Fejl ved annullering af planskift."
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Fejl ved afslutning af prøveperiode. Kontakt venligst Twenty team."
+msgstr "Fejl ved afslutning af prøveperiode. Kontakt venligst Exe team."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10896,7 +10896,7 @@ msgstr "Sidenavn"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "Side ikke fundet | Twenty"
+msgstr "Side ikke fundet | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11589,7 +11589,7 @@ msgstr "Læs din profil"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "Skrivebeskyttet — administreret af Twenty"
+msgstr "Skrivebeskyttet — administreret af Exe"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13887,7 +13887,7 @@ msgstr "Synkroniser med Outlook"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Synkroniser dine e-mails og din kalender med Twenty. Vælg dine privatlivsindstillinger."
+msgstr "Synkroniser dine e-mails og din kalender med Exe. Vælg dine privatlivsindstillinger."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14814,7 +14814,7 @@ msgstr "Turkis"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Twenty-felter"
+msgstr "Exe-felter"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15873,7 +15873,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Velkommen til Twenty"
+msgstr "Velkommen til Exe"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx

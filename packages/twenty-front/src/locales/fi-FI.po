@@ -2595,7 +2595,7 @@ msgstr "tekijä: {author}"
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
 msgid "By using Exe, you agree to the"
-msgstr "Twenty:tä käyttäessäsi hyväksyt"
+msgstr "Exe:tä käyttäessäsi hyväksyt"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2930,7 +2930,7 @@ msgstr "Tarkista postilaatikkosi vahvistaaksesi uuden sähköpostiosoitteesi."
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Tarkista istunnovirhe. Yritä uudelleen tai ota yhteyttä Twenty-tiimiin"
+msgstr "Tarkista istunnovirhe. Yritä uudelleen tai ota yhteyttä Exe-tiimiin"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6067,7 +6067,7 @@ msgstr "Virhe suunnitelman peruutuksessa."
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
 msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Virhe kokeilujakson päättämisessä. Ota yhteyttä Twenty -tiimiin."
+msgstr "Virhe kokeilujakson päättämisessä. Ota yhteyttä Exe -tiimiin."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10896,7 +10896,7 @@ msgstr "Sivun nimi"
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
 msgid "Page Not Found | Exe"
-msgstr "Sivua ei löydy | Twenty"
+msgstr "Sivua ei löydy | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11589,7 +11589,7 @@ msgstr "Lue profiilisi"
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
 msgid "Read-only — managed by Exe"
-msgstr "Vain luku — Twenty hallinnoi"
+msgstr "Vain luku — Exe hallinnoi"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13887,7 +13887,7 @@ msgstr "Synkronoi Outlookin kanssa"
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
 msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Synkronoi sähköpostisi ja kalenterisi Twentyyn. Valitse tietosuoja-asetuksesi."
+msgstr "Synkronoi sähköpostisi ja kalenterisi Exeyn. Valitse tietosuoja-asetuksesi."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14812,7 +14812,7 @@ msgstr "Turkoosi"
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
 msgid "Exe fields"
-msgstr "Twenty-kentät"
+msgstr "Exe-kentät"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15871,7 +15871,7 @@ msgstr ""
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
 msgid "Welcome to Exe"
-msgstr "Tervetuloa Twentyyn"
+msgstr "Tervetuloa Exeyn"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx
