@@ -55,3 +55,7 @@ TRANSLATION_QA_REPORT.md
 
 # Employee task assignments (private)
 /exe/
+
+# Test/CI env files with secrets
+.env.test
+.env.e2e-testing-server
