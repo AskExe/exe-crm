@@ -6,6 +6,7 @@ import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/wo
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { getRecordDisplayName } from 'src/engine/core-modules/record-crud/utils/get-record-display-name.util';
 import { getRecordImageIdentifier } from 'src/engine/core-modules/record-crud/utils/get-record-image-identifier.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { RecordIdentifierDTO } from 'src/engine/metadata-modules/navigation-menu-item/dtos/record-identifier.dto';
@@ -21,6 +22,7 @@ export class NavigationMenuItemRecordIdentifierService {
     private readonly workspaceManyOrAllFlatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly fileService: FileService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async resolveRecordIdentifier({
@@ -129,6 +131,9 @@ export class NavigationMenuItemRecordIdentifierService {
           url,
           workspaceId,
         }),
+      allowExternalIconRequests: this.twentyConfigService.get(
+        'ALLOW_REQUESTS_TO_TWENTY_ICONS',
+      ),
     });
 
     return {

@@ -2594,7 +2594,7 @@ msgstr "por {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Exe, you agree to the"
 msgstr "Ao usar o Twenty, você concorda com os"
 
 #. js-lingui-id: Yx41df
@@ -2929,7 +2929,7 @@ msgstr "Verifique sua caixa de entrada para confirmar seu novo endereço de e-ma
 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Exe team"
 msgstr "Erro na sessão de checkout. Por favor, tente novamente ou contate a equipe Twenty"
 
 #. js-lingui-id: SviKkE
@@ -6066,7 +6066,7 @@ msgstr "Erro ao cancelar a alternância de plano."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Exe team."
 msgstr "Erro ao encerrar o período de avaliação. Por favor, entre em contato com a equipe Twenty."
 
 #. js-lingui-id: 5g78zo
@@ -10895,7 +10895,7 @@ msgstr "Nome da página"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Exe"
 msgstr "Página não encontrada | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -11588,7 +11588,7 @@ msgstr "Ler seu perfil"
 
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Twenty"
+msgid "Read-only — managed by Exe"
 msgstr "Somente leitura — gerenciado pela Twenty"
 
 #. js-lingui-id: W+ApAD
@@ -13886,7 +13886,7 @@ msgstr "Sincronizar com Outlook"
 
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
+msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
 msgstr "Sincronize seus e-mails e calendário com o Twenty. Escolha suas configurações de privacidade."
 
 #. js-lingui-id: N2FcBE
@@ -14811,7 +14811,7 @@ msgstr "Turquesa"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Exe fields"
 msgstr "Campos do Twenty"
 
 #. js-lingui-id: YIjS4q
@@ -15870,7 +15870,7 @@ msgstr ""
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Exe"
 msgstr "Bem-vindo ao Twenty"
 
 #. js-lingui-id: t8ZvkC

@@ -530,7 +530,10 @@ export class SignInUpService {
           queryRunner,
         );
 
-      if (isWorkEmailFound) {
+      if (
+        isWorkEmailFound &&
+        this.twentyConfigService.get('ALLOW_REQUESTS_TO_TWENTY_ICONS')
+      ) {
         const logoUrl = `${TWENTY_ICONS_BASE_URL}/${getDomainNameByEmail(email)}`;
         const logoFile =
           await this.fileCorePictureService.uploadWorkspaceLogoFromUrl({

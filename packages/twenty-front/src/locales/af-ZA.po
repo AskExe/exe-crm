@@ -2594,7 +2594,7 @@ msgstr "deur {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Exe, you agree to the"
 msgstr "Deur gebruik te maak van Twenty, stem jy in tot die"
 
 #. js-lingui-id: Yx41df
@@ -2929,7 +2929,7 @@ msgstr "Kontroleer jou inkassie om jou nuwe e-posadres te bevestig."
 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Exe team"
 msgstr "Betaalafhandeling sessie fout. Probeer asseblief weer of kontak Twenty-span"
 
 #. js-lingui-id: SviKkE
@@ -6066,7 +6066,7 @@ msgstr "Fout tydens die kansellasie van planwisseling."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Exe team."
 msgstr "Fout tydens die beëindiging van die proefperiode. Kontak asseblief die Twenty-span."
 
 #. js-lingui-id: 5g78zo
@@ -10895,7 +10895,7 @@ msgstr "Bladsynaam"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Exe"
 msgstr "Bladsy nie gevind nie | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -11588,7 +11588,7 @@ msgstr "Lees jou profiel"
 
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Twenty"
+msgid "Read-only — managed by Exe"
 msgstr "Leesalleen — bestuur deur Twenty"
 
 #. js-lingui-id: W+ApAD
@@ -13886,7 +13886,7 @@ msgstr "Sinchroniseer met Outlook"
 
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
+msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
 msgstr "Sinkroniseer jou e-posse en kalender met Twenty. Kies jou privaatheid-instellings."
 
 #. js-lingui-id: N2FcBE
@@ -14811,7 +14811,7 @@ msgstr "Turkoois"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Exe fields"
 msgstr "Twenty-velde"
 
 #. js-lingui-id: YIjS4q
@@ -15870,7 +15870,7 @@ msgstr ""
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Exe"
 msgstr "Welkom by Twenty"
 
 #. js-lingui-id: t8ZvkC

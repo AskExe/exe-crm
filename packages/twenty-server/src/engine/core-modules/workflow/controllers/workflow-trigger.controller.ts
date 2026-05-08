@@ -14,6 +14,7 @@ import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
 
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { WorkflowTriggerRestApiExceptionFilter } from 'src/engine/core-modules/workflow/filters/workflow-trigger-rest-api-exception.filter';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
@@ -31,6 +32,7 @@ import {
   WorkflowTriggerExceptionCode,
 } from 'src/modules/workflow/workflow-trigger/exceptions/workflow-trigger.exception';
 import { WorkflowTriggerType } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
+import { type WorkflowWebhookTrigger } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-trigger/workspace-services/workflow-trigger.workspace-service';
 
 @Controller('webhooks')
@@ -44,6 +46,7 @@ export class WorkflowTriggerController {
     private readonly workflowTriggerWorkspaceService: WorkflowTriggerWorkspaceService,
     @InjectRepository(WorkspaceEntity)
     protected readonly workspaceRepository: Repository<WorkspaceEntity>,
+    private readonly accessTokenService: AccessTokenService,
   ) {}
 
   @Post('workflows/:workspaceId/:workflowId')
@@ -57,6 +60,7 @@ export class WorkflowTriggerController {
       workflowId,
       payload: request.body || {},
       workspaceId,
+      request,
     });
   }
 
@@ -65,18 +69,21 @@ export class WorkflowTriggerController {
   async runWorkflowByGetRequest(
     @Param('workspaceId') workspaceId: string,
     @Param('workflowId') workflowId: string,
+    @Req() request: Request,
   ) {
-    return await this.runWorkflow({ workflowId, workspaceId });
+    return await this.runWorkflow({ workflowId, workspaceId, request });
   }
 
   private async runWorkflow({
     workflowId,
     payload,
     workspaceId,
+    request,
   }: {
     workflowId: string;
     payload?: object;
     workspaceId: string;
+    request: Request;
   }) {
     const workspaceExists = await this.workspaceRepository.existsBy({
       id: workspaceId,
@@ -91,7 +98,7 @@ export class WorkflowTriggerController {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    const { workflow } =
+    const { workflow, workflowVersion } =
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
           const workflowRepository =
@@ -157,6 +164,33 @@ export class WorkflowTriggerController {
         },
         authContext,
       );
+
+    // Validate webhook authentication when configured.
+    // When the trigger has `authentication: 'API_KEY'`, callers must
+    // supply a valid workspace API key via `Authorization: Bearer <token>`.
+    const trigger = workflowVersion.trigger as WorkflowWebhookTrigger | undefined;
+
+    if (trigger?.settings?.authentication === 'API_KEY') {
+      const authHeader = request.headers.authorization;
+
+      if (!authHeader?.startsWith('Bearer ')) {
+        throw new WorkflowTriggerException(
+          `[Webhook trigger] Workflow ${workflowId} requires API key authentication. Provide an Authorization: Bearer <token> header.`,
+          WorkflowTriggerExceptionCode.FORBIDDEN,
+        );
+      }
+
+      const token = authHeader.slice('Bearer '.length);
+
+      try {
+        await this.accessTokenService.validateToken(token);
+      } catch {
+        throw new WorkflowTriggerException(
+          `[Webhook trigger] Invalid or expired API key for workflow ${workflowId} in workspace ${workspaceId}`,
+          WorkflowTriggerExceptionCode.FORBIDDEN,
+        );
+      }
+    }
 
     const { workflowRunId } =
       await this.workflowTriggerWorkspaceService.runWorkflowVersion({

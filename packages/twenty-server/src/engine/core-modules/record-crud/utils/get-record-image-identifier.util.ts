@@ -11,6 +11,8 @@ type GetRecordImageIdentifierOptions = {
   flatObjectMetadata: FlatObjectMetadata;
   flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
   signUrl?: (url: string) => string | null;
+  /** When false (default), company logo lookups via twenty-icons.com CDN are skipped. */
+  allowExternalIconRequests?: boolean;
 };
 
 export const getRecordImageIdentifier = ({
@@ -18,8 +20,12 @@ export const getRecordImageIdentifier = ({
   flatObjectMetadata,
   flatFieldMetadataMaps,
   signUrl,
+  allowExternalIconRequests = false,
 }: GetRecordImageIdentifierOptions): string | null => {
-  if (flatObjectMetadata.nameSingular === 'company') {
+  if (
+    flatObjectMetadata.nameSingular === 'company' &&
+    allowExternalIconRequests
+  ) {
     const domainNameObj = record.domainName as
       | { primaryLinkUrl?: string }
       | undefined;

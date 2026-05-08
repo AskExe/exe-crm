@@ -2507,7 +2507,7 @@ msgstr "crwdns107790:0{author}crwdne107790:0"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Exe, you agree to the"
 msgstr "crwdns155:0crwdne155:0"
 
 #. js-lingui-id: Yx41df
@@ -2842,7 +2842,7 @@ msgstr "crwdns65960:0crwdne65960:0"
 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Exe team"
 msgstr "crwdns6450:0crwdne6450:0"
 
 #. js-lingui-id: SviKkE
@@ -5949,7 +5949,7 @@ msgstr "crwdns7928:0crwdne7928:0"
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Exe team."
 msgstr "crwdns5802:0crwdne5802:0"
 
 #. js-lingui-id: 5g78zo
@@ -10723,7 +10723,7 @@ msgstr "crwdns108024:0crwdne108024:0"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Exe"
 msgstr "crwdns66282:0crwdne66282:0"
 
 #. js-lingui-id: sF+Xp9
@@ -11405,7 +11405,7 @@ msgstr "crwdns109116:0crwdne109116:0"
 
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Twenty"
+msgid "Read-only — managed by Exe"
 msgstr "crwdns108108:0crwdne108108:0"
 
 #. js-lingui-id: W+ApAD
@@ -13675,7 +13675,7 @@ msgstr "crwdns63894:0crwdne63894:0"
 
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
+msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
 msgstr "crwdns66416:0crwdne66416:0"
 
 #. js-lingui-id: N2FcBE
@@ -14612,7 +14612,7 @@ msgstr "crwdns66464:0crwdne66464:0"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Exe fields"
 msgstr "crwdns66466:0crwdne66466:0"
 
 #. js-lingui-id: YIjS4q
@@ -15639,7 +15639,7 @@ msgstr "crwdns64790:0crwdne64790:0"
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Exe"
 msgstr "crwdns106300:0crwdne106300:0"
 
 #. js-lingui-id: t8ZvkC

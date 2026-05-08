@@ -2594,7 +2594,7 @@ msgstr "제작: {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Exe, you agree to the"
 msgstr "Twenty를 사용함으로써 귀하는 다음에 동의합니다"
 
 #. js-lingui-id: Yx41df
@@ -2929,7 +2929,7 @@ msgstr "새 이메일 주소를 확인하려면 받은 편지함을 확인하세
 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Exe team"
 msgstr "결제 세션 오류입니다. 다시 시도하거나 Twenty 팀에 문의하십시오"
 
 #. js-lingui-id: SviKkE
@@ -6066,7 +6066,7 @@ msgstr "플랜 전환 취소 중 오류 발생."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Exe team."
 msgstr "시험 기간 종료 중 오류가 발생했습니다. Twenty 팀에 문의하세요."
 
 #. js-lingui-id: 5g78zo
@@ -10895,7 +10895,7 @@ msgstr "페이지 이름"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Exe"
 msgstr "페이지를 찾을 수 없음 | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -11588,7 +11588,7 @@ msgstr "내 프로필 읽기"
 
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Twenty"
+msgid "Read-only — managed by Exe"
 msgstr "읽기 전용 — Twenty에서 관리됨"
 
 #. js-lingui-id: W+ApAD
@@ -13886,7 +13886,7 @@ msgstr "Outlook과 동기화"
 
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
+msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
 msgstr "이메일과 캘린더를 Twenty와 동기화하세요. 개인정보 설정을 선택하세요."
 
 #. js-lingui-id: N2FcBE
@@ -14811,7 +14811,7 @@ msgstr "터콰이즈"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Exe fields"
 msgstr "Twenty 필드"
 
 #. js-lingui-id: YIjS4q
@@ -15870,7 +15870,7 @@ msgstr ""
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Exe"
 msgstr "Twenty에 오신 것을 환영합니다"
 
 #. js-lingui-id: t8ZvkC

@@ -2589,8 +2589,8 @@ msgstr "by {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
-msgstr "By using Twenty, you agree to the"
+msgid "By using Exe, you agree to the"
+msgstr "By using Exe, you agree to the"
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2924,8 +2924,8 @@ msgstr "Check your inbox to verify your new email address."
 
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
-msgstr "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Exe team"
+msgstr "Checkout session error. Please retry or contact Exe team"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -6061,8 +6061,8 @@ msgstr "Error while cancelling plan switching."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
-msgstr "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Exe team."
+msgstr "Error while ending trial period. Please contact Exe team."
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -10890,8 +10890,8 @@ msgstr "Page Name"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
-msgstr "Page Not Found | Twenty"
+msgid "Page Not Found | Exe"
+msgstr "Page Not Found | Exe"
 
 #. js-lingui-id: sF+Xp9
 #: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
@@ -11583,8 +11583,8 @@ msgstr "Read your profile"
 
 #. js-lingui-id: tCXcL7
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Twenty"
-msgstr "Read-only — managed by Twenty"
+msgid "Read-only — managed by Exe"
+msgstr "Read-only — managed by Exe"
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -13881,8 +13881,8 @@ msgstr "Sync with Outlook"
 
 #. js-lingui-id: +9x4tK
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
-msgstr "Sync your Emails and Calendar with Twenty. Choose your privacy settings."
+msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
+msgstr "Sync your Emails and Calendar with Exe. Choose your privacy settings."
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -14808,8 +14808,8 @@ msgstr "Turquoise"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
-msgstr "Twenty fields"
+msgid "Exe fields"
+msgstr "Exe fields"
 
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
@@ -15867,8 +15867,8 @@ msgstr "Weight"
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
-msgstr "Welcome to Twenty"
+msgid "Welcome to Exe"
+msgstr "Welcome to Exe"
 
 #. js-lingui-id: t8ZvkC
 #: src/pages/auth/SignInUp.tsx
