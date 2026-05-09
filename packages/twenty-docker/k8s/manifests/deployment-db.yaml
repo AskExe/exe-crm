@@ -27,7 +27,7 @@ spec:
             claimName: twentycrm-db-pvc
       containers:
         - name: twentycrm
-          image: twentycrm/twenty-postgres-spilo:latest
+          image: twentycrm/twenty-postgres-spilo:16
           imagePullPolicy: Always
           env:
             - name: PGUSER_SUPERUSER

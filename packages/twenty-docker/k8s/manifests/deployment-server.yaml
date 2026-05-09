@@ -30,7 +30,7 @@ spec:
             claimName: twentycrm-docker-data-pvc
       containers:
         - name: twentycrm
-          image: twentycrm/twenty:latest
+          image: ghcr.io/askexe/exe-crm:2.2.0
           imagePullPolicy: Always
           env:
             - name: NODE_PORT

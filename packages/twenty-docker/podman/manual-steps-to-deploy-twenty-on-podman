@@ -27,7 +27,7 @@ podman run -d --pod twenty-pod --name twenty-db \
 
 podman run -d --pod twenty-pod --name twenty-redis \
   -v twenty-redis-data:/data:Z \
-  docker.io/library/redis:latest
+  docker.io/library/redis:7-alpine
 
 podman run -d --pod twenty-pod --name twenty-server \
   -e NODE_PORT=3000 \
@@ -38,7 +38,7 @@ podman run -d --pod twenty-pod --name twenty-server \
   -e NODE_ENV=production \
   -e LOG_LEVEL=info \
   -v twenty-server-data:/app/docker-data:Z \
-  docker.io/twentycrm/twenty:latest
+  docker.io/ghcr.io/askexe/exe-crm:2.2.0
 
 podman run -d --pod twenty-pod --name twenty-worker \
   --init \
@@ -50,7 +50,7 @@ podman run -d --pod twenty-pod --name twenty-worker \
   -e NODE_ENV=production \
   -e LOG_LEVEL=info \
   -v twenty-server-data:/app/docker-data:Z \
-  docker.io/twentycrm/twenty:latest \
+  docker.io/ghcr.io/askexe/exe-crm:2.2.0 \
   yarn worker:prod
 
 # wait some time, check status

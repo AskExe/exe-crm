@@ -23,13 +23,13 @@ variable "twentycrm_app_name" {
 
 variable "twentycrm_server_image" {
   type        = string
-  default     = "twentycrm/twenty:latest"
+  default     = "ghcr.io/askexe/exe-crm:2.2.0"
   description = "TwentyCRM server image for the server deployment. This defaults to latest. This value is also used for the workers image."
 }
 
 variable "twentycrm_db_image" {
   type        = string
-  default     = "twentycrm/twenty-postgres-spilo:latest"
+  default     = "twentycrm/twenty-postgres-spilo:16"
   description = "TwentyCRM image for database deployment. This defaults to latest."
 }
 
@@ -107,7 +107,7 @@ variable "twentycrm_redis_replicas" {
 
 variable "twentycrm_redis_image" {
   type        = string
-  default     = "redis/redis-stack-server:latest"
+  default     = "redis/redis-stack-server:7.2.0-v15"
   description = "TwentyCRM image for Redis deployment. This defaults to latest."
 }
 
