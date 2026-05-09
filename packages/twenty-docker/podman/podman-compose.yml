@@ -1,9 +1,14 @@
+# ──────────────────────────────────────────────────────────────────────
+# DEPRECATED: This podman-compose file is NOT part of the supported
+# deployment surface. Use packages/twenty-docker/docker-compose.yml
+# instead. Kept for reference only — do not use in production.
+# ──────────────────────────────────────────────────────────────────────
 version: "3.8"
 
 services:
   db:
     container_name: twenty-db
-    image: postgres:16
+    image: postgres:16.9-alpine
     environment:
       POSTGRES_DB: twenty
       POSTGRES_USER: twenty
@@ -13,14 +18,14 @@ services:
 
   redis:
     container_name: twenty-redis
-    image: redis:latest
+    image: redis:7-alpine
     command: ["--maxmemory-policy", "noeviction"]
     volumes:
       - twenty-redis-data:/data:Z
 
   server:
     container_name: twenty-server
-    image: twentycrm/twenty:latest
+    image: ghcr.io/askexe/exe-crm:${TAG:-2.2.0}
     environment:
       NODE_PORT: "3000"
       SERVER_URL: ${SERVER_URL}
@@ -36,7 +41,7 @@ services:
 
   worker:
     container_name: twenty-worker
-    image: twentycrm/twenty:latest
+    image: ghcr.io/askexe/exe-crm:${TAG:-2.2.0}
     command: yarn worker:prod
     environment:
       SERVER_URL: ${SERVER_URL}

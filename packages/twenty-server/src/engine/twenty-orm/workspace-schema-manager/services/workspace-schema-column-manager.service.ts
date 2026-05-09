@@ -41,6 +41,14 @@ export class WorkspaceSchemaColumnManagerService {
   }): Promise<void> {
     if (columnNames.length === 0) return;
 
+    if (process.env.ALLOW_DESTRUCTIVE_DB_OPS !== 'true') {
+      throw new Error(
+        `Destructive operation DROP COLUMN refused for "${schemaName}"."${tableName}" ` +
+          `(columns: ${columnNames.join(', ')}). ` +
+          'Set ALLOW_DESTRUCTIVE_DB_OPS=true to permit destructive schema operations.',
+      );
+    }
+
     const cascadeClause = cascade ? ' CASCADE' : '';
     const dropClauses = columnNames.map(
       (name) =>

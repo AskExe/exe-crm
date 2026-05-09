@@ -43,6 +43,13 @@ export class WorkspaceSchemaTableManagerService {
     tableName: string;
     cascade?: boolean;
   }): Promise<void> {
+    if (process.env.ALLOW_DESTRUCTIVE_DB_OPS !== 'true') {
+      throw new Error(
+        `Destructive operation DROP TABLE refused for "${schemaName}"."${tableName}". ` +
+          'Set ALLOW_DESTRUCTIVE_DB_OPS=true to permit destructive schema operations.',
+      );
+    }
+
     const cascadeClause = cascade ? ' CASCADE' : '';
     const sql = `DROP TABLE IF EXISTS ${escapeIdentifier(schemaName)}.${escapeIdentifier(tableName)}${cascadeClause}`;
 

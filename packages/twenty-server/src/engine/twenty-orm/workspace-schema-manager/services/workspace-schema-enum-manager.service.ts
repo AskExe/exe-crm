@@ -276,6 +276,13 @@ export class WorkspaceSchemaEnumManagerService {
     tableName: string;
     columnName: string;
   }): Promise<void> {
+    if (process.env.ALLOW_DESTRUCTIVE_DB_OPS !== 'true') {
+      throw new Error(
+        `Destructive operation DROP COLUMN refused for "${schemaName}"."${tableName}"."${columnName}". ` +
+          'Set ALLOW_DESTRUCTIVE_DB_OPS=true to permit destructive schema operations.',
+      );
+    }
+
     const sql = `ALTER TABLE ${escapeIdentifier(schemaName)}.${escapeIdentifier(tableName)} DROP COLUMN ${escapeIdentifier(columnName)}`;
 
     await queryRunner.query(sql);
