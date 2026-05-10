@@ -4,8 +4,8 @@
   "repo": "AskExe/exe-crm",
   "service": "exe-crm",
   "packageName": "twenty",
-  "version": "0.9.0",
-  "image": "ghcr.io/askexe/exe-crm:v0.9.0",
+  "version": "0.9.1",
+  "image": "ghcr.io/askexe/exe-crm:v0.9.1",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {
     "required": true,
