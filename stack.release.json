@@ -4,18 +4,27 @@
   "repo": "AskExe/exe-crm",
   "service": "exe-crm",
   "packageName": "twenty",
-  "version": "0.2.1",
-  "image": "ghcr.io/askexe/exe-crm:v0.2.1",
+  "version": "0.9.0",
+  "image": "ghcr.io/askexe/exe-crm:v0.9.0",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {
     "required": true,
     "compatibleStack": ">=0.9.0 <1.0.0",
     "health": [
-      { "type": "http", "url": "http://127.0.0.1:3000/healthz" }
+      {
+        "type": "http",
+        "url": "http://127.0.0.1:3000/healthz"
+      }
     ],
     "smokeTests": [
-      { "name": "container health", "command": "curl --fail http://127.0.0.1:3000/healthz" },
-      { "name": "worker boot", "command": "docker inspect exe-crm-worker --format '{{.State.Status}}'" }
+      {
+        "name": "container health",
+        "command": "curl --fail http://127.0.0.1:3000/healthz"
+      },
+      {
+        "name": "worker boot",
+        "command": "docker inspect exe-crm-worker --format '{{.State.Status}}'"
+      }
     ],
     "migrations": {
       "command": "yarn database:migrate:prod",
@@ -23,9 +32,18 @@
     },
     "config": {
       "envExample": "packages/twenty-docker/.env.example",
-      "requiredEnv": ["CRM_IMAGE_TAG", "CRM_SERVER_URL", "CRM_APP_SECRET", "PG_DATABASE_URL", "REDIS_URL", "CLICKHOUSE_URL"]
+      "requiredEnv": [
+        "CRM_IMAGE_TAG",
+        "CRM_SERVER_URL",
+        "CRM_APP_SECRET",
+        "PG_DATABASE_URL",
+        "REDIS_URL",
+        "CLICKHOUSE_URL"
+      ]
     },
     "breakingChanges": [],
-    "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config."
-  }
+    "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config.",
+    "releaseLine": "v0.9 private/customer pilot; v1.0 is public-beta stable."
+  },
+  "sourceVersion": "0.2.1"
 }

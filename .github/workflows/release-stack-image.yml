@@ -1,0 +1,71 @@
+name: Release stack image
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*.*.*'
+      - 'stack-v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release-image:
+    runs-on: ubuntu-latest
+    env:
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate stack release contract
+        id: release
+        shell: bash
+        run: |
+          python -m json.tool stack.release.json >/dev/null
+          python - <<'PY2' >> "$GITHUB_OUTPUT"
+          import json
+          rel = json.load(open('stack.release.json'))
+          assert rel.get('schemaVersion') == 1, 'schemaVersion must be 1'
+          assert rel.get('version'), 'version required'
+          assert rel.get('image', '').endswith(':v' + rel['version']), 'image must use stack release tag'
+          assert rel.get('stackParticipation', {}).get('health'), 'health checks required'
+          assert rel.get('stackParticipation', {}).get('smokeTests'), 'smoke tests required'
+          print('stack_version=' + rel['version'])
+          print('image=' + rel['image'])
+          PY2
+
+      - name: Login to GHCR
+        if: ${{ env.GHCR_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ env.GHCR_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/twenty-docker/twenty/Dockerfile
+          push: ${{ env.GHCR_TOKEN != '' }}
+          tags: |
+            ${{ steps.release.outputs.image }}
+            ghcr.io/askexe/exe-crm:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.stack_version }}
+
+      - name: Report image publish status
+        run: |
+          if [ -z "$GHCR_TOKEN" ]; then
+            echo "::notice::Image build passed. GHCR push skipped; add GHCR_TOKEN with write:packages to publish."
+          else
+            echo "Published ${{ steps.release.outputs.image }}"
+          fi
