@@ -2,11 +2,14 @@ name: Release stack image
 
 on:
   push:
-    branches: [main, master]
     tags:
       - 'v*.*.*'
       - 'stack-v*.*.*'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
