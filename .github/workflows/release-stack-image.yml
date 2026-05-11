@@ -19,7 +19,7 @@ jobs:
   release-image:
     runs-on: ubuntu-latest
     env:
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      GHCR_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -68,7 +68,7 @@ jobs:
       - name: Report image publish status
         run: |
           if [ -z "$GHCR_TOKEN" ]; then
-            echo "::notice::Image build passed. GHCR push skipped; add GHCR_TOKEN with write:packages to publish."
+            echo "::notice::Image build passed. GHCR push skipped; GITHUB_TOKEN unavailable; check workflow packages: write permission."
           else
             echo "Published ${{ steps.release.outputs.image }}"
           fi
