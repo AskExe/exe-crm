@@ -49,6 +49,13 @@ export class WorkspaceSchemaEnumManagerService {
     schemaName: string;
     enumName: string;
   }): Promise<void> {
+    if (process.env.ALLOW_DESTRUCTIVE_DB_OPS !== 'true') {
+      throw new Error(
+        `Destructive operation DROP TYPE refused for "${schemaName}"."${enumName}". ` +
+          'Set ALLOW_DESTRUCTIVE_DB_OPS=true to permit destructive schema operations.',
+      );
+    }
+
     const sql = `DROP TYPE IF EXISTS ${escapeIdentifier(schemaName)}.${escapeIdentifier(enumName)}`;
 
     await queryRunner.query(sql);

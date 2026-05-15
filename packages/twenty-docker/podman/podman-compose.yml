@@ -18,14 +18,14 @@ services:
 
   redis:
     container_name: twenty-redis
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     command: ["--maxmemory-policy", "noeviction"]
     volumes:
       - twenty-redis-data:/data:Z
 
   server:
     container_name: twenty-server
-    image: ghcr.io/askexe/exe-crm:${TAG:-2.2.0}
+    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
     environment:
       NODE_PORT: "3000"
       SERVER_URL: ${SERVER_URL}
@@ -41,7 +41,7 @@ services:
 
   worker:
     container_name: twenty-worker
-    image: ghcr.io/askexe/exe-crm:${TAG:-2.2.0}
+    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
     command: yarn worker:prod
     environment:
       SERVER_URL: ${SERVER_URL}
