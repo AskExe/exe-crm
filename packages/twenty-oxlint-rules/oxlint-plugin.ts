@@ -66,7 +66,7 @@ import {
 } from './rules/styled-components-prefixed-with-styled';
 
 export default definePlugin({
-  meta: { name: 'twenty' },
+  meta: { name: 'exe-crm' },
   rules: {
     [componentPropsNamingName]: componentPropsNaming,
     [effectComponentsName]: effectComponents,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import path from 'path';
 import { type Readable } from 'stream';
 
 import { isNonEmptyString } from '@sniptt/guards';
@@ -48,9 +49,13 @@ export class FileService {
     filepath: string;
     fileFolder: FileFolder;
   }): Promise<{ stream: Readable; mimeType: string }> {
+    // Sanitize filepath to prevent path traversal (defense in depth — DB
+    // lookup also validates, but reject malicious paths proactively).
+    const sanitized = path.normalize(filepath).replace(/^(\.\.[/\\])+/, '');
+
     const file = await this.fileRepository.findOneOrFail({
       where: {
-        path: `${fileFolder}/${filepath}`,
+        path: `${fileFolder}/${sanitized}`,
         workspaceId,
         applicationId,
       },

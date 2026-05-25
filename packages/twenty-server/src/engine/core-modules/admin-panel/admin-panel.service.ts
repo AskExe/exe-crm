@@ -195,20 +195,21 @@ export class AdminPanelService {
     try {
       const httpClient = this.secureHttpClientService.getHttpClient();
 
+      // GHCR v2 API returns { name: "askexe/exe-crm", tags: ["v0.9.3", ...] }
       const rawResponse = await httpClient.get<unknown>(
-        'https://hub.docker.com/v2/repositories/twentycrm/twenty/tags?page_size=100',
+        'https://ghcr.io/v2/askexe/exe-crm/tags/list',
       );
       const response = z
         .object({
           data: z.object({
-            results: z.array(z.object({ name: z.string() })),
+            tags: z.array(z.string()),
           }),
         })
         .parse(rawResponse);
 
-      const versions = response.data.results
-        .map((tag) => tag.name)
-        .filter((name) => name !== 'latest' && semver.valid(name));
+      const versions = response.data.tags.filter(
+        (name) => name !== 'latest' && semver.valid(name),
+      );
 
       if (versions.length === 0) {
         return { currentVersion, latestVersion: 'latest' };

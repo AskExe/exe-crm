@@ -1,0 +1,14 @@
+# Exe CRM Code Owners
+# Require review approval before merging to main.
+
+# Default — all files require at least one review from the team
+* @mabdullahabaid
+
+# Docker / deployment — extra care required
+packages/twenty-docker/ @mabdullahabaid
+stack.release.json @mabdullahabaid
+CONTRACTS.md @mabdullahabaid
+DEPLOY.md @mabdullahabaid
+
+# CI workflows
+.github/ @mabdullahabaid

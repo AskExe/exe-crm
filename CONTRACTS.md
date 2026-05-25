@@ -78,11 +78,50 @@ The `CRM_IMAGE_TAG` env var in `.env` controls which exe-crm image version is pu
 | `DISABLE_DB_MIGRATIONS`          | —       | Set `true` on workers (server handles migrations) |
 | `DISABLE_CRON_JOBS_REGISTRATION` | —       | Set `true` on workers                             |
 
+### Optional — Monitoring
+
+| Variable                    | Default | Description                                                          |
+| --------------------------- | ------- | -------------------------------------------------------------------- |
+| `SENTRY_DSN`                | —       | Sentry DSN for error tracking                                        |
+| `EXCEPTION_HANDLER_DRIVER`  | —       | Set to `SENTRY` to enable Sentry integration                        |
+| `SENTRY_ENVIRONMENT`        | —       | Sentry environment label (e.g. `production`)                         |
+
+### Optional — Analytics (ClickHouse)
+
+| Variable         | Default | Description                                    |
+| ---------------- | ------- | ---------------------------------------------- |
+| `CLICKHOUSE_URL` | —       | ClickHouse connection string for analytics     |
+
 ### Safety
 
 | Variable                   | Default         | Description                                                                                                     |
 | -------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------- |
 | `ALLOW_DESTRUCTIVE_DB_OPS` | `false` (unset) | Must be explicitly set to `true` to permit `DROP TABLE` / `DROP COLUMN` operations at the schema-manager level. |
+
+## Rate Limiting
+
+The application includes a custom token-bucket throttler (`ThrottlerService`) used by specific modules (AI chat, workflow execution, logic functions). Auth endpoints are protected by an optional captcha guard (`CaptchaGuard`).
+
+**For production deployments**, add reverse proxy rate limiting:
+
+```nginx
+# Example nginx rate limiting for auth endpoints
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=api:10m rate=100r/m;
+
+server {
+    location /api {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+    }
+    location ~ ^/api/auth {
+        limit_req zone=auth burst=5 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+    }
+}
+```
+
+Without a reverse proxy, the application has no global IP-based rate limiting. This is a known gap documented for remediation.
 
 ## MCP Integration Points
 

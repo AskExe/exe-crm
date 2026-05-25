@@ -37,8 +37,7 @@
         "CRM_SERVER_URL",
         "CRM_APP_SECRET",
         "PG_DATABASE_URL",
-        "REDIS_URL",
-        "CLICKHOUSE_URL"
+        "REDIS_URL"
       ]
     },
     "breakingChanges": [],

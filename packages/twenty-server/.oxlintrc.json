@@ -56,10 +56,10 @@
       "argsIgnorePattern": "^_"
     }],
 
-    "twenty/inject-workspace-repository": "warn",
-    "twenty/rest-api-methods-should-be-guarded": "error",
-    "twenty/graphql-resolvers-should-be-guarded": "error",
-    "twenty/enforce-module-boundaries": ["error", {
+    "exe-crm/inject-workspace-repository": "warn",
+    "exe-crm/rest-api-methods-should-be-guarded": "error",
+    "exe-crm/graphql-resolvers-should-be-guarded": "error",
+    "exe-crm/enforce-module-boundaries": ["error", {
       "depConstraints": [
         {
           "sourceTag": "scope:backend",
@@ -78,7 +78,7 @@
     {
       "files": ["**/constants/*.ts", "**/*.constants.ts"],
       "rules": {
-        "twenty/max-consts-per-file": "off"
+        "exe-crm/max-consts-per-file": "off"
       }
     }
   ]

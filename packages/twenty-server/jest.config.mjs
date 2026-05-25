@@ -51,6 +51,14 @@ const jestConfig = {
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
+  coverageThreshold: {
+    global: {
+      statements: 30,
+      branches: 20,
+      functions: 25,
+      lines: 30,
+    },
+  },
 };
 
 export default jestConfig;

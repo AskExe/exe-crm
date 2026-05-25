@@ -43,7 +43,7 @@ if (process.env.EXCEPTION_HANDLER_DRIVER === ExceptionHandlerDriver.SENTRY) {
     ],
     tracesSampleRate: 0.1,
     profilesSampleRate: 0.3,
-    sendDefaultPii: true,
+    sendDefaultPii: false,
     debug: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
   });
 }

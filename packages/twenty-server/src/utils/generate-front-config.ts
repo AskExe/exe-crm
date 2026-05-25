@@ -97,7 +97,7 @@ function lighten(hex: string, amount: number): string {
 }
 
 function generateBrandingBlock(branding: BrandingConfig): string {
-  const { accent, background, text, border } = branding.colors;
+  const { accent, background, text } = branding.colors;
   const bgSecondary = lighten(background, 0.04);
   const bgTertiary = lighten(background, 0.07);
 

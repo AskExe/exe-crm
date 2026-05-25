@@ -33,6 +33,33 @@ Production deployments must use the pinned image from `stack.release.json`; do *
 - `/healthz` — readiness-style health check for server, database, and Redis.
 - Worker container health validates Redis queue connectivity.
 
+## Backup & Disaster Recovery
+
+The `docker-compose.yml` includes a `db-backup` sidecar that runs `pg_dump` every 6 hours:
+
+- **Backups stored in:** the `db-backups` Docker volume
+- **Retention:** last 7 dumps (42 hours of coverage)
+- **Format:** PostgreSQL custom format (`.dump`)
+
+### Restoring from backup
+
+```bash
+# List available backups
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec db-backup ls -lt /backups/
+
+# Restore a specific backup (stops server first)
+docker compose -f packages/twenty-docker/docker-compose.yml stop server worker
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec db pg_restore -U postgres -d default --clean --if-exists \
+  /backups/exe-crm_YYYYMMDD_HHMMSS.dump
+docker compose -f packages/twenty-docker/docker-compose.yml start server worker
+```
+
+### External backup (recommended for production)
+
+For production VPS deployments, also configure an external backup target (S3-compatible storage, rsync to secondary host, or VPS provider snapshots). The built-in sidecar protects against application-level data loss; external backups protect against host-level failures.
+
 ## Running locally
 
 ```bash
