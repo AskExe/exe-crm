@@ -50,10 +50,17 @@ export class MessagingRelaunchFailedMessageChannelsCronJob {
 
     for (const activeWorkspace of activeWorkspaces) {
       try {
-        const schemaName = getWorkspaceSchemaName(activeWorkspace.id);
+        const schemaName = getWorkspaceSchemaName(activeWorkspace.id).replace(
+          /"/g,
+          '""',
+        );
 
         const failedMessageChannels = await this.coreDataSource.query(
-          `SELECT * FROM ${schemaName}."messageChannel" WHERE "syncStage" = '${MessageChannelSyncStage.FAILED}' AND "syncStatus" = '${MessageChannelSyncStatus.FAILED_UNKNOWN}'`,
+          `SELECT * FROM "${schemaName}"."messageChannel" WHERE "syncStage" = $1 AND "syncStatus" = $2`,
+          [
+            MessageChannelSyncStage.FAILED,
+            MessageChannelSyncStatus.FAILED_UNKNOWN,
+          ],
         );
 
         for (const messageChannel of failedMessageChannels) {
@@ -62,6 +69,9 @@ export class MessagingRelaunchFailedMessageChannelsCronJob {
             {
               workspaceId: activeWorkspace.id,
               messageChannelId: messageChannel.id,
+            },
+            {
+              id: `${MessagingRelaunchFailedMessageChannelJob.name}:${activeWorkspace.id}:${messageChannel.id}`,
             },
           );
         }

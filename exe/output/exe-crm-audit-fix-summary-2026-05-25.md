@@ -23,8 +23,8 @@ Fixed the RED blockers from `exe/output/exe-crm-comprehensive-repo-audit-2026-05
 - Made workspace TypeORM wrappers compatible with TypeORM 0.3.30 `UpdateOptions` signatures.
 - Fixed Node 24 crypto typing for GoTrue JWK verification and Axios content-type narrowing.
 - Hardened BullMQ idempotent enqueueing: `options.id` is now a stable job ID and existing jobs are skipped across active/waiting/delayed states.
-- Added idempotency keys to messaging list-fetch/import cron enqueue calls.
-- Parameterized messaging cron SQL values and isolated schema identifier quoting.
+- Added idempotency keys to messaging list-fetch/import/relaunch-failed cron enqueue calls.
+- Parameterized messaging cron SQL values and isolated schema identifier quoting, including the remaining relaunch-failed-message-channels cron.
 - Updated AskExe/Exe CRM branding expectations in affected tests.
 
 ## Verification
@@ -44,5 +44,6 @@ PASS:
 Known environment note:
 - `yarn install --immutable --mode=skip-build` links dependencies, then fails repository post-install validation because this shell is Node `v22.20.0` while the repo requires `^24.5.0`. This is an environment/runtime mismatch, not a lockfile resolution failure. The prior Axios lockfile failure is fixed, and dependency versions in local `node_modules` now reflect the updated lockfile.
 
-## Commit
-Pending at time of file creation; commit will include all remediation files except pre-existing local `.codex/config.toml`.
+## Commits
+- `9e3a181005` — initial audit blocker remediation.
+- Follow-up commit — closes the remaining relaunch-failed-message-channels SQL interpolation and idempotency gap. Pre-existing local `.codex/config.toml` remains intentionally excluded.
