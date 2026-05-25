@@ -2,13 +2,13 @@ name: exe-crm
 
 services:
   server:
-    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     ports:
-      - "127.0.0.1:${CRM_HOST_PORT:-3000}:3000"
+      - '127.0.0.1:${CRM_HOST_PORT:-3000}:3000'
     environment:
-      NODE_PORT: "3000"
+      NODE_PORT: '3000'
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
       SERVER_URL: ${SERVER_URL}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -28,8 +28,8 @@ services:
       GOTRUE_JWT_ISSUER: ${GOTRUE_JWT_ISSUER:-}
       GOTRUE_JWT_AUDIENCE: ${GOTRUE_JWT_AUDIENCE:-}
 
-      APP_SECRET: "${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}"
-      EXE_LICENSE_KEY: "${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}"
+      APP_SECRET: '${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}'
+      EXE_LICENSE_KEY: '${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}'
       # MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED}
       # CALENDAR_PROVIDER_GOOGLE_ENABLED: ${CALENDAR_PROVIDER_GOOGLE_ENABLED}
       # AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
@@ -66,16 +66,16 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
-    command: ["yarn", "worker:prod"]
+    command: ['yarn', 'worker:prod']
     environment:
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
       SERVER_URL: ${SERVER_URL}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      DISABLE_DB_MIGRATIONS: "true" # it already runs on the server
-      DISABLE_CRON_JOBS_REGISTRATION: "true" # it already runs on the server
+      DISABLE_DB_MIGRATIONS: 'true' # it already runs on the server
+      DISABLE_CRON_JOBS_REGISTRATION: 'true' # it already runs on the server
 
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
@@ -90,8 +90,8 @@ services:
       GOTRUE_JWT_ISSUER: ${GOTRUE_JWT_ISSUER:-}
       GOTRUE_JWT_AUDIENCE: ${GOTRUE_JWT_AUDIENCE:-}
 
-      APP_SECRET: "${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}"
-      EXE_LICENSE_KEY: "${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}"
+      APP_SECRET: '${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}'
+      EXE_LICENSE_KEY: '${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}'
       # MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED}
       # CALENDAR_PROVIDER_GOOGLE_ENABLED: ${CALENDAR_PROVIDER_GOOGLE_ENABLED}
       # AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
@@ -121,7 +121,11 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const net=require(''net''); const u=new URL(process.env.REDIS_QUEUE_URL || process.env.REDIS_URL || ''redis://redis:6379''); const s=net.createConnection({host:u.hostname, port:Number(u.port)||6379},()=>{s.end(); process.exit(0);}); s.setTimeout(3000,()=>{s.destroy(); process.exit(1);}); s.on(''error'',()=>process.exit(1));"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -145,9 +149,9 @@ services:
   redis:
     image: redis:7.4-alpine
     restart: unless-stopped
-    command: ["--maxmemory-policy", "noeviction"]
+    command: ['--maxmemory-policy', 'noeviction']
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 10

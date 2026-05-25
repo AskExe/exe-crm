@@ -2,53 +2,41 @@
 
 ## Docker Image
 
-A single production image bundles the NestJS server and React frontend (served
-as static files from the server).
+A single production image bundles the NestJS server and React frontend (served as static files from the server).
 
 - **Registry:** `ghcr.io/askexe/exe-crm`
 - **Dockerfile:** `packages/twenty-docker/twenty/Dockerfile` (target: `twenty`)
 - **Build context:** repository root
+- **Production tag source of truth:** `stack.release.json`
 
-### Tags
+## Release workflow
 
-| Trigger | Tags applied |
-|---------|-------------|
-| Push to `main` | `latest`, `sha-<short>` |
-| Tag push `v*` | `<version>`, `<major>.<minor>`, `latest`, `sha-<short>` |
+| Workflow                                    | Trigger                                              | What it does                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `.github/workflows/release-stack-image.yml` | tag `v*.*.*`, tag `stack-v*.*.*`, or manual dispatch | validates `stack.release.json`, builds the production image, and publishes to GHCR when `GHCR_TOKEN` is configured |
 
-## CI/CD Workflows
+Production deployments must use the pinned image from `stack.release.json`; do **not** deploy `latest`.
 
-| Workflow | Trigger | What it does |
-|----------|---------|-------------|
-| `cd-deploy-main.yaml` | Push to `main` | Build + push image to GHCR |
-| `cd-deploy-tag.yaml` | Tag push `v*` | Build + push image to GHCR with version tags |
-| `health-check.yaml` | Manual (`workflow_dispatch`) | Curl `/healthz` on `crm.askexe.com` |
-| `ci-brand-drift.yaml` | Pull request | Detect "twenty" brand leaks |
+## Stack update contract
 
-> **SSH deploy is deferred.** The pipeline builds and pushes images only.
-> When VPS credentials are available, add a deploy job that SSHes in and
-> runs `docker pull && docker compose up -d`.
+`stack.release.json` declares:
 
-## Health Endpoint
+- image: `ghcr.io/askexe/exe-crm:v0.9.3`
+- image env var: `CRM_IMAGE_TAG`
+- health/smoke checks
+- migration command and rollback guidance
 
-- **Path:** `/healthz`
-- **Controller:** `packages/twenty-server/src/engine/core-modules/health/controllers/health.controller.ts`
-- **Method:** `GET`
-- **Expected response:** `200 OK` with NestJS health check payload
+`packages/twenty-docker/docker-compose.yml` reads `CRM_IMAGE_TAG`, so exe-os stack updates can change the image without editing Compose.
 
-The `health-check.yaml` workflow is disabled by default. Once `crm.askexe.com`
-is live, uncomment the `schedule` trigger to enable automated checks every 6
-hours.
+## Health endpoints
 
-## Pulling the Image
+- `/healthz` — readiness-style health check for server, database, and Redis.
+- Worker container health validates Redis queue connectivity.
+
+## Running locally
 
 ```bash
-docker pull ghcr.io/askexe/exe-crm:latest
-```
-
-## Running Locally
-
-```bash
-# See packages/twenty-docker/docker-compose.yml for the full stack
-docker compose -f packages/twenty-docker/docker-compose.yml up
+cp packages/twenty-docker/.env.example packages/twenty-docker/.env
+# set APP_SECRET, EXE_LICENSE_KEY, PG_DATABASE_PASSWORD, SERVER_URL
+docker compose -f packages/twenty-docker/docker-compose.yml up -d
 ```

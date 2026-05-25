@@ -1,6 +1,8 @@
 import { HealthCheckService } from '@nestjs/terminus';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { getDataSourceToken } from '@nestjs/typeorm';
 
+import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 import { HealthController } from 'src/engine/core-modules/health/controllers/health.controller';
 
 describe('HealthController', () => {
@@ -13,6 +15,17 @@ describe('HealthController', () => {
         {
           provide: HealthCheckService,
           useValue: { check: jest.fn() },
+        },
+        {
+          provide: getDataSourceToken(),
+          useValue: { query: jest.fn() },
+        },
+        {
+          provide: RedisClientService,
+          useValue: {
+            getClient: jest.fn(),
+            getQueueClient: jest.fn(),
+          },
         },
       ],
     }).compile();

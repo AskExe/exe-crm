@@ -3,7 +3,7 @@
 # deployment surface. Use packages/twenty-docker/docker-compose.yml
 # instead. Kept for reference only — do not use in production.
 # ──────────────────────────────────────────────────────────────────────
-version: "3.8"
+version: '3.8'
 
 services:
   db:
@@ -19,18 +19,18 @@ services:
   redis:
     container_name: twenty-redis
     image: redis:7.4-alpine
-    command: ["--maxmemory-policy", "noeviction"]
+    command: ['--maxmemory-policy', 'noeviction']
     volumes:
       - twenty-redis-data:/data:Z
 
   server:
     container_name: twenty-server
-    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
     environment:
-      NODE_PORT: "3000"
+      NODE_PORT: '3000'
       SERVER_URL: ${SERVER_URL}
-      PG_DATABASE_URL: "postgresql://twenty:${PG_DATABASE_PASSWORD}@twenty-db:5432/twenty"
-      REDIS_URL: "redis://twenty-redis:6379"
+      PG_DATABASE_URL: 'postgresql://twenty:${PG_DATABASE_PASSWORD}@twenty-db:5432/twenty'
+      REDIS_URL: 'redis://twenty-redis:6379'
       APP_SECRET: ${APP_SECRET}
       NODE_ENV: production
       LOG_LEVEL: info
@@ -41,14 +41,14 @@ services:
 
   worker:
     container_name: twenty-worker
-    image: ghcr.io/askexe/exe-crm:${TAG:-0.9.95}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
     command: yarn worker:prod
     environment:
       SERVER_URL: ${SERVER_URL}
-      PG_DATABASE_URL: "postgresql://twenty:${PG_DATABASE_PASSWORD}@twenty-db:5432/twenty"
-      REDIS_URL: "redis://twenty-redis:6379"
+      PG_DATABASE_URL: 'postgresql://twenty:${PG_DATABASE_PASSWORD}@twenty-db:5432/twenty'
+      REDIS_URL: 'redis://twenty-redis:6379'
       APP_SECRET: ${APP_SECRET}
-      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_DB_MIGRATIONS: 'true'
       NODE_ENV: production
       LOG_LEVEL: info
     volumes:

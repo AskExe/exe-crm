@@ -43,11 +43,22 @@ function on_exit {
 }
 trap on_exit EXIT
 
-# Use environment variables VERSION and BRANCH, with defaults if not set
-version=${VERSION:-$(curl -s "https://hub.docker.com/v2/repositories/askexe/exe-crm/tags" | grep -o '"name":"[^"]*"' | grep -v 'latest' | cut -d'"' -f4 | sort -V | tail -n1)}
-branch=${BRANCH:-$(curl -s https://api.github.com/repos/AskExe/exe-crm/tags | grep '"name":' | head -n 1 | cut -d '"' -f 4)}
+# Use environment variables CRM_IMAGE_TAG/VERSION and BRANCH, with defaults from GitHub.
+branch=${BRANCH:-$(curl -fsSL https://api.github.com/repos/AskExe/exe-crm/tags | grep '"name":' | head -n 1 | cut -d '"' -f 4)}
+if [ -z "$branch" ]; then
+  echo "❌ Could not determine latest GitHub tag for AskExe/exe-crm. Set BRANCH manually."
+  exit 1
+fi
 
-echo "🚀 Using docker version $version and Github branch $branch"
+release_json=$(curl -fsSL "https://raw.githubusercontent.com/AskExe/exe-crm/$branch/stack.release.json" || true)
+manifest_image_tag=$(printf '%s' "$release_json" | grep -o 'ghcr.io/askexe/exe-crm:[^"]*' | head -n 1 | sed 's|ghcr.io/askexe/exe-crm:||')
+version=${CRM_IMAGE_TAG:-${VERSION:-$manifest_image_tag}}
+if [ -z "$version" ]; then
+  echo "❌ Could not determine CRM image tag from stack.release.json. Set CRM_IMAGE_TAG manually."
+  exit 1
+fi
+
+echo "🚀 Using CRM image tag $version and GitHub branch $branch"
 
 dir_name="exe-crm"
 function ask_directory {
@@ -80,13 +91,13 @@ curl -sLo docker-compose.yml https://raw.githubusercontent.com/AskExe/exe-crm/$b
 echo -e "\t• Setting up .env file"
 curl -sLo .env https://raw.githubusercontent.com/AskExe/exe-crm/$branch/packages/twenty-docker/.env.example
 
-# Replace TAG=latest by TAG=<latest_release or version input>
+# Pin CRM image tag from stack.release.json or caller-provided CRM_IMAGE_TAG/VERSION.
 if [[ $(uname) == "Darwin" ]]; then
   # Running on macOS
-  sed -i '' "s/TAG=latest/TAG=$version/g" .env
+  sed -i '' "s/^CRM_IMAGE_TAG=.*/CRM_IMAGE_TAG=$version/g" .env
 else
   # Assuming Linux
-  sed -i'' "s/TAG=latest/TAG=$version/g" .env
+  sed -i'' "s/^CRM_IMAGE_TAG=.*/CRM_IMAGE_TAG=$version/g" .env
 fi
 
 # Generate random strings for secrets
