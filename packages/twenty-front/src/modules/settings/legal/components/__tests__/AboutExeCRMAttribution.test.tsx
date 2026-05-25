@@ -8,7 +8,7 @@
 
 import { render, screen } from '@testing-library/react';
 
-import { AboutExeCRMAttribution } from '../AboutExeCRMAttribution';
+import { AboutExeCRMAttribution } from '@/settings/legal/components/AboutExeCRMAttribution';
 
 describe('AboutExeCRMAttribution', () => {
   beforeEach(() => {

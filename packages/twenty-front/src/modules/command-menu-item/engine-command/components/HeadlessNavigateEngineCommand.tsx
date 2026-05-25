@@ -15,7 +15,7 @@ export const HeadlessNavigateEngineCommand = <T extends AppPath>({
   const navigate = useNavigate();
   const path = getAppPath(to, params, queryParams);
 
-  // eslint-disable-next-line twenty/no-navigate-prefer-link
+  // oxlint-disable-next-line exe-crm/no-navigate-prefer-link
   const onExecute = () => {
     navigate(path);
   };
