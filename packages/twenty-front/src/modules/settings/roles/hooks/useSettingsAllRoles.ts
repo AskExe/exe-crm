@@ -5,7 +5,7 @@ import { useStore } from 'jotai';
 import { isDefined } from 'twenty-shared/utils';
 
 export const useSettingsAllRoles = () => {
-  // oxlint-disable-next-line twenty/matching-state-variable
+  // oxlint-disable-next-line exe-crm/matching-state-variable
   const roleIds = useAtomStateValue(settingsRoleIdsState);
   const store = useStore();
 

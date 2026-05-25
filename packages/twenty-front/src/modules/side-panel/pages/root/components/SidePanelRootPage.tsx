@@ -35,7 +35,7 @@ export const SidePanelRootPage = () => {
     sidePanelSearch,
   });
 
-  // oxlint-disable-next-line twenty/matching-state-variable
+  // oxlint-disable-next-line exe-crm/matching-state-variable
   const previousContextStoreCurrentObjectMetadataItemId =
     useAtomComponentStateValue(
       contextStoreCurrentObjectMetadataItemIdComponentState,

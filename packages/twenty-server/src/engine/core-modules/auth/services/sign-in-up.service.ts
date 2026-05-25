@@ -48,7 +48,7 @@ import { getDomainNameByEmail } from 'src/utils/get-domain-name-by-email';
 import { isWorkEmail } from 'src/utils/is-work-email';
 
 @Injectable()
-// oxlint-disable-next-line twenty/inject-workspace-repository
+// oxlint-disable-next-line exe-crm/inject-workspace-repository
 export class SignInUpService {
   constructor(
     @InjectRepository(UserEntity)

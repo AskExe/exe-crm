@@ -29,7 +29,7 @@ const computeBorderColor = (
   return 'transparent';
 };
 
-// oxlint-disable-next-line twenty/sort-css-properties-alphabetically
+// oxlint-disable-next-line exe-crm/sort-css-properties-alphabetically
 const StyledWidgetCard = styled.div<WidgetCardStyledProps>`
   background: ${(props) => {
     if (props.isEditable && props.isDragging) {

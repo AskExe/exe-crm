@@ -56,7 +56,6 @@ const StyledContainer = styled.div<{
   isMobile?: boolean;
   isExpanded?: boolean;
 }>`
-  position: relative;
   background: ${themeCssVariables.background.primary};
   border-right: 1px solid ${themeCssVariables.border.color.light};
   box-sizing: border-box;
@@ -71,12 +70,13 @@ const StyledContainer = styled.div<{
         ? `${themeCssVariables.spacing[3]} 0 0 ${themeCssVariables.spacing[8]}`
         : `${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[4]} 0`
       : `${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[14]} ${themeCssVariables.spacing[2]}`};
+  position: relative;
   width: ${({ isExpanded }) =>
     isExpanded ? `var(${NAVIGATION_DRAWER_WIDTH_VAR})` : '100%'};
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    width: 100%;
     padding-left: ${themeCssVariables.spacing[5]};
     padding-right: ${themeCssVariables.spacing[5]};
+    width: 100%;
   }
 `;
 

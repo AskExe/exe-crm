@@ -1,4 +1,4 @@
-/* oxlint-disable twenty/max-consts-per-file */
+/* oxlint-disable exe-crm/max-consts-per-file */
 import { type FieldMetadata } from '@/object-record/record-field/ui/types/FieldMetadata';
 import { type ColumnDefinition } from '@/object-record/record-table/types/ColumnDefinition';
 import { filterAvailableTableColumns } from '@/object-record/utils/filterAvailableTableColumns';

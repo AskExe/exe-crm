@@ -38,7 +38,7 @@ export const ActivityRichTextEditor = ({
 }: ActivityRichTextEditorProps) => {
   const store = useStore();
 
-  // oxlint-disable-next-line twenty/no-state-useref
+  // oxlint-disable-next-line exe-crm/no-state-useref
   const editorRef = useRef<typeof BLOCK_SCHEMA.BlockNoteEditor | null>(null);
 
   const { upsertActivity } = useUpsertActivity({

@@ -10,20 +10,20 @@ type NavigationDrawerThemeToggleProps = {
 };
 
 const StyledContainer = styled.div`
-  position: absolute;
-  bottom: ${themeCssVariables.spacing[3]};
-  display: flex;
-  left: ${themeCssVariables.spacing[2]};
-  right: ${themeCssVariables.spacing[2]};
-  justify-content: flex-start;
   align-items: center;
+  background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.pill};
-  z-index: 8;
-  background: ${themeCssVariables.background.secondary};
+  bottom: ${themeCssVariables.spacing[3]};
   box-shadow: ${themeCssVariables.boxShadow.light};
+  display: flex;
+  justify-content: flex-start;
+  left: ${themeCssVariables.spacing[2]};
   padding: ${themeCssVariables.spacing['0.5']};
   pointer-events: auto;
+  position: absolute;
+  right: ${themeCssVariables.spacing[2]};
+  z-index: 8;
 `;
 
 const StyledToggleButtonGroup = styled.div`

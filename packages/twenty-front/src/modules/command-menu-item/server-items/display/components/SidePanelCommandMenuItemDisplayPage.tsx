@@ -100,7 +100,7 @@ export const SidePanelCommandMenuItemDisplayPage = () => {
   const selectableItems = commandGroups.flatMap((group) => group.items ?? []);
   const selectableItemIds = selectableItems.map((item) => item.key);
 
-  // oxlint-disable-next-line twenty/matching-state-variable
+  // oxlint-disable-next-line exe-crm/matching-state-variable
   const previousContextStoreCurrentObjectMetadataItemId =
     useAtomComponentStateValue(
       contextStoreCurrentObjectMetadataItemIdComponentState,

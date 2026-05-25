@@ -159,13 +159,13 @@ describe('useSetGlobalCommandMenuContext', () => {
         const { setGlobalCommandMenuContext } =
           useSetGlobalCommandMenuContext();
 
-        // oxlint-disable-next-line twenty/matching-state-variable
+        // oxlint-disable-next-line exe-crm/matching-state-variable
         const previousTargetedRecordsRule = useAtomComponentStateValue(
           contextStoreTargetedRecordsRuleComponentState,
           SIDE_PANEL_PREVIOUS_COMPONENT_INSTANCE_ID,
         );
 
-        // oxlint-disable-next-line twenty/matching-state-variable
+        // oxlint-disable-next-line exe-crm/matching-state-variable
         const previousNumberOfSelectedRecords = useAtomComponentStateValue(
           contextStoreNumberOfSelectedRecordsComponentState,
           SIDE_PANEL_PREVIOUS_COMPONENT_INSTANCE_ID,
