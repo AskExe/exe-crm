@@ -1,11 +1,11 @@
-# Kubernetes for Twenty CRM (Helm)
-DISCLAIMER: The k8s and podman deployments are not maintained by the core team.
-These files are provided and maintained by the community. Twenty core team
-maintains support for docker deployment.
+# Kubernetes for Exe CRM (Helm)
+
+DISCLAIMER: Helm is the recommended Kubernetes surface for Exe CRM.
+The raw Kubernetes manifests and Podman scripts are legacy/community-maintained helpers; keep production deployments pinned to the stack release image in stack.release.json.
 
 ## Overview
 
-This repository contains a world-class Helm chart and (legacy) raw Kubernetes manifests plus Terraform files to help you deploy and manage the Twenty CRM application. The chart is located at `packages/twenty-docker/helm/twenty` and supersedes the manifests in `packages/twenty-docker/k8s/manifests`.
+This repository contains a world-class Helm chart and (legacy) raw Kubernetes manifests plus Terraform files to help you deploy and manage the Exe CRM application. The chart is located at `packages/twenty-docker/helm/twenty` and supersedes the manifests in `packages/twenty-docker/k8s/manifests`.
 
 ## Prerequisites
 
@@ -20,6 +20,7 @@ Before using these files, ensure you have the following installed and configured
 ## Helm Chart (Recommended)
 
 **Quick install:**
+
 ```bash
 export DOMAIN=your-domain.com
 helm install my-twenty packages/twenty-docker/helm/twenty \
@@ -38,9 +39,9 @@ See [QUICKSTART](../helm/twenty/QUICKSTART.md) and [chart README](../helm/twenty
 
 Clone the repository to your local machine:
 
-``` bash
-git clone https://github.com/twentyhq/twenty.git
-cd twenty/packages/twenty-docker/k8s
+```bash
+git clone https://github.com/AskExe/exe-crm.git
+cd exe-crm/packages/twenty-docker/k8s
 ```
 
 ### Step 2: Customize the Manifests and Terraform Files
@@ -51,27 +52,27 @@ cd twenty/packages/twenty-docker/k8s
 
 1. Navigate to the Terraform directory:
 
-    ```bash
-    cd terraform
-    ```
+   ```bash
+   cd terraform
+   ```
 
 2. Initialize Terraform:
 
-    ```bash
-    terraform init
-    ```
+   ```bash
+   terraform init
+   ```
 
 3. Plan the deployment:
 
-    ```bash
-    terraform plan
-    ```
+   ```bash
+   terraform plan
+   ```
 
 4. Apply the deployment:
 
-    ```bash
-    terraform apply
-    ```
+   ```bash
+   terraform apply
+   ```
 
 ## OR
 
@@ -79,21 +80,21 @@ cd twenty/packages/twenty-docker/k8s
 
 1. Navigate to the Kubernetes manifests directory:
 
-    ```bash
-    cd ../k8s
-    ```
+   ```bash
+   cd ../k8s
+   ```
 
 2. Create Server Secret
 
-    ``` bash
-    kubectl create secret generic -n twentycrm tokens --from-literal accessToken=changeme --from-literal loginToken="changeme" --from-literal refreshToken="changeme" --from-literal fileToken="changeme"
-    ```
+   ```bash
+   kubectl create secret generic -n twentycrm tokens --from-literal accessToken=changeme --from-literal loginToken="changeme" --from-literal refreshToken="changeme" --from-literal fileToken="changeme"
+   ```
 
 3. Apply the manifests:
 
-    ```bash
-    kubectl apply -f .
-    ```
+   ```bash
+   kubectl apply -f .
+   ```
 
 ## Customization
 

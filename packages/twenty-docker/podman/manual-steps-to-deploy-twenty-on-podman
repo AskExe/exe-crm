@@ -38,7 +38,7 @@ podman run -d --pod twenty-pod --name twenty-server \
   -e NODE_ENV=production \
   -e LOG_LEVEL=info \
   -v twenty-server-data:/app/docker-data:Z \
-  docker.io/ghcr.io/askexe/exe-crm:2.2.0
+  ghcr.io/askexe/exe-crm:v0.9.3
 
 podman run -d --pod twenty-pod --name twenty-worker \
   --init \
@@ -50,7 +50,7 @@ podman run -d --pod twenty-pod --name twenty-worker \
   -e NODE_ENV=production \
   -e LOG_LEVEL=info \
   -v twenty-server-data:/app/docker-data:Z \
-  docker.io/ghcr.io/askexe/exe-crm:2.2.0 \
+  ghcr.io/askexe/exe-crm:v0.9.3 \
   yarn worker:prod
 
 # wait some time, check status

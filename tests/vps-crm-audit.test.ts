@@ -13,6 +13,21 @@ describe('exe-crm VPS regression audit', () => {
   const entrypoint = read('packages/twenty-docker/twenty/entrypoint.sh');
   const mainTs = read('packages/twenty-server/src/main.ts');
   const compose = read('packages/twenty-docker/docker-compose.yml');
+  const stackRelease = JSON.parse(read('stack.release.json')) as {
+    version: string;
+    image: string;
+    imageEnv: string;
+  };
+  const helmChart = read('packages/twenty-docker/helm/twenty/Chart.yaml');
+  const k8sServerDeployment = read(
+    'packages/twenty-docker/k8s/manifests/deployment-server.yaml',
+  );
+  const k8sWorkerDeployment = read(
+    'packages/twenty-docker/k8s/manifests/deployment-worker.yaml',
+  );
+  const podmanManualSteps = read(
+    'packages/twenty-docker/podman/manual-steps-to-deploy-twenty-on-podman',
+  );
   const accessTokenService = read(
     'packages/twenty-server/src/engine/core-modules/auth/token/services/access-token.service.ts',
   );
@@ -127,6 +142,28 @@ describe('exe-crm VPS regression audit', () => {
 
     expect(matches?.length).toBe(2);
     expect(compose).not.toContain('${TAG:-');
+  });
+
+  it('keeps every customer deployment surface pinned to the stack release image', () => {
+    const expectedImage = `ghcr.io/askexe/exe-crm:v${stackRelease.version}`;
+
+    expect(stackRelease.image).toBe(expectedImage);
+    expect(stackRelease.imageEnv).toBe('CRM_IMAGE_TAG');
+    expect(helmChart).toMatch(
+      new RegExp(`appVersion: [\'\"]v${stackRelease.version}[\'\"]`),
+    );
+    expect(k8sServerDeployment).toContain(`image: ${expectedImage}`);
+    expect(k8sWorkerDeployment).toContain(`image: ${expectedImage}`);
+    expect(podmanManualSteps).toContain(expectedImage);
+    expect(
+      [
+        compose,
+        helmChart,
+        k8sServerDeployment,
+        k8sWorkerDeployment,
+        podmanManualSteps,
+      ].join('\n'),
+    ).not.toMatch(/exe-crm:(2\.2\.0|v1\.14\.0)|docker\.io\/ghcr\.io/);
   });
 
   it('GoTrue JWT bridge keeps the expected validation imports and helpers', () => {
