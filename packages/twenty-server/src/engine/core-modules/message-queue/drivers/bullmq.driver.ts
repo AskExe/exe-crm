@@ -12,7 +12,6 @@ import {
   Worker,
 } from 'bullmq';
 import { isDefined } from 'twenty-shared/utils';
-import { v4 } from 'uuid';
 
 import {
   type QueueCronJobOptions,
@@ -30,8 +29,6 @@ import { type MetricsService } from 'src/engine/core-modules/metrics/metrics.ser
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
 
 export type BullMQDriverOptions = QueueOptions;
-
-const V4_LENGTH = 36;
 
 export class BullMQDriver
   implements MessageQueueDriver, OnModuleDestroy, OnModuleInit
@@ -220,21 +217,19 @@ export class BullMQDriver
       );
     }
 
-    // This ensures only one waiting job can be queued for a specific option.id
+    // Stable job IDs make idempotent producers safe across waiting, delayed,
+    // active, and retry states. Completed/failed jobs are removed by retention,
+    // so a future legitimate run can enqueue after the previous job finishes.
     if (options?.id) {
-      const waitingJobs = await this.queueMap[queueName].getJobs(['waiting']);
+      const existingJob = await this.queueMap[queueName].getJob(options.id);
 
-      const isJobAlreadyWaiting = waitingJobs.some(
-        (job) => job.id?.slice(0, -(V4_LENGTH + 1)) === options.id,
-      );
-
-      if (isJobAlreadyWaiting) {
+      if (isDefined(existingJob)) {
         return;
       }
     }
 
     const queueOptions: JobsOptions = {
-      jobId: options?.id ? `${options.id}-${v4()}` : undefined, // We add V4() to id to make sure ids are uniques so we can add a waiting job when a job related with the same option.id is running
+      jobId: options?.id,
       priority: options?.priority ?? MESSAGE_QUEUE_PRIORITY[queueName],
       attempts: 1 + (options?.retryLimit || 0),
       removeOnComplete: {

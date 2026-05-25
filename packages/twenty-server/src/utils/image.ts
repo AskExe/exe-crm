@@ -50,7 +50,12 @@ export const getImageBufferFromUrl = async (
       throw new Error('Received empty response from image URL');
     }
 
-    const contentType = response.headers['content-type'];
+    const rawContentType = response.headers['content-type'];
+    const contentType = Array.isArray(rawContentType)
+      ? rawContentType[0]
+      : typeof rawContentType === 'string'
+        ? rawContentType
+        : undefined;
 
     if (contentType && !contentType.startsWith('image/')) {
       throw new Error(

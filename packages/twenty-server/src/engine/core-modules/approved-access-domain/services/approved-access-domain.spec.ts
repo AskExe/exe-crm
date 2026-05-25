@@ -145,12 +145,10 @@ describe('ApprovedAccessDomainService', () => {
           } as WorkspaceMemberWorkspaceEntity,
           'user@gmail.com',
         ),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Approved access domain must be a company domain',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_MUST_BE_A_COMPANY_DOMAIN,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_MUST_BE_A_COMPANY_DOMAIN,
+        message: 'Approved access domain must be a company domain',
+      });
       expect(approvedAccessDomainRepository.save).not.toHaveBeenCalled();
     });
   });
@@ -232,12 +230,10 @@ describe('ApprovedAccessDomainService', () => {
           workspace,
           approvedAccessDomain,
         ),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Approved access domain has already been validated',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_ALREADY_VERIFIED,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_ALREADY_VERIFIED,
+        message: 'Approved access domain has already been validated',
+      });
     });
 
     it('should throw an exception if the email does not match the approved access domain', async () => {
@@ -262,12 +258,10 @@ describe('ApprovedAccessDomainService', () => {
           workspace,
           approvedAccessDomain,
         ),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Approved access domain does not match email domain',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_DOES_NOT_MATCH_DOMAIN_EMAIL,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_DOES_NOT_MATCH_DOMAIN_EMAIL,
+        message: 'Approved access domain does not match email domain',
+      });
     });
 
     it('should send a validation email if all conditions are met', async () => {
@@ -315,7 +309,7 @@ describe('ApprovedAccessDomainService', () => {
       });
 
       expect(emailService.send).toHaveBeenCalledWith({
-        from: 'John Doe (via Twenty) <no-reply@example.com>',
+        from: 'John Doe (via Exe CRM) <no-reply@example.com>',
         to: email,
         subject: 'Approve your access domain',
         text: expect.any(String),
@@ -368,12 +362,10 @@ describe('ApprovedAccessDomainService', () => {
           validationToken,
           approvedAccessDomainId: approvedAccessDomainId,
         }),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Approved access domain not found',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_NOT_FOUND,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_NOT_FOUND,
+        message: 'Approved access domain not found',
+      });
     });
 
     it('should throw an error if the validation token is invalid', async () => {
@@ -397,12 +389,10 @@ describe('ApprovedAccessDomainService', () => {
           validationToken,
           approvedAccessDomainId: approvedAccessDomainId,
         }),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Invalid approved access domain validation token',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_VALIDATION_TOKEN_INVALID,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_VALIDATION_TOKEN_INVALID,
+        message: 'Invalid approved access domain validation token',
+      });
     });
 
     it('should throw an error if the approved access domain is already validated', async () => {
@@ -423,12 +413,10 @@ describe('ApprovedAccessDomainService', () => {
           validationToken,
           approvedAccessDomainId: approvedAccessDomainId,
         }),
-      ).rejects.toThrowError(
-        new ApprovedAccessDomainException(
-          'Approved access domain has already been validated',
-          ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_ALREADY_VALIDATED,
-        ),
-      );
+      ).rejects.toMatchObject({
+        code: ApprovedAccessDomainExceptionCode.APPROVED_ACCESS_DOMAIN_ALREADY_VALIDATED,
+        message: 'Approved access domain has already been validated',
+      });
     });
   });
 });

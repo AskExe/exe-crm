@@ -455,11 +455,15 @@ describe('AccessTokenService', () => {
       jest
         .spyOn(userWorkspaceRepository, 'findOne')
         .mockImplementation(async (input) => {
+          const where = Array.isArray(input?.where)
+            ? input?.where[0]
+            : input?.where;
+
           if (
             hasMembership &&
             storedUser &&
-            input?.where?.userId === storedUser.id &&
-            input?.where?.workspaceId === workspaceId
+            where?.userId === storedUser.id &&
+            where?.workspaceId === workspaceId
           ) {
             return {
               id: userWorkspaceId,

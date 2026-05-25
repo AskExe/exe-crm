@@ -1,4 +1,4 @@
-import { createPublicKey } from 'crypto';
+import { createPublicKey, type JsonWebKey as CryptoJsonWebKey } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -455,7 +455,7 @@ export class AccessTokenService {
     }
 
     return createPublicKey({
-      key: jwk as JsonWebKey,
+      key: jwk as CryptoJsonWebKey,
       format: 'jwk',
     });
   }

@@ -1,4 +1,5 @@
 import { type ObjectsPermissions } from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
 import {
   type DeepPartial,
   type DeleteResult,
@@ -17,6 +18,7 @@ import {
 } from 'typeorm';
 import { type PickKeysByType } from 'typeorm/common/PickKeysByType';
 import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { type UpdateOptions } from 'typeorm/repository/UpdateOptions';
 import { type UpsertOptions } from 'typeorm/repository/UpsertOptions';
 
 import { type FeatureFlagMap } from 'src/engine/core-modules/feature-flag/interfaces/feature-flag-map.interface';
@@ -436,11 +438,14 @@ export class WorkspaceRepository<
       | Date[]
       | ObjectId
       | ObjectId[]
-      | FindOptionsWhere<T>,
-    entityManager?: WorkspaceEntityManager,
+      | FindOptionsWhere<T>
+      | FindOptionsWhere<T>[],
+    entityManager?: WorkspaceEntityManager | UpdateOptions,
     selectedColumns?: string[],
   ): Promise<UpdateResult> {
-    const manager = entityManager || this.manager;
+    const manager = this.isWorkspaceEntityManager(entityManager)
+      ? entityManager
+      : this.manager;
 
     if (typeof criteria === 'object' && 'where' in criteria) {
       criteria = await this.transformOptions(criteria);
@@ -590,12 +595,15 @@ export class WorkspaceRepository<
       | Date[]
       | ObjectId
       | ObjectId[]
-      | FindOptionsWhere<T>,
+      | FindOptionsWhere<T>
+      | FindOptionsWhere<T>[],
     partialEntity: QueryDeepPartialEntity<T>,
-    entityManager?: WorkspaceEntityManager,
+    entityManager?: WorkspaceEntityManager | UpdateOptions,
     selectedColumns?: string[],
   ): Promise<UpdateResult> {
-    const manager = entityManager || this.manager;
+    const manager = this.isWorkspaceEntityManager(entityManager)
+      ? entityManager
+      : this.manager;
 
     if (typeof criteria === 'object' && 'where' in criteria) {
       criteria = await this.transformOptions(criteria);
@@ -613,6 +621,12 @@ export class WorkspaceRepository<
       permissionOptions,
       selectedColumns,
     );
+  }
+
+  private isWorkspaceEntityManager(
+    entityManager?: WorkspaceEntityManager | UpdateOptions,
+  ): entityManager is WorkspaceEntityManager {
+    return isDefined(entityManager) && 'internalContext' in entityManager;
   }
 
   // Experimental method to allow batch update and batch event emission
@@ -918,7 +932,7 @@ export class WorkspaceRepository<
   /**
    * DEPRECATED AND RESTRICTED METHODS
    */
-  override async query(): Promise<unknown> {
+  override async query<TResult = unknown>(): Promise<TResult> {
     throw new PermissionsException(
       'Method not allowed.',
       PermissionsExceptionCode.RAW_SQL_NOT_ALLOWED,

@@ -30,6 +30,7 @@ import { FindOptionsUtils } from 'typeorm/find-options/FindOptionsUtils';
 import { EntityPersistExecutor } from 'typeorm/persistence/EntityPersistExecutor';
 import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { PlainObjectToDatabaseEntityTransformer } from 'typeorm/query-builder/transformer/PlainObjectToDatabaseEntityTransformer';
+import { type UpdateOptions } from 'typeorm/repository/UpdateOptions';
 import { type UpsertOptions } from 'typeorm/repository/UpsertOptions';
 import { InstanceChecker } from 'typeorm/util/InstanceChecker';
 
@@ -338,10 +339,15 @@ export class WorkspaceEntityManager extends EntityManager {
       | ObjectId[]
       | unknown,
     partialEntity: QueryDeepPartialEntity<Entity>,
-    permissionOptions?: PermissionOptions,
+    permissionOptions?: PermissionOptions | UpdateOptions,
     selectedColumns: string[] | '*' = '*',
   ): Promise<UpdateResult> {
     const metadata = this.connection.getMetadata(target);
+    const workspacePermissionOptions = this.isWorkspacePermissionOptions(
+      permissionOptions,
+    )
+      ? permissionOptions
+      : undefined;
 
     if (
       criteria === undefined ||
@@ -365,7 +371,7 @@ export class WorkspaceEntityManager extends EntityManager {
         target,
         metadata.name,
         undefined,
-        permissionOptions,
+        workspacePermissionOptions,
       )
         .update()
         .set(partialEntity)
@@ -377,7 +383,7 @@ export class WorkspaceEntityManager extends EntityManager {
         target,
         metadata.name,
         undefined,
-        permissionOptions,
+        workspacePermissionOptions,
       )
         .update()
         .set(partialEntity)
@@ -385,6 +391,16 @@ export class WorkspaceEntityManager extends EntityManager {
         .returning(selectedColumns)
         .execute();
     }
+  }
+
+  private isWorkspacePermissionOptions(
+    options?: PermissionOptions | UpdateOptions,
+  ): options is PermissionOptions {
+    return (
+      isDefined(options) &&
+      ('shouldBypassPermissionChecks' in options ||
+        'objectRecordsPermissions' in options)
+    );
   }
 
   public updateMany<Entity extends ObjectLiteral>(

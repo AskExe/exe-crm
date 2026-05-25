@@ -57,14 +57,29 @@ export class MessagingMessageListFetchCronJob {
           activeWorkspace.id,
         );
 
+        const workspaceSchemaName = getWorkspaceSchemaName(
+          activeWorkspace.id,
+        ).replace(/"/g, '""');
+
         const [messageChannels] = isMigrated
           ? await this.coreDataSource.query(
-              `UPDATE core."messageChannel" SET "syncStage" = '${MessageChannelSyncStage.MESSAGE_LIST_FETCH_SCHEDULED}', "syncStageStartedAt" = COALESCE("syncStageStartedAt", '${now}')
-               WHERE "workspaceId" = '${activeWorkspace.id}' AND "isSyncEnabled" = true AND "syncStage" = '${MessageChannelSyncStage.MESSAGE_LIST_FETCH_PENDING}' RETURNING *`,
+              `UPDATE core."messageChannel" SET "syncStage" = $1, "syncStageStartedAt" = COALESCE("syncStageStartedAt", $2)
+               WHERE "workspaceId" = $3 AND "isSyncEnabled" = true AND "syncStage" = $4 RETURNING *`,
+              [
+                MessageChannelSyncStage.MESSAGE_LIST_FETCH_SCHEDULED,
+                now,
+                activeWorkspace.id,
+                MessageChannelSyncStage.MESSAGE_LIST_FETCH_PENDING,
+              ],
             )
           : await this.coreDataSource.query(
-              `UPDATE ${getWorkspaceSchemaName(activeWorkspace.id)}."messageChannel" SET "syncStage" = '${MessageChannelSyncStage.MESSAGE_LIST_FETCH_SCHEDULED}', "syncStageStartedAt" = COALESCE("syncStageStartedAt", '${now}')
-               WHERE "isSyncEnabled" = true AND "syncStage" = '${MessageChannelSyncStage.MESSAGE_LIST_FETCH_PENDING}' RETURNING *`,
+              `UPDATE "${workspaceSchemaName}"."messageChannel" SET "syncStage" = $1, "syncStageStartedAt" = COALESCE("syncStageStartedAt", $2)
+               WHERE "isSyncEnabled" = true AND "syncStage" = $3 RETURNING *`,
+              [
+                MessageChannelSyncStage.MESSAGE_LIST_FETCH_SCHEDULED,
+                now,
+                MessageChannelSyncStage.MESSAGE_LIST_FETCH_PENDING,
+              ],
             );
 
         for (const messageChannel of messageChannels) {
@@ -73,6 +88,9 @@ export class MessagingMessageListFetchCronJob {
             {
               workspaceId: activeWorkspace.id,
               messageChannelId: messageChannel.id,
+            },
+            {
+              id: `${MessagingMessageListFetchJob.name}:${activeWorkspace.id}:${messageChannel.id}`,
             },
           );
         }
