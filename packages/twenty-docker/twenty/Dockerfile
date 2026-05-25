@@ -76,7 +76,7 @@ RUN if [ -d /app/packages/twenty-front/build ]; then \
 #   docker build --target twenty-app-dev -f packages/twenty-docker/twenty/Dockerfile .
 # ===========================================================================
 
-FROM alpine:3.20 AS s6-fetch
+FROM alpine:3.23 AS s6-fetch
 ARG S6_OVERLAY_VERSION=3.2.0.2
 ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "arm64" ]; then echo "aarch64" > /tmp/s6arch; \
