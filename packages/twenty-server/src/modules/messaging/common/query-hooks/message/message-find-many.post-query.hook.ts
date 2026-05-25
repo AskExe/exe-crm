@@ -13,9 +13,7 @@ import { type MessageWorkspaceEntity } from 'src/modules/messaging/common/standa
   key: `message.findMany`,
   type: WorkspaceQueryHookType.POST_HOOK,
 })
-export class MessageFindManyPostQueryHook
-  implements WorkspacePostQueryHookInstance
-{
+export class MessageFindManyPostQueryHook implements WorkspacePostQueryHookInstance {
   constructor(
     private readonly applyMessagesVisibilityRestrictionsService: ApplyMessagesVisibilityRestrictionsService,
   ) {}

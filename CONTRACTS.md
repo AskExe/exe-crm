@@ -127,6 +127,15 @@ Without a reverse proxy, the application has no global IP-based rate limiting. T
 
 Exe CRM does not currently expose its own MCP server. It is consumed as a standalone service reached via `SERVER_URL`. Future MCP tooling (if added) will be documented here.
 
+## External Service Dependencies
+
+| Service                  | Used by                        | Purpose                                       | Required? |
+| ------------------------ | ------------------------------ | --------------------------------------------- | --------- |
+| `twenty-companies.com`   | `create-company.service.ts`    | Company enrichment (logo, domain lookup)       | No — gracefully degrades if unavailable |
+| `fonts.googleapis.com`   | Branding block in `index.html` | Custom font loading for white-label branding   | No — falls back to system fonts |
+
+> **Note:** `twenty-companies.com` is an upstream (Twenty) service. It is not Exe-controlled. Customer data (company names) is sent to this service for enrichment. If this conflicts with data sovereignty requirements, disable company enrichment or replace the `TWENTY_COMPANIES_BASE_URL` constant in `packages/twenty-shared/src/constants/TwentyCompaniesBaseUrl.ts`.
+
 ## Cross-Repo Dependencies
 
 | Dependency | Relationship                                                                                                                                     |

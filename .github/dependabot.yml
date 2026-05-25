@@ -15,3 +15,19 @@ updates:
       - dependency-name: "@nestjs/graphql"
       - dependency-name: "@ptc-org/nestjs-query-graphql"
       - dependency-name: "typeorm"
+
+  - package-ecosystem: "docker"
+    directory: "/packages/twenty-docker/twenty"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    assignees:
+      - "mabdullahabaid"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    assignees:
+      - "mabdullahabaid"

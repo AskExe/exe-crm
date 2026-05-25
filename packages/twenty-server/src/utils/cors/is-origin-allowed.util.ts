@@ -44,9 +44,7 @@ export const isOriginAllowed = async ({
   }
 
   if (LOCAL_ORIGIN_REGEX.test(normalizedOrigin)) {
-    return (
-      twentyConfigService.get('NODE_ENV') === NodeEnvironment.DEVELOPMENT
-    );
+    return twentyConfigService.get('NODE_ENV') === NodeEnvironment.DEVELOPMENT;
   }
 
   if (getConfiguredOrigins(twentyConfigService).has(normalizedOrigin)) {

@@ -29,7 +29,9 @@ describe('AboutExeCRMAttribution', () => {
 
   it('renders the source-code URL inline', () => {
     expect(
-      screen.getByText('Source code available at: https://github.com/AskExe/exe-crm'),
+      screen.getByText(
+        'Source code available at: https://github.com/AskExe/exe-crm',
+      ),
     ).toBeInTheDocument();
   });
 

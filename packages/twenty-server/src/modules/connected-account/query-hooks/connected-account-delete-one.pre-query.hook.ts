@@ -14,9 +14,7 @@ import { MessageChannelDataAccessService } from 'src/engine/metadata-modules/mes
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 @WorkspaceQueryHook(`connectedAccount.destroyOne`)
-export class ConnectedAccountDeleteOnePreQueryHook
-  implements WorkspacePreQueryHookInstance
-{
+export class ConnectedAccountDeleteOnePreQueryHook implements WorkspacePreQueryHookInstance {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly messageChannelDataAccessService: MessageChannelDataAccessService,

@@ -81,7 +81,6 @@ export class AppModule {
     const modules: DynamicModule[] = [];
     const frontPath = join(__dirname, 'front');
 
-
     if (existsSync(frontPath)) {
       modules.push(
         ServeStaticModule.forRoot({

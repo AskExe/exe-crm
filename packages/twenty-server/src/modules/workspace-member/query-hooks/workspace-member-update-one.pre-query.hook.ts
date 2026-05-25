@@ -21,9 +21,7 @@ import { WorkspaceNotFoundDefaultError } from 'src/engine/core-modules/workspace
 import { WorkspaceMemberPreQueryHookService } from 'src/modules/workspace-member/query-hooks/workspace-member-pre-query-hook.service';
 
 @WorkspaceQueryHook(`workspaceMember.updateOne`)
-export class WorkspaceMemberUpdateOnePreQueryHook
-  implements WorkspacePreQueryHookInstance
-{
+export class WorkspaceMemberUpdateOnePreQueryHook implements WorkspacePreQueryHookInstance {
   constructor(
     private readonly workspaceMemberPreQueryHookService: WorkspaceMemberPreQueryHookService,
     @InjectRepository(UserWorkspaceEntity)

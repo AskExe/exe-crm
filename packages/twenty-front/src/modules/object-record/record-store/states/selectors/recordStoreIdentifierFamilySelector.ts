@@ -16,10 +16,7 @@ export const recordStoreIdentifierFamilySelector = createAtomFamilySelector<
 >({
   key: 'recordStoreIdentifierFamilySelector',
   get:
-    ({
-      recordId,
-      allowRequestsToExeIcons,
-    }: RecordStoreIdentifierFamilyKey) =>
+    ({ recordId, allowRequestsToExeIcons }: RecordStoreIdentifierFamilyKey) =>
     ({ get }) => {
       const recordFromStore = get(recordStoreFamilyState, recordId);
       const objectNameSingular = uncapitalize(

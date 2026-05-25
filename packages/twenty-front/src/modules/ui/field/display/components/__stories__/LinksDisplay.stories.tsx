@@ -148,10 +148,7 @@ export const SocialMediaLinks: Story = {
 
     const twitterLink = await canvas.findByText('@askexe');
     expect(twitterLink).toBeVisible();
-    expect(twitterLink).toHaveAttribute(
-      'href',
-      'https://twitter.com/askexe',
-    );
+    expect(twitterLink).toHaveAttribute('href', 'https://twitter.com/askexe');
   },
 };
 

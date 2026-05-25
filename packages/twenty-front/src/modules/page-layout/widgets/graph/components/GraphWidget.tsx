@@ -8,11 +8,11 @@ import { lazy, Suspense } from 'react';
 import { WidgetConfigurationType } from '~/generated-metadata/graphql';
 
 const GraphWidgetGaugeChart = lazy(() =>
-  import(
-    '@/page-layout/widgets/graph/graph-widget-gauge-chart/components/GraphWidgetGaugeChart'
-  ).then((module) => ({
-    default: module.GraphWidgetGaugeChart,
-  })),
+  import('@/page-layout/widgets/graph/graph-widget-gauge-chart/components/GraphWidgetGaugeChart').then(
+    (module) => ({
+      default: module.GraphWidgetGaugeChart,
+    }),
+  ),
 );
 
 export const GraphWidget = () => {

@@ -168,7 +168,9 @@ export class WorkflowTriggerController {
     // Validate webhook authentication when configured.
     // When the trigger has `authentication: 'API_KEY'`, callers must
     // supply a valid workspace API key via `Authorization: Bearer <token>`.
-    const trigger = workflowVersion.trigger as WorkflowWebhookTrigger | undefined;
+    const trigger = workflowVersion.trigger as
+      | WorkflowWebhookTrigger
+      | undefined;
 
     if (trigger?.settings?.authentication === 'API_KEY') {
       const authHeader = request.headers.authorization;

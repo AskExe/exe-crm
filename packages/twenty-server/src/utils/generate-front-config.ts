@@ -44,8 +44,7 @@ const BRANDING_DEFAULTS: BrandingConfig = {
 };
 
 function loadBranding(): BrandingConfig {
-  const configPath =
-    process.env.BRANDING_CONFIG_PATH || '/app/branding.json';
+  const configPath = process.env.BRANDING_CONFIG_PATH || '/app/branding.json';
 
   try {
     if (fs.existsSync(configPath)) {
@@ -101,7 +100,11 @@ function generateBrandingBlock(branding: BrandingConfig): string {
   const bgSecondary = lighten(background, 0.04);
   const bgTertiary = lighten(background, 0.07);
 
-  const fontFamilies = [branding.fonts.heading, branding.fonts.body, branding.fonts.mono]
+  const fontFamilies = [
+    branding.fonts.heading,
+    branding.fonts.body,
+    branding.fonts.mono,
+  ]
     .filter(Boolean)
     .map((f) => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`)
     .join('&');
@@ -120,7 +123,7 @@ function generateBrandingBlock(branding: BrandingConfig): string {
         --t-font-color-secondary: ${rgba(text, 0.6)};
         --t-font-color-tertiary: ${rgba(text, 0.35)};
         --t-border-color-strong: ${rgba(text, 0.16)};
-        --t-border-color-medium: ${rgba(text, 0.10)};
+        --t-border-color-medium: ${rgba(text, 0.1)};
         --t-border-color-light: ${rgba(text, 0.06)};
         --t-background-primary-inverted: ${text};
       }

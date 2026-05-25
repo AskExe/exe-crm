@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout PR head with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
