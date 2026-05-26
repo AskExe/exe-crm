@@ -10,4 +10,11 @@ export class BillingUsageService {
   }) {
     return;
   }
+
+  async canFeatureBeUsed(
+    _workspaceId: string,
+    _productKey?: string,
+  ): Promise<boolean> {
+    return true;
+  }
 }

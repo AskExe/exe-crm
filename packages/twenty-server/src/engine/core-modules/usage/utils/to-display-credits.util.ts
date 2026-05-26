@@ -1,4 +1,4 @@
 // Stub: exe-os usage metering
-export function toDisplayCredits(credits: number): string {
-  return `${credits} credits`;
+export function toDisplayCredits(creditsMicro: number): number {
+  return creditsMicro / 1_000_000;
 }

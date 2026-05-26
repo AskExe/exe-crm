@@ -5,4 +5,10 @@ import { Field, ObjectType } from '@nestjs/graphql';
 export class BillingSubscriptionEntity {
   @Field()
   id: string;
+
+  @Field({ nullable: true })
+  workspaceId?: string;
+
+  @Field({ nullable: true })
+  status?: string;
 }

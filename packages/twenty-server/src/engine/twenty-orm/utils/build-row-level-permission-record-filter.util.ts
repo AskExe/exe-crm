@@ -121,7 +121,12 @@ export const buildRowLevelPermissionRecordFilter = ({
           isCompositeFieldMetadataType(workspaceMemberFieldMetadata.type) &&
           typeof rawWorkspaceMemberValue === 'object'
         ) {
-          predicateValue = rawWorkspaceMemberValue[workspaceMemberSubFieldName];
+          predicateValue = (
+            rawWorkspaceMemberValue as Record<
+              string,
+              RowLevelPermissionPredicateValue
+            >
+          )[workspaceMemberSubFieldName];
         } else {
           predicateValue = rawWorkspaceMemberValue;
         }

@@ -8,4 +8,7 @@ export class BillingTrialPeriodDTO {
 
   @Field({ nullable: true })
   isTrial?: boolean;
+
+  @Field({ nullable: true })
+  isCreditCardRequired?: boolean;
 }

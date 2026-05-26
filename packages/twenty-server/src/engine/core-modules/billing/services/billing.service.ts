@@ -19,4 +19,11 @@ export class BillingService {
   ): Promise<boolean> {
     return true;
   }
+
+  async canBillMeteredProduct(
+    _workspaceId: string,
+    _productKey: string,
+  ): Promise<boolean> {
+    return true;
+  }
 }

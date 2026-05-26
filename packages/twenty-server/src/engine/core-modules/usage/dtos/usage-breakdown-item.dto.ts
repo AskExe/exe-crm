@@ -4,7 +4,10 @@ import { Field, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class UsageBreakdownItemDTO {
   @Field()
-  label: string;
+  key: string;
+
+  @Field({ nullable: true })
+  label?: string;
 
   @Field()
   value: number;

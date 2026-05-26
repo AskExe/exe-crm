@@ -1,8 +1,13 @@
 // Stub: exe-os billing
-export const UpdateSubscriptionQuantityJob = {
-  name: 'UpdateSubscriptionQuantityJob',
-};
+import { Injectable } from '@nestjs/common';
 
 export type UpdateSubscriptionQuantityJobData = {
   workspaceId: string;
 };
+
+@Injectable()
+export class UpdateSubscriptionQuantityJob {
+  async handle(_data: UpdateSubscriptionQuantityJobData): Promise<void> {
+    // no-op: exe-os handles billing externally
+  }
+}

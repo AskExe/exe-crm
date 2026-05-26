@@ -7,7 +7,7 @@ import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat
 import { type ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
 import { type RawAuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { type AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
-import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { type FlatWorkspaceMember } from 'src/engine/core-modules/user/types/flat-workspace-member.type';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -20,7 +20,7 @@ declare module 'express-serve-static-core' {
     workspaceId?: string;
     workspaceMetadataVersion?: number;
     workspaceMemberId?: string;
-    workspaceMember?: WorkspaceMemberWorkspaceEntity;
+    workspaceMember?: FlatWorkspaceMember;
     userWorkspaceId?: string;
     authProvider?: AuthProviderEnum | null;
     impersonationContext?: RawAuthContext['impersonationContext'];

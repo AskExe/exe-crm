@@ -8,4 +8,12 @@ export class UsageAnalyticsService {
   }) {
     return [];
   }
+
+  async getAdminAiUsageByWorkspace(_params: {
+    periodStart: Date;
+    periodEnd: Date;
+    useDollarMode?: boolean;
+  }): Promise<Array<{ key: string; value: number; label?: string }>> {
+    return [];
+  }
 }
