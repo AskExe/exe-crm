@@ -46,13 +46,15 @@ export class MessageQueueService {
     options: QueueCronJobOptions;
     jobId?: string;
   }): Promise<void> {
-    return this.driver.addCron({
-      queueName: this.queueName,
-      jobName,
-      data,
-      options,
-      jobId,
-    });
+    return Promise.resolve(
+      this.driver.addCron({
+        queueName: this.queueName,
+        jobName,
+        data,
+        options,
+        jobId,
+      }),
+    );
   }
 
   removeCron({
@@ -62,11 +64,13 @@ export class MessageQueueService {
     jobName: string;
     jobId?: string;
   }): Promise<void> {
-    return this.driver.removeCron({
-      queueName: this.queueName,
-      jobName,
-      jobId,
-    });
+    return Promise.resolve(
+      this.driver.removeCron({
+        queueName: this.queueName,
+        jobName,
+        jobId,
+      }),
+    );
   }
 
   work<T extends MessageQueueJobData>(

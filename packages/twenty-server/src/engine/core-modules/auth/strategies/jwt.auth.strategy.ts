@@ -49,10 +49,11 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly twentyConfigService: TwentyConfigService,
   ) {
     const jwtFromRequestFunction = jwtWrapperService.extractJwtFromRequest();
+    // oxlint-disable-next-line @typescripttypescript/no-explicit-any
     const secretOrKeyProviderFunction = async (
-      _request: unknown,
-      rawJwtToken: string,
-      done: (err: unknown, secret: string | null) => void,
+      _request: any,
+      rawJwtToken: any,
+      done: any,
     ) => {
       try {
         const decodedToken = jwtWrapperService.decode<
