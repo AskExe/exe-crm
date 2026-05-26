@@ -9739,11 +9739,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:11.1.16":
-  version: 11.1.16
-  resolution: "@nestjs/common@npm:11.1.16"
+"@nestjs/common@npm:11.1.18":
+  version: 11.1.18
+  resolution: "@nestjs/common@npm:11.1.18"
   dependencies:
-    file-type: "npm:21.3.0"
+    file-type: "npm:21.3.4"
     iterare: "npm:1.2.1"
     load-esm: "npm:1.0.3"
     tslib: "npm:2.8.1"
@@ -9758,7 +9758,7 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: 10c0/bcc2a22e47f9ad49ade83e299e832183a83782e3fa9f81c0cd9d00b494a1f0193e88c6379e9aa193527dcc959d6de10c795d343af5185a1c085bea0533497bf1
+  checksum: 10c0/d074a1c44099d91b6456212f0a1a62352897e2b9195735eea4e683534d30a305810ec9e9cd0912e77cc20401a16d449283aa8d9302531776ba2f91eeae8b8327
   languageName: node
   linkType: hard
 
@@ -9776,14 +9776,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:11.1.16":
-  version: 11.1.16
-  resolution: "@nestjs/core@npm:11.1.16"
+"@nestjs/core@npm:11.1.18":
+  version: 11.1.18
+  resolution: "@nestjs/core@npm:11.1.18"
   dependencies:
     "@nuxt/opencollective": "npm:0.4.1"
     fast-safe-stringify: "npm:2.1.1"
     iterare: "npm:1.2.1"
-    path-to-regexp: "npm:8.3.0"
+    path-to-regexp: "npm:8.4.2"
     tslib: "npm:2.8.1"
     uid: "npm:2.0.2"
   peerDependencies:
@@ -9800,7 +9800,7 @@ __metadata:
       optional: true
     "@nestjs/websockets":
       optional: true
-  checksum: 10c0/1bbd899da0bd1cdde3053c258099e27aa8abb6a87e3fa2d58ebbfb74d2fab4d291ad818719eaef2a0eb0e447dbb24d5d4c1f704e5ff1029937a76aa2af0763ae
+  checksum: 10c0/324d7006b6a564cba7c7939a99928270d4e2f3c31172c596297ba97a150857458c431eae78ed5ef1c697aa754cf4179444be44184931183ed3063416cca1d381
   languageName: node
   linkType: hard
 
@@ -16483,24 +16483,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:10.27.0":
-  version: 10.27.0
-  resolution: "@sentry/core@npm:10.27.0"
-  checksum: 10c0/4562abd3f786d6ebfcb7282905dd5c31dadf92e250d1425c34a6dbf683c0df1306ef4d5b2a389a9a8c25106312d8e476325829aac5194051275e7c6817ac3a48
-  languageName: node
-  linkType: hard
-
 "@sentry/core@npm:10.36.0":
   version: 10.36.0
   resolution: "@sentry/core@npm:10.36.0"
   checksum: 10c0/1ccd2177af7305f7dbe4ac4d6a377d71f2889f01bbc92fafb40431dba08d64c3b78ec769d94744f15abbfd3e55f25254a2ad1f5b34745abd1398c6d9b88aee78
-  languageName: node
-  linkType: hard
-
-"@sentry/core@npm:8.55.0":
-  version: 8.55.0
-  resolution: "@sentry/core@npm:8.55.0"
-  checksum: 10c0/51c1768f0bd940a060787b402dba9df3347c918ea4c0fdc300d45c37703ebbf6f7adee9fff332cfd6b23372b33c46e6d2f31a04227762d490aaddc14773894a0
   languageName: node
   linkType: hard
 
@@ -29656,16 +29642,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:36.4.0":
-  version: 36.4.0
-  resolution: "electron@npm:36.4.0"
+"electron@npm:39.8.1":
+  version: 39.8.1
+  resolution: "electron@npm:39.8.1"
   dependencies:
     "@electron/get": "npm:^2.0.0"
     "@types/node": "npm:^22.7.7"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 10c0/c82fab3fbda01e5be561509f362bbbce1179f50e6f2fe3b5262cbb622887ae7c0f8d0ac728190207d3fb9480f3144ce5ddfbd1a6145627c3d267cd24811e9fdf
+  checksum: 10c0/e540bd3ba3a2f24671c5cc0c5e79b9f4640116b987b7c20e8d170ef0ff59f6a9636fdd73d8b338f41395b5720d7d81ff593533cff45b776e0cdd7383254d48af
   languageName: node
   linkType: hard
 
@@ -49538,7 +49524,7 @@ __metadata:
     css-loader: "npm:^6.11.0"
     dotenv: "npm:^16.5.0"
     easymde: "npm:^2.20.0"
-    electron: "npm:36.4.0"
+    electron: "npm:39.8.1"
     electron-squirrel-startup: "npm:^1.0.1"
     express: "npm:^4.18.2"
     marked: "npm:^5.0.0"
@@ -49804,9 +49790,9 @@ __metadata:
     "@nestjs/axios": "npm:3.1.2"
     "@nestjs/cache-manager": "npm:^2.3.0"
     "@nestjs/cli": "npm:^11.0.16"
-    "@nestjs/common": "npm:11.1.16"
+    "@nestjs/common": "npm:11.1.18"
     "@nestjs/config": "npm:3.3.0"
-    "@nestjs/core": "npm:11.1.16"
+    "@nestjs/core": "npm:11.1.18"
     "@nestjs/event-emitter": "npm:2.1.0"
     "@nestjs/graphql": "patch:@nestjs/graphql@12.1.1#./patches/@nestjs+graphql+12.1.1.patch"
     "@nestjs/jwt": "npm:11.0.1"

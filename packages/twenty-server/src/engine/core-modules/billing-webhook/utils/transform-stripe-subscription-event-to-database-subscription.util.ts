@@ -77,7 +77,7 @@ export const transformStripeSubscriptionEventToDatabaseSubscription = (
     collectionMethod:
       (BillingSubscriptionCollectionMethod as Record<string, string>)[
         subscription.collection_method.toUpperCase()
-      ],
+      ] as BillingSubscriptionCollectionMethod,
     automaticTax: toAutomaticTaxJson(subscription.automatic_tax),
     cancellationDetails: toCancellationDetailsJson(
       subscription.cancellation_details,
@@ -87,16 +87,16 @@ export const transformStripeSubscriptionEventToDatabaseSubscription = (
       : undefined,
     trialStart: subscription.trial_start
       ? getDateFromTimestamp(subscription.trial_start)
-      : undefined,
+      : null,
     trialEnd: subscription.trial_end
       ? getDateFromTimestamp(subscription.trial_end)
-      : undefined,
+      : null,
     cancelAt: subscription.cancel_at
       ? getDateFromTimestamp(subscription.cancel_at)
-      : undefined,
+      : null,
     canceledAt: subscription.canceled_at
       ? getDateFromTimestamp(subscription.canceled_at)
-      : undefined,
+      : null,
   };
 };
 

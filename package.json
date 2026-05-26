@@ -181,6 +181,7 @@
   "name": "twenty",
   "packageManager": "yarn@4.13.0",
   "resolutions": {
+    "@sentry/core": "10.36.0",
     "graphql": "16.8.1",
     "type-fest": "4.10.1",
     "typescript": "5.9.2",

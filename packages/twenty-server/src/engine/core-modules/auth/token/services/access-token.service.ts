@@ -480,7 +480,7 @@ export class AccessTokenService {
     return this.twentyConfigService.get('GOTRUE_JWT_AUDIENCE');
   }
 
-  private getGoTrueIssuers(gotrueUrl: string) {
+  private getGoTrueIssuers(gotrueUrl: string): [string, ...string[]] {
     const configuredIssuer = this.twentyConfigService.get('GOTRUE_JWT_ISSUER');
 
     if (configuredIssuer) {
@@ -494,7 +494,9 @@ export class AccessTokenService {
       .toString()
       .replace(/\/$/, '');
 
-    return [...new Set([normalizedGoTrueUrl, authV1Issuer])];
+    const unique = [...new Set([normalizedGoTrueUrl, authV1Issuer])];
+
+    return unique as [string, ...string[]];
   }
 
   private getGoTrueEmail(claims: GoTrueJwtPayload): string | null {
