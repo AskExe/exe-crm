@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build shared
+        run: npx nx build twenty-shared
+
+      - name: Build oxlint plugin
+        run: npx nx build twenty-oxlint-rules
+
+      - name: Typecheck frontend
+        run: npx nx typecheck twenty-front
+
+      - name: Typecheck server
+        run: npx nx typecheck twenty-server
+
+      - name: Lint server
+        run: npx nx lint twenty-server
+
+  brand-drift:
+    name: Brand drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Detect "twenty" in PR-added lines
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ALLOWLIST_FILE: .brand-drift-allowlist.txt
+          SCAN_PATHS: 'packages/ README.md NOTICE'
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "${ALLOWLIST_FILE}" ]; then
+            echo "::error::Missing ${ALLOWLIST_FILE} at repo root."
+            exit 1
+          fi
+
+          mapfile -t ALLOWED < <(grep -vE '^\s*(#|$)' "${ALLOWLIST_FILE}" || true)
+
+          is_allowed() {
+            local candidate="$1"
+            for entry in "${ALLOWED[@]}"; do
+              if [ "${candidate}" = "${entry}" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          MERGE_BASE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          # shellcheck disable=SC2086
+          CHANGED_FILES=$(git diff --name-only --diff-filter=AM \
+            "${MERGE_BASE}" "${HEAD_SHA}" -- ${SCAN_PATHS} || true)
+
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No files in scope changed in this PR."
+            exit 0
+          fi
+
+          violations=0
+          while IFS= read -r file; do
+            [ -z "${file}" ] && continue
+            if is_allowed "${file}"; then
+              echo "skip (allowlisted): ${file}"
+              continue
+            fi
+
+            added=$(git diff -U0 "${MERGE_BASE}" "${HEAD_SHA}" -- "${file}" \
+              | grep -E '^\+[^+]' || true)
+
+            if [ -z "${added}" ]; then
+              continue
+            fi
+
+            if echo "${added}" | grep -iqE 'twenty'; then
+              echo "::error file=${file}::Brand drift: PR adds 'twenty' to ${file}."
+              echo "${added}" | grep -iE 'twenty' | sed 's/^/    /'
+              violations=$((violations + 1))
+            fi
+          done <<< "${CHANGED_FILES}"
+
+          if [ "${violations}" -gt 0 ]; then
+            echo "::error::${violations} file(s) introduced 'twenty' outside the brand-drift allowlist."
+            exit 1
+          fi
+
+          echo "Brand drift check passed."
+
+  server-tests:
+    name: Server unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build shared
+        run: npx nx build twenty-shared
+
+      - name: Run server tests
+        run: npx nx test twenty-server -- --passWithNoTests
