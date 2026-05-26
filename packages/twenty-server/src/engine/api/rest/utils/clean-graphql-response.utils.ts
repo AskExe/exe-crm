@@ -18,7 +18,8 @@ export const cleanGraphQLResponse = (input: any) => {
       if (isObject(obj[key])) {
         if (obj[key].edges) {
           // Handle edges by mapping over them and applying cleanObject to each node
-          cleanedObj[key] = obj[key].edges.map((edge) =>
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+          cleanedObj[key] = obj[key].edges.map((edge: any) =>
             cleanObject(edge.node),
           );
         } else {
@@ -27,7 +28,6 @@ export const cleanGraphQLResponse = (input: any) => {
         }
       } else {
         // Directly assign non-object properties
-        // @ts-expect-error legacy noImplicitAny
         cleanedObj[key] = obj[key];
       }
     });
@@ -38,7 +38,8 @@ export const cleanGraphQLResponse = (input: any) => {
   Object.keys(input).forEach((key) => {
     if (isObject(input[key]) && input[key].edges) {
       // Handle collections with edges, ensuring data is placed under the data key
-      output.data[key] = input[key].edges.map((edge) => cleanObject(edge.node));
+      // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+      output.data[key] = input[key].edges.map((edge: any) => cleanObject(edge.node));
       // Move pageInfo and totalCount to the top level
       if (input[key].pageInfo) {
         output['pageInfo'] = input[key].pageInfo;
@@ -50,11 +51,13 @@ export const cleanGraphQLResponse = (input: any) => {
       // Recursively clean and assign nested objects under the data key
       output.data[key] = cleanObject(input[key]);
     } else if (Array.isArray(input[key])) {
-      const itemsWithEdges = input[key].filter((item) => item.edges);
-      const cleanedObjArray = itemsWithEdges.map(({ edges, ...item }) => {
+      const itemsWithEdges = input[key].filter((item: unknown) => (item as Record<string, unknown>).edges);
+      // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+      const cleanedObjArray = itemsWithEdges.map(({ edges, ...item }: any) => {
         return {
           ...item,
-          [key]: edges.map((edge) => cleanObject(edge.node)),
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+          [key]: edges.map((edge: any) => cleanObject(edge.node)),
         };
       });
 

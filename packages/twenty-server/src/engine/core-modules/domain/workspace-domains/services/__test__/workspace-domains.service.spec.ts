@@ -59,7 +59,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return a URL containing the correct customDomain if customDomain is provided', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
@@ -82,7 +83,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return a URL containing the correct subdomain if customDomain is not provided but subdomain is', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -108,7 +110,8 @@ describe('WorkspaceDomainsService', () => {
     it('should build workspace URL with given subdomain', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -132,7 +135,8 @@ describe('WorkspaceDomainsService', () => {
     it('should set the pathname if provided', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
@@ -155,7 +159,8 @@ describe('WorkspaceDomainsService', () => {
     it('should set the search parameters if provided', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
@@ -184,7 +189,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return default workspace if IS_MULTIWORKSPACE_ENABLED=false', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
@@ -210,7 +216,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return 1st workspace if multiple workspaces when IS_MULTIWORKSPACE_ENABLED=false', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
@@ -239,7 +246,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return workspace by subdomain', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -264,7 +272,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return workspace by customDomain', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -289,7 +298,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return workspace by publicDomain', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -318,7 +328,8 @@ describe('WorkspaceDomainsService', () => {
     it('should return undefined if nothing found', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,

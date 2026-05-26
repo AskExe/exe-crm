@@ -46,7 +46,8 @@ describe('SubdomainManagerService', () => {
     it('should build the base URL from environment variables', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
@@ -62,7 +63,8 @@ describe('SubdomainManagerService', () => {
     it('should append default subdomain if multiworkspace is enabled', () => {
       jest
         .spyOn(twentyConfigService, 'get')
-        .mockImplementation((key: string) => {
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        .mockImplementation((key: any) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
