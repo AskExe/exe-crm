@@ -50,7 +50,7 @@ export const parseFilter = (
       result[conjunction] = subResult;
     }
 
-    return result;
+    return result as Record<string, FieldValue>;
   }
   const { fields, comparator, value } = parseBaseFilter(filterQuery);
 

@@ -66,7 +66,7 @@ export const parseOrderBy = (
 
     const resultFields = Object.keys(fieldResult).map((key) => ({
       [key]: fieldResult[key],
-    }));
+    })) as Record<string, OrderByDirection>[];
 
     result = [...result, ...resultFields];
   }
