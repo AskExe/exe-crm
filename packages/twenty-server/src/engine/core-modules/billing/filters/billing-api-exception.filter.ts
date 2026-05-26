@@ -1,5 +1,9 @@
 // Stub: exe-os billing
-import { Catch, type ExceptionFilter, type ArgumentsHost } from '@nestjs/common';
+import {
+  Catch,
+  type ExceptionFilter,
+  type ArgumentsHost,
+} from '@nestjs/common';
 
 import { BillingException } from 'src/engine/core-modules/billing/billing.exception';
 

@@ -56,9 +56,7 @@ export const SignInUpWorkspaceScopeForm = () => {
           <SignInUpWithMicrosoft action="join-workspace" />
         )}
 
-        {(providers.google ||
-          providers.microsoft) &&
-        providers.password ? (
+        {(providers.google || providers.microsoft) && providers.password ? (
           <HorizontalSeparator />
         ) : null}
         {providers.password && (

@@ -37,18 +37,22 @@ export const generateFakeRecordField = ({
       label: label,
       fieldMetadataId,
       // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-      value: compositeType.properties.reduce<Record<string, any>>((acc, property) => {
-        acc[property.name] = {
-          isLeaf: true,
-          type: property.type,
-          label: camelToTitleCase(property.name),
-          value: value || generateFakeValue(property.type, 'FieldMetadataType'),
-          fieldMetadataId,
-          isCompositeSubField: true,
-        };
+      value: compositeType.properties.reduce<Record<string, any>>(
+        (acc, property) => {
+          acc[property.name] = {
+            isLeaf: true,
+            type: property.type,
+            label: camelToTitleCase(property.name),
+            value:
+              value || generateFakeValue(property.type, 'FieldMetadataType'),
+            fieldMetadataId,
+            isCompositeSubField: true,
+          };
 
-        return acc;
-      }, {}),
+          return acc;
+        },
+        {},
+      ),
     };
   }
 

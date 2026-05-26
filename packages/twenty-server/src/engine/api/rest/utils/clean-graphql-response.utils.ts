@@ -39,7 +39,9 @@ export const cleanGraphQLResponse = (input: any) => {
     if (isObject(input[key]) && input[key].edges) {
       // Handle collections with edges, ensuring data is placed under the data key
       // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-      output.data[key] = input[key].edges.map((edge: any) => cleanObject(edge.node));
+      output.data[key] = input[key].edges.map((edge: any) =>
+        cleanObject(edge.node),
+      );
       // Move pageInfo and totalCount to the top level
       if (input[key].pageInfo) {
         output['pageInfo'] = input[key].pageInfo;
@@ -51,7 +53,9 @@ export const cleanGraphQLResponse = (input: any) => {
       // Recursively clean and assign nested objects under the data key
       output.data[key] = cleanObject(input[key]);
     } else if (Array.isArray(input[key])) {
-      const itemsWithEdges = input[key].filter((item: unknown) => (item as Record<string, unknown>).edges);
+      const itemsWithEdges = input[key].filter(
+        (item: unknown) => (item as Record<string, unknown>).edges,
+      );
       // oxlint-disable-next-line @typescripttypescript/no-explicit-any
       const cleanedObjArray = itemsWithEdges.map(({ edges, ...item }: any) => {
         return {

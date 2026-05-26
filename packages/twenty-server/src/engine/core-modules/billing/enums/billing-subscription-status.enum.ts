@@ -12,4 +12,3 @@ export enum BillingSubscriptionStatus {
 // Legacy alias
 export const SubscriptionStatus = BillingSubscriptionStatus;
 export type SubscriptionStatus = BillingSubscriptionStatus;
-

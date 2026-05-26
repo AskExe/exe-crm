@@ -8,9 +8,7 @@ import { type WorkspaceSSOIdentityProviderEntity } from 'src/engine/core-modules
 export class SSOService {
   async findSSOIdentityProviderById(
     _id: string,
-  ): Promise<
-    (SSOConfiguration & WorkspaceSSOIdentityProviderEntity) | null
-  > {
+  ): Promise<(SSOConfiguration & WorkspaceSSOIdentityProviderEntity) | null> {
     return null;
   }
 
@@ -28,10 +26,11 @@ export class SSOService {
 
   isSAMLIdentityProvider(
     _provider: SSOConfiguration & WorkspaceSSOIdentityProviderEntity,
-  ): _provider is SSOConfiguration & WorkspaceSSOIdentityProviderEntity & {
-    ssoURL: string;
-    certificate: string;
-  } {
+  ): _provider is SSOConfiguration &
+    WorkspaceSSOIdentityProviderEntity & {
+      ssoURL: string;
+      certificate: string;
+    } {
     return false;
   }
 

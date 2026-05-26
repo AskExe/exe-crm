@@ -173,25 +173,20 @@ export class TimelineMessagingService {
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
         return (threadParticipantsWithCompositeFields as any[]).reduce<
           Record<string, MessageParticipantWorkspaceEntity[]>
-        >(
-          (threadParticipantsAcc, threadParticipant) => {
-            if (!threadParticipant.message.messageThreadId)
-              return threadParticipantsAcc;
-
-            if (
-              !threadParticipantsAcc[threadParticipant.message.messageThreadId]
-            )
-              threadParticipantsAcc[threadParticipant.message.messageThreadId] =
-                [];
-
-            threadParticipantsAcc[
-              threadParticipant.message.messageThreadId
-            ].push(threadParticipant);
-
+        >((threadParticipantsAcc, threadParticipant) => {
+          if (!threadParticipant.message.messageThreadId)
             return threadParticipantsAcc;
-          },
-          {},
-        );
+
+          if (!threadParticipantsAcc[threadParticipant.message.messageThreadId])
+            threadParticipantsAcc[threadParticipant.message.messageThreadId] =
+              [];
+
+          threadParticipantsAcc[threadParticipant.message.messageThreadId].push(
+            threadParticipant,
+          );
+
+          return threadParticipantsAcc;
+        }, {});
       },
       authContext,
     );

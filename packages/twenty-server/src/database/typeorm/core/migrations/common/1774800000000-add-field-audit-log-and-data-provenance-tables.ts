@@ -1,8 +1,6 @@
 import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
-export class AddFieldAuditLogAndDataProvenanceTables1774800000000
-  implements MigrationInterface
-{
+export class AddFieldAuditLogAndDataProvenanceTables1774800000000 implements MigrationInterface {
   name = 'AddFieldAuditLogAndDataProvenanceTables1774800000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

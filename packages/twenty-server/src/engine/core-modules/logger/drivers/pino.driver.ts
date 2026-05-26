@@ -66,31 +66,49 @@ export class PinoDriver {
 
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   log(message: any, context?: string, ...args: any[]) {
-    this.logger.info({ context, args: args.length ? args : undefined }, String(message));
+    this.logger.info(
+      { context, args: args.length ? args : undefined },
+      String(message),
+    );
   }
 
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   error(message: any, context?: string, ...args: any[]) {
     // NestJS sometimes passes the stack trace as the second arg
     if (context && context.includes('\n')) {
-      this.logger.error({ stack: context, args: args.length ? args : undefined }, String(message));
+      this.logger.error(
+        { stack: context, args: args.length ? args : undefined },
+        String(message),
+      );
     } else {
-      this.logger.error({ context, args: args.length ? args : undefined }, String(message));
+      this.logger.error(
+        { context, args: args.length ? args : undefined },
+        String(message),
+      );
     }
   }
 
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   warn(message: any, context?: string, ...args: any[]) {
-    this.logger.warn({ context, args: args.length ? args : undefined }, String(message));
+    this.logger.warn(
+      { context, args: args.length ? args : undefined },
+      String(message),
+    );
   }
 
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   debug(message: any, context?: string, ...args: any[]) {
-    this.logger.debug({ context, args: args.length ? args : undefined }, String(message));
+    this.logger.debug(
+      { context, args: args.length ? args : undefined },
+      String(message),
+    );
   }
 
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   verbose(message: any, context?: string, ...args: any[]) {
-    this.logger.trace({ context, args: args.length ? args : undefined }, String(message));
+    this.logger.trace(
+      { context, args: args.length ? args : undefined },
+      String(message),
+    );
   }
 }

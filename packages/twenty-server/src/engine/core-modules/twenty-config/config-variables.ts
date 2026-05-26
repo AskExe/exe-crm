@@ -864,7 +864,8 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.LOGGING,
-    description: 'Driver used for logging. PINO outputs structured JSON in production, pretty-prints in development. CONSOLE outputs plain text.',
+    description:
+      'Driver used for logging. PINO outputs structured JSON in production, pretty-prints in development. CONSOLE outputs plain text.',
     type: ConfigVariableType.ENUM,
     options: Object.values(LoggerDriverType),
     isEnvOnly: true,

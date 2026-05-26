@@ -38,7 +38,14 @@ export class DataIngestionService {
       const record = records[i];
 
       try {
-        await this.processRecord(workspaceId, record, source, userId, i, result);
+        await this.processRecord(
+          workspaceId,
+          record,
+          source,
+          userId,
+          i,
+          result,
+        );
       } catch (error) {
         const errorEntry: IngestError = {
           index: i,

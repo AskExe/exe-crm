@@ -3,9 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UsageAnalyticsService {
-  async getUsageBreakdown(_params: {
-    workspaceId: string;
-  }) {
+  async getUsageBreakdown(_params: { workspaceId: string }) {
     return [];
   }
 

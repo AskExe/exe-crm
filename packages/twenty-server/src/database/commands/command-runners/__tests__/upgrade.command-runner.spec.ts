@@ -219,7 +219,10 @@ describe('UpgradeCommandRunner', () => {
     const passedParams: string[] = [];
     const options = {};
 
-    await upgradeCommandRunner.run(passedParams, options as Record<string, unknown>);
+    await upgradeCommandRunner.run(
+      passedParams,
+      options as Record<string, unknown>,
+    );
 
     const { fail: failReport, success: successReport } =
       upgradeCommandRunner.migrationReport;
@@ -245,7 +248,10 @@ describe('UpgradeCommandRunner', () => {
     const passedParams: string[] = [];
     const options = {};
 
-    await upgradeCommandRunner.run(passedParams, options as Record<string, unknown>);
+    await upgradeCommandRunner.run(
+      passedParams,
+      options as Record<string, unknown>,
+    );
 
     [upgradeCommandRunner.runOnWorkspace].forEach((fn) =>
       expect(fn).toHaveBeenCalledTimes(numberOfWorkspace),
@@ -307,7 +313,10 @@ describe('UpgradeCommandRunner', () => {
         const passedParams: string[] = [];
         const options = {};
 
-        await upgradeCommandRunner.run(passedParams, options as Record<string, unknown>);
+        await upgradeCommandRunner.run(
+          passedParams,
+          options as Record<string, unknown>,
+        );
 
         const { fail: failReport, success: successReport } =
           upgradeCommandRunner.migrationReport;

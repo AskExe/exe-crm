@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import {
-  ConnectedAccountProvider,
-  FeatureFlagKey,
-} from 'twenty-shared/types';
+import { ConnectedAccountProvider, FeatureFlagKey } from 'twenty-shared/types';
 
 import { CreateSSOConnectedAccountService } from 'src/engine/core-modules/auth/services/create-sso-connected-account.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';

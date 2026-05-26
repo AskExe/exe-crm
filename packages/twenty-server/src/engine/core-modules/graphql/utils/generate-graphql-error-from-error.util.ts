@@ -18,7 +18,9 @@ export const generateGraphQLErrorFromError = (
   // to the client. Use a generic message for non-HTTP, non-Custom exceptions.
   const isProduction = process.env.NODE_ENV === 'production';
   const safeMessage =
-    isProduction && !(error instanceof HttpException) && !(error instanceof CustomException)
+    isProduction &&
+    !(error instanceof HttpException) &&
+    !(error instanceof CustomException)
       ? 'Internal server error'
       : error.message;
 

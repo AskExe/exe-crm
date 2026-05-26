@@ -390,7 +390,11 @@ describe('TwentyConfigService', () => {
         .mockImplementation((key: keyof ConfigVariables) => {
           const keyStr = String(key);
 
-          if ((mockConfigVarMetadata as Record<string, { isEnvOnly?: boolean }>)[keyStr]?.isEnvOnly) {
+          if (
+            (mockConfigVarMetadata as Record<string, { isEnvOnly?: boolean }>)[
+              keyStr
+            ]?.isEnvOnly
+          ) {
             return environmentConfigDriver.get(key);
           }
           const values: Record<string, string> = {

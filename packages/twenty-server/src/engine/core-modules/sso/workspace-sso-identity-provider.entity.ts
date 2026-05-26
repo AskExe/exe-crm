@@ -21,7 +21,9 @@ export enum SSOIdentityProviderStatus {
 }
 
 registerEnumType(IdentityProviderType, { name: 'IdentityProviderType' });
-registerEnumType(SSOIdentityProviderStatus, { name: 'SSOIdentityProviderStatus' });
+registerEnumType(SSOIdentityProviderStatus, {
+  name: 'SSOIdentityProviderStatus',
+});
 
 @Entity({ name: 'workspaceSSOIdentityProvider', schema: 'core' })
 export class WorkspaceSSOIdentityProviderEntity {
@@ -42,8 +44,9 @@ export class WorkspaceSSOIdentityProviderEntity {
 
   @ManyToOne(
     'WorkspaceEntity',
-    (workspace: { workspaceSSOIdentityProviders: WorkspaceSSOIdentityProviderEntity[] }) =>
-      workspace.workspaceSSOIdentityProviders,
+    (workspace: {
+      workspaceSSOIdentityProviders: WorkspaceSSOIdentityProviderEntity[];
+    }) => workspace.workspaceSSOIdentityProviders,
   )
   @JoinColumn({ name: 'workspaceId' })
   // oxlint-disable-next-line @typescript/no-explicit-any

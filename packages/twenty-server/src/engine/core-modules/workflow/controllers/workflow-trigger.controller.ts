@@ -31,7 +31,10 @@ import {
   WorkflowTriggerException,
   WorkflowTriggerExceptionCode,
 } from 'src/modules/workflow/workflow-trigger/exceptions/workflow-trigger.exception';
-import { WorkflowTriggerType, type WorkflowWebhookTrigger } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
+import {
+  WorkflowTriggerType,
+  type WorkflowWebhookTrigger,
+} from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-trigger/workspace-services/workflow-trigger.workspace-service';
 
 @Controller('webhooks')

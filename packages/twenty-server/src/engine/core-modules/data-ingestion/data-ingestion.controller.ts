@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UseFilters,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Post, UseFilters, UseGuards } from '@nestjs/common';
 
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
 import {
@@ -21,9 +15,7 @@ import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
 @UseFilters(RestApiExceptionFilter)
 export class DataIngestionController {
-  constructor(
-    private readonly dataIngestionService: DataIngestionService,
-  ) {}
+  constructor(private readonly dataIngestionService: DataIngestionService) {}
 
   @Post('ingest')
   async ingest(

@@ -108,12 +108,13 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
-          (resolvers.Query as Record<string, unknown>)[resolverName] = resolverFactory.create({
-            flatObjectMetadata,
-            flatObjectMetadataMaps,
-            flatFieldMetadataMaps,
-            objectIdByNameSingular,
-          });
+          (resolvers.Query as Record<string, unknown>)[resolverName] =
+            resolverFactory.create({
+              flatObjectMetadata,
+              flatObjectMetadataMaps,
+              flatFieldMetadataMaps,
+              objectIdByNameSingular,
+            });
         }
       }
 
@@ -138,12 +139,13 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
-          (resolvers.Mutation as Record<string, unknown>)[resolverName] = resolverFactory.create({
-            flatObjectMetadata,
-            flatObjectMetadataMaps,
-            flatFieldMetadataMaps,
-            objectIdByNameSingular,
-          });
+          (resolvers.Mutation as Record<string, unknown>)[resolverName] =
+            resolverFactory.create({
+              flatObjectMetadata,
+              flatObjectMetadataMaps,
+              flatFieldMetadataMaps,
+              objectIdByNameSingular,
+            });
         }
       }
     }

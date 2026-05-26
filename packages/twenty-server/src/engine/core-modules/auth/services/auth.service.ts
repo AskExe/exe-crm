@@ -7,10 +7,7 @@ import { msg } from '@lingui/core/macro';
 import { render } from '@react-email/render';
 import { PasswordUpdateNotifyEmail } from 'twenty-emails';
 import { PermissionFlagType } from 'twenty-shared/constants';
-import {
-  AppPath,
-  ConnectedAccountProvider,
-} from 'twenty-shared/types';
+import { AppPath, ConnectedAccountProvider } from 'twenty-shared/types';
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
 import { IsNull, Repository } from 'typeorm';
 

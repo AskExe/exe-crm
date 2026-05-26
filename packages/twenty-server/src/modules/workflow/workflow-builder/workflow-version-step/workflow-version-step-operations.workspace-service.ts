@@ -597,7 +597,9 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               (field) => field.name === key,
             );
 
-            const responseValue = responseRecord[key] as Record<string, unknown> | undefined;
+            const responseValue = responseRecord[key] as
+              | Record<string, unknown>
+              | undefined;
 
             if (
               field?.type === 'RECORD' &&
@@ -637,11 +639,14 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           }),
         );
 
-        return enrichedResponses.reduce<Record<string, unknown>>((acc, { key, value }) => {
-          acc[key] = value;
+        return enrichedResponses.reduce<Record<string, unknown>>(
+          (acc, { key, value }) => {
+            acc[key] = value;
 
-          return acc;
-        }, {});
+            return acc;
+          },
+          {},
+        );
       },
       authContext,
     );
