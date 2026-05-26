@@ -1,15 +1,11 @@
-/* @license Enterprise */
-
+// Stub: exe-os billing
 import { Field, ObjectType } from '@nestjs/graphql';
 
-import { Min } from 'class-validator';
-
-@ObjectType('BillingTrialPeriod')
+@ObjectType()
 export class BillingTrialPeriodDTO {
-  @Field(() => Number)
-  @Min(0)
-  duration: number;
+  @Field({ nullable: true })
+  duration?: number;
 
-  @Field(() => Boolean)
-  isCreditCardRequired: boolean;
+  @Field({ nullable: true })
+  isTrial?: boolean;
 }

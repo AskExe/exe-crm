@@ -1,18 +1,11 @@
-/* @license Enterprise */
+// Stub: exe-os billing
+import { Field, ObjectType } from '@nestjs/graphql';
 
-import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
-
-import { BillingEntitlementKey } from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
-
-registerEnumType(BillingEntitlementKey, {
-  name: 'BillingEntitlementKey',
-});
-
-@ObjectType('BillingEntitlement')
+@ObjectType()
 export class BillingEntitlementDTO {
-  @Field(() => BillingEntitlementKey)
-  key: BillingEntitlementKey;
+  @Field()
+  key: string;
 
-  @Field(() => Boolean)
+  @Field()
   value: boolean;
 }

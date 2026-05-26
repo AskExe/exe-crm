@@ -1,12 +1,15 @@
-/* @license Enterprise */
-
-export enum SubscriptionStatus {
-  Active = 'active',
-  Canceled = 'canceled',
-  Incomplete = 'incomplete',
-  IncompleteExpired = 'incomplete_expired',
-  PastDue = 'past_due',
-  Paused = 'paused', // TODO: remove this once paused subscriptions are deprecated
-  Trialing = 'trialing',
-  Unpaid = 'unpaid',
+// Stub: exe-os billing
+export enum BillingSubscriptionStatus {
+  ACTIVE = 'active',
+  CANCELED = 'canceled',
+  INCOMPLETE = 'incomplete',
+  INCOMPLETE_EXPIRED = 'incomplete_expired',
+  PAST_DUE = 'past_due',
+  TRIALING = 'trialing',
+  UNPAID = 'unpaid',
 }
+
+// Legacy alias
+export const SubscriptionStatus = BillingSubscriptionStatus;
+export type SubscriptionStatus = BillingSubscriptionStatus;
+

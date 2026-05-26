@@ -112,26 +112,6 @@ export const SettingsWorkspace = lazy(() =>
   })),
 );
 
-export const SettingsDomains = lazy(() =>
-  import('~/pages/settings/domains/SettingsDomains').then((module) => ({
-    default: module.SettingsDomains,
-  })),
-);
-
-export const SettingsSubdomainPage = lazy(() =>
-  import('~/pages/settings/domains/SettingsSubdomainPage').then((module) => ({
-    default: module.SettingsSubdomainPage,
-  })),
-);
-
-export const SettingsCustomDomainPage = lazy(() =>
-  import('~/pages/settings/domains/SettingsCustomDomainPage').then(
-    (module) => ({
-      default: module.SettingsCustomDomainPage,
-    }),
-  ),
-);
-
 export const SettingsApiWebhooks = lazy(() =>
   import('~/pages/settings/workspace/SettingsApiWebhooks').then((module) => ({
     default: module.SettingsApiWebhooks,
@@ -314,36 +294,6 @@ export const SettingsObjectFieldEdit = lazy(() =>
   import('~/pages/settings/data-model/SettingsObjectFieldEdit').then(
     (module) => ({
       default: module.SettingsObjectFieldEdit,
-    }),
-  ),
-);
-
-export const SettingsSecurity = lazy(() =>
-  import('~/pages/settings/security/SettingsSecurity').then((module) => ({
-    default: module.SettingsSecurity,
-  })),
-);
-
-export const SettingsSecuritySSOIdentifyProvider = lazy(() =>
-  import('~/pages/settings/security/SettingsSecuritySSOIdentifyProvider').then(
-    (module) => ({
-      default: module.SettingsSecuritySSOIdentifyProvider,
-    }),
-  ),
-);
-
-export const SettingsSecurityApprovedAccessDomain = lazy(() =>
-  import('~/pages/settings/security/SettingsSecurityApprovedAccessDomain').then(
-    (module) => ({
-      default: module.SettingsSecurityApprovedAccessDomain,
-    }),
-  ),
-);
-
-export const SettingsEventLogs = lazy(() =>
-  import('~/pages/settings/security/event-logs/SettingsEventLogs').then(
-    (module) => ({
-      default: module.SettingsEventLogs,
     }),
   ),
 );
