@@ -14,10 +14,18 @@ export const generateGraphQLErrorFromError = (
   error: Error | CustomException,
   i18n: I18n,
 ) => {
+  // In production, don't leak internal error messages (DB constraints, stack details)
+  // to the client. Use a generic message for non-HTTP, non-Custom exceptions.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const safeMessage =
+    isProduction && !(error instanceof HttpException) && !(error instanceof CustomException)
+      ? 'Internal server error'
+      : error.message;
+
   const graphqlError =
     error instanceof HttpException
       ? convertExceptionToGraphQLError(error)
-      : new BaseGraphQLError(error.message, ErrorCode.INTERNAL_SERVER_ERROR);
+      : new BaseGraphQLError(safeMessage, ErrorCode.INTERNAL_SERVER_ERROR);
 
   const defaultErrorMessage = msg`An error occurred.`;
 

@@ -137,6 +137,10 @@ const bootstrap = async () => {
   // Inject the server url in the frontend page
   generateFrontConfig();
 
+  // Enable graceful shutdown — drains connections and runs onApplicationShutdown hooks
+  // on SIGTERM/SIGINT (Docker sends SIGTERM on container stop)
+  app.enableShutdownHooks();
+
   await app.listen(twentyConfigService.get('NODE_PORT'));
 };
 
