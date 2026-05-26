@@ -27,7 +27,9 @@ export function filterOutContactsThatBelongToSelfOrWorkspaceMembers(
 
   const workspaceMembersMap = workspaceMembers.reduce<Record<string, boolean>>(
     (map, workspaceMember) => {
-      map[workspaceMember.userEmail.toLowerCase()] = true;
+      if (workspaceMember.userEmail) {
+        map[workspaceMember.userEmail.toLowerCase()] = true;
+      }
 
       return map;
     },

@@ -30,8 +30,7 @@ export default meta;
 export type Story = StoryObj<typeof RecordIndexPage>;
 
 export const Default: Story = {
-  // oxlint-disable-next-line @typescripttypescript/ban-ts-comment
-  // @ts-ignore
+  // @ts-expect-error - Storybook decorator type mismatch
   decorators: [LoadingDecorator, PageDecorator],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

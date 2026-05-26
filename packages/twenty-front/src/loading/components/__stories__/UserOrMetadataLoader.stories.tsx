@@ -79,8 +79,7 @@ export type Story = StoryObj<typeof RecordIndexPage>;
 
 export const Default: Story = {
   parameters: userMetadataLoaderMocks,
-  // oxlint-disable-next-line @typescripttypescript/ban-ts-comment
-  // @ts-ignore
+  // @ts-expect-error - Storybook decorator type mismatch
   decorators: [PageDecorator],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

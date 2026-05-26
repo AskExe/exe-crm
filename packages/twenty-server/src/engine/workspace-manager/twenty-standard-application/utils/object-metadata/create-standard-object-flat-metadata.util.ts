@@ -56,7 +56,7 @@ export const createStandardObjectFlatMetadata = <
   now,
 }: CreateStandardObjectArgs<O>): FlatObjectMetadata => {
   const labelIdentifierFieldMetadataUniversalIdentifier =
-    // @ts-expect-error ignore
+    // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS can't narrow the union
     STANDARD_OBJECTS[nameSingular as keyof typeof STANDARD_OBJECTS].fields[
       labelIdentifierFieldMetadataName
     ].universalIdentifier;

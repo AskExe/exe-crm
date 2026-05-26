@@ -578,25 +578,26 @@ export class WorkflowVersionStepOperationsWorkspaceService {
   }: {
     workspaceId: string;
     step: WorkflowFormAction;
-    response: Record<string, unknown>;
+    response: object;
   }) {
     const authContext = buildSystemAuthContext(workspaceId);
+    const responseRecord = response as Record<string, unknown>;
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
-        const responseKeys = Object.keys(response);
+        const responseKeys = Object.keys(responseRecord);
 
         const enrichedResponses = await Promise.all(
           responseKeys.map(async (key) => {
-            if (!isDefined(response[key])) {
-              return { key, value: response[key] };
+            if (!isDefined(responseRecord[key])) {
+              return { key, value: responseRecord[key] };
             }
 
             const field = step.settings.input.find(
               (field) => field.name === key,
             );
 
-            const responseValue = response[key] as Record<string, unknown> | undefined;
+            const responseValue = responseRecord[key] as Record<string, unknown> | undefined;
 
             if (
               field?.type === 'RECORD' &&
@@ -631,7 +632,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
 
               return { key, value: record };
             } else {
-              return { key, value: response[key] };
+              return { key, value: responseRecord[key] };
             }
           }),
         );

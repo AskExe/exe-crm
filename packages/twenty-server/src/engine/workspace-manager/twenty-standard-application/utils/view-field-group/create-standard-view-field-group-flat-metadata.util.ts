@@ -38,7 +38,7 @@ export const createStandardViewFieldGroupFlatMetadata = <
   twentyStandardApplicationId,
   now,
 }: CreateStandardViewFieldGroupArgs<O, V>): FlatViewFieldGroup => {
-  // @ts-expect-error ignore
+  // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
   const viewDefinition = STANDARD_OBJECTS[objectName].views[viewName] as {
     universalIdentifier: string;
     viewFieldGroups: Record<string, { universalIdentifier: string }>;

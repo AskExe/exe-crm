@@ -151,10 +151,10 @@ export const getStandardObjectMetadataRelatedEntityIds =
       });
 
       result[objectName] = {
-        // @ts-expect-error ignore this
+        // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
         fields: fieldIds,
         id: v4(),
-        // @ts-expect-error ignore this
+        // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
         views: viewIds,
       };
     }

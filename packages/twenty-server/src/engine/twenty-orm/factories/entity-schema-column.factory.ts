@@ -139,7 +139,8 @@ export class EntitySchemaColumnFactory {
       );
       const columnType = fieldMetadataTypeToColumnType(compositeProperty.type);
       const defaultValue = serializeDefaultValue(
-        (fieldMetadata.defaultValue as Record<string, unknown> | null | undefined)?.[compositeProperty.name],
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        (fieldMetadata.defaultValue as any)?.[compositeProperty.name],
       );
 
       entitySchemaColumnMap[columnName] = {

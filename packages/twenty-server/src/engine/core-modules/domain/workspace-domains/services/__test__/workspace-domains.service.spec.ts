@@ -60,13 +60,14 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = workspaceDomainsService.getWorkspaceUrls({
         subdomain: 'subdomain',
@@ -84,14 +85,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = workspaceDomainsService.getWorkspaceUrls({
         subdomain: 'subdomain',
@@ -111,7 +113,7 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -119,7 +121,8 @@ describe('WorkspaceDomainsService', () => {
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = workspaceDomainsService.buildWorkspaceURL({
         workspace: {
@@ -136,13 +139,14 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = workspaceDomainsService.buildWorkspaceURL({
         workspace: {
@@ -160,13 +164,14 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = workspaceDomainsService.buildWorkspaceURL({
         workspace: {
@@ -190,14 +195,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'find').mockResolvedValueOnce([
         {
@@ -217,14 +223,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'find').mockResolvedValueOnce([
         {
@@ -247,14 +254,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce({
         id: 'workspace-id1',
@@ -273,14 +281,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce({
         id: 'workspace-id1',
@@ -299,14 +308,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce({
         id: 'workspace-id1',
@@ -329,14 +339,15 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce(null);
 

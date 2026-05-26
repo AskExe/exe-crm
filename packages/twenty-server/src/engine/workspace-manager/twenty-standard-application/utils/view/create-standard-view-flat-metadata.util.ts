@@ -62,7 +62,7 @@ export const createStandardViewFlatMetadata = <
   twentyStandardApplicationId,
   now,
 }: CreateStandardViewArgs<O>): FlatView => {
-  // @ts-expect-error ignore
+  // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
   const viewDefinition = STANDARD_OBJECTS[objectName].views[viewName] as {
     universalIdentifier: string;
   };
@@ -97,19 +97,19 @@ export const createStandardViewFlatMetadata = <
 
   const kanbanAggregateOperationFieldMetadataUniversalIdentifier =
     kanbanAggregateOperationFieldName
-      ? // @ts-expect-error ignore
+      ? // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
         STANDARD_OBJECTS[objectName].fields[kanbanAggregateOperationFieldName]
           .universalIdentifier
       : null;
 
   const mainGroupByFieldMetadataUniversalIdentifier = mainGroupByFieldName
-    ? // @ts-expect-error ignore
+    ? // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
       STANDARD_OBJECTS[objectName].fields[mainGroupByFieldName]
         .universalIdentifier
     : null;
 
   const calendarFieldMetadataUniversalIdentifier = calendarFieldName
-    ? // @ts-expect-error ignore
+    ? // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
       STANDARD_OBJECTS[objectName].fields[calendarFieldName].universalIdentifier
     : null;
 

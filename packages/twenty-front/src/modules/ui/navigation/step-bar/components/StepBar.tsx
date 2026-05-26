@@ -32,8 +32,7 @@ export const StepBar = ({ activeStep, children }: StepBarProps) => {
         }
 
         // If the child is not a Step, return it as-is
-        // oxlint-disable-next-line @typescripttypescript/ban-ts-comment
-        // @ts-expect-error
+        // @ts-expect-error - ReactElement.type may have displayName but TS doesn't expose it
         if (child.type?.displayName !== Step.displayName) {
           return child;
         }

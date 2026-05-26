@@ -55,7 +55,7 @@ export const createStandardIndexFlatMetadata = <
       `Invalid index configuration ${objectName} ${indexName.toString()}`,
     );
   }
-  // @ts-expect-error ignore
+  // @ts-expect-error - STANDARD_OBJECTS indexed by dynamic key; TS cannot narrow the discriminated union
   const indexDefinition = objectIndexes[indexName] as unknown as {
     universalIdentifier: string;
   };

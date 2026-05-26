@@ -47,13 +47,14 @@ describe('SubdomainManagerService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = domainServerConfigService.getBaseUrl();
 
@@ -64,7 +65,7 @@ describe('SubdomainManagerService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        .mockImplementation((key: any) => {
+        .mockImplementation(((key: string) => {
           const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
@@ -72,7 +73,8 @@ describe('SubdomainManagerService', () => {
           };
 
           return env[key];
-        });
+          // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        }) as any);
 
       const result = domainServerConfigService.getBaseUrl();
 
