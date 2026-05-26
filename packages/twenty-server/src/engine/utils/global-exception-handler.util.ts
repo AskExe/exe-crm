@@ -20,7 +20,10 @@ import {
 } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
 import { type CustomException } from 'src/utils/custom-exception';
 
-const graphQLPredefinedExceptions = {
+const graphQLPredefinedExceptions: Record<
+  number,
+  new (message: string) => BaseGraphQLError
+> = {
   400: ValidationError,
   401: AuthenticationError,
   403: ForbiddenError,
@@ -127,11 +130,15 @@ const convertHttpExceptionToGraphql = (exception: HttpException) => {
   let error: BaseGraphQLError;
 
   if (status in graphQLPredefinedExceptions) {
-    // @ts-expect-error legacy noImplicitAny
-    const message = exception.getResponse()['message'] ?? exception.message;
+    const response = exception.getResponse();
+    const message =
+      (typeof response === 'object' && response !== null && 'message' in response
+        ? (response as Record<string, unknown>).message
+        : undefined) ?? exception.message;
 
-    // @ts-expect-error legacy noImplicitAny
-    error = new graphQLPredefinedExceptions[exception.getStatus()](message);
+    error = new graphQLPredefinedExceptions[exception.getStatus()](
+      String(message),
+    );
   } else {
     error = new BaseGraphQLError(
       'Internal Server Error',

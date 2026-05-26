@@ -5,6 +5,7 @@ import {
   Module,
 } from '@nestjs/common';
 
+import { PinoDriver } from 'src/engine/core-modules/logger/drivers/pino.driver';
 import { LoggerDriverType } from 'src/engine/core-modules/logger/interfaces';
 import { LOGGER_DRIVER } from 'src/engine/core-modules/logger/logger.constants';
 import {
@@ -13,6 +14,16 @@ import {
   type OPTIONS_TYPE,
 } from 'src/engine/core-modules/logger/logger.module-definition';
 import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
+
+const createLoggerDriver = (type: LoggerDriverType) => {
+  switch (type) {
+    case LoggerDriverType.PINO:
+      return new PinoDriver();
+    case LoggerDriverType.CONSOLE:
+    default:
+      return new ConsoleLogger();
+  }
+};
 
 @Global()
 @Module({
@@ -23,10 +34,7 @@ export class LoggerModule extends ConfigurableModuleClass {
   static forRoot(options: typeof OPTIONS_TYPE): DynamicModule {
     const provider = {
       provide: LOGGER_DRIVER,
-      useValue:
-        options.type === LoggerDriverType.CONSOLE
-          ? new ConsoleLogger()
-          : undefined,
+      useValue: createLoggerDriver(options.type),
     };
     const dynamicModule = super.forRoot(options);
 
@@ -48,11 +56,7 @@ export class LoggerModule extends ConfigurableModuleClass {
         }
 
         const logLevels = config.logLevels ?? [];
-
-        const logger =
-          config?.type === LoggerDriverType.CONSOLE
-            ? new ConsoleLogger()
-            : undefined;
+        const logger = createLoggerDriver(config.type);
 
         logger?.setLogLevels(logLevels);
 

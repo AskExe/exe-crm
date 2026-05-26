@@ -78,6 +78,13 @@ The `CRM_IMAGE_TAG` env var in `.env` controls which exe-crm image version is pu
 | `DISABLE_DB_MIGRATIONS`          | —       | Set `true` on workers (server handles migrations) |
 | `DISABLE_CRON_JOBS_REGISTRATION` | —       | Set `true` on workers                             |
 
+### Optional — Logging
+
+| Variable        | Default   | Description                                                                                   |
+| --------------- | --------- | --------------------------------------------------------------------------------------------- |
+| `LOGGER_DRIVER` | `CONSOLE` | `CONSOLE` (NestJS default) or `PINO` (structured JSON in production, pretty-print in dev)     |
+| `LOG_LEVELS`    | `log,error,warn` | Comma-separated NestJS log levels: `log`, `error`, `warn`, `debug`, `verbose`           |
+
 ### Optional — Monitoring
 
 | Variable                    | Default | Description                                                          |

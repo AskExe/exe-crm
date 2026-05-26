@@ -83,8 +83,7 @@ export const useGraphQLErrorHandlerHook = <
     async onExecute({ args }) {
       const exceptionHandlerService = options.exceptionHandlerService;
       const rootOperation = args.document.definitions.find(
-        // @ts-expect-error legacy noImplicitAny
-        (o) => o.kind === Kind.OPERATION_DEFINITION,
+        (o: { kind: string }) => o.kind === Kind.OPERATION_DEFINITION,
       ) as OperationDefinitionNode;
 
       if (!rootOperation) {

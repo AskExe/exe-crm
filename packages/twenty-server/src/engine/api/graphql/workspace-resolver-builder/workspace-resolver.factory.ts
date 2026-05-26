@@ -108,8 +108,7 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
-          // @ts-expect-error legacy noImplicitAny
-          resolvers.Query[resolverName] = resolverFactory.create({
+          (resolvers.Query as Record<string, unknown>)[resolverName] = resolverFactory.create({
             flatObjectMetadata,
             flatObjectMetadataMaps,
             flatFieldMetadataMaps,
@@ -139,8 +138,7 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
-          // @ts-expect-error legacy noImplicitAny
-          resolvers.Mutation[resolverName] = resolverFactory.create({
+          (resolvers.Mutation as Record<string, unknown>)[resolverName] = resolverFactory.create({
             flatObjectMetadata,
             flatObjectMetadataMaps,
             flatFieldMetadataMaps,

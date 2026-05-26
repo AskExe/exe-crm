@@ -25,14 +25,13 @@ export function filterOutContactsThatBelongToSelfOrWorkspaceMembers(
     ),
   ];
 
-  const workspaceMembersMap = workspaceMembers.reduce(
+  const workspaceMembersMap = workspaceMembers.reduce<Record<string, boolean>>(
     (map, workspaceMember) => {
-      // @ts-expect-error legacy noImplicitAny
       map[workspaceMember.userEmail.toLowerCase()] = true;
 
       return map;
     },
-    new Map<string, boolean>(),
+    {},
   );
 
   const isDifferentDomain = (contact: Contact, selfDomainName: string) =>
@@ -42,7 +41,6 @@ export function filterOutContactsThatBelongToSelfOrWorkspaceMembers(
     (contact) =>
       (isDifferentDomain(contact, selfDomainName) ||
         !isWorkDomain(selfDomainName)) &&
-      // @ts-expect-error legacy noImplicitAny
       !workspaceMembersMap[contact.handle.toLowerCase()] &&
       !allHandles.includes(contact.handle.toLowerCase()),
   );

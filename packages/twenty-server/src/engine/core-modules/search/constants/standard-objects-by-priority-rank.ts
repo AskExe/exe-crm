@@ -1,5 +1,5 @@
 //the higher the number, the higher the priority
-export const STANDARD_OBJECTS_BY_PRIORITY_RANK = {
+export const STANDARD_OBJECTS_BY_PRIORITY_RANK: Record<string, number> = {
   person: 5,
   company: 4,
   opportunity: 3,

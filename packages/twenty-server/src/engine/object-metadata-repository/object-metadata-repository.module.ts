@@ -16,11 +16,8 @@ import { convertClassNameToObjectMetadataName } from 'src/engine/workspace-manag
 @Global()
 @Module({})
 export class ObjectMetadataRepositoryModule {
-  // @ts-expect-error legacy noImplicitAny
-  static forFeature(objectMetadatas): DynamicModule {
-    // @ts-expect-error legacy noImplicitAny
+  static forFeature(objectMetadatas: { name: string }[]): DynamicModule {
     const providers: Provider[] = objectMetadatas.map((objectMetadata) => {
-      // @ts-expect-error legacy noImplicitAny
       const repositoryClass = metadataToRepositoryMapping[objectMetadata.name];
 
       if (!repositoryClass) {

@@ -47,11 +47,10 @@ describe('SubdomainManagerService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -64,13 +63,12 @@ describe('SubdomainManagerService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
             DEFAULT_SUBDOMAIN: 'test',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 

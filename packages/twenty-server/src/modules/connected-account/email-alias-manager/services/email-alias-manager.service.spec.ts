@@ -16,8 +16,7 @@ describe('Email Alias Manager Service', () => {
   let emailAliasManagerService: EmailAliasManagerService;
   let microsoftEmailAliasManagerService: MicrosoftEmailAliasManagerService;
   const mockConnectedAccountDataAccessService = {
-    // @ts-expect-error legacy noImplicitAny
-    update: jest.fn().mockResolvedValue((arg) => arg),
+    update: jest.fn().mockResolvedValue((arg: unknown) => arg),
   };
 
   beforeEach(async () => {

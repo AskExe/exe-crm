@@ -51,7 +51,7 @@ export const parseOrderBy = (
       itemFields = orderByItem;
     }
 
-    let fieldResult = {};
+    let fieldResult: Record<string, unknown> = {};
 
     itemFields
       .split('.')
@@ -60,13 +60,11 @@ export const parseOrderBy = (
         if (Object.keys(fieldResult).length) {
           fieldResult = { [field]: fieldResult };
         } else {
-          // @ts-expect-error legacy noImplicitAny
           fieldResult[field] = itemDirection;
         }
       }, itemDirection);
 
     const resultFields = Object.keys(fieldResult).map((key) => ({
-      // @ts-expect-error legacy noImplicitAny
       [key]: fieldResult[key],
     }));
 

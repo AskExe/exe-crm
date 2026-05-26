@@ -99,8 +99,11 @@ export class GmailGetMessageListService {
       pageToken = messageList.data.nextPageToken ?? undefined;
       hasMoreMessages = !!pageToken;
 
-      // @ts-expect-error legacy noImplicitAny
-      messageExternalIds.push(...messages.map((message) => message.id));
+      messageExternalIds.push(
+        ...messages
+          .map((message: { id?: string | null }) => message.id)
+          .filter((id): id is string => !!id),
+      );
     }
 
     if (messageExternalIds.length === 0) {

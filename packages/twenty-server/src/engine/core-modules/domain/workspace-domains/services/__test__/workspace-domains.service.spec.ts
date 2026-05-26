@@ -60,11 +60,10 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -84,12 +83,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -111,13 +109,12 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
             DEFAULT_SUBDOMAIN: 'default',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -136,11 +133,10 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -160,11 +156,10 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -190,12 +185,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -217,12 +211,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: false,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -247,12 +240,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -273,12 +265,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -299,12 +290,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 
@@ -329,12 +319,11 @@ describe('WorkspaceDomainsService', () => {
       jest
         .spyOn(twentyConfigService, 'get')
         .mockImplementation((key: string) => {
-          const env = {
+          const env: Record<string, unknown> = {
             FRONTEND_URL: 'https://example.com',
             IS_MULTIWORKSPACE_ENABLED: true,
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return env[key];
         });
 

@@ -75,8 +75,7 @@ export const transformStripeSubscriptionEventToDatabaseSubscription = (
     currentPeriodStart: getDateFromTimestamp(firstItem.current_period_start),
     metadata: subscription.metadata,
     collectionMethod:
-      // @ts-expect-error legacy noImplicitAny
-      BillingSubscriptionCollectionMethod[
+      (BillingSubscriptionCollectionMethod as Record<string, string>)[
         subscription.collection_method.toUpperCase()
       ],
     automaticTax: toAutomaticTaxJson(subscription.automatic_tax),

@@ -376,13 +376,12 @@ describe('TwentyConfigService', () => {
         .spyOn(environmentConfigDriver, 'get')
         .mockImplementation((key: keyof ConfigVariables) => {
           const keyStr = String(key);
-          const values = {
+          const values: Record<string, string> = {
             TEST_VAR: 'env test value',
             ENV_ONLY_VAR: 'env only value',
             SENSITIVE_VAR: 'sensitive_data_123',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return values[keyStr] || undefined;
         });
 
@@ -391,16 +390,14 @@ describe('TwentyConfigService', () => {
         .mockImplementation((key: keyof ConfigVariables) => {
           const keyStr = String(key);
 
-          // @ts-expect-error legacy noImplicitAny
-          if (mockConfigVarMetadata[keyStr]?.isEnvOnly) {
+          if ((mockConfigVarMetadata as Record<string, { isEnvOnly?: boolean }>)[keyStr]?.isEnvOnly) {
             return environmentConfigDriver.get(key);
           }
-          const values = {
+          const values: Record<string, string> = {
             TEST_VAR: 'db test value',
             SENSITIVE_VAR: 'sensitive_data_123',
           };
 
-          // @ts-expect-error legacy noImplicitAny
           return values[keyStr] || undefined;
         });
     };

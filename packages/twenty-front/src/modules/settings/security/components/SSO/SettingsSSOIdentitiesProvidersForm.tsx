@@ -126,5 +126,3 @@ export const SettingsSSOIdentitiesProvidersForm = () => {
     </SettingsPageContainer>
   );
 };
-
-export default SettingsSSOIdentitiesProvidersForm;

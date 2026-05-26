@@ -4,7 +4,7 @@ import { logDebug } from '~/utils/logDebug';
 import { logError } from '~/utils/logError';
 
 import { isDefined } from 'twenty-shared/utils';
-import formatTitle from './formatTitle';
+import { formatTitle } from './formatTitle';
 
 const getGroup = (collapsed: boolean) =>
   collapsed

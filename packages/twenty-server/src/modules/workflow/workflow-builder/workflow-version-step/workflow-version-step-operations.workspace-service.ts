@@ -578,7 +578,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
   }: {
     workspaceId: string;
     step: WorkflowFormAction;
-    response: object;
+    response: Record<string, unknown>;
   }) {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -588,9 +588,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
 
         const enrichedResponses = await Promise.all(
           responseKeys.map(async (key) => {
-            // @ts-expect-error legacy noImplicitAny
             if (!isDefined(response[key])) {
-              // @ts-expect-error legacy noImplicitAny
               return { key, value: response[key] };
             }
 
@@ -598,13 +596,13 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               (field) => field.name === key,
             );
 
+            const responseValue = response[key] as Record<string, unknown> | undefined;
+
             if (
               field?.type === 'RECORD' &&
               field?.settings?.objectName &&
-              // @ts-expect-error legacy noImplicitAny
-              isDefined(response[key].id) &&
-              // @ts-expect-error legacy noImplicitAny
-              isValidUuid(response[key].id)
+              isDefined(responseValue?.id) &&
+              isValidUuid(responseValue?.id as string)
             ) {
               const { flatObjectMetadata, flatFieldMetadataMaps } =
                 await this.workflowCommonWorkspaceService.getObjectMetadataInfo(
@@ -627,21 +625,18 @@ export class WorkflowVersionStepOperationsWorkspaceService {
                 );
 
               const record = await repository.findOne({
-                // @ts-expect-error legacy noImplicitAny
-                where: { id: response[key].id },
+                where: { id: responseValue?.id as string },
                 relations: relationFieldsNames,
               });
 
               return { key, value: record };
             } else {
-              // @ts-expect-error legacy noImplicitAny
               return { key, value: response[key] };
             }
           }),
         );
 
-        return enrichedResponses.reduce((acc, { key, value }) => {
-          // @ts-expect-error legacy noImplicitAny
+        return enrichedResponses.reduce<Record<string, unknown>>((acc, { key, value }) => {
           acc[key] = value;
 
           return acc;

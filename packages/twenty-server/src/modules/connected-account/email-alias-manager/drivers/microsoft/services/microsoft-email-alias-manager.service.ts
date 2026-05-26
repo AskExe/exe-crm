@@ -26,20 +26,17 @@ export class MicrosoftEmailAliasManagerService {
         throw new Error(`Failed to fetch email aliases: ${error.message}`);
       });
 
-    const proxyAddresses = response.proxyAddresses;
+    const proxyAddresses: string[] | undefined = response.proxyAddresses;
 
     const handleAliases =
       proxyAddresses
-        // @ts-expect-error legacy noImplicitAny
-        ?.filter((address) => {
+        ?.filter((address: string) => {
           return address.startsWith('SMTP:') === false;
         })
-        // @ts-expect-error legacy noImplicitAny
-        .map((address) => {
+        .map((address: string) => {
           return address.replace('smtp:', '').toLowerCase();
         })
-        // @ts-expect-error legacy noImplicitAny
-        .filter((address) => {
+        .filter((address: string) => {
           return isNonEmptyString(address);
         }) || [];
 

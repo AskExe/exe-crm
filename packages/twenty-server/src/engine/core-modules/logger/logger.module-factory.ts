@@ -16,6 +16,12 @@ export const loggerModuleFactory = async (
   const logLevels = twentyConfigService.get('LOG_LEVELS');
 
   switch (driverType) {
+    case LoggerDriverType.PINO: {
+      return {
+        type: LoggerDriverType.PINO,
+        logLevels: logLevels,
+      };
+    }
     case LoggerDriverType.CONSOLE: {
       return {
         type: LoggerDriverType.CONSOLE,

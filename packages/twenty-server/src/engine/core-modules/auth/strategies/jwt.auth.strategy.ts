@@ -49,8 +49,11 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly twentyConfigService: TwentyConfigService,
   ) {
     const jwtFromRequestFunction = jwtWrapperService.extractJwtFromRequest();
-    // @ts-expect-error legacy noImplicitAny
-    const secretOrKeyProviderFunction = async (_request, rawJwtToken, done) => {
+    const secretOrKeyProviderFunction = async (
+      _request: unknown,
+      rawJwtToken: string,
+      done: (err: unknown, secret: string | null) => void,
+    ) => {
       try {
         const decodedToken = jwtWrapperService.decode<
           | FileTokenJwtPayloadLegacy

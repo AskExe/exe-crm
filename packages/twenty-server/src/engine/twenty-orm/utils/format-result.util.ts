@@ -107,7 +107,8 @@ function formatResultInternal<T>(
     flatFieldMetadataMaps,
   );
 
-  const newData: object = {};
+  // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+  const newData: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(data)) {
     const compositePropertyArgs = compositeFieldMetadataMap.get(key);
@@ -148,7 +149,6 @@ function formatResultInternal<T>(
         );
       }
 
-      // @ts-expect-error legacy noImplicitAny
       newData[key] = formatResultInternal(
         value,
         targetObjectMetadata,
@@ -161,13 +161,10 @@ function formatResultInternal<T>(
     if (isDefined(compositePropertyArgs)) {
       const { parentField, ...compositeProperty } = compositePropertyArgs;
 
-      // @ts-expect-error legacy noImplicitAny
       if (!newData[parentField]) {
-        // @ts-expect-error legacy noImplicitAny
         newData[parentField] = {};
       }
 
-      // @ts-expect-error legacy noImplicitAny
       newData[parentField][compositeProperty.name] = isNull(value)
         ? transformCompositeFieldNullValue(
             value,
@@ -182,7 +179,6 @@ function formatResultInternal<T>(
       continue;
     }
 
-    // @ts-expect-error legacy noImplicitAny
     newData[key] = formatFieldMetadataValue(value, fieldMetadata.type);
   }
 
@@ -199,14 +195,12 @@ function formatResultInternal<T>(
   ).filter((field) => field.type === FieldMetadataType.DATE);
 
   for (const dateField of fieldMetadataItemsOfTypeDateOnly) {
-    // @ts-expect-error legacy noImplicitAny
     const rawUpdatedDate = newData[dateField.name] as string | null | undefined;
 
     if (!isDefined(rawUpdatedDate)) {
       continue;
     }
 
-    // @ts-expect-error legacy noImplicitAny
     newData[dateField.name] = rawUpdatedDate;
   }
 
@@ -217,7 +211,6 @@ function formatResultInternal<T>(
     ).filter((field) => field.type === FieldMetadataType.DATE_TIME);
 
   for (const dateTimeField of fieldMetadataItemsOfTypeDateTimeOnly) {
-    // @ts-expect-error legacy noImplicitAny
     const rawUpdatedDateTime = newData[dateTimeField.name] as
       | string
       | Date
@@ -234,7 +227,6 @@ function formatResultInternal<T>(
       rawUpdatedDateTime instanceof Date ||
       isPlainObject(rawUpdatedDateTime)
     ) {
-      // @ts-expect-error legacy noImplicitAny
       newData[dateTimeField.name] = rawUpdatedDateTime;
     } else {
       const stringifiedUnknownValue = stringifySafely(rawUpdatedDateTime);

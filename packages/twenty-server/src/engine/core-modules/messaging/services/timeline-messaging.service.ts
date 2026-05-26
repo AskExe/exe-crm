@@ -151,11 +151,9 @@ export class TimelineMessagingService {
             person: {
               id: threadParticipant.person?.id,
               name: {
-                //oxlint-disable-next-line
-                //@ts-ignore
+                // @ts-expect-error - TypeORM flat column name not in entity type
                 firstName: threadParticipant.person?.nameFirstName,
-                //oxlint-disable-next-line
-                //@ts-ignore
+                // @ts-expect-error - TypeORM flat column name not in entity type
                 lastName: threadParticipant.person?.nameLastName,
               },
               avatarUrl: threadParticipant.person?.avatarUrl,
@@ -163,31 +161,29 @@ export class TimelineMessagingService {
             workspaceMember: {
               id: threadParticipant.workspaceMember?.id,
               name: {
-                //oxlint-disable-next-line
-                //@ts-ignore
+                // @ts-expect-error - TypeORM flat column name not in entity type
                 firstName: threadParticipant.workspaceMember?.nameFirstName,
-                //oxlint-disable-next-line
-                //@ts-ignore
+                // @ts-expect-error - TypeORM flat column name not in entity type
                 lastName: threadParticipant.workspaceMember?.nameLastName,
               },
               avatarUrl: threadParticipant.workspaceMember?.avatarUrl,
             },
           }));
 
-        return threadParticipantsWithCompositeFields.reduce(
+        // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+        return (threadParticipantsWithCompositeFields as any[]).reduce<
+          Record<string, MessageParticipantWorkspaceEntity[]>
+        >(
           (threadParticipantsAcc, threadParticipant) => {
             if (!threadParticipant.message.messageThreadId)
               return threadParticipantsAcc;
 
             if (
-              // @ts-expect-error legacy noImplicitAny
               !threadParticipantsAcc[threadParticipant.message.messageThreadId]
             )
-              // @ts-expect-error legacy noImplicitAny
               threadParticipantsAcc[threadParticipant.message.messageThreadId] =
                 [];
 
-            // @ts-expect-error legacy noImplicitAny
             threadParticipantsAcc[
               threadParticipant.message.messageThreadId
             ].push(threadParticipant);

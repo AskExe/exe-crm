@@ -77,8 +77,7 @@ export class KeyValuePairService<
     const conflictPaths = Object.keys(upsertData).filter(
       (key) =>
         ['userId', 'workspaceId', 'key'].includes(key) &&
-        // @ts-expect-error legacy noImplicitAny
-        upsertData[key] !== undefined,
+        (upsertData as Record<string, unknown>)[key] !== undefined,
     );
 
     const indexPredicate = !userId

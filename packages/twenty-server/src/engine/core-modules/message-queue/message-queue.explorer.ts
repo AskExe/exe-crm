@@ -148,8 +148,7 @@ export class MessageQueueExplorer implements OnModuleInit {
     const filteredProcessMethodNames = processMethodNames.filter(
       (processMethodName) => {
         const metadata = this.metadataAccessor.getProcessMetadata(
-          // @ts-expect-error legacy noImplicitAny
-          instance[processMethodName],
+          (instance as Record<string, Function>)[processMethodName],
         );
 
         return metadata && job.name === metadata.jobName;
@@ -204,8 +203,7 @@ export class MessageQueueExplorer implements OnModuleInit {
   ) {
     for (const processMethodName of processMethodNames) {
       try {
-        // @ts-expect-error legacy noImplicitAny
-        await instance[processMethodName].call(instance, job.data);
+        await (instance as Record<string, Function>)[processMethodName].call(instance, job.data);
       } catch (err) {
         if (shouldCaptureException(err)) {
           this.exceptionHandlerService.captureExceptions([err]);

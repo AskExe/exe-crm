@@ -46,21 +46,19 @@ export const buildDuplicateConditions = (
     );
 
     return criteriaWithMatchingArgs.map((criteria) => {
-      const condition = {};
+      // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+      const condition: Record<string, any> = {};
 
       criteria.forEach((columnName) => {
         const compositeFieldMetadata =
           compositeFieldMetadataMap.get(columnName);
 
         if (compositeFieldMetadata) {
-          // @ts-expect-error legacy noImplicitAny
           condition[compositeFieldMetadata.parentField] = {
-            // @ts-expect-error legacy noImplicitAny
             ...condition[compositeFieldMetadata.parentField],
             [compositeFieldMetadata.name]: { eq: record[columnName] },
           };
         } else {
-          // @ts-expect-error legacy noImplicitAny
           condition[columnName] = { eq: record[columnName] };
         }
       });

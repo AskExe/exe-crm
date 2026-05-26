@@ -47,4 +47,4 @@ const formatTitle = (
   return [parts.join(' '), ...headerCss];
 };
 
-export default formatTitle;
+export { formatTitle };

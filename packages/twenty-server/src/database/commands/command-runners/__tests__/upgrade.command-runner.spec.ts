@@ -216,12 +216,10 @@ describe('UpgradeCommandRunner', () => {
       numberOfWorkspace: 0,
       workspaces: [higherVersionWorkspace],
     });
-    // @ts-expect-error legacy noImplicitAny
-    const passedParams = [];
+    const passedParams: string[] = [];
     const options = {};
 
-    // @ts-expect-error legacy noImplicitAny
-    await upgradeCommandRunner.run(passedParams, options);
+    await upgradeCommandRunner.run(passedParams, options as Record<string, unknown>);
 
     const { fail: failReport, success: successReport } =
       upgradeCommandRunner.migrationReport;
@@ -244,12 +242,10 @@ describe('UpgradeCommandRunner', () => {
     await buildModuleAndSetupSpies({
       numberOfWorkspace,
     });
-    // @ts-expect-error legacy noImplicitAny
-    const passedParams = [];
+    const passedParams: string[] = [];
     const options = {};
 
-    // @ts-expect-error legacy noImplicitAny
-    await upgradeCommandRunner.run(passedParams, options);
+    await upgradeCommandRunner.run(passedParams, options as Record<string, unknown>);
 
     [upgradeCommandRunner.runOnWorkspace].forEach((fn) =>
       expect(fn).toHaveBeenCalledTimes(numberOfWorkspace),

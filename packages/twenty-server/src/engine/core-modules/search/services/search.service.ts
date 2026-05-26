@@ -668,9 +668,7 @@ export class SearchService {
       }
 
       return (
-        // @ts-expect-error legacy noImplicitAny
         (STANDARD_OBJECTS_BY_PRIORITY_RANK[b.objectNameSingular] || 0) -
-        // @ts-expect-error legacy noImplicitAny
         (STANDARD_OBJECTS_BY_PRIORITY_RANK[a.objectNameSingular] || 0)
       );
     });

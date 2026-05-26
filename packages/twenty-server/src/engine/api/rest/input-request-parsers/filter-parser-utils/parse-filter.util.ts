@@ -20,7 +20,7 @@ export enum Conjunctions {
 export const parseFilter = (
   filterQuery: string,
 ): Record<string, FieldValue> => {
-  const result = {};
+  const result: Record<string, unknown> = {};
   const match = filterQuery.match(
     `^(${Object.values(Conjunctions).join('|')})\\((.+)\\)$`,
   );
@@ -45,10 +45,8 @@ export const parseFilter = (
           { userFriendlyMessage: msg`Invalid filter parameter.` },
         );
       }
-      // @ts-expect-error legacy noImplicitAny
       result[conjunction] = subResult[0];
     } else {
-      // @ts-expect-error legacy noImplicitAny
       result[conjunction] = subResult;
     }
 

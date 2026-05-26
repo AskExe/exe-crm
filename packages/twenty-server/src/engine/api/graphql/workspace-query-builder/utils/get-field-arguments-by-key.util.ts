@@ -44,11 +44,12 @@ const findFieldNode = (
   return field;
 };
 
-// @ts-expect-error legacy noImplicitAny
+// oxlint-disable-next-line @typescripttypescript/no-explicit-any
 const parseValueNode = (
   valueNode: ValueNode,
   variables: GraphQLResolveInfo['variableValues'],
-) => {
+  // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+): any => {
   switch (valueNode.kind) {
     case Kind.VARIABLE:
       return variables[valueNode.name.value];
@@ -60,11 +61,10 @@ const parseValueNode = (
     case Kind.ENUM:
       return valueNode.value;
     case Kind.LIST:
-      // @ts-expect-error legacy noImplicitAny
       return valueNode.values.map((value) => parseValueNode(value, variables));
     case Kind.OBJECT:
-      return valueNode.fields.reduce((obj, field) => {
-        // @ts-expect-error legacy noImplicitAny
+      // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+      return valueNode.fields.reduce<Record<string, any>>((obj, field) => {
         obj[field.name.value] = parseValueNode(field.value, variables);
 
         return obj;

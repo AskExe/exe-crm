@@ -35,10 +35,8 @@ describe('mergeUserVars', () => {
   });
 
   it('should merge user vars correctly when user vars are empty', () => {
-    // @ts-expect-error legacy noImplicitAny
-    const userVars = [];
+    const userVars: never[] = [];
 
-    // @ts-expect-error legacy noImplicitAny
     const mergedUserVars = mergeUserVars(userVars);
 
     expect(mergedUserVars).toEqual(new Map());

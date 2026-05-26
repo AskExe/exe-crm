@@ -72,6 +72,8 @@ import { MessagingFolderSyncManagerModule } from 'src/modules/messaging/message-
 
 import { AuthResolver } from './auth.resolver';
 
+import { AuthOAuthAuthorizationService } from './services/auth-oauth-authorization.service';
+import { AuthSSOConnectedAccountService } from './services/auth-sso-connected-account.service';
 import { AuthService } from './services/auth.service';
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
@@ -134,6 +136,8 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
   providers: [
     SignInUpService,
     AuthService,
+    AuthOAuthAuthorizationService,
+    AuthSSOConnectedAccountService,
     JwtAuthStrategy,
     SamlAuthStrategy,
     AuthResolver,
