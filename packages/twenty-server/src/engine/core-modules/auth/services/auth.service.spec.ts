@@ -10,6 +10,8 @@ import {
   AuthException,
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import { AuthOAuthAuthorizationService } from 'src/engine/core-modules/auth/services/auth-oauth-authorization.service';
+import { AuthSSOConnectedAccountService } from 'src/engine/core-modules/auth/services/auth-sso-connected-account.service';
 import { AuthSsoService } from 'src/engine/core-modules/auth/services/auth-sso.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
@@ -57,6 +59,14 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        {
+          provide: AuthOAuthAuthorizationService,
+          useValue: { generateAuthorizationCode: jest.fn() },
+        },
+        {
+          provide: AuthSSOConnectedAccountService,
+          useValue: { createSSOConnectedAccount: jest.fn() },
+        },
         {
           provide: getRepositoryToken(WorkspaceEntity),
           useValue: {

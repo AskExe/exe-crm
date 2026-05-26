@@ -113,7 +113,9 @@ jobs:
               continue
             fi
 
-            if echo "${added}" | grep -iqE 'twenty'; then
+            # Exclude package imports (twenty-shared, twenty-ui, etc.) — those are legitimate
+            filtered=$(echo "${added}" | grep -ivE "from ['\"]twenty-|require\(['\"]twenty-" || true)
+            if [ -n "${filtered}" ] && echo "${filtered}" | grep -iqE 'twenty'; then
               echo "::error file=${file}::Brand drift: PR adds 'twenty' to ${file}."
               echo "${added}" | grep -iE 'twenty' | sed 's/^/    /'
               violations=$((violations + 1))
