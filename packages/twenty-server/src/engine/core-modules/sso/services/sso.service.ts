@@ -1,4 +1,4 @@
-// Stub: exe-os uses GoTrue for auth, not Twenty SSO
+// Stub: exe-os uses GoTrue for auth, not upstream SSO
 import { Injectable } from '@nestjs/common';
 
 import { type SSOConfiguration } from 'src/engine/core-modules/sso/types/SSOConfigurations.type';
@@ -36,7 +36,7 @@ export class SSOService {
   }
 
   // oxlint-disable-next-line @typescript/no-explicit-any
-  getOIDCClient(_provider: any, _issuer: any) {
+  getOIDCClient(_provider: any, _issuer: any): any {
     return null;
   }
 

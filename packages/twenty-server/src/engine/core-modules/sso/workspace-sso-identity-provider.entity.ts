@@ -1,4 +1,4 @@
-// Stub: exe-os uses GoTrue for auth, not Twenty SSO
+// Stub: exe-os uses GoTrue for auth, not upstream SSO
 import { registerEnumType } from '@nestjs/graphql';
 import {
   Column,
