@@ -1,9 +1,7 @@
-/* @license Enterprise */
-
+// Stub: exe-os usage metering
 export enum UsageUnit {
-  CREDIT = 'CREDIT',
+  CREDITS = 'CREDITS',
+  COUNT = 'COUNT',
   TOKEN = 'TOKEN',
   INVOCATION = 'INVOCATION',
-  MINUTE = 'MINUTE',
-  BYTE = 'BYTE',
 }

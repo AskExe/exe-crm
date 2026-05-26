@@ -1,12 +1,11 @@
-/* @license Enterprise */
-
+// Stub: exe-os billing (no Stripe)
 import { Injectable } from '@nestjs/common';
 
-import Stripe from 'stripe';
+export const STRIPE_SDK_SERVICE = 'STRIPE_SDK_SERVICE';
 
 @Injectable()
-export class StripeSDKService {
-  getStripe(stripeApiKey: string) {
-    return new Stripe(stripeApiKey, {});
-  }
-}
+export class StripeSdkService {}
+
+// Legacy alias
+export const StripeSDKService = StripeSdkService;
+export type StripeSDKService = StripeSdkService;

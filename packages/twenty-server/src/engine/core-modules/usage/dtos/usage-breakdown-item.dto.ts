@@ -1,15 +1,14 @@
-/* @license Enterprise */
+// Stub: exe-os usage metering
+import { Field, ObjectType } from '@nestjs/graphql';
 
-import { Field, Float, ObjectType } from '@nestjs/graphql';
-
-@ObjectType('UsageBreakdownItem')
+@ObjectType()
 export class UsageBreakdownItemDTO {
-  @Field(() => String)
+  @Field()
   key: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   label?: string;
 
-  @Field(() => Float)
-  creditsUsed: number;
+  @Field()
+  value: number;
 }

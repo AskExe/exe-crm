@@ -27,14 +27,13 @@ export const unserializeDefaultValue = (
   }
 
   if (typeof serializedDefaultValue === 'object') {
-    return Object.entries(serializedDefaultValue).reduce<Record<string, unknown>>(
-      (acc, [key, value]) => {
-        acc[key] = unserializeDefaultValue(value);
+    return Object.entries(serializedDefaultValue).reduce<
+      Record<string, unknown>
+    >((acc, [key, value]) => {
+      acc[key] = unserializeDefaultValue(value);
 
-        return acc;
-      },
-      {},
-    );
+      return acc;
+    }, {});
   }
 
   throw new Error(

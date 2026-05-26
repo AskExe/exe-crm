@@ -203,7 +203,10 @@ export class MessageQueueExplorer implements OnModuleInit {
   ) {
     for (const processMethodName of processMethodNames) {
       try {
-        await (instance as Record<string, Function>)[processMethodName].call(instance, job.data);
+        await (instance as Record<string, Function>)[processMethodName].call(
+          instance,
+          job.data,
+        );
       } catch (err) {
         if (shouldCaptureException(err)) {
           this.exceptionHandlerService.captureExceptions([err]);

@@ -1,13 +1,5 @@
-/* @license Enterprise */
-
-import { registerEnumType } from '@nestjs/graphql';
-
+// Stub: exe-os billing
 export enum BillingUsageType {
-  METERED = 'METERED',
-  LICENSED = 'LICENSED',
+  METERED = 'metered',
+  LICENSED = 'licensed',
 }
-
-registerEnumType(BillingUsageType, {
-  name: 'BillingUsageType',
-  description: 'The different billing usage types',
-});

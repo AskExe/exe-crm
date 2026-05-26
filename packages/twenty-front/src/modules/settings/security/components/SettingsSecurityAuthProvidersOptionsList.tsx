@@ -1,7 +1,6 @@
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { authProvidersState } from '@/client-config/states/authProvidersState';
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
-import { SSOIdentitiesProvidersState } from '@/settings/security/states/SSOIdentitiesProvidersState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { styled } from '@linaria/react';
@@ -36,7 +35,6 @@ export const SettingsSecurityAuthProvidersOptionsList = () => {
   const { t } = useLingui();
 
   const { enqueueErrorSnackBar } = useSnackBar();
-  const SSOIdentitiesProviders = useAtomStateValue(SSOIdentitiesProvidersState);
   const authProviders = useAtomStateValue(authProvidersState);
 
   const [currentWorkspace, setCurrentWorkspace] = useAtomState(
@@ -69,7 +67,6 @@ export const SettingsSecurityAuthProvidersOptionsList = () => {
       currentWorkspace.isGoogleAuthEnabled,
       currentWorkspace.isMicrosoftAuthEnabled,
       currentWorkspace.isPasswordAuthEnabled,
-      (SSOIdentitiesProviders?.length ?? 0) > 0,
     ];
 
     if (

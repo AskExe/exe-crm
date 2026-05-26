@@ -131,14 +131,16 @@ export class AdminPanelHealthService {
       return {
         ...indicatorStatus,
         // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-        queues: ((indicatorStatus as any)?.queues ?? []).map((queue: { queueName: string; workers: number }) => ({
-          id: `${indicatorId}-${queue.queueName}`,
-          queueName: queue.queueName,
-          status:
-            queue.workers > 0
-              ? AdminPanelHealthServiceStatus.OPERATIONAL
-              : AdminPanelHealthServiceStatus.OUTAGE,
-        })),
+        queues: ((indicatorStatus as any)?.queues ?? []).map(
+          (queue: { queueName: string; workers: number }) => ({
+            id: `${indicatorId}-${queue.queueName}`,
+            queueName: queue.queueName,
+            status:
+              queue.workers > 0
+                ? AdminPanelHealthServiceStatus.OPERATIONAL
+                : AdminPanelHealthServiceStatus.OUTAGE,
+          }),
+        ),
       };
     }
 

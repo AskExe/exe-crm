@@ -274,12 +274,7 @@ describe('AdminPanelService', () => {
       mockEnvironmentGet.mockReturnValue('1.0.0');
       mockHttpClientGet.mockResolvedValue({
         data: {
-          results: [
-            { name: '2.0.0' },
-            { name: '1.5.0' },
-            { name: '1.0.0' },
-            { name: 'latest' },
-          ],
+          tags: ['2.0.0', '1.5.0', '1.0.0', 'latest'],
         },
       });
 
@@ -295,7 +290,7 @@ describe('AdminPanelService', () => {
       mockEnvironmentGet.mockReturnValue(undefined);
       mockHttpClientGet.mockResolvedValue({
         data: {
-          results: [{ name: '2.0.0' }, { name: 'latest' }],
+          tags: ['2.0.0', 'latest'],
         },
       });
 
@@ -319,11 +314,11 @@ describe('AdminPanelService', () => {
       });
     });
 
-    it('should handle empty Docker Hub tags', async () => {
+    it('should handle empty GHCR tags', async () => {
       mockEnvironmentGet.mockReturnValue('1.0.0');
       mockHttpClientGet.mockResolvedValue({
         data: {
-          results: [],
+          tags: [],
         },
       });
 
@@ -339,12 +334,7 @@ describe('AdminPanelService', () => {
       mockEnvironmentGet.mockReturnValue('1.0.0');
       mockHttpClientGet.mockResolvedValue({
         data: {
-          results: [
-            { name: '2.0.0' },
-            { name: 'invalid-version' },
-            { name: 'latest' },
-            { name: '1.0.0' },
-          ],
+          tags: ['2.0.0', 'invalid-version', 'latest', '1.0.0'],
         },
       });
 

@@ -125,7 +125,10 @@ export class WorkspaceQueryHookExplorer implements OnModuleInit {
         ...executeParams,
       );
     } else {
-      return (instance as Record<string, Function>)[methodName].call(instance, ...executeParams);
+      return (instance as Record<string, Function>)[methodName].call(
+        instance,
+        ...executeParams,
+      );
     }
   }
 

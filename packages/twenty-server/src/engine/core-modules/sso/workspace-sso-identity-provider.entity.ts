@@ -1,35 +1,18 @@
-/* @license Enterprise */
-
-import { ObjectType, registerEnumType } from '@nestjs/graphql';
-
-import { IDField } from '@ptc-org/nestjs-query-graphql';
+// Stub: exe-os uses GoTrue for auth, not upstream SSO
+import { registerEnumType } from '@nestjs/graphql';
 import {
   Column,
-  CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  type Relation,
 } from 'typeorm';
-
-import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { WorkspaceRelatedEntity } from 'src/engine/workspace-manager/types/workspace-related-entity';
 
 export enum IdentityProviderType {
   OIDC = 'OIDC',
   SAML = 'SAML',
 }
-
-export enum OIDCResponseType {
-  // Only Authorization Code is used for now
-  CODE = 'code',
-  ID_TOKEN = 'id_token',
-  TOKEN = 'token',
-  NONE = 'none',
-}
-
-registerEnumType(IdentityProviderType, {
-  name: 'IdentityProviderType',
-});
 
 export enum SSOIdentityProviderStatus {
   Active = 'Active',
@@ -37,58 +20,44 @@ export enum SSOIdentityProviderStatus {
   Error = 'Error',
 }
 
+registerEnumType(IdentityProviderType, { name: 'IdentityProviderType' });
 registerEnumType(SSOIdentityProviderStatus, {
   name: 'SSOIdentityProviderStatus',
 });
 
 @Entity({ name: 'workspaceSSOIdentityProvider', schema: 'core' })
-@ObjectType('WorkspaceSSOIdentityProvider')
-export class WorkspaceSSOIdentityProviderEntity extends WorkspaceRelatedEntity {
-  // COMMON
-  @IDField(() => UUIDScalarType)
+export class WorkspaceSSOIdentityProviderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: SSOIdentityProviderStatus,
-    default: SSOIdentityProviderStatus.Active,
-  })
-  status: SSOIdentityProviderStatus;
-
-  @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date;
-
-  @Column({
-    type: 'enum',
-    enum: IdentityProviderType,
-    default: IdentityProviderType.OIDC,
-  })
+  @Column({ nullable: true })
   type: IdentityProviderType;
 
-  @Column()
+  @Column({ nullable: true })
   issuer: string;
 
-  // OIDC
   @Column({ nullable: true })
-  clientID?: string;
+  workspaceId: string;
+
+  @ManyToOne(
+    'WorkspaceEntity',
+    (workspace: {
+      workspaceSSOIdentityProviders: WorkspaceSSOIdentityProviderEntity[];
+    }) => workspace.workspaceSSOIdentityProviders,
+  )
+  @JoinColumn({ name: 'workspaceId' })
+  // oxlint-disable-next-line @typescript/no-explicit-any
+  workspace: Relation<any>;
 
   @Column({ nullable: true })
-  clientSecret?: string;
-
-  // SAML
-  @Column({ nullable: true })
-  ssoURL?: string;
+  ssoURL: string;
 
   @Column({ nullable: true })
-  certificate?: string;
+  certificate: string;
 
   @Column({ nullable: true })
-  fingerprint?: string;
+  status: SSOIdentityProviderStatus;
 }

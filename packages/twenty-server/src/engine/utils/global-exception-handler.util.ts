@@ -132,7 +132,9 @@ const convertHttpExceptionToGraphql = (exception: HttpException) => {
   if (status in graphQLPredefinedExceptions) {
     const response = exception.getResponse();
     const message =
-      (typeof response === 'object' && response !== null && 'message' in response
+      (typeof response === 'object' &&
+      response !== null &&
+      'message' in response
         ? (response as Record<string, unknown>).message
         : undefined) ?? exception.message;
 

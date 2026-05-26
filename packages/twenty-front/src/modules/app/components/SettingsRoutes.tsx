@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { SettingsProtectedRouteWrapper } from '@/settings/components/SettingsProtectedRouteWrapper';
 import { SettingsSkeletonLoader } from '@/settings/components/SettingsSkeletonLoader';
-import { SettingPublicDomain } from '@/settings/domains/components/SettingPublicDomain';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
 import {
@@ -35,15 +34,12 @@ import {
   SettingsApplications,
   SettingsAvailableApplicationDetails,
   SettingsBilling,
-  SettingsCustomDomainPage,
   SettingsDevelopersApiKeyDetail,
   SettingsDevelopersApiKeysNew,
   SettingsDevelopersWebhookDetail,
   SettingsDevelopersWebhookNew,
-  SettingsDomains,
   SettingsEditImapSmtpCaldavConnection,
   SettingsEmailingDomainDetail,
-  SettingsEventLogs,
   SettingsExperience,
   SettingsGraphQLPlayground,
   SettingsLogicFunctionDetail,
@@ -64,11 +60,7 @@ import {
   SettingsRoleEdit,
   SettingsRoleObjectLevel,
   SettingsRoles,
-  SettingsSecurity,
-  SettingsSecurityApprovedAccessDomain,
-  SettingsSecuritySSOIdentifyProvider,
   SettingsSkillForm,
-  SettingsSubdomainPage,
   SettingsTwoFactorAuthenticationMethod,
   SettingsUpdates,
   SettingsUsage,
@@ -134,7 +126,6 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
         }
       >
         <Route path={SettingsPath.Workspace} element={<SettingsWorkspace />} />
-        <Route path={SettingsPath.Domains} element={<SettingsDomains />} />
         <Route
           path={SettingsPath.ApiWebhooks}
           element={<SettingsApiWebhooks />}
@@ -184,24 +175,12 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
           />
         </Route>
         <Route
-          path={SettingsPath.Subdomain}
-          element={<SettingsSubdomainPage />}
-        />
-        <Route
-          path={SettingsPath.CustomDomain}
-          element={<SettingsCustomDomainPage />}
-        />
-        <Route
           path={SettingsPath.NewEmailingDomain}
           element={<SettingsNewEmailingDomain />}
         />
         <Route
           path={SettingsPath.EmailingDomainDetail}
           element={<SettingsEmailingDomainDetail />}
-        />
-        <Route
-          path={SettingsPath.PublicDomain}
-          element={<SettingPublicDomain />}
         />
       </Route>
       <Route
@@ -332,25 +311,6 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
           path={SettingsPath.ApplicationLogicFunctionDetail}
           element={<SettingsLogicFunctionDetail />}
         />
-      </Route>
-
-      <Route
-        element={
-          <SettingsProtectedRouteWrapper
-            settingsPermission={PermissionFlagType.SECURITY}
-          />
-        }
-      >
-        <Route path={SettingsPath.Security} element={<SettingsSecurity />} />
-        <Route
-          path={SettingsPath.NewSSOIdentityProvider}
-          element={<SettingsSecuritySSOIdentifyProvider />}
-        />
-        <Route
-          path={SettingsPath.NewApprovedAccessDomain}
-          element={<SettingsSecurityApprovedAccessDomain />}
-        />
-        <Route path={SettingsPath.EventLogs} element={<SettingsEventLogs />} />
       </Route>
 
       {isAdminPageEnabled && (

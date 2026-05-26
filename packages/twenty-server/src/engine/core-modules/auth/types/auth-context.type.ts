@@ -4,7 +4,7 @@ import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-
 import { type FlatAuthContextUser } from 'src/engine/core-modules/auth/types/flat-auth-context-user.type';
 import { type FlatUserWorkspace } from 'src/engine/core-modules/user-workspace/types/flat-user-workspace.type';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
-import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
+import { type FlatWorkspaceMember } from 'src/engine/core-modules/user/types/flat-workspace-member.type';
 
 export { AUTH_CONTEXT_USER_SELECT_FIELDS } from 'src/engine/core-modules/auth/constants/auth-context-user-select-fields.constants';
 export { type FlatAuthContextUser as AuthContextUser } from 'src/engine/core-modules/auth/types/flat-auth-context-user.type';
@@ -13,7 +13,7 @@ export type RawAuthContext = {
   user?: FlatAuthContextUser | null | undefined;
   apiKey?: FlatApiKey | null | undefined;
   workspaceMemberId?: string;
-  workspaceMember?: WorkspaceMemberWorkspaceEntity;
+  workspaceMember?: FlatWorkspaceMember;
   workspace?: FlatWorkspace;
   application?: ApplicationEntity | null | undefined;
   userWorkspaceId?: string;

@@ -1,8 +1,11 @@
-/* @license Enterprise */
-
+// Stub: exe-os uses its own entitlement system
 export enum BillingEntitlementKey {
   SSO = 'SSO',
   CUSTOM_DOMAIN = 'CUSTOM_DOMAIN',
+  ROW_LEVEL_SECURITY = 'ROW_LEVEL_SECURITY',
   RLS = 'RLS',
+  EVENT_LOGS = 'EVENT_LOGS',
   AUDIT_LOGS = 'AUDIT_LOGS',
+  AI = 'AI',
+  WORKFLOWS = 'WORKFLOWS',
 }

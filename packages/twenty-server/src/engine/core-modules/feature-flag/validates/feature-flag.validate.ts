@@ -7,11 +7,7 @@ const assertIsFeatureFlagKey = (
   featureFlagKey: string,
   exceptionToThrow: CustomException,
 ): asserts featureFlagKey is FeatureFlagKey => {
-  if (
-    isDefined(
-      (FeatureFlagKey as Record<string, string>)[featureFlagKey],
-    )
-  )
+  if (isDefined((FeatureFlagKey as Record<string, string>)[featureFlagKey]))
     return;
   throw exceptionToThrow;
 };
