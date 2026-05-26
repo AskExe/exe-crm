@@ -1,11 +1,11 @@
-import { MultipleRecordsCommandKeys } from '@/command-menu-item/record/multiple-records/types/MultipleRecordsCommandKeys';
+import type { MultipleRecordsCommandKeys } from '@/command-menu-item/record/multiple-records/types/MultipleRecordsCommandKeys';
 import { MULTIPLE_RECORDS_COMMAND_MENU_ITEMS_CONFIG } from '@/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig';
 import { NO_SELECTION_RECORD_COMMAND_MENU_ITEMS_CONFIG } from '@/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig';
 import { SINGLE_RECORD_COMMAND_MENU_ITEMS_CONFIG } from '@/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig';
-import { NoSelectionRecordCommandKeys } from '@/command-menu-item/record/no-selection/types/NoSelectionRecordCommandKeys';
-import { RecordPageLayoutSingleRecordCommandKeys } from '@/command-menu-item/record/single-record/record-page-layout/types/RecordPageLayoutSingleRecordCommandKeys';
-import { SingleRecordCommandKeys } from '@/command-menu-item/record/single-record/types/SingleRecordCommandKeys';
-import { type CommandMenuItemConfig } from '@/command-menu-item/types/CommandMenuItemConfig';
+import type { NoSelectionRecordCommandKeys } from '@/command-menu-item/record/no-selection/types/NoSelectionRecordCommandKeys';
+import type { RecordPageLayoutSingleRecordCommandKeys } from '@/command-menu-item/record/single-record/record-page-layout/types/RecordPageLayoutSingleRecordCommandKeys';
+import type { SingleRecordCommandKeys } from '@/command-menu-item/record/single-record/types/SingleRecordCommandKeys';
+import type { CommandMenuItemConfig } from '@/command-menu-item/types/CommandMenuItemConfig';
 
 export const DEFAULT_RECORD_COMMAND_MENU_ITEMS_CONFIG: Record<
   | NoSelectionRecordCommandKeys

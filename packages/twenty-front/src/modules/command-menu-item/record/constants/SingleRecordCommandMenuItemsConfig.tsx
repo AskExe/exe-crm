@@ -15,12 +15,9 @@ import { SingleRecordCommandKeys } from '@/command-menu-item/record/single-recor
 import { type CommandMenuItemConfig } from '@/command-menu-item/types/CommandMenuItemConfig';
 import { CommandMenuItemScope } from '@/command-menu-item/types/CommandMenuItemScope';
 import { CommandMenuItemType } from '@/command-menu-item/types/CommandMenuItemType';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { CoreObjectNameSingular, CommandMenuItemViewType } from 'twenty-shared/types';
 import { msg } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
-import {
-  CommandMenuItemViewType,
-} from 'twenty-shared/types';
 import {
   IconChevronDown,
   IconChevronUp,

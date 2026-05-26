@@ -44,6 +44,9 @@ jobs:
       - name: Typecheck server
         run: npx nx typecheck twenty-server
 
+      - name: Lint frontend
+        run: npx nx lint twenty-front
+
       - name: Lint server
         run: npx nx lint twenty-server
 

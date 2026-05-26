@@ -10,7 +10,7 @@ services:
     environment:
       NODE_PORT: '3000'
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
-      SERVER_URL: ${SERVER_URL}
+      SERVER_URL: '${SERVER_URL:?SERVER_URL is required - set to your externally-reachable origin e.g. https://crm.example.com}'
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS:-}
       DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION:-}
@@ -77,7 +77,7 @@ services:
     command: ['yarn', 'worker:prod']
     environment:
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
-      SERVER_URL: ${SERVER_URL}
+      SERVER_URL: '${SERVER_URL:?SERVER_URL is required - set to your externally-reachable origin e.g. https://crm.example.com}'
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DISABLE_DB_MIGRATIONS: 'true' # it already runs on the server
       DISABLE_CRON_JOBS_REGISTRATION: 'true' # it already runs on the server

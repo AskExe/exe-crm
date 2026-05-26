@@ -36,8 +36,8 @@ if (process.env.EXCEPTION_HANDLER_DRIVER === ExceptionHandlerDriver.SENTRY) {
       Sentry.graphqlIntegration(),
       Sentry.postgresIntegration(),
       Sentry.vercelAIIntegration({
-        recordInputs: true,
-        recordOutputs: true,
+        recordInputs: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
+        recordOutputs: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
       }),
       nodeProfilingIntegration(),
     ],
