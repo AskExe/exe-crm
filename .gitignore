@@ -59,3 +59,9 @@ TRANSLATION_QA_REPORT.md
 # Test/CI env files with secrets
 .env.test
 .env.e2e-testing-server
+
+# Agent worktrees (exe-os)
+/.worktrees/
+
+# Agent/runtime local state (exe-os)
+.claude/scheduled_tasks.lock
