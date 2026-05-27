@@ -1,8 +1,11 @@
 // Stub: exe-os uses its own license server for billing
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 
+import { BillingService } from './services/billing.service';
+
+@Global()
 @Module({
-  providers: [],
-  exports: [],
+  providers: [BillingService],
+  exports: [BillingService],
 })
 export class BillingModule {}

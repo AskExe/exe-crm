@@ -1,8 +1,11 @@
 // Stub: exe-os uses its own API Router for usage metering
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 
+import { UsageAnalyticsService } from './services/usage-analytics.service';
+
+@Global()
 @Module({
-  providers: [],
-  exports: [],
+  providers: [UsageAnalyticsService],
+  exports: [UsageAnalyticsService],
 })
 export class UsageModule {}
