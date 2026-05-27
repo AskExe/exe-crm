@@ -70,6 +70,7 @@ import { AuthResolver } from './auth.resolver';
 import { AuthOAuthAuthorizationService } from './services/auth-oauth-authorization.service';
 import { AuthSSOConnectedAccountService } from './services/auth-sso-connected-account.service';
 import { AuthService } from './services/auth.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
 @Global()
@@ -152,6 +153,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     UpdateConnectedAccountOnReconnectService,
     TransientTokenService,
     AuthSsoService,
+    JwtAuthGuard,
   ],
   exports: [
     AccessTokenService,
@@ -159,6 +161,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     RefreshTokenService,
     CreateMessageChannelService,
     CreateCalendarChannelService,
+    JwtAuthGuard,
   ],
 })
 export class AuthModule {}
