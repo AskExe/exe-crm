@@ -4,6 +4,11 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { WorkspaceQueryRunnerModule } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-runner.module';
 import { ActorModule } from 'src/engine/core-modules/actor/actor.module';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { DnsManagerModule } from 'src/engine/core-modules/dns-manager/dns-manager.module';
+import { EnterpriseModule } from 'src/engine/core-modules/enterprise/enterprise.module';
+import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
+import { UsageModule } from 'src/engine/core-modules/usage/usage.module';
 import { AdminPanelModule } from 'src/engine/core-modules/admin-panel/admin-panel.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { AppTokenModule } from 'src/engine/core-modules/app-token/app-token.module';
@@ -146,6 +151,12 @@ import { FileModule } from './file/file.module';
     EventLogsModule,
     FieldAuditModule,
     DataIngestionModule,
+    // Exe-OS stub modules — @Global() so all DI sites resolve
+    BillingModule,
+    WorkspaceSSOModule,
+    DnsManagerModule,
+    EnterpriseModule,
+    UsageModule,
   ],
   exports: [
     AuditModule,
