@@ -42,16 +42,12 @@ export const typeORMCoreModuleOptions: TypeOrmModuleOptions = {
   type: 'postgres',
   logging: getLoggingConfig(),
   schema: 'core',
-  entities:
-    process.env.IS_BILLING_ENABLED === 'true'
-      ? [
-          `${isJest ? 'src/' : 'dist/'}engine/core-modules/**/*.entity{.ts,.js}`,
-          `${isJest ? 'src/' : 'dist/'}engine/metadata-modules/**/*.entity{.ts,.js}`,
-        ]
-      : [
-          `${isJest ? 'src/' : 'dist/'}engine/core-modules/**/!(billing-*).entity.{ts,js}`,
-          `${isJest ? 'src/' : 'dist/'}engine/metadata-modules/**/*.entity{.ts,.js}`,
-        ],
+  // Exe-OS: always include billing entity stubs so TypeOrmModule.forFeature()
+  // resolves even when IS_BILLING_ENABLED=false (stubs are no-op, no migrations)
+  entities: [
+    `${isJest ? 'src/' : 'dist/'}engine/core-modules/**/*.entity{.ts,.js}`,
+    `${isJest ? 'src/' : 'dist/'}engine/metadata-modules/**/*.entity{.ts,.js}`,
+  ],
   synchronize: false,
   migrationsRun: false,
   migrationsTableName: '_typeorm_migrations',
