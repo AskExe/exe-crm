@@ -23,17 +23,38 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    // Admin token bypass — machine-to-machine access (agents, MCP, scripts).
-    // Same pattern as exe-gateway's EXE_GATEWAY_AUTH_TOKEN.
-    // If valid admin token → skip JWT validation, grant full access.
-    const adminToken = process.env.EXE_CRM_ADMIN_TOKEN;
-    if (adminToken) {
+    // Admin token bypass — already validated and hydrated by AdminTokenMiddleware.
+    if (request.adminTokenAuthenticated) {
+      return true;
+    }
+
+    // GoTrue JWT — shared auth layer across all exe-os services.
+    // If GOTRUE_URL is configured, validate the Bearer token against GoTrue.
+    // This enables one-login across CRM, Wiki, and Gateway.
+    const gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
+    if (gotrueUrl) {
       const authHeader = request.headers?.authorization;
       const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-      if (bearerToken && bearerToken === adminToken) {
-        this.logger.debug('Admin token access granted');
-        request.adminAccess = true;
-        return true;
+      if (bearerToken) {
+        try {
+          const res = await fetch(`${gotrueUrl}/user`, {
+            headers: {
+              Authorization: `Bearer ${bearerToken}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (res.ok) {
+            const gotrueUser = await res.json();
+            if (gotrueUser?.id) {
+              request.gotrueUser = gotrueUser;
+              this.logger.debug(`GoTrue auth: ${gotrueUser.email ?? gotrueUser.id}`);
+              return true;
+            }
+          }
+        } catch (err) {
+          this.logger.debug(`GoTrue validation failed, falling through to Twenty auth: ${err}`);
+        }
       }
     }
 
