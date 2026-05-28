@@ -24,6 +24,7 @@ import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { DataloaderModule } from 'src/engine/dataloaders/dataloader.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
+import { AdminTokenMiddleware } from 'src/engine/middlewares/admin-token.middleware';
 import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares/graphql-hydrate-request-from-token.middleware';
 import { MiddlewareModule } from 'src/engine/middlewares/middleware.module';
 import { RestCoreMiddleware } from 'src/engine/middlewares/rest-core.middleware';
@@ -104,6 +105,7 @@ export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(
+        AdminTokenMiddleware,
         GraphQLHydrateRequestFromTokenMiddleware,
         WorkspaceAuthContextMiddleware,
       )
@@ -111,6 +113,7 @@ export class AppModule {
 
     consumer
       .apply(
+        AdminTokenMiddleware,
         GraphQLHydrateRequestFromTokenMiddleware,
         WorkspaceAuthContextMiddleware,
       )
@@ -118,8 +121,12 @@ export class AppModule {
 
     for (const method of MIGRATED_REST_METHODS) {
       consumer
-        .apply(RestCoreMiddleware, WorkspaceAuthContextMiddleware)
+        .apply(AdminTokenMiddleware, RestCoreMiddleware, WorkspaceAuthContextMiddleware)
         .forRoutes({ path: 'rest/*path', method });
     }
+
+    consumer
+      .apply(AdminTokenMiddleware, WorkspaceAuthContextMiddleware)
+      .forRoutes({ path: 'mcp', method: RequestMethod.ALL });
   }
 }

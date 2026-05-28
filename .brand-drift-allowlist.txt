@@ -22,3 +22,4 @@ README.md
 
 # AGPL §5 attribution — list of modifications and upstream source URL.
 NOTICE
+packages/twenty-server/src/engine/guards/jwt-auth.guard.ts

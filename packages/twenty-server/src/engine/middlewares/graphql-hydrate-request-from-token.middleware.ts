@@ -9,6 +9,12 @@ export class GraphQLHydrateRequestFromTokenMiddleware implements NestMiddleware 
   constructor(private readonly middlewareService: MiddlewareService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
+    if (req.adminTokenAuthenticated) {
+      next();
+
+      return;
+    }
+
     try {
       await this.middlewareService.hydrateGraphqlRequest(req);
     } catch (error) {

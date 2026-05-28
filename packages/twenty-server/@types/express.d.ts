@@ -25,5 +25,6 @@ declare module 'express-serve-static-core' {
     authProvider?: AuthProviderEnum | null;
     impersonationContext?: RawAuthContext['impersonationContext'];
     skipWorkspaceSchemaCreation?: boolean;
+    adminTokenAuthenticated?: boolean;
   }
 }

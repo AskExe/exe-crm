@@ -17,6 +17,19 @@ import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-u
 @Injectable()
 export class WorkspaceAuthContextMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction) {
+    if (req.adminTokenAuthenticated && isDefined(req.workspace)) {
+      const authContext: WorkspaceAuthContext = {
+        type: 'system',
+        workspace: req.workspace,
+      };
+
+      withWorkspaceAuthContext(authContext, () => {
+        next();
+      });
+
+      return;
+    }
+
     if (!isDefined(req.workspace)) {
       next();
 
