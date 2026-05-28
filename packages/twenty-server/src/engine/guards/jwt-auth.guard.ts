@@ -34,7 +34,9 @@ export class JwtAuthGuard implements CanActivate {
     const gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
     if (gotrueUrl) {
       const authHeader = request.headers?.authorization;
-      const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      const bearerToken = authHeader?.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : null;
       if (bearerToken) {
         try {
           const res = await fetch(`${gotrueUrl}/user`, {
@@ -48,12 +50,16 @@ export class JwtAuthGuard implements CanActivate {
             const gotrueUser = await res.json();
             if (gotrueUser?.id) {
               request.gotrueUser = gotrueUser;
-              this.logger.debug(`GoTrue auth: ${gotrueUser.email ?? gotrueUser.id}`);
+              this.logger.debug(
+                `GoTrue auth: ${gotrueUser.email ?? gotrueUser.id}`,
+              );
               return true;
             }
           }
         } catch (err) {
-          this.logger.debug(`GoTrue validation failed, falling through to Twenty auth: ${err}`);
+          this.logger.debug(
+            `GoTrue validation failed, falling through to Twenty auth: ${err}`,
+          );
         }
       }
     }
