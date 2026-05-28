@@ -23,6 +23,20 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
+    // Admin token bypass — machine-to-machine access (agents, MCP, scripts).
+    // Same pattern as exe-gateway's EXE_GATEWAY_AUTH_TOKEN.
+    // If valid admin token → skip JWT validation, grant full access.
+    const adminToken = process.env.EXE_CRM_ADMIN_TOKEN;
+    if (adminToken) {
+      const authHeader = request.headers?.authorization;
+      const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (bearerToken && bearerToken === adminToken) {
+        this.logger.debug('Admin token access granted');
+        request.adminAccess = true;
+        return true;
+      }
+    }
+
     try {
       const data =
         await this.accessTokenService.validateTokenByRequest(request);
