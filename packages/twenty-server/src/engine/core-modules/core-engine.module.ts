@@ -4,6 +4,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { WorkspaceQueryRunnerModule } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-runner.module';
 import { ActorModule } from 'src/engine/core-modules/actor/actor.module';
+// exe-os stub modules — @Global, imported here so NestJS DI tree can resolve them everywhere
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { DnsManagerModule } from 'src/engine/core-modules/dns-manager/dns-manager.module';
+import { EnterpriseModule } from 'src/engine/core-modules/enterprise/enterprise.module';
+import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
+import { UsageModule } from 'src/engine/core-modules/usage/usage.module';
 import { AdminPanelModule } from 'src/engine/core-modules/admin-panel/admin-panel.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { AppTokenModule } from 'src/engine/core-modules/app-token/app-token.module';
@@ -135,6 +142,13 @@ import { FileModule } from './file/file.module';
     CacheStorageModule,
     AiModelsModule,
     AiBillingModule,
+    // exe-os stubs — must be imported in root module tree for @Global to work
+    BillingModule,
+    StripeModule,
+    DnsManagerModule,
+    EnterpriseModule,
+    WorkspaceSSOModule,
+    UsageModule,
     LogicFunctionModule.forRoot(),
     CodeInterpreterModule.forRoot(),
     SearchModule,
