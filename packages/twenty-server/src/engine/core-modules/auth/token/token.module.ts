@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -22,6 +22,8 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 
+// @Global so JwtAuthGuard can resolve AccessTokenService from any module scope
+@Global()
 @Module({
   imports: [
     JwtModule,
