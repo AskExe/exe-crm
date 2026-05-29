@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
@@ -11,6 +11,8 @@ import { AdminTokenMiddleware } from 'src/engine/middlewares/admin-token.middlew
 import { MiddlewareService } from 'src/engine/middlewares/middleware.service';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 
+// @Global so AdminTokenMiddleware is resolvable when applied via configure() in AppModule
+@Global()
 @Module({
   imports: [
     DataSourceModule,
