@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -27,6 +28,7 @@ import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/work
 import { AdminTokenMiddleware } from 'src/engine/middlewares/admin-token.middleware';
 import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares/graphql-hydrate-request-from-token.middleware';
 import { MiddlewareModule } from 'src/engine/middlewares/middleware.module';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { RestCoreMiddleware } from 'src/engine/middlewares/rest-core.middleware';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
@@ -70,6 +72,8 @@ const MIGRATED_REST_METHODS = [
     McpModule,
     DataSourceModule,
     MiddlewareModule,
+    // AdminTokenMiddleware needs WorkspaceEntity repo in AppModule scope
+    TypeOrmModule.forFeature([WorkspaceEntity]),
     WorkspaceMetadataVersionModule,
     // I18n module for translations
     I18nModule,
