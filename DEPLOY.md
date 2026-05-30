@@ -60,6 +60,31 @@ docker compose -f packages/twenty-docker/docker-compose.yml start server worker
 
 For production VPS deployments, also configure an external backup target (S3-compatible storage, rsync to secondary host, or VPS provider snapshots). The built-in sidecar protects against application-level data loss; external backups protect against host-level failures.
 
+## Database Migration Safety
+
+### Destructive operation gate
+
+Dynamic workspace schema changes (DROP TABLE, DROP COLUMN, DROP TYPE) are blocked at runtime unless `ALLOW_DESTRUCTIVE_DB_OPS=true` is explicitly set. Production deployments must leave this disabled.
+
+### Release migration checklist
+
+Before applying a new CRM version to a customer VPS:
+
+1. **Back up the database** — trigger an immediate `pg_dump` or VPS snapshot before upgrading. Do not rely solely on the 6-hour sidecar cycle.
+2. **Review migrations are additive** — inspect new TypeORM migrations for DROP/ALTER/DELETE operations. Destructive `down` paths exist in the migration history; rolling back requires a database restore, not a reverse migration.
+3. **Test on staging first** — run `docker compose up` against a copy of production data to verify migrations apply cleanly.
+4. **Keep `ALLOW_DESTRUCTIVE_DB_OPS` disabled** — this env var gates dynamic schema manager operations. Only enable it temporarily for planned schema cleanup with explicit approval.
+5. **Verify after upgrade** — hit `/healthz` and confirm server + worker + Redis are healthy.
+
+### Rollback procedure
+
+If a migration fails or causes data issues:
+
+1. Stop server and worker containers
+2. Restore from the pre-upgrade backup (see Backup & Disaster Recovery above)
+3. Revert to the previous `CRM_IMAGE_TAG` in `.env`
+4. Restart containers
+
 ## Running locally
 
 ```bash
