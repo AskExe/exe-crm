@@ -1,4 +1,3 @@
-import { useAuth } from '@/auth/hooks/useAuth';
 import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
 
@@ -190,8 +189,6 @@ export const SignInUpWorkspaceScopeForm = () => {
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
 
-  const { signInWithCredentialsInWorkspace } = useAuth();
-
   const handleCredentialsSubmit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
@@ -202,7 +199,25 @@ export const SignInUpWorkspaceScopeForm = () => {
       setCredError('');
       setCredLoading(true);
       try {
-        await signInWithCredentialsInWorkspace(email, password);
+        const res = await fetch('/api/auth/gotrue-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+
+        if (data.token) {
+          document.cookie = `tokenPair=${JSON.stringify({
+            accessToken: { token: data.token },
+          })};path=/`;
+          window.location.href = '/';
+        } else {
+          throw new Error('No token received');
+        }
       } catch (err) {
         setCredError(
           err instanceof Error ? err.message : 'Authentication failed',
@@ -211,7 +226,7 @@ export const SignInUpWorkspaceScopeForm = () => {
         setCredLoading(false);
       }
     },
-    [email, password, signInWithCredentialsInWorkspace],
+    [email, password],
   );
 
   const handleAdminTokenSubmit = useCallback(
