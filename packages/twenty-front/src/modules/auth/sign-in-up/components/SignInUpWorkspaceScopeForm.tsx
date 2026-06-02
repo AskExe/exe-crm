@@ -305,6 +305,7 @@ export const SignInUpWorkspaceScopeForm = () => {
               type="email"
               placeholder="you@company.com"
               value={email}
+              onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (credError) setCredError('');
@@ -318,6 +319,7 @@ export const SignInUpWorkspaceScopeForm = () => {
               id="login-password"
               type="password"
               value={password}
+              onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (credError) setCredError('');
@@ -346,6 +348,7 @@ export const SignInUpWorkspaceScopeForm = () => {
               type="password"
               placeholder="Paste your admin token"
               value={adminToken}
+              onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => {
                 setAdminToken(e.target.value);
                 if (adminTokenError) setAdminTokenError('');
