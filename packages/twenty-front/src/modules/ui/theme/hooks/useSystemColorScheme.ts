@@ -9,10 +9,9 @@ export const useSystemColorScheme = (): ColorScheme => {
     [],
   );
 
+  // Exe Foundry Bold: always dark. Ignore system preference.
   const [preferredColorScheme, setPreferredColorScheme] = useState<ColorScheme>(
-    isUndefinedOrNull(window.matchMedia) || !mediaQuery.matches
-      ? 'Light'
-      : 'Dark',
+    'Dark',
   );
 
   useEffect(() => {
