@@ -2,18 +2,19 @@ import { AuthModalMountEffect } from '@/auth/components/AuthModalMountEffect';
 import { styled } from '@linaria/react';
 import React from 'react';
 
+// oxlint-disable-next-line exe-crm/no-hardcoded-colors
 const StyledFullscreenContainer = styled.div`
   align-items: center;
   background-color: #0f0e1a;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  left: 0;
   min-height: 100dvh;
   position: fixed;
-  top: 0;
-  left: 0;
   right: 0;
-  bottom: 0;
+  top: 0;
   z-index: 1000;
 `;
 
