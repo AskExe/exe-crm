@@ -6,10 +6,12 @@ import { Repository } from 'typeorm';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
+import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 /**
  * /api/auth/gotrue-login  — email + password via GoTrue → Twenty access token
@@ -29,6 +31,7 @@ export class GoTrueAuthController {
     private readonly accessTokenService: AccessTokenService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly signInUpService: SignInUpService,
+    private readonly workspaceService: WorkspaceService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -160,8 +163,24 @@ export class GoTrueAuthController {
           throw new Error('User context missing after provisioning');
         }
 
+        // Activate workspace if still pending
+        if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+          this.logger.log(`Activating workspace ${ctx.workspace.id}...`);
+          await this.workspaceService.activateWorkspace(
+            ctx.user,
+            ctx.workspace,
+            { displayName: 'Exe' },
+          );
+          // Refresh after activation
+          ctx = await this.getUserContext(email);
+
+          if (!ctx) {
+            throw new Error('User context missing after activation');
+          }
+        }
+
         this.logger.log(
-          `Auto-provisioned: user=${ctx.user.id} workspace=${ctx.workspace.id}`,
+          `Auto-provisioned: user=${ctx.user.id} workspace=${ctx.workspace.id} status=${ctx.workspace.activationStatus}`,
         );
       } catch (provisionErr) {
         this.logger.error(`Auto-provision failed for ${email}: ${provisionErr}`);
@@ -169,6 +188,27 @@ export class GoTrueAuthController {
         return res.status(500).json({
           error: 'Failed to set up your account. Please try again or contact admin.',
         });
+      }
+    }
+
+    // Activate workspace if pending (covers existing-but-unactivated state)
+    if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+      try {
+        this.logger.log(`Activating existing pending workspace ${ctx.workspace.id}...`);
+        await this.workspaceService.activateWorkspace(
+          ctx.user,
+          ctx.workspace,
+          { displayName: ctx.workspace.displayName || 'Exe' },
+        );
+        ctx = await this.getUserContext(email);
+
+        if (!ctx) {
+          return res.status(500).json({ error: 'Workspace activation failed' });
+        }
+      } catch (activateErr) {
+        this.logger.error(`Workspace activation failed: ${activateErr}`);
+
+        return res.status(500).json({ error: 'Failed to activate workspace' });
       }
     }
 

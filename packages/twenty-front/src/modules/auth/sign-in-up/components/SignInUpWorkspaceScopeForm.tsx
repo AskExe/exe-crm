@@ -27,6 +27,7 @@ const StyledContentContainer = styled.div`
 const StyledTabContainer = styled.div`
   background: ${TOKENS.bgCard};
   border-radius: ${TOKENS.radiusMd};
+  box-sizing: border-box;
   display: flex;
   gap: 0;
   margin-bottom: 24px;
