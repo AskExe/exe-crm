@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
+import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -27,6 +28,7 @@ export class GoTrueAuthController {
   constructor(
     private readonly accessTokenService: AccessTokenService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly signInUpService: SignInUpService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -134,22 +136,47 @@ export class GoTrueAuthController {
       return res.status(502).json({ error: 'Authentication service unavailable' });
     }
 
-    // Step 2: Find user in Twenty's DB
-    const ctx = await this.getUserContext(email);
+    // Step 2: Find user in CRM DB, or auto-provision on first login
+    let ctx = await this.getUserContext(email);
 
     if (!ctx) {
-      this.logger.warn(`GoTrue login OK but user ${email} not found in CRM DB`);
+      this.logger.log(`GoTrue login OK — auto-provisioning ${email} in CRM`);
 
-      return res.status(403).json({
-        error: 'Account not provisioned in CRM. Ask your admin to create your account.',
-      });
+      try {
+        const result = await this.signInUpService.signUpOnNewWorkspace({
+          type: 'newUserWithPicture',
+          newUserWithPicture: {
+            email,
+            firstName: gotrueData.user?.email?.split('@')[0] ?? 'User',
+            lastName: '',
+            picture: null,
+          },
+        });
+
+        // Refresh context after provisioning
+        ctx = await this.getUserContext(email);
+
+        if (!ctx) {
+          throw new Error('User context missing after provisioning');
+        }
+
+        this.logger.log(
+          `Auto-provisioned: user=${ctx.user.id} workspace=${ctx.workspace.id}`,
+        );
+      } catch (provisionErr) {
+        this.logger.error(`Auto-provision failed for ${email}: ${provisionErr}`);
+
+        return res.status(500).json({
+          error: 'Failed to set up your account. Please try again or contact admin.',
+        });
+      }
     }
 
-    // Step 3: Generate Twenty-native token pair
+    // Step 3: Generate CRM-native token pair
     try {
       const tokens = await this.generateTokenPair(ctx.user.id, ctx.workspace.id);
 
-      this.logger.log(`GoTrue login: ${email} → Twenty token issued`);
+      this.logger.log(`GoTrue login: ${email} → CRM token issued`);
 
       return res.json({
         tokens,
