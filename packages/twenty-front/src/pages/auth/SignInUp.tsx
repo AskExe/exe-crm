@@ -11,21 +11,15 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import { Logo } from '@/auth/components/Logo';
-import { EmailVerificationSent } from '@/auth/sign-in-up/components/EmailVerificationSent';
-import { SignInUpGlobalScopeForm } from '@/auth/sign-in-up/components/SignInUpGlobalScopeForm';
+// EmailVerificationSent REMOVED — GoTrue owns email verification.
+// SignInUpGlobalScopeForm REMOVED — not rendered (we always show workspace scope form).
 import { SignInUpWorkspaceScopeForm } from '@/auth/sign-in-up/components/SignInUpWorkspaceScopeForm';
-import { SignInUpWorkspaceScopeFormEffect } from '@/auth/sign-in-up/components/internal/SignInUpWorkspaceScopeFormEffect';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCurrentLocationOnAWorkspace';
 import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
 import { useMemo } from 'react';
 
-import { SignInUpGlobalScopeFormEffect } from '@/auth/sign-in-up/components/internal/SignInUpGlobalScopeFormEffect';
-import { SignInUpTwoFactorAuthenticationProvision } from '@/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationProvision';
-import { SignInUpTOTPVerification } from '@/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationVerification';
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
-import { useSearchParams } from 'react-router-dom';
-import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { AnimatedEaseIn } from 'twenty-ui/utilities';
 
@@ -70,8 +64,6 @@ export const SignInUp = () => {
     isMultiWorkspaceEnabledState,
   );
 
-  const [searchParams] = useSearchParams();
-
   const onClickOnLogo = () => {
     setSignInUpStep(SignInUpStep.Init);
   };
@@ -96,13 +88,7 @@ export const SignInUp = () => {
     workspacePublicData,
   ]);
 
-  if (signInUpStep === SignInUpStep.EmailVerification) {
-    return (
-      <StyledPageContainer>
-        <EmailVerificationSent email={searchParams.get('email')} />
-      </StyledPageContainer>
-    );
-  }
+  // Email verification step REMOVED — GoTrue owns email verification.
 
   return (
     <StyledPageContainer>

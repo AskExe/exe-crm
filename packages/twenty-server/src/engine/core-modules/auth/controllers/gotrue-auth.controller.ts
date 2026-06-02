@@ -1,7 +1,9 @@
 import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
 import { type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+
+import * as bcrypt from 'bcryptjs';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
@@ -14,12 +16,12 @@ import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/worksp
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 /**
- * /api/auth/gotrue-login  — email + password via GoTrue → Twenty access token
- * /api/auth/admin-token   — admin token bypass → Twenty access token
+ * /api/auth/gotrue-login  — email+password via GoTrue → CRM token pair
+ * /api/auth/admin-token   — admin token bypass → CRM token pair
  *
- * GoTrue is the identity provider. After GoTrue validates the credentials,
- * we mint a native Twenty access+refresh token pair that works with all
- * downstream CRM GraphQL resolvers (workspace context, user context, etc.).
+ * First login auto-provisions workspace + user in BOTH CRM and Wiki.
+ * GoTrue owns identity. CRM mints session tokens. Wiki gets a matching
+ * workspace + user via direct SQL (same exe-db Postgres).
  */
 @Controller('api/auth')
 export class GoTrueAuthController {
@@ -32,6 +34,7 @@ export class GoTrueAuthController {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
+    private readonly dataSource: DataSource,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -43,9 +46,6 @@ export class GoTrueAuthController {
     this.adminToken = process.env.EXE_CRM_ADMIN_TOKEN;
   }
 
-  /**
-   * Find the first workspace (single-tenant: only one workspace exists).
-   */
   private async getWorkspace(): Promise<WorkspaceEntity | null> {
     return this.workspaceRepository.findOne({
       where: {},
@@ -53,9 +53,6 @@ export class GoTrueAuthController {
     });
   }
 
-  /**
-   * Find or log the user+workspace association.
-   */
   private async getUserContext(email: string) {
     const user = await this.userRepository.findOne({
       where: { email: email.toLowerCase().trim() },
@@ -74,9 +71,6 @@ export class GoTrueAuthController {
     return { user, workspace, userWorkspace };
   }
 
-  /**
-   * Generate a Twenty-native token pair that works with all CRM endpoints.
-   */
   private async generateTokenPair(userId: string, workspaceId: string) {
     const accessToken = await this.accessTokenService.generateAccessToken({
       userId,
@@ -95,12 +89,69 @@ export class GoTrueAuthController {
     };
   }
 
+  /**
+   * Provision matching workspace + user in Wiki's tables (same Postgres).
+   * Idempotent — skips if already exists.
+   */
+  private async provisionWiki(
+    email: string,
+    workspaceName: string,
+    gotrueUserId: string | undefined,
+    password: string,
+  ) {
+    try {
+      const slug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'exe';
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Check if wiki schema exists
+      const schemaCheck = await this.dataSource.query(
+        `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'wiki'`,
+      );
+
+      if (schemaCheck.length === 0) {
+        this.logger.warn('Wiki schema does not exist — skipping wiki provisioning');
+        return;
+      }
+
+      // Create wiki workspace (idempotent)
+      await this.dataSource.query(`
+        INSERT INTO wiki.workspaces (name, slug, created_at, updated_at)
+        SELECT $1, $2, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM wiki.workspaces WHERE slug = $2)
+      `, [workspaceName, slug]);
+
+      // Create wiki user (idempotent by username)
+      await this.dataSource.query(`
+        INSERT INTO wiki.users (username, password, role, gotrue_id, created_at, updated_at)
+        SELECT $1, $2, 'admin', $3, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM wiki.users WHERE username = $1)
+      `, [email.toLowerCase().trim(), passwordHash, gotrueUserId ?? null]);
+
+      // Link user to workspace (idempotent)
+      await this.dataSource.query(`
+        INSERT INTO wiki.workspace_users (user_id, workspace_id, created_at, updated_at)
+        SELECT u.id, w.id, NOW(), NOW()
+        FROM wiki.users u, wiki.workspaces w
+        WHERE u.username = $1 AND w.slug = $2
+        AND NOT EXISTS (
+          SELECT 1 FROM wiki.workspace_users wu
+          WHERE wu.user_id = u.id AND wu.workspace_id = w.id
+        )
+      `, [email.toLowerCase().trim(), slug]);
+
+      this.logger.log(`Wiki provisioned: workspace=${slug} user=${email}`);
+    } catch (err) {
+      // Non-fatal — CRM login works even if wiki provisioning fails
+      this.logger.error(`Wiki provisioning failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   @Post('gotrue-login')
   async gotrueLogin(
-    @Body() body: { email?: string; password?: string },
+    @Body() body: { email?: string; password?: string; workspaceName?: string },
     @Res() res: Response,
   ) {
-    const { email, password } = body ?? {};
+    const { email, password, workspaceName } = body ?? {};
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -111,7 +162,7 @@ export class GoTrueAuthController {
     }
 
     // Step 1: Authenticate with GoTrue
-    let gotrueData: { access_token?: string; user?: { email?: string } };
+    let gotrueData: { access_token?: string; user?: { id?: string; email?: string } };
 
     try {
       const gotrueRes = await fetch(
@@ -139,39 +190,49 @@ export class GoTrueAuthController {
       return res.status(502).json({ error: 'Authentication service unavailable' });
     }
 
-    // Step 2: Find user in CRM DB, or auto-provision on first login
+    // Step 2: Check if workspace exists
     let ctx = await this.getUserContext(email);
+    const isFirstLogin = !ctx;
 
-    if (!ctx) {
-      this.logger.log(`GoTrue login OK — auto-provisioning ${email} in CRM`);
+    // First login — need workspace name. If not provided, signal frontend to ask.
+    if (isFirstLogin && !workspaceName) {
+      return res.status(200).json({
+        needsSetup: true,
+        message: 'First login — please provide a workspace name.',
+      });
+    }
+
+    // First login — provision everything
+    if (isFirstLogin) {
+      const wsName = workspaceName!.trim() || 'Exe';
+
+      this.logger.log(`First login for ${email} — provisioning workspace "${wsName}"`);
 
       try {
-        const result = await this.signInUpService.signUpOnNewWorkspace({
+        // CRM: create workspace + user
+        await this.signInUpService.signUpOnNewWorkspace({
           type: 'newUserWithPicture',
           newUserWithPicture: {
             email,
-            firstName: gotrueData.user?.email?.split('@')[0] ?? 'User',
+            firstName: email.split('@')[0] ?? 'User',
             lastName: '',
             picture: null,
           },
         });
 
-        // Refresh context after provisioning
         ctx = await this.getUserContext(email);
 
         if (!ctx) {
           throw new Error('User context missing after provisioning');
         }
 
-        // Activate workspace if still pending
+        // CRM: activate workspace
         if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
-          this.logger.log(`Activating workspace ${ctx.workspace.id}...`);
           await this.workspaceService.activateWorkspace(
             ctx.user,
             ctx.workspace,
-            { displayName: 'Exe' },
+            { displayName: wsName },
           );
-          // Refresh after activation
           ctx = await this.getUserContext(email);
 
           if (!ctx) {
@@ -179,26 +240,28 @@ export class GoTrueAuthController {
           }
         }
 
+        // Wiki: create matching workspace + user
+        await this.provisionWiki(email, wsName, gotrueData.user?.id, password);
+
         this.logger.log(
-          `Auto-provisioned: user=${ctx.user.id} workspace=${ctx.workspace.id} status=${ctx.workspace.activationStatus}`,
+          `Provisioned: CRM workspace=${ctx.workspace.id} (${ctx.workspace.activationStatus}) + Wiki`,
         );
       } catch (provisionErr) {
-        this.logger.error(`Auto-provision failed for ${email}: ${provisionErr}`);
+        this.logger.error(`Provisioning failed for ${email}: ${provisionErr}`);
 
         return res.status(500).json({
-          error: 'Failed to set up your account. Please try again or contact admin.',
+          error: 'Failed to set up your workspace. Please try again.',
         });
       }
     }
 
-    // Activate workspace if pending (covers existing-but-unactivated state)
-    if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+    // Activate if still pending (edge case: previous provision crashed mid-way)
+    if (ctx!.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
       try {
-        this.logger.log(`Activating existing pending workspace ${ctx.workspace.id}...`);
         await this.workspaceService.activateWorkspace(
-          ctx.user,
-          ctx.workspace,
-          { displayName: ctx.workspace.displayName || 'Exe' },
+          ctx!.user,
+          ctx!.workspace,
+          { displayName: ctx!.workspace.displayName || workspaceName || 'Exe' },
         );
         ctx = await this.getUserContext(email);
 
@@ -212,15 +275,13 @@ export class GoTrueAuthController {
       }
     }
 
-    // Step 3: Generate CRM-native token pair
+    // Step 3: Generate token pair
     try {
-      const tokens = await this.generateTokenPair(ctx.user.id, ctx.workspace.id);
-
-      this.logger.log(`GoTrue login: ${email} → CRM token issued`);
+      const tokens = await this.generateTokenPair(ctx!.user.id, ctx!.workspace.id);
 
       return res.json({
         tokens,
-        user: { id: ctx.user.id, email: ctx.user.email },
+        user: { id: ctx!.user.id, email: ctx!.user.email },
       });
     } catch (err) {
       this.logger.error(`Token generation failed for ${email}: ${err}`);
@@ -248,11 +309,10 @@ export class GoTrueAuthController {
       return res.status(401).json({ error: 'Invalid admin token' });
     }
 
-    // Find the first user in the first workspace (admin bypass)
     const workspace = await this.getWorkspace();
 
     if (!workspace) {
-      return res.status(500).json({ error: 'No workspace found' });
+      return res.status(500).json({ error: 'No workspace found. Log in with email first to create one.' });
     }
 
     const userWorkspace = await this.userWorkspaceRepository.findOne({
@@ -269,8 +329,6 @@ export class GoTrueAuthController {
         userWorkspace.userId,
         workspace.id,
       );
-
-      this.logger.log(`Admin token login → Twenty token issued`);
 
       return res.json({
         tokens,

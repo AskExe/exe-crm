@@ -190,25 +190,37 @@ export const SignInUpWorkspaceScopeForm = () => {
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
 
-  const handleCredentialsSubmit = useCallback(
-    async (event: React.FormEvent) => {
-      event.preventDefault();
-      if (!email.trim() || !password.trim()) {
-        setCredError('Email and password are required');
-        return;
-      }
+  // Setup wizard state
+  const [showSetup, setShowSetup] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+
+  const doLogin = useCallback(
+    async (wsName?: string) => {
       setCredError('');
       setCredLoading(true);
       try {
+        const payload: Record<string, string> = { email, password };
+
+        if (wsName) {
+          payload.workspaceName = wsName;
+        }
+
         const res = await fetch('/api/auth/gotrue-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
 
         if (!res.ok) {
           throw new Error(data.error || 'Authentication failed');
+        }
+
+        // First login — backend needs a workspace name
+        if (data.needsSetup) {
+          setShowSetup(true);
+          setCredLoading(false);
+          return;
         }
 
         if (data.tokens?.accessToken?.token) {
@@ -229,6 +241,30 @@ export const SignInUpWorkspaceScopeForm = () => {
       }
     },
     [email, password],
+  );
+
+  const handleCredentialsSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!email.trim() || !password.trim()) {
+        setCredError('Email and password are required');
+        return;
+      }
+      await doLogin();
+    },
+    [email, password, doLogin],
+  );
+
+  const handleSetupSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!workspaceName.trim()) {
+        setCredError('Workspace name is required');
+        return;
+      }
+      await doLogin(workspaceName.trim());
+    },
+    [workspaceName, doLogin],
   );
 
   const handleAdminTokenSubmit = useCallback(
@@ -277,6 +313,44 @@ export const SignInUpWorkspaceScopeForm = () => {
     },
     [adminToken],
   );
+
+  // Setup wizard — shown after first login when backend returns needsSetup
+  if (showSetup) {
+    return (
+      <StyledContentContainer>
+        <StyledAdminTokenForm onSubmit={handleSetupSubmit}>
+          <StyledFieldGroup>
+            <StyledLabel htmlFor="workspace-name">Name your workspace</StyledLabel>
+            <StyledInput
+              id="workspace-name"
+              type="text"
+              placeholder="My Company"
+              value={workspaceName}
+              onKeyDown={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                setWorkspaceName(e.target.value);
+                if (credError) setCredError('');
+              }}
+              autoComplete="organization"
+              autoFocus
+            />
+            <StyledHelperText>
+              This workspace will be shared across CRM and Wiki.
+            </StyledHelperText>
+          </StyledFieldGroup>
+
+          {credError && <StyledErrorMessage>{credError}</StyledErrorMessage>}
+
+          <StyledGoldButton
+            type="submit"
+            disabled={credLoading || !workspaceName.trim()}
+          >
+            {credLoading ? <StyledSpinner /> : 'CREATE WORKSPACE'}
+          </StyledGoldButton>
+        </StyledAdminTokenForm>
+      </StyledContentContainer>
+    );
+  }
 
   return (
     <StyledContentContainer>
