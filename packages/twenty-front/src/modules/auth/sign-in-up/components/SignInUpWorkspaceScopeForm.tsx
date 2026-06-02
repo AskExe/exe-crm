@@ -1,11 +1,6 @@
-import { SignInUpWithCredentials } from '@/auth/sign-in-up/components/internal/SignInUpWithCredentials';
-import { useHandleResetPassword } from '@/auth/sign-in-up/hooks/useHandleResetPassword';
-import { useSignInUp } from '@/auth/sign-in-up/hooks/useSignInUp';
-import { useSignInUpForm } from '@/auth/sign-in-up/hooks/useSignInUpForm';
-import { SignInUpStep } from '@/auth/states/signInUpStepState';
+import { useAuth } from '@/auth/hooks/useAuth';
 import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
-import { FormProvider } from 'react-hook-form';
 
 type AuthTab = 'credentials' | 'admin-token';
 
@@ -187,13 +182,37 @@ const StyledSpinner = styled.div`
 
 export const SignInUpWorkspaceScopeForm = () => {
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [credError, setCredError] = useState('');
+  const [credLoading, setCredLoading] = useState(false);
   const [adminToken, setAdminToken] = useState('');
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
 
-  const { form } = useSignInUpForm();
-  const { handleResetPassword } = useHandleResetPassword();
-  const { signInUpStep } = useSignInUp(form);
+  const { signInWithCredentialsInWorkspace } = useAuth();
+
+  const handleCredentialsSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!email.trim() || !password.trim()) {
+        setCredError('Email and password are required');
+        return;
+      }
+      setCredError('');
+      setCredLoading(true);
+      try {
+        await signInWithCredentialsInWorkspace(email, password);
+      } catch (err) {
+        setCredError(
+          err instanceof Error ? err.message : 'Authentication failed',
+        );
+      } finally {
+        setCredLoading(false);
+      }
+    },
+    [email, password, signInWithCredentialsInWorkspace],
+  );
 
   const handleAdminTokenSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -224,7 +243,6 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         if (data.token || data.accessToken) {
           const jwt = data.token || data.accessToken;
-          // Store token the same way Twenty stores auth tokens
           document.cookie = `tokenPair=${JSON.stringify({ accessToken: { token: jwt } })};path=/`;
           window.location.href = '/';
         } else {
@@ -249,34 +267,56 @@ export const SignInUpWorkspaceScopeForm = () => {
           isActive={activeTab === 'credentials'}
           onClick={() => setActiveTab('credentials')}
         >
-          Email / Password
+          Login
         </StyledTab>
         <StyledTab
           type="button"
           isActive={activeTab === 'admin-token'}
           onClick={() => setActiveTab('admin-token')}
         >
-          Admin Token
+          Token
         </StyledTab>
       </StyledTabContainer>
 
       {activeTab === 'credentials' && (
-        <>
-          <FormProvider
-            // oxlint-disable-next-line react/jsx-props-no-spreading
-            {...form}
+        <StyledAdminTokenForm onSubmit={handleCredentialsSubmit}>
+          <StyledFieldGroup>
+            <StyledLabel htmlFor="login-email">Email</StyledLabel>
+            <StyledInput
+              id="login-email"
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (credError) setCredError('');
+              }}
+              autoComplete="email"
+            />
+          </StyledFieldGroup>
+          <StyledFieldGroup style={{ marginTop: 16 }}>
+            <StyledLabel htmlFor="login-password">Password</StyledLabel>
+            <StyledInput
+              id="login-password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (credError) setCredError('');
+              }}
+              autoComplete="current-password"
+            />
+          </StyledFieldGroup>
+
+          {credError && <StyledErrorMessage>{credError}</StyledErrorMessage>}
+
+          <StyledGoldButton
+            type="submit"
+            disabled={credLoading || !email.trim() || !password.trim()}
           >
-            <SignInUpWithCredentials />
-          </FormProvider>
-          {signInUpStep === SignInUpStep.Password && (
-            <StyledForgotPassword
-              type="button"
-              onClick={handleResetPassword(form.getValues('email'))}
-            >
-              Forgot password?
-            </StyledForgotPassword>
-          )}
-        </>
+            {credLoading ? <StyledSpinner /> : 'SIGN IN'}
+          </StyledGoldButton>
+        </StyledAdminTokenForm>
       )}
 
       {activeTab === 'admin-token' && (

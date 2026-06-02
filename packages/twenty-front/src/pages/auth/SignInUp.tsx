@@ -111,12 +111,11 @@ export const SignInUp = () => {
       );
     }
 
-    // Default: show workspace scope form even without workspace data
-    // This is the main login flow
+    // Default: show workspace scope form (Login/Token tabs)
     return (
       <>
-        <SignInUpGlobalScopeFormEffect />
-        <SignInUpGlobalScopeForm />
+        <SignInUpWorkspaceScopeFormEffect />
+        <SignInUpWorkspaceScopeForm />
       </>
     );
   }, [
