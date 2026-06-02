@@ -210,9 +210,10 @@ export const SignInUpWorkspaceScopeForm = () => {
           throw new Error(data.error || 'Authentication failed');
         }
 
-        if (data.token) {
+        if (data.tokens?.accessToken?.token) {
           document.cookie = `tokenPair=${JSON.stringify({
-            accessToken: { token: data.token },
+            accessToken: data.tokens.accessToken,
+            refreshToken: data.tokens.refreshToken,
           })};path=/`;
           window.location.href = '/';
         } else {
@@ -256,9 +257,11 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         const data = await response.json();
 
-        if (data.token || data.accessToken) {
-          const jwt = data.token || data.accessToken;
-          document.cookie = `tokenPair=${JSON.stringify({ accessToken: { token: jwt } })};path=/`;
+        if (data.tokens?.accessToken?.token) {
+          document.cookie = `tokenPair=${JSON.stringify({
+            accessToken: data.tokens.accessToken,
+            refreshToken: data.tokens.refreshToken,
+          })};path=/`;
           window.location.href = '/';
         } else {
           throw new Error('No token received from server');
