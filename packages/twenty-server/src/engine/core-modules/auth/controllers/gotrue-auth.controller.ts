@@ -104,37 +104,38 @@ export class GoTrueAuthController {
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Check if wiki schema exists
-      const schemaCheck = await this.dataSource.query(
-        `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'wiki'`,
+      // Check if wiki tables exist in public schema
+      const tableCheck = await this.dataSource.query(
+        `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'workspaces'`,
       );
 
-      if (schemaCheck.length === 0) {
-        this.logger.warn('Wiki schema does not exist — skipping wiki provisioning');
+      if (tableCheck.length === 0) {
+        this.logger.warn('Wiki tables do not exist in public schema — skipping wiki provisioning');
         return;
       }
 
       // Create wiki workspace (idempotent)
       await this.dataSource.query(`
-        INSERT INTO wiki.workspaces (name, slug, created_at, updated_at)
+        INSERT INTO public.workspaces (name, slug, "createdAt", "lastUpdatedAt")
         SELECT $1, $2, NOW(), NOW()
-        WHERE NOT EXISTS (SELECT 1 FROM wiki.workspaces WHERE slug = $2)
+        WHERE NOT EXISTS (SELECT 1 FROM public.workspaces WHERE slug = $2)
       `, [workspaceName, slug]);
 
       // Create wiki user (idempotent by username)
       await this.dataSource.query(`
-        INSERT INTO wiki.users (username, password, role, gotrue_id, created_at, updated_at)
+        INSERT INTO public.users (username, password, role, gotrue_id, "createdAt", "lastUpdatedAt")
         SELECT $1, $2, 'admin', $3, NOW(), NOW()
-        WHERE NOT EXISTS (SELECT 1 FROM wiki.users WHERE username = $1)
+        WHERE NOT EXISTS (SELECT 1 FROM public.users WHERE username = $1)
       `, [email.toLowerCase().trim(), passwordHash, gotrueUserId ?? null]);
 
       // Link user to workspace (idempotent)
       await this.dataSource.query(`
-        INSERT INTO wiki.workspace_users (user_id, workspace_id, created_at, updated_at)
+        INSERT INTO public.workspace_users (user_id, workspace_id, "createdAt", "lastUpdatedAt")
         SELECT u.id, w.id, NOW(), NOW()
-        FROM wiki.users u, wiki.workspaces w
+        FROM public.users u, public.workspaces w
         WHERE u.username = $1 AND w.slug = $2
         AND NOT EXISTS (
-          SELECT 1 FROM wiki.workspace_users wu
+          SELECT 1 FROM public.workspace_users wu
           WHERE wu.user_id = u.id AND wu.workspace_id = w.id
         )
       `, [email.toLowerCase().trim(), slug]);
