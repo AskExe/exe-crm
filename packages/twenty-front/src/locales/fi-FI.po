@@ -96,7 +96,6 @@ msgid "(selected: {selectedIconKey})"
 msgstr "(valittu: {selectedIconKey})"
 
 #. js-lingui-id: ZBGbuw
-#: src/pages/settings/security/event-logs/components/EventLogJsonCell.tsx
 #: src/pages/settings/ai/components/SettingsSystemToolTableRow.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepOutputDetail.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepInputDetail.tsx
@@ -352,11 +351,6 @@ msgstr ""
 #: src/modules/object-record/record-merge/components/MergeSettingsTab.tsx
 msgid "{positionLabel} record holds priority"
 msgstr "Tietue {positionLabel} on etusijalla"
-
-#. js-lingui-id: Sxx5Hr
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "{recordCount} of {totalCount} records"
-msgstr "{recordCount} / {totalCount} tietuetta"
 
 #. js-lingui-id: 5d0hY6
 #: src/modules/settings/admin-panel/health-status/hooks/useRetryJobs.ts
@@ -635,16 +629,24 @@ msgid "Abort"
 msgstr "Keskeytä"
 
 #. js-lingui-id: uyJsf6
+#: src/pages/settings/SettingsAboutExeCRM.tsx
+#: src/pages/settings/SettingsAboutExeCRM.tsx
 #: src/pages/settings/data-model/SettingsNewObject.tsx
 #: src/pages/settings/applications/SettingsAvailableApplicationDetails.tsx
 #: src/pages/settings/applications/SettingsAvailableApplicationDetails.tsx
 #: src/pages/settings/applications/SettingsApplicationDetails.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
 #: src/modules/settings/logic-functions/components/SettingsLogicFunctionNewForm.tsx
+#: src/modules/settings/hooks/useSettingsNavigationItems.tsx
 #: src/modules/settings/data-model/object-details/components/tabs/ObjectSettings.tsx
 #: src/modules/settings/admin-panel/components/SettingsAdminGeneral.tsx
 msgid "About"
 msgstr "Tietoja"
+
+#. js-lingui-id: dpVmUV
+#: src/pages/settings/SettingsAboutExeCRM.tsx
+msgid "About Exe CRM"
+msgstr ""
 
 #. js-lingui-id: NBHoKd
 #: src/modules/settings/billing/components/SettingsBillingSubscriptionInfo.tsx
@@ -716,16 +718,6 @@ msgstr "Tilin poistaminen"
 msgid "Accounts"
 msgstr "Tilit"
 
-#. js-lingui-id: X5unbK
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "ACS Url"
-msgstr "ACS-URL"
-
-#. js-lingui-id: GGcxJO
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "ACS Url copied to clipboard"
-msgstr "ACS URL kopioitu leikepöydälle"
-
 #. js-lingui-id: bwRvnp
 #: src/modules/workflow/workflow-steps/workflow-actions/utils/getActionHeaderTypeOrThrow.ts
 #: src/modules/side-panel/components/SidePanelWorkflowStepInfo.tsx
@@ -764,7 +756,6 @@ msgstr "Toiminnot, joita käyttäjät voivat suorittaa tällä kohteella"
 #: src/pages/settings/data-model/SettingsObjectFieldEdit.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
 #: src/pages/settings/ai/components/SettingsSkillInactiveMenuDropDown.tsx
-#: src/modules/settings/security/components/SSO/SettingsSecuritySSORowDropdownMenu.tsx
 #: src/modules/settings/data-model/objects/components/SettingsObjectInactiveMenuDropDown.tsx
 #: src/modules/settings/data-model/object-details/components/SettingsObjectFieldDisabledActionDropdown.tsx
 #: src/modules/settings/components/SettingsEnterpriseFeatureGateCard.tsx
@@ -790,9 +781,8 @@ msgstr "Aktivoidaan..."
 
 #. js-lingui-id: F6pfE9
 #: src/pages/settings/SettingsProfile.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/modules/settings/domains/components/SettingsWorkspaceDomainCard.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminQueueJobsTable.tsx
 msgid "Active"
 msgstr "Aktiivinen"
@@ -1054,12 +1044,6 @@ msgstr "Lisää tuloskenttä"
 msgid "Add permission"
 msgstr ""
 
-#. js-lingui-id: wTsnV9
-#: src/modules/settings/domains/components/SettingsPublicDomainsListCard.tsx
-#: src/modules/settings/domains/components/SettingsPublicDomainsListCard.tsx
-msgid "Add Public Domain"
-msgstr "Lisää julkinen toimialue"
-
 #. js-lingui-id: AmiJYR
 #: src/modules/settings/data-model/object-details/components/tabs/ObjectFields.tsx
 msgid "Add relation"
@@ -1097,12 +1081,6 @@ msgstr "Lisää sääntöryhmä"
 msgid "Add sort"
 msgstr "Lisää lajittelu"
 
-#. js-lingui-id: sgXUv+
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersListCardWrapper.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersListCard.tsx
-msgid "Add SSO Identity Provider"
-msgstr "Lisää SSO-identiteetintarjoaja"
-
 #. js-lingui-id: hWkQMS
 #: src/modules/activities/tasks/components/AddTaskButton.tsx
 msgid "Add task"
@@ -1130,8 +1108,8 @@ msgid "Add to Favorite"
 msgstr "Lisää suosikkilistalle"
 
 #. js-lingui-id: pBsoKL
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 msgid "Add to favorites"
@@ -1510,11 +1488,6 @@ msgstr "Kaikki ryhmät"
 msgid "All lines"
 msgstr "Kaikki rivit"
 
-#. js-lingui-id: c3lkKf
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "All Members"
-msgstr "Kaikki jäsenet"
-
 #. js-lingui-id: ypSiuQ
 #: src/modules/settings/developers/components/WebhookEntitySelect.tsx
 msgid "All Metadata"
@@ -1526,7 +1499,6 @@ msgid "All objects"
 msgstr ""
 
 #. js-lingui-id: aFE/OW
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
 #: src/modules/settings/roles/role-permissions/objects-permissions/components/SettingsRolePermissionsObjectsTableHeader.tsx
 #: src/modules/settings/developers/components/WebhookEntitySelect.tsx
 #: src/modules/settings/developers/components/WebhookEntitySelect.tsx
@@ -1746,11 +1718,6 @@ msgstr "Tämän niminen objekti on jo olemassa"
 msgid "An unexpected error occurred"
 msgstr "Tapahtui odottamaton virhe"
 
-#. js-lingui-id: byKna+
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "An unexpected error occurred. Please try again."
-msgstr "Tapahtui odottamaton virhe. Yritä uudelleen."
-
 #. js-lingui-id: HZFm5R
 #: src/utils/date-utils.ts
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -1771,11 +1738,6 @@ msgstr "Mikä tahansa {fieldLabel}-kenttä"
 #: src/modules/views/components/AnyFieldSearchChip.tsx
 msgid "Any field"
 msgstr "Mikä tahansa kenttä"
-
-#. js-lingui-id: xJR+Wq
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Anyone with an email address at these domains is allowed to sign up for this workspace."
-msgstr "Kuka tahansa, jolla on sähköpostiosoite näissä tunnusalueissa, saa rekisteröityä tähän työtilaan."
 
 #. js-lingui-id: OZtEcz
 #: src/modules/settings/playground/components/PlaygroundSetupForm.tsx
@@ -1982,11 +1944,6 @@ msgstr "Käytä{progressText}"
 #: src/modules/settings/security/components/approvedAccessDomains/SettingsSecurityApprovedAccessDomainValidationEffect.tsx
 msgid "Approved access domain validated"
 msgstr "Hyväksytyt pääsyoikeudet valittu"
-
-#. js-lingui-id: 9tggYj
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Approved Domains"
-msgstr "Hyväksytyt verkkotunnukset"
 
 #. js-lingui-id: VDvaN2
 #: src/modules/settings/hooks/useSettingsNavigationItems.tsx
@@ -2220,6 +2177,11 @@ msgstr "Liitä tiedostoja"
 msgid "Attachments"
 msgstr "Liitteet"
 
+#. js-lingui-id: MYvhs6
+#: src/pages/settings/SettingsAboutExeCRM.tsx
+msgid "Attribution and source code for the AGPLv3 fork."
+msgstr ""
+
 #. js-lingui-id: /rTz0M
 #: src/pages/settings/admin-panel/SettingsAdminNewAiModel.tsx
 msgid "Audio"
@@ -2230,22 +2192,6 @@ msgstr "Ääni"
 msgid "Audit logs"
 msgstr "Tarkastuslokit"
 
-#. js-lingui-id: EPEFrH
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Audit Logs"
-msgstr "Tarkastuslokit"
-
-#. js-lingui-id: X0+U3u
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Audit logs are available with an Enterprise subscription. Please upgrade to access this feature."
-msgstr "Tarkastuslokit ovat saatavilla Enterprise-tilauksella. Päivitä saadaksesi tämän ominaisuuden käyttöösi."
-
-#. js-lingui-id: rNQ4RB
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Audit logs require ClickHouse to be configured. Please contact your administrator to set up ClickHouse."
-msgstr "Tarkastuslokit edellyttävät, että ClickHouse on määritetty. Ota yhteyttä järjestelmänvalvojaasi ClickHousen käyttöönottoa varten."
-
 #. js-lingui-id: kIuOL4
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerWebhookForm.tsx
 msgid "Auth"
@@ -2255,11 +2201,6 @@ msgstr "Tunnistautuminen"
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionTriggersTab.tsx
 msgid "Auth Required"
 msgstr "Todennus vaaditaan"
-
-#. js-lingui-id: P8fBlG
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Authentication"
-msgstr "Todennus"
 
 #. js-lingui-id: htuqBH
 #: src/modules/auth/hooks/useVerifyLogin.ts
@@ -2295,16 +2236,6 @@ msgstr "Valtuutus epäonnistui. Yritä uudelleen."
 #: src/pages/auth/Authorize.tsx
 msgid "Authorize"
 msgstr "Valtuuta"
-
-#. js-lingui-id: wTBNbL
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Authorized URI"
-msgstr "Valtuutettu URI"
-
-#. js-lingui-id: Ovw0c6
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Authorized URL copied to clipboard"
-msgstr "Valtuutettu URL kopioitu leikepöydälle"
 
 #. js-lingui-id: 8RmQki
 #: src/pages/auth/Authorize.tsx
@@ -2472,7 +2403,7 @@ msgid "Billing"
 msgstr "Laskutus"
 
 #. js-lingui-id: dSjFxR
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Billing history"
 msgstr "Laskutushistoria"
 
@@ -2592,10 +2523,10 @@ msgstr ""
 msgid "by {author}"
 msgstr "tekijä: {author}"
 
-#. js-lingui-id: 8Pfllj
+#. js-lingui-id: J02Fzs
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Exe, you agree to the"
-msgstr "Exe:tä käyttäessäsi hyväksyt"
+msgid "By using Exe CRM, you agree to the"
+msgstr ""
 
 #. js-lingui-id: Yx41df
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
@@ -2762,7 +2693,7 @@ msgid "Cancel metered tier switching?"
 msgstr "Peruuta mitatun tason vaihtaminen?"
 
 #. js-lingui-id: rRK/Lf
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/SettingsBillingContent.tsx
 msgid "Cancel Plan"
 msgstr "Peruuta suunnitelma"
@@ -2778,23 +2709,23 @@ msgid "Cancel plan switching?"
 msgstr "Peruuta suunnitelman vaihtaminen?"
 
 #. js-lingui-id: N6gPiD
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/SettingsBillingContent.tsx
 msgid "Cancel your subscription"
 msgstr "Peruuta tilauksesi"
 
 #. js-lingui-id: GGWsTU
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Canceled"
 msgstr "Peruttu"
 
 #. js-lingui-id: y4uH7j
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Cancelling"
 msgstr "Peruutetaan"
 
 #. js-lingui-id: WbPx+C
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Cancels on"
 msgstr "Peruutetaan"
 
@@ -2866,11 +2797,6 @@ msgstr "Vaihda solmun tyyppi"
 msgid "Change Password"
 msgstr "Vaihda salasana"
 
-#. js-lingui-id: EYSFEW
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-msgid "Change subdomain?"
-msgstr "Vaihda aliavain?"
-
 #. js-lingui-id: 9m7pJA
 #: src/modules/settings/billing/components/SettingsBillingSubscriptionInfo.tsx
 msgid "Change to Monthly?"
@@ -2927,10 +2853,10 @@ msgstr "Tarkista sähköpostisi"
 msgid "Check your inbox to verify your new email address."
 msgstr "Tarkista postilaatikkosi vahvistaaksesi uuden sähköpostiosoitteesi."
 
-#. js-lingui-id: SxwQE8
+#. js-lingui-id: BjD+e/
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Exe team"
-msgstr "Tarkista istunnovirhe. Yritä uudelleen tai ota yhteyttä Exe-tiimiin"
+msgid "Checkout session error. Please retry or contact Exe CRM team"
+msgstr ""
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -2941,16 +2867,6 @@ msgstr "Kiina — Yksinkertaistettu"
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
 msgid "Chinese — Traditional"
 msgstr "Kiina — Perinteinen"
-
-#. js-lingui-id: NFfUic
-#: src/pages/auth/SignInUp.tsx
-msgid "Choose a Workspace"
-msgstr "Valitse työtila"
-
-#. js-lingui-id: Qz73jD
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
-msgid "Choose between OIDC and SAML protocols"
-msgstr "Valitse OIDC- ja SAML-protokollien välillä"
 
 #. js-lingui-id: 2ZFG9X
 #: src/modules/settings/data-model/fields/forms/currency/components/SettingsDataModelFieldCurrencyForm.tsx
@@ -2986,11 +2902,6 @@ msgstr "Valitse, mitä tapahtuu, kun napsautat puhelinnumeroa"
 #: src/modules/settings/data-model/fields/forms/utils/getSettingsDataModelFieldOnClickActionDescription.ts
 msgid "Choose what happens when you click an email"
 msgstr "Valitse, mitä tapahtuu, kun napsautat sähköpostiosoitetta"
-
-#. js-lingui-id: 02EFne
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Choose which profile fields users with the Edit Profile permission can modify"
-msgstr ""
 
 #. js-lingui-id: 9qP96p
 #: src/pages/onboarding/internal/ChooseYourPlanContent.tsx
@@ -3052,13 +2963,7 @@ msgstr "Napsauta nähdäksesi tiedot"
 msgid "Click to select icon {iconAriaLabel}"
 msgstr "Napsauta valitaksesi kuvakkeen {iconAriaLabel}"
 
-#. js-lingui-id: ZwIUeU
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "ClickHouse is required for audit logs. Contact your administrator."
-msgstr "Tarkastuslokit edellyttävät ClickHousea. Ota yhteyttä järjestelmänvalvojaasi."
-
 #. js-lingui-id: CTdw8/
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
 #: src/pages/settings/ai/components/SettingsAIUsageTab.tsx
 #: src/modules/settings/usage/components/SettingsUsageAnalyticsSection.tsx
 msgid "ClickHouse Not Configured"
@@ -3066,13 +2971,11 @@ msgstr "ClickHouse ei ole määritetty"
 
 #. js-lingui-id: b9Y4up
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationOAuthTab.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
 msgid "Client ID"
 msgstr "Asiakkaan tunnus"
 
 #. js-lingui-id: Bdj4LI
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationOAuthTab.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
 msgid "Client Secret"
 msgstr "Asiakkaan salaisuus"
 
@@ -3080,11 +2983,6 @@ msgstr "Asiakkaan salaisuus"
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationOAuthTab.tsx
 msgid "Client secret rotated. Copy it now — it won't be shown again."
 msgstr "Asiakassalasana vaihdettu. Kopioi se nyt — sitä ei näytetä uudelleen."
-
-#. js-lingui-id: XUe4cu
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Client Settings"
-msgstr "Asiakasasetukset"
 
 #. js-lingui-id: mekEJ5
 #: src/hooks/useCopyToClipboard.tsx
@@ -3129,7 +3027,6 @@ msgid "Code your function"
 msgstr "Koodaa funktiosi"
 
 #. js-lingui-id: H86f9p
-#: src/pages/settings/security/event-logs/components/EventLogJsonCell.tsx
 #: src/pages/settings/ai/components/SettingsSystemToolTableRow.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepOutputDetail.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepInputDetail.tsx
@@ -3217,7 +3114,7 @@ msgstr "Tiivis näkymä"
 
 #. js-lingui-id: s2QZS6
 #: src/modules/sign-in-background-mock/components/SignInBackgroundMockPage.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Companies"
 msgstr "Yritykset"
 
@@ -3274,20 +3171,10 @@ msgstr "Kokoonpano"
 msgid "Configure"
 msgstr "Määritä"
 
-#. js-lingui-id: +zUMwJ
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Configure an SSO connection"
-msgstr "Määritä SSO-yhteys"
-
 #. js-lingui-id: QTNsSm
 #: src/modules/settings/accounts/components/SettingsAccountsSettingsSection.tsx
 msgid "Configure and customize your calendar preferences."
 msgstr "Määritä ja muokkaa kalenteriasetuksiasi."
-
-#. js-lingui-id: 5i71HM
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Configure and verify domains for emailing from this workspace."
-msgstr "Määritä ja varmista toimialueet sähköpostia varten tästä työtilasta."
 
 #. js-lingui-id: 6MDr1S
 #: src/modules/settings/accounts/components/SettingsAccountsConnectionForm.tsx
@@ -3303,11 +3190,6 @@ msgstr "Aseta päivämäärä, aika, numero, aikavyöhyke ja kalenterin aloitusp
 #: src/pages/settings/ai/components/SettingsAIModelsTab.tsx
 msgid "Configure default AI models and availability"
 msgstr "Määritä oletus-AI-mallit ja niiden saatavuus"
-
-#. js-lingui-id: utsXG8
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Configure fallback login methods for users with SSO bypass permissions"
-msgstr "Määritä varasijaiset kirjautumismenetelmät käyttäjille, joilla on SSO-ohituksen käyttöoikeudet"
 
 #. js-lingui-id: OLqG0t
 #: src/modules/settings/data-model/object-details/components/tabs/ObjectSettings.tsx
@@ -3333,11 +3215,6 @@ msgstr "Määritä SMTP-asetukset lähettääksesi sähköposteja tililtäsi."
 #: src/modules/settings/admin-panel/ai/components/SettingsAdminAI.tsx
 msgid "Configure the default AI models for all workspaces"
 msgstr "Määritä oletus-AI-mallit kaikille työtiloille"
-
-#. js-lingui-id: qA9AGQ
-#: src/modules/settings/domains/components/SettingsDomainRecords.tsx
-msgid "Configure these DNS records with your domain provider"
-msgstr "Määritä nämä DNS-tietueet verkkotunnuksen tarjoajallasi"
 
 #. js-lingui-id: BgaUQT
 #: src/modules/page-layout/widgets/fields/components/FieldsWidget.tsx
@@ -3573,10 +3450,6 @@ msgid "Copied to clipboard"
 msgstr "Kopioitu leikepöydälle"
 
 #. js-lingui-id: he3ygx
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
 #: src/modules/settings/developers/components/ApiKeyInput.tsx
 #: src/modules/object-record/record-field/ui/meta-types/input/components/MultiItemFieldMenuItem.tsx
 msgid "Copy"
@@ -3859,7 +3732,7 @@ msgid "Create new dashboard"
 msgstr "Luo uusi koontinäyttö"
 
 #. js-lingui-id: d0DCww
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Create new record"
 msgstr "Luo uusi tietue"
 
@@ -3911,8 +3784,8 @@ msgid "Create view"
 msgstr "Luo näkymä"
 
 #. js-lingui-id: 3D0MXY
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Create View"
 msgstr "Luo näkymä"
 
@@ -4095,19 +3968,6 @@ msgstr "Nykyistä työtilan jäsentä ei löytynyt."
 msgid "Custom"
 msgstr "Mukautettu"
 
-#. js-lingui-id: XQ681Q
-#: src/modules/settings/domains/components/SettingsWorkspaceDomainCard.tsx
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-msgid "Custom Domain"
-msgstr "Mukauta toimialuetta"
-
-#. js-lingui-id: 1GTWIA
-#: src/modules/settings/domains/hooks/useSettingsCustomDomain.ts
-msgid "Custom domain updated"
-msgstr "Mukautettu verkkotunnus päivitetty"
-
 #. js-lingui-id: 87ZNeX
 #: src/pages/settings/admin-panel/SettingsAdminNewAiModel.tsx
 msgid "Custom model ID"
@@ -4177,11 +4037,6 @@ msgstr "Mukauta sivun asetteluja ja käyttöliittymän rakennetta"
 msgid "Customize what this user can view and perform"
 msgstr "Mukauta, mitä tämä käyttäjä voi nähdä ja tehdä"
 
-#. js-lingui-id: bCJa9l
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Customize your workspace security"
-msgstr "Mukauta työtilasi turvallisuutta"
-
 #. js-lingui-id: fFwMZv
 #: src/modules/settings/data-model/fields/forms/select/components/SettingsDataModelFieldSelectFormOptionRow.tsx
 msgid "Cyan"
@@ -4226,6 +4081,9 @@ msgstr "Tanska"
 
 #. js-lingui-id: pvnfJD
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
 #: src/modules/ui/navigation/navigation-drawer/components/MultiWorkspaceDropdown/internal/MultiWorkspaceDropdownThemesComponents.tsx
 msgid "Dark"
 msgstr "Tumma"
@@ -4237,7 +4095,7 @@ msgid "Dashboard duplicated successfully"
 msgstr "Hallintapaneeli monistettiin onnistuneesti"
 
 #. js-lingui-id: w6iIMm
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Dashboards"
 msgstr "Koontinäytöt"
 
@@ -4403,7 +4261,6 @@ msgstr "Päivät liipaisimien välillä"
 #. js-lingui-id: 5y3O+A
 #: src/pages/settings/data-model/SettingsObjectFieldEdit.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
-#: src/modules/settings/security/components/SSO/SettingsSecuritySSORowDropdownMenu.tsx
 #: src/modules/settings/data-model/object-details/components/tabs/ObjectSettings.tsx
 #: src/modules/command-menu-item/record/constants/WorkflowCommandMenuItemsConfig.tsx
 msgid "Deactivate"
@@ -4585,10 +4442,8 @@ msgstr "poista"
 #: src/modules/views/view-picker/components/ViewPickerEditButton.tsx
 #: src/modules/views/view-picker/components/ViewPickerCreateButton.tsx
 #: src/modules/side-panel/pages/page-layout/components/SidePanelPageLayoutTabSettingsContent.tsx
-#: src/modules/settings/security/components/SSO/SettingsSecuritySSORowDropdownMenu.tsx
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionTabEnvironmentVariableTableRow.tsx
 #: src/modules/settings/emailing-domains/components/SettingsEmailingDomainRowDropdownMenu.tsx
-#: src/modules/settings/domains/components/SettingPublicDomainRowDropdownMenu.tsx
 #: src/modules/settings/developers/components/SettingsDevelopersWebhookForm.tsx
 #: src/modules/settings/developers/components/SettingsDevelopersWebhookForm.tsx
 #: src/modules/settings/data-model/objects/components/SettingsObjectInactiveMenuDropDown.tsx
@@ -4602,9 +4457,9 @@ msgstr "poista"
 #: src/modules/object-record/record-field-list/record-detail-section/relation/components/RecordDetailRelationRecordsListItem.tsx
 #: src/modules/object-record/record-field/ui/meta-types/input/components/MultiItemFieldMenuItem.tsx
 #: src/modules/navigation-menu-item/display/folder/components/NavigationMenuItemFolderNavigationDrawerItemDropdown.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
@@ -4708,7 +4563,7 @@ msgid "Delete or transfer this app registration"
 msgstr "Poista tai siirrä tämän sovelluksen rekisteröinti"
 
 #. js-lingui-id: kf0A63
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Delete records"
 msgstr "Poista tietueet"
 
@@ -4811,7 +4666,7 @@ msgid "Deleted record"
 msgstr "Poistettu tietue"
 
 #. js-lingui-id: WH/5rN
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Deleted records"
 msgstr "Poistetut tietueet"
 
@@ -4868,8 +4723,8 @@ msgid "destroy"
 msgstr "tuhota"
 
 #. js-lingui-id: 2xxBws
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Destroy"
 msgstr "Tuhota"
 
@@ -4895,7 +4750,6 @@ msgid "Detach"
 msgstr "Irrota"
 
 #. js-lingui-id: URmyfc
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
 #: src/modules/ai/components/RoutingDebugDisplay.tsx
 msgid "Details"
 msgstr "Tiedot"
@@ -4982,42 +4836,20 @@ msgid "Doesn't contain"
 msgstr "Ei sisällä"
 
 #. js-lingui-id: EoKe5U
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
 #: src/pages/settings/emailing-domains/SettingsNewEmailingDomain.tsx
 msgid "Domain"
 msgstr "Verkkotunnus"
-
-#. js-lingui-id: 0nBpE2
-#: src/modules/settings/domains/hooks/useSettingsCustomDomain.ts
-msgid "Domain already taken"
-msgstr "Verkkotunnus on jo käytössä"
 
 #. js-lingui-id: OjtVhh
 #: src/pages/settings/emailing-domains/SettingsEmailingDomainDetail.tsx
 msgid "Domain not found"
 msgstr "Toimialuetta ei löytynyt"
 
-#. js-lingui-id: XoBD/+
-#: src/modules/settings/domains/components/SettingsDomainRecords.tsx
-msgid "Domain Setup"
-msgstr "Verkkotunnuksen määritys"
-
 #. js-lingui-id: AZ4xlc
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
 #: src/pages/settings/emailing-domains/SettingsNewEmailingDomain.tsx
-#: src/pages/settings/domains/SettingsDomains.tsx
-#: src/pages/settings/domains/SettingsDomains.tsx
 #: src/modules/settings/hooks/useSettingsNavigationItems.tsx
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
 msgid "Domains"
 msgstr "Verkkotunnukset"
-
-#. js-lingui-id: 7kVRe6
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "Domains have to be smaller than 256 characters, cannot contain spaces and cannot contain any special characters."
-msgstr "Verkkotunnusten on oltava pienempiä kuin 256 merkkiä, eivät saa sisältää välilyöntejä eikä erikoismerkkejä."
 
 #. js-lingui-id: KUxVkp
 #: src/modules/settings/accounts/components/SettingsAccountsMessageAutoCreationCard.tsx
@@ -5056,11 +4888,6 @@ msgstr "Lataa"
 #: src/modules/ai/components/CodeExecutionDisplay.tsx
 msgid "Download {filename}"
 msgstr "Lataa {filename}"
-
-#. js-lingui-id: WcWS//
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Download file"
-msgstr "Lataa tiedosto"
 
 #. js-lingui-id: IFNYKF
 #: src/modules/activities/files/components/DocumentViewer.tsx
@@ -5304,8 +5131,8 @@ msgid "Edit iFrame"
 msgstr "Muokkaa iFrame"
 
 #. js-lingui-id: NZubw3
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Edit Layout"
 msgstr "Muokkaa asettelua"
 
@@ -5327,8 +5154,8 @@ msgid "Edit own profile information"
 msgstr ""
 
 #. js-lingui-id: h2KoTu
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/SettingsBillingContent.tsx
 msgid "Edit payment method, see your invoices and more"
 msgstr "Muokkaa maksutapaa, näe laskusi ja paljon muuta"
@@ -5357,16 +5184,6 @@ msgstr "Muokkaa sivupalkkia"
 #: src/modules/views/view-picker/components/ViewPickerContentEditMode.tsx
 msgid "Edit view"
 msgstr "Muokkaa näkymää"
-
-#. js-lingui-id: 6o1M/Q
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Edit your subdomain name or set a custom domain."
-msgstr "Muokkaa alasivustosi nimeä tai aseta mukautettu verkkotunnus."
-
-#. js-lingui-id: xMkLkW
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Editable Profile Fields"
-msgstr ""
 
 #. js-lingui-id: uBAxNB
 #: src/pages/settings/logic-functions/SettingsLogicFunctionDetail.tsx
@@ -5409,11 +5226,6 @@ msgstr "Sähköposti"
 msgid "Email Address"
 msgstr "Sähköpostiosoite"
 
-#. js-lingui-id: unEEog
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "Email cannot be empty"
-msgstr "Sähköpostiosoite ei voi olla tyhjä"
-
 #. js-lingui-id: UZQ5eW
 #: src/modules/object-record/record-table/record-table-cell/hooks/useGetSecondaryRecordTableCellButton.ts
 #: src/modules/object-record/record-field/ui/meta-types/input/components/EmailsFieldInput.tsx
@@ -5451,11 +5263,6 @@ msgstr "Sähköposti tai verkkotunnus on jo estolistalla"
 #: src/modules/side-panel/hooks/useOpenEmailThreadInSidePanel.ts
 msgid "Email Thread"
 msgstr "Sähköpostiketju"
-
-#. js-lingui-id: LimKOG
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "Email verification"
-msgstr "Sähköpostin varmistus"
 
 #. js-lingui-id: FiEQ3l
 #: src/modules/auth/components/VerifyEmailEffect.tsx
@@ -5495,7 +5302,6 @@ msgstr "Sähköpostitoimialue poistettiin onnistuneesti"
 #. js-lingui-id: axQccV
 #: src/pages/settings/emailing-domains/SettingsNewEmailingDomain.tsx
 #: src/pages/settings/emailing-domains/SettingsEmailingDomainDetail.tsx
-#: src/pages/settings/domains/SettingsDomains.tsx
 msgid "Emailing Domains"
 msgstr "Sähköpostitoimialueet"
 
@@ -5546,7 +5352,6 @@ msgid "Empty"
 msgstr "Tyhjä"
 
 #. js-lingui-id: OMbipf
-#: src/pages/settings/security/event-logs/components/EventLogJsonCell.tsx
 #: src/pages/settings/ai/components/SettingsSystemToolTableRow.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepOutputDetail.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepInputDetail.tsx
@@ -5568,7 +5373,6 @@ msgid "Empty Inbox"
 msgstr "Tyhjä Saapuneet"
 
 #. js-lingui-id: 3hSGoJ
-#: src/pages/settings/security/event-logs/components/EventLogJsonCell.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepOutputDetail.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepInputDetail.tsx
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminJsonDataIndicatorHealthStatus.tsx
@@ -5592,11 +5396,6 @@ msgstr "Ota ohitusvaihtoehdot käyttöön"
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
 msgid "Enable model-specific features"
 msgstr "Ota käyttöön mallikohtaiset ominaisuudet"
-
-#. js-lingui-id: VFv2ZC
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "End Date"
-msgstr "Päättymispäivä"
 
 #. js-lingui-id: k1i50B
 #: src/modules/information-banner/components/billing/InformationBannerEndTrialPeriod.tsx
@@ -5798,16 +5597,6 @@ msgstr "Kirjoita tekstiä tai kirjoita '/' komentoja varten"
 msgid "Enter text or Type '/' for commands"
 msgstr ""
 
-#. js-lingui-id: XJU8BD
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Enter the credentials to set the connection"
-msgstr "Anna tunnistetiedot yhteyden muodostamiseksi"
-
-#. js-lingui-id: rGWgcm
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Enter the infos to set the connection"
-msgstr "Anna tiedot yhteyden luomiseksi"
-
 #. js-lingui-id: 3EF9HN
 #: src/pages/settings/ai/forms/components/SettingsAIAgentForm.tsx
 #: src/pages/settings/ai/components/SettingsAgentSettingsTab.tsx
@@ -5847,8 +5636,6 @@ msgid "Enter your API key"
 msgstr "Anna API-avaimesi"
 
 #. js-lingui-id: GpB8YV
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/SettingsSecurity.tsx
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 #: src/pages/settings/ai/components/SettingsAIUsageTab.tsx
@@ -5863,19 +5650,14 @@ msgstr "Yritys"
 msgid "Enterprise feature"
 msgstr ""
 
-#. js-lingui-id: Kjjkt3
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Enterprise Feature"
-msgstr "Enterprise-ominaisuus"
-
 #. js-lingui-id: S5c4pl
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Enterprise License"
 msgstr "Enterprise-lisenssi"
 
@@ -5883,16 +5665,6 @@ msgstr "Enterprise-lisenssi"
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 msgid "Enterprise license activated successfully"
 msgstr "Enterprise-lisenssi aktivoitiin onnistuneesti"
-
-#. js-lingui-id: SLuq/l
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Entity ID"
-msgstr "Entiteetin tunnus"
-
-#. js-lingui-id: 8PrrNJ
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Entity ID copied to clipboard"
-msgstr "Yksikkö ID kopioitu leikepöydälle"
 
 #. js-lingui-id: 3IeauL
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionTabEnvironmentVariableTableRow.tsx
@@ -5913,11 +5685,6 @@ msgstr "Ympäristömuuttujat"
 #: src/modules/settings/logic-functions/components/SettingsLogicFunctionTabEnvironmentVariablesSection.tsx
 msgid "Environment variables are defined at application level for all functions. Please check <0/>."
 msgstr "Ympäristömuuttujat määritellään sovellustasolla kaikille funktioille. Tarkista <0/>."
-
-#. js-lingui-id: BlLvRP
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Erasure of soft-deleted records"
-msgstr "Pehmeästi poistettujen tietueiden poistaminen"
 
 #. js-lingui-id: SlfejT
 #: src/modules/ui/feedback/snack-bar-manager/components/SnackBar.tsx
@@ -5944,16 +5711,6 @@ msgstr "Virhe sovellusta poistettaessa"
 msgid "Error deleting invitation"
 msgstr "Virhe kutsun poistamisessa"
 
-#. js-lingui-id: cyvTSq
-#: src/modules/settings/security/components/SSO/SettingsSecuritySSORowDropdownMenu.tsx
-msgid "Error deleting SSO Identity Provider"
-msgstr "Virhe SSO-identiteetintarjoajan poistamisessa"
-
-#. js-lingui-id: WEltn2
-#: src/modules/settings/security/components/SSO/SettingsSecuritySSORowDropdownMenu.tsx
-msgid "Error editing SSO Identity Provider"
-msgstr "Virhe SSO-identiteetintarjoajan muokkaamisessa"
-
 #. js-lingui-id: GdBN5t
 #: src/modules/error-handler/components/AppRootErrorFallback.tsx
 msgid "Error illustration"
@@ -5963,11 +5720,6 @@ msgstr "Virheen kuvitus"
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationGeneralTab.tsx
 msgid "Error installing app"
 msgstr "Virhe sovellusta asennettaessa"
-
-#. js-lingui-id: UJr0dl
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Error Loading Audit Logs"
-msgstr "Virhe tarkastuslokeja ladattaessa"
 
 #. js-lingui-id: 9e/9KK
 #: src/modules/activities/timeline-activities/rows/calendar/components/EventCardCalendarEvent.tsx
@@ -6064,10 +5816,10 @@ msgstr "Virhe mitatun tason peruutuksessa."
 msgid "Error while cancelling plan switching."
 msgstr "Virhe suunnitelman peruutuksessa."
 
-#. js-lingui-id: QmR+2U
+#. js-lingui-id: 2fdqSN
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Exe team."
-msgstr "Virhe kokeilujakson päättämisessä. Ota yhteyttä Exe -tiimiin."
+msgid "Error while ending trial period. Please contact Exe CRM team."
+msgstr ""
 
 #. js-lingui-id: 5g78zo
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -6111,16 +5863,9 @@ msgid "Evaluations"
 msgstr ""
 
 #. js-lingui-id: 0pC/y6
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
 #: src/modules/activities/calendar/components/CalendarEventDetails.tsx
 msgid "Event"
 msgstr "Tapahtuma"
-
-#. js-lingui-id: ailPEn
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Event Type"
-msgstr "Tapahtuman tyyppi"
 
 #. js-lingui-id: poC90w
 #: src/modules/settings/accounts/components/SettingsAccountsCalendarChannelDetails.tsx
@@ -6231,6 +5976,11 @@ msgstr "Jätä ei-ammattimaiset sähköpostit pois"
 msgid "Exclude the following people and domains from my email sync. Internal conversations will not be imported"
 msgstr "Pois sulje seuraavat henkilöt ja verkkotunnukset sähköpostisynkronoinnistani. Sisäisiä keskusteluja ei tuoda"
 
+#. js-lingui-id: QsBBDa
+#: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
+msgid "Exe CRM fields"
+msgstr ""
+
 #. js-lingui-id: YzI8cc
 #: src/modules/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormFieldSettingsSelect.tsx
 msgid "Existing Field"
@@ -6257,7 +6007,6 @@ msgid "Exit Settings"
 msgstr "Poistu asetuksista"
 
 #. js-lingui-id: 1A3EXy
-#: src/pages/settings/security/event-logs/components/EventLogJsonCell.tsx
 #: src/pages/settings/ai/components/SettingsSystemToolTableRow.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepOutputDetail.tsx
 #: src/modules/workflow/workflow-steps/components/WorkflowRunStepInputDetail.tsx
@@ -6339,13 +6088,13 @@ msgstr "Vanhenee {dateDiff}"
 
 #. js-lingui-id: GS+Mus
 #: src/modules/object-record/record-index/export/hooks/useRecordIndexExportRecords.ts
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 msgid "Export"
@@ -6383,7 +6132,7 @@ msgid "Export members"
 msgstr ""
 
 #. js-lingui-id: ep2rbf
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Export records"
 msgstr "Vie tietueet"
 
@@ -6399,7 +6148,7 @@ msgid "Export runs"
 msgstr "Vie suoritukset"
 
 #. js-lingui-id: q46CjD
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Export to PDF"
 msgstr "Vie PDF-muotoon"
 
@@ -6418,7 +6167,7 @@ msgstr "Vie versiot"
 #: src/modules/command-menu-item/record/constants/WorkspaceMembersCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/record/constants/WorkflowRunsCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/record/constants/WorkflowCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Export view"
 msgstr "Vie näkymä"
 
@@ -6886,20 +6635,10 @@ msgstr "Tiedostot"
 msgid "Filter"
 msgstr "Suodata"
 
-#. js-lingui-id: LjNPDA
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Filter by event"
-msgstr "Suodata tapahtuman mukaan"
-
 #. js-lingui-id: yZOiaW
 #: src/modules/side-panel/components/SidePanelObjectFilterDropdown.tsx
 msgid "Filter by object type"
 msgstr ""
-
-#. js-lingui-id: gVEHcL
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Filter by record ID"
-msgstr "Suodata tietue-ID:n mukaan"
 
 #. js-lingui-id: /VmB4B
 #: src/modules/object-record/advanced-filter/components/AdvancedFilterRecordFilterGroupOptionsDropdown.tsx
@@ -6980,7 +6719,7 @@ msgid "First name can not be empty"
 msgstr "Etunimi ei saa olla tyhjä"
 
 #. js-lingui-id: JREYkg
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Fix the payment issue to keep your enterprise features active."
 msgstr "Korjaa maksuongelma pitääksesi Enterprise-ominaisuudet aktiivisina."
 
@@ -7009,7 +6748,6 @@ msgid "Folders"
 msgstr "Kansiot"
 
 #. js-lingui-id: glx6on
-#: src/modules/auth/sign-in-up/components/SignInUpWorkspaceScopeForm.tsx
 #: src/modules/auth/sign-in-up/components/SignInUpGlobalScopeForm.tsx
 msgid "Forgot your password?"
 msgstr "Unohtuiko salasana?"
@@ -7153,18 +6891,18 @@ msgid "German"
 msgstr "Saksa"
 
 #. js-lingui-id: sqtljx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/enterprise/components/EnterprisePlanModal.tsx
 msgid "Get Enterprise"
 msgstr "Hanki Enterprise"
 
 #. js-lingui-id: o2kSwB
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Get Enterprise Key"
 msgstr "Hanki Enterprise-avain"
 
@@ -7183,24 +6921,19 @@ msgstr "Hanki tilaus"
 msgid "Global"
 msgstr "Globaali"
 
-#. js-lingui-id: sr0UJD
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Go Back"
-msgstr "Palaa takaisin"
-
 #. js-lingui-id: Hb4Cgz
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Go to billing portal"
 msgstr "Siirry laskutusportaaliin"
 
 #. js-lingui-id: mUbv8L
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Companies"
 msgstr "Mene Yrityksiin"
 
 #. js-lingui-id: dvMw7T
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Dashboards"
 msgstr "Siirry hallintapaneeleihin"
 
@@ -7210,17 +6943,17 @@ msgid "Go to Draft"
 msgstr "Siirry luonnokseen"
 
 #. js-lingui-id: BQE4ob
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Notes"
 msgstr "Siirry muistiinpanoihin"
 
 #. js-lingui-id: buPcNi
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Opportunities"
 msgstr "Siirry mahdollisuuksiin"
 
 #. js-lingui-id: MrE/Qb
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 msgid "Go to People"
 msgstr "Siirry henkilöihin"
@@ -7236,17 +6969,17 @@ msgstr "Siirry suorittamaan"
 #: src/modules/views/view-picker/components/ViewPickerCreateButton.tsx
 #: src/modules/views/view-picker/components/ViewPickerCreateButton.tsx
 #: src/modules/object-record/record-table/empty-state/components/RecordTableEmptyStateRemote.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Settings"
 msgstr "Siirry asetuksiin"
 
 #. js-lingui-id: BM24SF
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Tasks"
 msgstr "Siirry tehtäviin"
 
 #. js-lingui-id: 203RqP
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Go to Workflows"
 msgstr "Siirry työnkulkuihin"
 
@@ -7260,11 +6993,6 @@ msgstr "Kulta"
 #: src/modules/settings/security/components/SettingsSecurityAuthBypassOptionsList.tsx
 msgid "Google"
 msgstr "Google"
-
-#. js-lingui-id: CQwSng
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
-msgid "Google OIDC"
-msgstr "Google OIDC"
 
 #. js-lingui-id: 6eo66Q
 #: src/modules/settings/workspace/components/ToggleImpersonate.tsx
@@ -7447,7 +7175,7 @@ msgid "Hide"
 msgstr "Piilota"
 
 #. js-lingui-id: OlbYor
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Hide deleted"
 msgstr "Piilota poistetut"
 
@@ -7462,7 +7190,7 @@ msgid "Hide deleted members"
 msgstr ""
 
 #. js-lingui-id: FHhlye
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Hide deleted records"
 msgstr "Piilota poistetut tietueet"
 
@@ -7636,16 +7364,6 @@ msgstr "Ikoni ja nimi"
 msgid "ID"
 msgstr "ID"
 
-#. js-lingui-id: 06cbfQ
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Identity Provider"
-msgstr "Identiteetintarjoaja"
-
-#. js-lingui-id: LPN8Ma
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Identity Provider Metadata XML"
-msgstr "Identiteetintarjoajan Metadata XML"
-
 #. js-lingui-id: vyLxYN
 #: src/modules/workflow/workflow-steps/workflow-actions/if-else-action/utils/getBranchLabel.ts
 msgid "if"
@@ -7750,7 +7468,7 @@ msgstr "Impersonointi on poistettu käytöstä tässä työtilassa"
 
 #. js-lingui-id: l3s5ri
 #: src/modules/settings/accounts/components/SettingsAccountsMessageChannelDetails.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Import"
 msgstr "Tuo"
 
@@ -7770,7 +7488,7 @@ msgid "Import only selected folders/labels"
 msgstr "Tuo vain valitut kansiot/tunnisteet"
 
 #. js-lingui-id: eECp4f
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Import records"
 msgstr "Tuo tietueet"
 
@@ -7806,7 +7524,6 @@ msgstr "In-Reply-To"
 
 #. js-lingui-id: NoNwIX
 #: src/pages/settings/data-model/SettingsObjectFieldTable.tsx
-#: src/modules/settings/domains/components/SettingsWorkspaceDomainCard.tsx
 #: src/modules/settings/data-model/object-details/components/SettingsObjectRelationsTable.tsx
 msgid "Inactive"
 msgstr "Ei aktiivinen"
@@ -7837,7 +7554,7 @@ msgid "Include in default search"
 msgstr ""
 
 #. js-lingui-id: mtGDyy
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Incomplete"
 msgstr "Keskeneräinen"
 
@@ -8033,16 +7750,6 @@ msgstr "Virheellinen cron-muoto: {errorMessage}"
 msgid "Invalid day value '{newDay}'. Should be integer greater than 1"
 msgstr "Virheellinen päiväarvo '{newDay}'. Sen tulisi olla kokonaisluku, joka on suurempi kuin 1"
 
-#. js-lingui-id: u3hwhx
-#: src/modules/settings/domains/utils/getDomainValidationSchema.ts
-msgid "Invalid domain. Domains have to be smaller than 256 characters in length, cannot be IP addresses, cannot contain spaces, cannot contain any special characters such as _~`!@#$%^*()=+{}[]|\\;:'\",<>/? and cannot begin or end with a '-' character."
-msgstr "Virheellinen verkkotunnus. Verkkotunnusten on oltava alle 256 merkkiä pitkiä, eivät saa olla IP-osoitteita, eivät saa sisältää välilyöntejä eivätkä erikoismerkkejä, kuten _~`!@#$%^*()=+{}[]|\\;:'\",<>/? eivätkä saa alkaa tai päättyä '-'-merkillä."
-
-#. js-lingui-id: Vxmaf0
-#: src/modules/settings/domains/utils/getDomainValidationSchema.ts
-msgid "Invalid domain. Please include at least one subdomain (e.g., sub.example.com)."
-msgstr "Virheellinen verkkotunnus. Lisää vähintään yksi aliverkkotunnus (esim. sub.example.com)."
-
 #. js-lingui-id: B2Tpo0
 #: src/modules/auth/sign-in-up/hooks/useHandleResetPassword.ts
 #: src/modules/auth/sign-in-up/hooks/useHandleResendEmailVerificationToken.ts
@@ -8059,11 +7766,6 @@ msgstr "Virheellinen sähköpostiosoite tai verkkotunnus"
 #: src/modules/auth/components/VerifyEmailEffect.tsx
 msgid "Invalid email verification link."
 msgstr "Virheellinen sähköpostivarmennuslinkki."
-
-#. js-lingui-id: uzxr9u
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Invalid File"
-msgstr "Virheellinen tiedosto"
 
 #. js-lingui-id: 04zLGG
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm.tsx
@@ -8259,11 +7961,6 @@ msgstr "On suhteellinen"
 msgid "Is today{timeZoneAbbreviationSuffix}"
 msgstr "On tänään{timeZoneAbbreviationSuffix}"
 
-#. js-lingui-id: IhCN5p
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Issuer URI"
-msgstr "Myöntäjän URI"
-
 #. js-lingui-id: Lj7sBL
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
 msgid "Italian"
@@ -8320,11 +8017,6 @@ msgstr "john.doe"
 #: src/modules/settings/accounts/components/SettingsAccountsConnectionForm.tsx
 msgid "john.doe@example.com"
 msgstr "john.doe@example.com"
-
-#. js-lingui-id: fSPjtl
-#: src/pages/auth/SignInUp.tsx
-msgid "Join {workspaceName} team"
-msgstr "Liity {workspaceName} -tiimiin"
 
 #. js-lingui-id: B2Zb/F
 #: src/pages/settings/ai/components/SettingsAgentResponseFormat.tsx
@@ -8592,13 +8284,16 @@ msgid "Less than or equal"
 msgstr "Pienempi tai yhtä suuri"
 
 #. js-lingui-id: 3qg5Ro
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Licensee"
 msgstr "Lisenssinhaltija"
 
 #. js-lingui-id: 1njn7W
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
 #: src/modules/ui/navigation/navigation-drawer/components/MultiWorkspaceDropdown/internal/MultiWorkspaceDropdownThemesComponents.tsx
 msgid "Light"
 msgstr "Vaalea"
@@ -8764,7 +8459,6 @@ msgid "Loading metrics data..."
 msgstr "Ladataan metriikkatietoja..."
 
 #. js-lingui-id: tVSmFT
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
 #: src/modules/ui/input/components/IconPicker.tsx
 #: src/modules/object-record/record-picker/multiple-record-picker/components/MultipleRecordPickerFetchMoreLoader.tsx
 #: src/modules/activities/components/CustomResolverFetchMoreLoader.tsx
@@ -8821,11 +8515,6 @@ msgstr "Kirjaa uusi diili (yritys, summa, vaihe, odotettu päättymispäivä). T
 #: src/modules/auth/sign-in-up/components/SignInUpGlobalScopeForm.tsx
 msgid "Log out"
 msgstr "Kirjaudu ulos"
-
-#. js-lingui-id: qakNlV
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Log retention"
-msgstr "Lokien säilytysaika"
 
 #. js-lingui-id: hykMbH
 #: src/modules/information-banner/components/impersonate/InformationBannerIsImpersonating.tsx
@@ -8905,8 +8594,8 @@ msgid "Manage billing and subscriptions"
 msgstr "Hallinnoi laskutusta ja tilauksia"
 
 #. js-lingui-id: nvgUPq
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/SettingsBillingContent.tsx
 msgid "Manage billing information"
 msgstr "Hallinnoi laskutustietoja"
@@ -8936,11 +8625,6 @@ msgstr ""
 #: src/modules/settings/roles/role-permissions/permission-flags/hooks/useSettingsRolePermissionFlagConfig.ts
 msgid "Manage security policies"
 msgstr "Hallinnoi tietoturvakäytäntöjä"
-
-#. js-lingui-id: 49MfD1
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Manage support access settings"
-msgstr "Hallitse tuki käyttöoikeuden asetuksia"
 
 #. js-lingui-id: N7fMy9
 #: src/pages/settings/members/SettingsWorkspaceMembers.tsx
@@ -9099,7 +8783,7 @@ msgstr "Jäsenet - Asetukset"
 
 #. js-lingui-id: UODtG8
 #: src/modules/object-record/record-merge/components/MergeRecordsFooter.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Merge"
 msgstr "Yhdistä"
 
@@ -9110,7 +8794,7 @@ msgstr "Esikatselu yhdistä"
 
 #. js-lingui-id: Cmeamd
 #: src/modules/side-panel/hooks/useOpenMergeRecordsPageInSidePanel.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Merge records"
 msgstr "Yhdistä tietueet"
 
@@ -9152,11 +8836,6 @@ msgstr "Viestit"
 #: src/modules/onboarding/constants/OnboardingSyncEmailsOptions.ts
 msgid "Metadata"
 msgstr "Metatiedot"
-
-#. js-lingui-id: dN5YOb
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Metadata file generation failed"
-msgstr "Metatiedostotiedoston luonti epäonnistui"
 
 #. js-lingui-id: onCJJ6
 #: src/modules/settings/billing/components/SettingsBillingSubscriptionInfo.tsx
@@ -9433,8 +9112,6 @@ msgstr "mySkill"
 #: src/pages/onboarding/CreateProfile.tsx
 #: src/modules/settings/workspace/components/NameField.tsx
 #: src/modules/settings/usage/components/UsageByUserTableSection.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
 #: src/modules/settings/roles/role-permissions/permission-flags/components/SettingsRolePermissionsSettingsTableHeader.tsx
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableHeader.tsx
 #: src/modules/settings/roles/role-permissions/object-level-permissions/field-permissions/components/SettingsRolePermissionsObjectLevelObjectFieldPermissionTable.tsx
@@ -9507,7 +9184,7 @@ msgid "Navigate to next dashboard"
 msgstr "Siirry seuraavaan hallintapaneeliin"
 
 #. js-lingui-id: 2T8KCk
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Navigate to next record"
 msgstr "Siirry seuraavaan tietueeseen"
 
@@ -9527,7 +9204,7 @@ msgid "Navigate to previous dashboard"
 msgstr "Siirry edelliseen hallintapaneeliin"
 
 #. js-lingui-id: 2tw9bo
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Navigate to previous record"
 msgstr "Siirry edelliseen tietueeseen"
 
@@ -9599,12 +9276,6 @@ msgstr "Uusi agentti"
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "New AI Provider"
 msgstr "Uusi AI-tarjoaja"
-
-#. js-lingui-id: 2qr/61
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "New Approved Access Domain"
-msgstr "Uusi Hyväksytty Pääsytunnusalue"
 
 #. js-lingui-id: hIQkLb
 #: src/modules/navigation/components/MainNavigationDrawerTabsRow.tsx
@@ -9684,7 +9355,7 @@ msgid "New Password"
 msgstr "Uusi salasana"
 
 #. js-lingui-id: BcCzLv
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "New record"
 msgstr "Uusi tietue"
 
@@ -9694,16 +9365,6 @@ msgstr "Uusi tietue"
 #: src/pages/settings/ai/components/SettingsAgentSkills.tsx
 msgid "New Skill"
 msgstr "Uusi taito"
-
-#. js-lingui-id: OzWuT+
-#: src/pages/settings/security/SettingsSecuritySSOIdentifyProvider.tsx
-msgid "New SSO Configuration"
-msgstr "Uusi SSO-konfiguraatio"
-
-#. js-lingui-id: C7WtCv
-#: src/pages/settings/security/SettingsSecuritySSOIdentifyProvider.tsx
-msgid "New SSO provider"
-msgstr "Uusi SSO-tarjoaja"
 
 #. js-lingui-id: wl18ST
 #: src/modules/activities/tasks/components/TaskGroups.tsx
@@ -9956,11 +9617,6 @@ msgstr ""
 #: src/pages/settings/ai/SettingsAgentTurnDetail.tsx
 msgid "No evaluations yet for this turn"
 msgstr ""
-
-#. js-lingui-id: SIR5Ix
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-msgid "No event logs found"
-msgstr "Tapahtumalokeja ei löytynyt"
 
 #. js-lingui-id: l7y8S8
 #: src/modules/activities/calendar/components/CalendarEventsCard.tsx
@@ -10342,7 +9998,7 @@ msgstr "Muistiinpano"
 
 #. js-lingui-id: 1DBGsz
 #: src/modules/page-layout/constants/StandardPageLayoutTabTitleTranslations.ts
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Notes"
 msgstr "Muistiinpanot"
 
@@ -10368,11 +10024,6 @@ msgstr "Numero"
 #: src/modules/settings/experience/components/NumberFormatSelect.tsx
 msgid "Number format"
 msgstr "Numeromuoto"
-
-#. js-lingui-id: +cbzNC
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Number of days to retain audit logs (30-1095 days)"
-msgstr "Tarkastuslokeja säilytettävien päivien määrä (30-1095 päivää)"
 
 #. js-lingui-id: 0fRFSb
 #: src/modules/settings/data-model/fields/forms/number/components/SettingsDataModelFieldNumberForm.tsx
@@ -10447,16 +10098,6 @@ msgstr "Objekti poistettu"
 msgid "Object destination"
 msgstr "Kohdeobjekti"
 
-#. js-lingui-id: /clmEa
-#: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
-msgid "Object Events"
-msgstr "Objektitapahtumat"
-
-#. js-lingui-id: 79D4Az
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-msgid "Object ID"
-msgstr "Objektin ID"
-
 #. js-lingui-id: wZpAXW
 #: src/modules/metadata-error-handler/hooks/useMetadataErrorHandler.ts
 msgid "object permission"
@@ -10466,11 +10107,6 @@ msgstr "objektin käyttöoikeus"
 #: src/modules/settings/roles/role-permissions/object-level-permissions/components/SettingsRolePermissionsObjectLevelTableRowOptionsDropdown.tsx
 msgid "Object permission options"
 msgstr "Objektin käyttöoikeusvaihtoehdot"
-
-#. js-lingui-id: UGhVPl
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Object Type"
-msgstr "Objektin tyyppi"
 
 #. js-lingui-id: rDycBw
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionUpsertRecord.tsx
@@ -10691,7 +10327,7 @@ msgid "Operational"
 msgstr "Toiminnassa"
 
 #. js-lingui-id: 4MyDFl
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Opportunities"
 msgstr "Mahdollisuudet"
 
@@ -10727,7 +10363,6 @@ msgstr "tai"
 
 #. js-lingui-id: ZAVklK
 #: src/modules/workflow/workflow-steps/filters/components/WorkflowStepFilterLogicalOperatorCell.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
 msgid "Or"
 msgstr "Tai"
 
@@ -10765,7 +10400,6 @@ msgstr ""
 
 #. js-lingui-id: /IX/7x
 #: src/pages/settings/updates/SettingsUpdates.tsx
-#: src/pages/settings/security/SettingsSecurity.tsx
 #: src/pages/settings/admin-panel/SettingsAdminIndicatorHealthStatus.tsx
 #: src/pages/settings/admin-panel/SettingsAdminConfigVariableDetails.tsx
 #: src/pages/settings/admin-panel/SettingsAdminAiProviderDetail.tsx
@@ -10783,11 +10417,6 @@ msgstr "Muu"
 #: src/modules/settings/data-model/objects/components/SettingsDataModelObjectSummary.tsx
 msgid "Other objects"
 msgstr "Muut objektit"
-
-#. js-lingui-id: 9LV44m
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Other security settings"
-msgstr "Muut tietoturva-asetukset"
 
 #. js-lingui-id: +vDFPm
 #: src/modules/ui/navigation/navigation-drawer/components/MultiWorkspaceDropdown/internal/MultiWorkspaceDropdownWorkspacesListComponents.tsx
@@ -10888,20 +10517,10 @@ msgstr "sivun asettelun välilehti"
 msgid "page layout widget"
 msgstr "sivun asettelun widget"
 
-#. js-lingui-id: IVBjIH
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Page Name"
-msgstr "Sivun nimi"
-
-#. js-lingui-id: NRvxzv
+#. js-lingui-id: +ECkxs
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Exe"
-msgstr "Sivua ei löydy | Exe"
-
-#. js-lingui-id: sF+Xp9
-#: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
-msgid "Page Views"
-msgstr "Sivun näyttökerrat"
+msgid "Page Not Found | Exe CRM"
+msgstr ""
 
 #. js-lingui-id: ijBN4V
 #: src/modules/advanced-text-editor/extensions/slash-command/DefaultSlashCommands.ts
@@ -10963,7 +10582,7 @@ msgid "Path"
 msgstr "Polku"
 
 #. js-lingui-id: QmXBEc
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Payment issue"
 msgstr "Maksuongelma"
 
@@ -10975,12 +10594,11 @@ msgstr "PDF"
 #. js-lingui-id: UbRKMZ
 #: src/pages/settings/emailing-domains/utils/getEmailingDomainStatusText.ts
 #: src/modules/settings/security/components/approvedAccessDomains/SettingsApprovedAccessDomainsListCard.tsx
-#: src/modules/settings/domains/components/SettingsPublicDomainsListCard.tsx
 msgid "Pending"
 msgstr "Odottaa"
 
 #. js-lingui-id: 1wdjme
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/mock/command-menu-items.mock.tsx
 msgid "People"
 msgstr "Henkilöt"
@@ -11034,11 +10652,6 @@ msgstr "Prosenttiosuus"
 msgid "Perform administrative actions or permanently delete this user"
 msgstr ""
 
-#. js-lingui-id: wSpwGR
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Permanent deletion. Enter the number of days."
-msgstr "Pysyvä poistaminen. Anna päivien määrä."
-
 #. js-lingui-id: rDky0a
 #: src/modules/command-menu-item/record/constants/DashboardCommandMenuItemsConfig.tsx
 msgid "Permanently destroy dashboard"
@@ -11050,7 +10663,7 @@ msgid "Permanently destroy dashboards"
 msgstr "Poista hallintapaneelit pysyvästi"
 
 #. js-lingui-id: Bv3y5w
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Permanently destroy record"
 msgstr "Tuhotaan tietue pysyvästi"
 
@@ -11063,7 +10676,7 @@ msgid "Permanently Destroy Record"
 msgstr "Tuhota tiedosto pysyvästi"
 
 #. js-lingui-id: xjWlSJ
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Permanently destroy records"
 msgstr "Tuhotaan tietueet pysyvästi"
 
@@ -11186,11 +10799,6 @@ msgstr "Suunnitelman vaihto peruutettu."
 #: src/modules/workflow/workflow-trigger/components/CronExpressionHelper.tsx
 msgid "Please check your cron expression syntax."
 msgstr "Tarkista aikavälin syntaksi."
-
-#. js-lingui-id: 90/XJz
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "Please check your email for a verification link."
-msgstr "Tarkista sähköpostisi varmennuslinkin osalta."
 
 #. js-lingui-id: jEw0Mr
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationOAuthTab.tsx
@@ -11422,12 +11030,6 @@ msgstr ""
 msgid "Prompt"
 msgstr ""
 
-#. js-lingui-id: l/UFPv
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-msgid "Properties"
-msgstr "Ominaisuudet"
-
 #. js-lingui-id: 56xUL1
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/BodyInput.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/BodyInput.tsx
@@ -11439,11 +11041,6 @@ msgstr "Ominaisuuden nimi"
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/BodyInput.tsx
 msgid "Property value"
 msgstr "Ominaisuuden arvo"
-
-#. js-lingui-id: GVxbU6
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Provide your OIDC provider details"
-msgstr "Anna OIDC-tarjoajan tiedot"
 
 #. js-lingui-id: aemBRq
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
@@ -11470,42 +11067,10 @@ msgstr "Tarjoaja \"{0}\" poistettu"
 msgid "Providers"
 msgstr "Tarjoajat"
 
-#. js-lingui-id: AULPv1
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Provision a complete and secure hosting environment on these domains."
-msgstr "Provisionoi täydellinen ja turvallinen isännöintialusta näille verkkotunnuksille."
-
 #. js-lingui-id: YJgRqq
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
 msgid "Pseudo-English"
 msgstr "Pseudosuomi"
-
-#. js-lingui-id: knP82t
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-msgid "Public domain"
-msgstr "Julkinen verkkotunnus"
-
-#. js-lingui-id: +fsX3t
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-msgid "Public Domain"
-msgstr "Julkinen verkkotunnus"
-
-#. js-lingui-id: Rjk8Vl
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-msgid "Public domain created successfully"
-msgstr "Julkinen verkkotunnus luotiin onnistuneesti"
-
-#. js-lingui-id: za+Mr9
-#: src/modules/settings/domains/components/SettingPublicDomainRowDropdownMenu.tsx
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-msgid "Public domain successfully deleted"
-msgstr "Julkinen verkkotunnus poistettiin onnistuneesti"
-
-#. js-lingui-id: g55kfn
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Public Domains"
-msgstr "Julkiset verkkotunnukset"
 
 #. js-lingui-id: mF9LxA
 #: src/modules/settings/data-model/fields/forms/select/components/SettingsDataModelFieldSelectFormOptionRow.tsx
@@ -11586,10 +11151,10 @@ msgstr "Lue dokumentaatio"
 msgid "Read your profile"
 msgstr "Lue profiilisi"
 
-#. js-lingui-id: tCXcL7
+#. js-lingui-id: grtDQj
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
-msgid "Read-only — managed by Exe"
-msgstr "Vain luku — Exe hallinnoi"
+msgid "Read-only — managed by Exe CRM"
+msgstr ""
 
 #. js-lingui-id: W+ApAD
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -11650,12 +11215,6 @@ msgstr "Tietueiden luonti keskeytettiin. {formattedCreatedRecordsCount} tietuett
 #: src/modules/object-record/advanced-filter/components/AdvancedFilterRecordFilterOptionsDropdown.tsx
 msgid "Record filter rule options"
 msgstr "Tietuesuodattimen säännön valinnat"
-
-#. js-lingui-id: xSAYIn
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Record ID"
-msgstr "Tietueen ID"
 
 #. js-lingui-id: mj1fkT
 #: src/modules/settings/data-model/objects/forms/components/SettingsDataModelObjectIdentifiersForm.tsx
@@ -11728,21 +11287,6 @@ msgstr "Uudelleenohjaus-URI:t"
 msgid "Redirect URIs updated"
 msgstr "Uudelleenohjaus-URI:t päivitetty"
 
-#. js-lingui-id: LfH+Ea
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Redirect Url copied to clipboard"
-msgstr "Ohjaus-URL kopioitu leikepöydälle"
-
-#. js-lingui-id: RZjynQ
-#: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
-msgid "Redirection URI"
-msgstr "Uudelleenohjaus-URI"
-
-#. js-lingui-id: lCF0wC
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
-msgid "Refresh"
-msgstr "Päivitä"
-
 #. js-lingui-id: vpZcGd
 #: src/pages/settings/developers/api-keys/SettingsDevelopersApiKeyDetail.tsx
 #: src/pages/settings/developers/api-keys/SettingsDevelopersApiKeyDetail.tsx
@@ -11812,20 +11356,18 @@ msgid "Releases"
 msgstr "Julkaisut"
 
 #. js-lingui-id: HpK/8d
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
 #: src/modules/error-handler/components/AppRootErrorFallback.tsx
 #: src/modules/error-handler/components/internal/AppErrorDisplay.tsx
 msgid "Reload"
 msgstr "Lataa uudelleen"
 
 #. js-lingui-id: qbM5In
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Reload validity token"
 msgstr "Lataa voimassaolotunnus uudelleen"
 
 #. js-lingui-id: MZWnSC
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Reloading..."
 msgstr "Ladataan uudelleen..."
 
@@ -11871,8 +11413,8 @@ msgid "Remove Deleted filter"
 msgstr "Poista Poistetut-suodatin"
 
 #. js-lingui-id: T/pF0Z
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Remove from favorites"
 msgstr "Poista suosikeista"
 
@@ -12036,11 +11578,6 @@ msgstr "Palauta staattiseen arvoon"
 msgid "Reset variable"
 msgstr "Palauta muuttuja"
 
-#. js-lingui-id: esl+Tv
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-msgid "Resource Type"
-msgstr "Resurssityyppi"
-
 #. js-lingui-id: ZlCDf+
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/HttpRequestExecutionResult.tsx
 msgid "Response"
@@ -12075,8 +11612,8 @@ msgstr "palauta"
 
 #. js-lingui-id: yKu/3Y
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Restore"
 msgstr "Palauta"
 
@@ -12091,7 +11628,7 @@ msgid "Restore dashboards"
 msgstr "Palauta hallintapaneelit"
 
 #. js-lingui-id: y4Ib1n
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/SingleRecordCommandMenuItemsConfig.tsx
 msgid "Restore record"
 msgstr "Palauta tietue"
 
@@ -12104,7 +11641,7 @@ msgid "Restore Record"
 msgstr "Palauta tietue"
 
 #. js-lingui-id: Vw369F
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Restore records"
 msgstr "Palauta tietueet"
 
@@ -12692,10 +12229,6 @@ msgid "Secret Access Key"
 msgstr "Salainen käyttöavain"
 
 #. js-lingui-id: a3LDKx
-#: src/pages/settings/security/SettingsSecuritySSOIdentifyProvider.tsx
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
 #: src/modules/settings/roles/role-permissions/permission-flags/hooks/useSettingsRolePermissionFlagConfig.ts
 #: src/modules/settings/hooks/useSettingsNavigationItems.tsx
 msgid "Security"
@@ -12738,7 +12271,7 @@ msgid "See deleted members"
 msgstr ""
 
 #. js-lingui-id: BxIUpp
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "See deleted records"
 msgstr "Näytä poistetut tietueet"
 
@@ -12799,7 +12332,7 @@ msgid "See workflow"
 msgstr "Näytä työnkulku"
 
 #. js-lingui-id: MVYiTN
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "See Workflows"
 msgstr "Näytä työnkulut"
 
@@ -12888,11 +12421,6 @@ msgstr "Valitse vaihtoehto"
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/TemplateColumn.tsx
 msgid "Select column..."
 msgstr "Valitse sarake..."
-
-#. js-lingui-id: U+WOF9
-#: src/pages/settings/security/event-logs/components/EventLogDatePickerInput.tsx
-msgid "Select date & time"
-msgstr "Valitse päivämäärä ja aika"
 
 #. js-lingui-id: hR/4+8
 #: src/modules/settings/developers/components/WebhookEntitySelect.tsx
@@ -13052,11 +12580,6 @@ msgstr "Serbia (kyrillinen)"
 msgid "Server Variables"
 msgstr "Palvelinmuuttujat"
 
-#. js-lingui-id: LUc0oL
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Service Provider Details"
-msgstr "Palveluntarjoajan Tiedot"
-
 #. js-lingui-id: 4FANIj
 #: src/modules/object-record/record-table/record-table-cell/components/RecordTableCellDisplayContainer.tsx
 msgid "Set {placeholderForEmptyCell}"
@@ -13082,6 +12605,12 @@ msgstr "Kiinnitä välilehti"
 msgid "Set as Primary"
 msgstr "Aseta ensisijaiseksi"
 
+#. js-lingui-id: /p42pc
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+msgid "Set Dark theme"
+msgstr ""
+
 #. js-lingui-id: V7fgiB
 #: src/modules/settings/accounts/components/SettingsAccountsSettingsSection.tsx
 msgid "Set email visibility, manage your blocklist and more."
@@ -13097,26 +12626,17 @@ msgstr "Aseta tulevaisuudessa luotavat kentät \"näkyviksi\"}]}``` }]} } } } } 
 msgid "Set global workspace preferences"
 msgstr "Aseta globaalit työtilan asetukset"
 
+#. js-lingui-id: DgRGzW
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+#: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerThemeToggle.tsx
+msgid "Set Light theme"
+msgstr ""
+
 #. js-lingui-id: 2gHjVM
 #: src/pages/auth/PasswordReset.tsx
 #: src/modules/settings/profile/components/SetOrChangePassword.tsx
 msgid "Set Password"
 msgstr "Aseta salasana"
-
-#. js-lingui-id: qNbuWB
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-msgid "Set the name of your custom domain and configure your DNS records."
-msgstr "Aseta mukautetun verkkotunnuksesi nimi ja määritä DNS-tietueet."
-
-#. js-lingui-id: d+3DrP
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
-msgid "Set the name of your public domain and configure your DNS records."
-msgstr "Aseta julkisen verkkotunnuksesi nimi ja määritä DNS-tietueet."
-
-#. js-lingui-id: tn41zE
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-msgid "Set the name of your subdomain"
-msgstr "Aseta aliverkkotunnuksesi nimi"
 
 #. js-lingui-id: tG3Y2G
 #: src/modules/views/view-picker/components/ViewPickerContentCreateMode.tsx
@@ -13152,7 +12672,7 @@ msgstr "Asetetaan tietokantaasi..."
 #: src/modules/settings/accounts/components/SettingsAccountsSettingsSection.tsx
 #: src/modules/object-record/record-merge/hooks/useMergeRecordsContainerTabs.ts
 #: src/modules/navigation/components/NavigationDrawerOtherSection.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Settings"
 msgstr "Asetukset"
 
@@ -13191,11 +12711,6 @@ msgstr "asetuksen avain"
 #: src/modules/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationProvision.tsx
 msgid "Setup key copied to clipboard"
 msgstr "Asetusavain kopioitu leikepöydälle"
-
-#. js-lingui-id: NQNJjc
-#: src/pages/auth/SignInUp.tsx
-msgid "Setup your 2FA"
-msgstr "Aseta 2FA:si"
 
 #. js-lingui-id: dsCM1m
 #: src/modules/object-record/record-merge/utils/getPositionWordLabel.ts
@@ -13292,11 +12807,6 @@ msgstr "Yksittäinen muokkaus"
 #: src/modules/page-layout/widgets/components/RecordPageAddWidgetSection.tsx
 msgid "Single field with smart formats"
 msgstr "Yksittäinen kenttä älykkäillä muotoiluilla"
-
-#. js-lingui-id: 5v3IHX
-#: src/modules/auth/sign-in-up/components/internal/SignInUpWithSSO.tsx
-msgid "Single sign-on (SSO)"
-msgstr "Kertakirjautuminen (SSO)"
 
 #. js-lingui-id: maCaRp
 #: src/modules/settings/data-model/objects/forms/components/SettingsDataModelObjectAboutForm.tsx
@@ -13517,11 +13027,6 @@ msgstr "Espanja"
 msgid "Split multiple values"
 msgstr "Erottele useita arvoja"
 
-#. js-lingui-id: vnS6Rf
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "SSO"
-msgstr "Kertakirjautuminen"
-
 #. js-lingui-id: vlvAkg
 #: src/pages/onboarding/internal/ChooseYourPlanContent.tsx
 #: src/modules/settings/enterprise/components/EnterprisePlanModal.tsx
@@ -13529,7 +13034,6 @@ msgid "SSO (SAML / OIDC)"
 msgstr "SSO (SAML / OIDC)"
 
 #. js-lingui-id: qBpBSc
-#: src/pages/settings/security/SettingsSecurity.tsx
 #: src/modules/settings/roles/role-permissions/permission-flags/hooks/useSettingsRolePermissionFlagConfig.ts
 msgid "SSO Bypass"
 msgstr "SSO-ohitus"
@@ -13570,19 +13074,14 @@ msgid "Start"
 msgstr "Aloita"
 
 #. js-lingui-id: ASqWQi
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Start a new enterprise subscription to re-enable enterprise features."
 msgstr "Aloita uusi Enterprise-tilaus ottaaksesi Enterprise-ominaisuudet uudelleen käyttöön."
 
 #. js-lingui-id: OC6rnK
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Start a new enterprise subscription."
 msgstr "Aloita uusi Enterprise-tilaus."
-
-#. js-lingui-id: D3iCkb
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Start Date"
-msgstr "Aloituspäivä"
 
 #. js-lingui-id: s+K73L
 #: src/modules/settings/billing/components/SettingsBillingSubscriptionInfo.tsx
@@ -13604,11 +13103,11 @@ msgid "State"
 msgstr "Tila"
 
 #. js-lingui-id: uAQUqI
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/pages/settings/admin-panel/SettingsAdminIndicatorHealthStatus.tsx
 #: src/modules/settings/components/SettingsDnsRecordsTable.tsx
 #: src/modules/settings/admin-panel/components/SettingsAdminWorkspaceContent.tsx
@@ -13666,34 +13165,6 @@ msgstr ""
 #: src/modules/settings/data-model/fields/forms/address/components/SettingsDataModelFieldAddressForm.tsx
 msgid "Sub-Fields"
 msgstr "Alikentät"
-
-#. js-lingui-id: ku9TbG
-#: src/modules/settings/domains/components/SettingsWorkspaceDomainCard.tsx
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-msgid "Subdomain"
-msgstr "Alidomain"
-
-#. js-lingui-id: omhc+7
-#: src/modules/settings/domains/hooks/useSettingsSubdomain.ts
-msgid "Subdomain already taken"
-msgstr "Alidomain on jo käytössä"
-
-#. js-lingui-id: OlC/tU
-#: src/modules/settings/domains/utils/getSubdomainValidationSchema.ts
-msgid "Subdomain can not be longer than 30 characters"
-msgstr "Alidomain ei voi olla yli 30 merkkiä pitkä"
-
-#. js-lingui-id: ZETwlU
-#: src/modules/settings/domains/utils/getSubdomainValidationSchema.ts
-msgid "Subdomain can not be shorter than 3 characters"
-msgstr "Alidomain ei voi olla lyhyempi kuin 3 merkkiä"
-
-#. js-lingui-id: DTG2nE
-#: src/modules/settings/domains/hooks/useSettingsSubdomain.ts
-msgid "Subdomain updated"
-msgstr "Aliverkkotunnus päivitetty"
 
 #. js-lingui-id: Rcm+OU
 #: src/modules/advanced-text-editor/extensions/slash-command/DefaultSlashCommands.ts
@@ -13813,7 +13284,6 @@ msgid "Sunday"
 msgstr "Sunnuntai"
 
 #. js-lingui-id: XYLcNv
-#: src/pages/settings/security/SettingsSecurity.tsx
 #: src/modules/ui/navigation/navigation-drawer/components/MultiWorkspaceDropdown/internal/MultiWorkspaceDropdownDefaultComponents.tsx
 #: src/modules/settings/hooks/useSettingsNavigationItems.tsx
 msgid "Support"
@@ -13884,10 +13354,10 @@ msgstr "Synkronoi Googlen kanssa"
 msgid "Sync with Outlook"
 msgstr "Synkronoi Outlookin kanssa"
 
-#. js-lingui-id: +9x4tK
+#. js-lingui-id: MSy8R3
 #: src/pages/onboarding/SyncEmails.tsx
-msgid "Sync your Emails and Calendar with Exe. Choose your privacy settings."
-msgstr "Synkronoi sähköpostisi ja kalenterisi Exeyn. Valitse tietosuoja-asetuksesi."
+msgid "Sync your Emails and Calendar with Exe CRM. Choose your privacy settings."
+msgstr ""
 
 #. js-lingui-id: N2FcBE
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
@@ -13986,7 +13456,6 @@ msgid "Tab Settings"
 msgstr "Välilehden asetukset"
 
 #. js-lingui-id: 4hJhzz
-#: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
 #: src/modules/views/view-picker/constants/ViewPickerTypeSelectOptions.ts
 #: src/modules/object-record/object-options-dropdown/components/ObjectOptionsDropdownLayoutContent.tsx
 #: src/modules/keyboard-shortcut-menu/components/KeyboardShortcutMenuOpenContent.tsx
@@ -14021,7 +13490,7 @@ msgstr "Tehtävän otsikko"
 
 #. js-lingui-id: GtycJ/
 #: src/modules/page-layout/constants/StandardPageLayoutTabTitleTranslations.ts
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/NoSelectionRecordCommandMenuItemsConfig.tsx
 msgid "Tasks"
 msgstr "Tehtävät"
 
@@ -14145,16 +13614,6 @@ msgstr "Tarjoajan API:n käyttämä mallin tunniste"
 msgid "The name and icon of this field"
 msgstr "Tämän kentän nimi ja ikoni"
 
-#. js-lingui-id: e/dfFe
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
-msgid "The name of your connection"
-msgstr "Yhteytesi nimi"
-
-#. js-lingui-id: 8EkdZh
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "The name of your Domain"
-msgstr "Toimialueesi nimi"
-
 #. js-lingui-id: +C8Rdp
 #: src/pages/onboarding/CreateWorkspace.tsx
 msgid "The name of your organization"
@@ -14226,7 +13685,7 @@ msgid "There are still some rows that contain errors. Rows with errors will be i
 msgstr "Joitakin rivejä, jotka sisältävät virheitä, on edelleen. Virheelliset rivit ohitetaan lähetettäessä."
 
 #. js-lingui-id: CA9PTn
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "There is a payment issue with your subscription. Please update your payment method."
 msgstr "Tilauksessasi on maksuongelma. Päivitä maksutapa."
 
@@ -14413,11 +13872,6 @@ msgstr "Tämä asetus voidaan määrittää vain ympäristömuuttujien kautta."
 msgid "This should never happen"
 msgstr "Tämän ei pitäisi koskaan tapahtua"
 
-#. js-lingui-id: Ryrt8E
-#: src/modules/settings/domains/utils/getSubdomainValidationSchema.ts
-msgid "This subdomain is reserved"
-msgstr "Tämä aliverkkotunnus on varattu"
-
 #. js-lingui-id: MMGDfe
 #: src/modules/settings/admin-panel/config-variables/components/ConfigVariableHelpText.tsx
 msgid "This value will be saved to the database."
@@ -14520,9 +13974,6 @@ msgid "Timeout"
 msgstr "Aikakatkaisu"
 
 #. js-lingui-id: 8TMaZI
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminQueueJobsTable.tsx
 msgid "Timestamp"
 msgstr "Aikaleima"
@@ -14676,8 +14127,8 @@ msgid "Transfer ownership"
 msgstr "Siirrä omistajuus"
 
 #. js-lingui-id: lhkaAC
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/internal/PlansTags.tsx
 msgid "Trial"
 msgstr "Koe"
@@ -14809,11 +14260,6 @@ msgstr ""
 msgid "Turquoise"
 msgstr "Turkoosi"
 
-#. js-lingui-id: JnaRPe
-#: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Exe fields"
-msgstr "Exe-kentät"
-
 #. js-lingui-id: YIjS4q
 #: src/pages/settings/ai/components/SettingsAgentModelCapabilities.tsx
 msgid "Twitter/X Search"
@@ -14850,7 +14296,6 @@ msgstr "Kaksivaiheisen todennuksen asennus on valmis!"
 #: src/pages/settings/ai/components/SettingsToolsTable.tsx
 #: src/pages/settings/ai/components/SettingsToolsTable.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFieldSettings.tsx
-#: src/modules/settings/security/components/SSO/SettingsSSOIdentitiesProvidersForm.tsx
 #: src/modules/settings/data-model/object-details/components/SettingsObjectRelationsTable.tsx
 #: src/modules/settings/components/SettingsDnsRecordsTable.tsx
 msgid "Type"
@@ -15027,7 +14472,7 @@ msgid "Unlisted"
 msgstr "Listaamattomat"
 
 #. js-lingui-id: Ep1uUU
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Unlock enterprise features like SSO, row-level security, and audit logs."
 msgstr "Avaa Enterprise-ominaisuudet, kuten SSO, rivitason suojaus ja tarkastuslokit."
 
@@ -15103,7 +14548,7 @@ msgstr "päivitä"
 #: src/pages/settings/applications/components/SettingsApplicationTableRow.tsx
 #: src/modules/information-banner/components/billing/InformationBannerFailPaymentInfo.tsx
 #: src/modules/information-banner/components/billing/InformationBannerBillingSubscriptionPaused.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Update"
 msgstr "Päivitä"
 
@@ -15113,14 +14558,14 @@ msgid "Update {contextStoreNumberOfSelectedRecords} records"
 msgstr "Päivitä {contextStoreNumberOfSelectedRecords} tietuetta"
 
 #. js-lingui-id: Y69tSP
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Update payment method"
 msgstr "Päivitä maksutapa"
 
 #. js-lingui-id: 0KAL3W
 #: src/modules/side-panel/hooks/useOpenUpdateMultipleRecordsPageInSidePanel.tsx
 #: src/modules/object-record/record-update-multiple/components/UpdateMultipleRecordsContainer.tsx
-#: src/modules/command-menu-item/record/constants/DefaultRecordCommandMenuItemsConfig.tsx
+#: src/modules/command-menu-item/record/constants/MultipleRecordsCommandMenuItemsConfig.tsx
 msgid "Update records"
 msgstr "Päivitä tietueet"
 
@@ -15183,11 +14628,6 @@ msgstr "Päivitä versioon {latestAvailableVersion}"
 msgid "Upgrade to access"
 msgstr "Päivitä saadaksesi käyttöoikeuden"
 
-#. js-lingui-id: Wurpq2
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "Upgrade to Enterprise to access audit logs."
-msgstr ""
-
 #. js-lingui-id: +Gi3x1
 #: src/pages/settings/applications/components/SettingsApplicationVersionContainer.tsx
 msgid "Upgrading..."
@@ -15204,7 +14644,6 @@ msgid "Upload .xlsx, .xls or .csv file"
 msgstr "Lataa .xlsx, .xls tai .csv tiedosto"
 
 #. js-lingui-id: 2IXDgU
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
 #: src/modules/object-record/record-field/ui/meta-types/input/components/FilesFieldInput.tsx
 #: src/modules/advanced-text-editor/components/WorkflowSendEmailAttachments.tsx
 msgid "Upload file"
@@ -15225,11 +14664,6 @@ msgstr "Lataa tiedostoja"
 #: src/modules/settings/roles/role-permissions/permission-flags/hooks/useActionRolePermissionFlagConfig.ts
 msgid "Upload Files"
 msgstr "Lataa tiedostoja"
-
-#. js-lingui-id: akDOEO
-#: src/modules/settings/security/components/SSO/SettingsSSOSAMLForm.tsx
-msgid "Upload the XML file with your connection infos"
-msgstr "Lataa XML-tiedosto sisältäen yhteystietosi"
 
 #. js-lingui-id: XzIB4l
 #: src/modules/apollo/services/apollo.factory.ts
@@ -15293,11 +14727,6 @@ msgstr "Käyttö tyypeittäin"
 msgid "Usage by User"
 msgstr "Käyttö käyttäjittäin"
 
-#. js-lingui-id: CedRjP
-#: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
-msgid "Usage Events"
-msgstr "Käyttötapahtumat"
-
 #. js-lingui-id: 6dMpmz
 #: src/modules/command-menu-item/record/constants/WorkflowVersionsCommandMenuItemsConfig.tsx
 #: src/modules/command-menu-item/record/constants/WorkflowVersionsCommandMenuItemsConfig.tsx
@@ -15318,11 +14747,6 @@ msgstr "Käytä vain parhaita malleja"
 #: src/pages/settings/ai/components/SettingsAgentSkills.tsx
 msgid "Use filter to see existing tools or create your own"
 msgstr ""
-
-#. js-lingui-id: oTTQsc
-#: src/modules/settings/domains/utils/getSubdomainValidationSchema.ts
-msgid "Use letter, number and dash only. Start and finish with a letter or a number"
-msgstr "Käytä vain kirjaimia, numeroita ja väliviivaa. Aloita ja lopeta kirjaimella tai numerolla"
 
 #. js-lingui-id: c6uZUV
 #: src/modules/object-record/record-table/empty-state/utils/getEmptyStateSubTitle.ts
@@ -15347,9 +14771,6 @@ msgstr "Hyödyllinen pivot-/liitostauluille"
 #. js-lingui-id: 7PzzBU
 #: src/pages/settings/SettingsTwoFactorAuthenticationMethod.tsx
 #: src/pages/settings/SettingsProfile.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
-#: src/pages/settings/security/event-logs/components/EventLogResultsTable.tsx
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
 #: src/pages/settings/ai/SettingsAgentTurnDetail.tsx
 #: src/pages/settings/ai/SettingsAIPrompts.tsx
@@ -15415,8 +14836,8 @@ msgid "Using default value. Set a custom value to override."
 msgstr "Käytetään oletusarvoa. Aseta mukautettu arvo ohittaaksesi."
 
 #. js-lingui-id: zzp4XX
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Valid until"
 msgstr "Voimassa asti"
 
@@ -15490,11 +14911,6 @@ msgstr "Vahvistettu"
 msgid "Verify"
 msgstr "Vahvista"
 
-#. js-lingui-id: IoglDq
-#: src/pages/auth/SignInUp.tsx
-msgid "Verify code from the app"
-msgstr "Vahvista koodi sovelluksesta"
-
 #. js-lingui-id: zS/rMV
 #: src/pages/settings/SettingsTwoFactorAuthenticationMethod.tsx
 msgid "Verify the code from the app"
@@ -15560,14 +14976,9 @@ msgstr ""
 msgid "View and customize AI instructions"
 msgstr "Näytä ja mukauta AI-ohjeita"
 
-#. js-lingui-id: XVf/G7
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "View and filter events, page views, object changes"
-msgstr "Näytä ja suodata tapahtumia, sivun näyttökertoja, objektien muutoksia"
-
 #. js-lingui-id: KANz0G
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 #: src/modules/settings/billing/components/SettingsBillingContent.tsx
 msgid "View billing details"
 msgstr "Näytä laskutustiedot"
@@ -15618,7 +15029,7 @@ msgid "View installed app"
 msgstr "Näytä asennettu sovellus"
 
 #. js-lingui-id: B02hom
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "View invoices"
 msgstr "Näytä laskut"
 
@@ -15626,11 +15037,6 @@ msgstr "Näytä laskut"
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminWorkerQueueMetricsSection.tsx
 msgid "View Jobs"
 msgstr "Näytä työt"
-
-#. js-lingui-id: 923YyC
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "View Logs"
-msgstr "Näytä lokit"
 
 #. js-lingui-id: 7PrSCy
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationDistributionTab.tsx
@@ -15673,11 +15079,6 @@ msgstr "Näkymän tyyppi"
 #: src/modules/settings/billing/components/SettingsBillingCreditsSection.tsx
 msgid "View usage"
 msgstr "Näytä käyttö"
-
-#. js-lingui-id: rWiqJF
-#: src/pages/settings/security/SettingsSecurity.tsx
-msgid "View workspace activity logs"
-msgstr "Näytä työtilan toimintalokit"
 
 #. js-lingui-id: 1I6UoR
 #: src/modules/navigation-menu-item/edit/side-panel/components/SidePanelNewSidebarItemViewPickerSubView.tsx
@@ -15783,11 +15184,6 @@ msgstr "Lähetämme POST-pyynnön tähän päätepisteeseen jokaisen uuden tapah
 msgid "We will send a POST request to this endpoint for each new event in application/json format."
 msgstr "Lähetämme POST-pyynnön tähän päätepisteeseen jokaisen uuden tapahtuman yhteydessä muodossa application/json."
 
-#. js-lingui-id: PI4LiB
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-msgid "We will send your a link to verify domain ownership"
-msgstr "Lähetämme sinulle linkin toimialueen omistajuuden varmistamiseksi"
-
 #. js-lingui-id: X56YGk
 #: src/pages/onboarding/PaymentSuccess.tsx
 msgid ""
@@ -15867,21 +15263,6 @@ msgstr ""
 #: src/modules/settings/data-model/object-details/components/tabs/SettingsObjectSearchSection.tsx
 msgid "Weight"
 msgstr ""
-
-#. js-lingui-id: nTuObL
-#: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Exe"
-msgstr "Tervetuloa Exeyn"
-
-#. js-lingui-id: t8ZvkC
-#: src/pages/auth/SignInUp.tsx
-msgid "Welcome to your workspace"
-msgstr "Tervetuloa työtilaasi"
-
-#. js-lingui-id: Vin3Dv
-#: src/pages/auth/SignInUp.tsx
-msgid "Welcome, {workspaceName}."
-msgstr "Tervetuloa, {workspaceName}."
 
 #. js-lingui-id: Itn+J7
 #: src/modules/ai/components/suggested-prompts/AIChatSuggestedPrompts.tsx
@@ -15994,10 +15375,6 @@ msgstr "Työnkulut"
 #: src/pages/settings/SettingsUsage.tsx
 #: src/pages/settings/SettingsBilling.tsx
 #: src/pages/settings/workspace/SettingsApiWebhooks.tsx
-#: src/pages/settings/security/SettingsSecuritySSOIdentifyProvider.tsx
-#: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/event-logs/SettingsEventLogs.tsx
 #: src/pages/settings/roles/SettingsRoleAddObjectLevel.tsx
 #: src/pages/settings/members/SettingsWorkspaceMembers.tsx
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
@@ -16006,7 +15383,6 @@ msgstr "Työnkulut"
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 #: src/pages/settings/emailing-domains/SettingsNewEmailingDomain.tsx
 #: src/pages/settings/emailing-domains/SettingsEmailingDomainDetail.tsx
-#: src/pages/settings/domains/SettingsDomains.tsx
 #: src/pages/settings/developers/webhooks/components/SettingsWebhooks.tsx
 #: src/pages/settings/developers/playground/SettingsRestPlayground.tsx
 #: src/pages/settings/developers/playground/SettingsGraphQLPlayground.tsx
@@ -16041,9 +15417,6 @@ msgstr "Työnkulut"
 #: src/modules/settings/roles/role/components/SettingsRole.tsx
 #: src/modules/settings/roles/components/SettingsRolesContainer.tsx
 #: src/modules/settings/hooks/useSettingsNavigationItems.tsx
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-#: src/modules/settings/domains/components/SettingsCustomDomain.tsx
-#: src/modules/settings/domains/components/SettingPublicDomain.tsx
 #: src/modules/settings/developers/components/SettingsDevelopersWebhookForm.tsx
 #: src/modules/settings/admin-panel/ai/components/SettingsAdminAI.tsx
 #: src/modules/object-record/object-options-dropdown/components/ObjectOptionsDropdownVisibilityContent.tsx
@@ -16062,17 +15435,6 @@ msgstr "Työtilan luonti epäonnistui"
 msgid "Workspace Deletion"
 msgstr "Työtilan poistaminen"
 
-#. js-lingui-id: i1AiTd
-#: src/pages/settings/domains/SettingsDomains.tsx
-msgid "Workspace Domain"
-msgstr "Työtilan verkkotunnus"
-
-#. js-lingui-id: J2q6WC
-#: src/pages/settings/security/SettingsSecurity.tsx
-#: src/pages/settings/security/event-logs/components/EventLogTableSelector.tsx
-msgid "Workspace Events"
-msgstr "Työtilan tapahtumat"
-
 #. js-lingui-id: J22jAC
 #: src/modules/settings/admin-panel/components/SettingsAdminWorkspaceContent.tsx
 msgid "Workspace Info"
@@ -16088,11 +15450,6 @@ msgstr "Työtilan ohjeet"
 #: src/pages/onboarding/CreateWorkspace.tsx
 msgid "Workspace logo"
 msgstr "Työtilan logo"
-
-#. js-lingui-id: qc38qR
-#: src/pages/settings/security/event-logs/components/EventLogFilters.tsx
-msgid "Workspace Member"
-msgstr "Työtilan jäsen"
 
 #. js-lingui-id: CozWO1
 #: src/pages/onboarding/CreateWorkspace.tsx
@@ -16280,11 +15637,6 @@ msgstr "Sinulta veloitetaan ${yearlyPrice} per käyttäjä per vuosi laskutettun
 msgid "You will lose all your mappings."
 msgstr "Menetät kaikki yhdistämisesi."
 
-#. js-lingui-id: Cl+hUj
-#: src/modules/settings/domains/components/SettingsSubdomain.tsx
-msgid "You're about to change your workspace subdomain. This action will log out all users."
-msgstr "Olet muuttamassa työtilan aliavaa. Tämä toimenpide kirjautuu ulos kaikista käyttäjistä."
-
 #. js-lingui-id: nIF+FL
 #: src/pages/onboarding/PaymentSuccess.tsx
 msgid "Your account has been activated."
@@ -16311,22 +15663,22 @@ msgid "Your emails and events content will be shared with your team."
 msgstr "Sähköpostiesi ja tapahtumien sisältö jaetaan tiimisi kanssa."
 
 #. js-lingui-id: ahEwS4
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your enterprise features are active"
 msgstr "Enterprise-ominaisuudet ovat aktiivisia"
 
 #. js-lingui-id: XMZLU/
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your enterprise features are active but your enterprise key is missing or invalid. This may be expected, but if not, please set a valid signed enterprise key to manage your subscription, or contact support."
 msgstr "Enterprise-ominaisuudet ovat aktiivisia, mutta Enterprise-avaimesi puuttuu tai on virheellinen. Tämä voi olla odotettua, mutta jos ei, aseta kelvollinen allekirjoitettu Enterprise-avain hallitaksesi tilaustasi tai ota yhteyttä tukeen."
 
 #. js-lingui-id: AxcwNj
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your enterprise features will be disabled"
 msgstr "Enterprise-ominaisuudet poistetaan käytöstä"
 
 #. js-lingui-id: PT137K
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your enterprise features will remain active until {cancelAtDate}."
 msgstr "Enterprise-ominaisuudet pysyvät aktiivisina {cancelAtDate} asti."
 
@@ -16336,7 +15688,7 @@ msgid "Your enterprise key format is deprecated. Please activate a new key to ke
 msgstr "Enterprise-avaimesi muoto on vanhentunut. Aktivoi uusi avain säilyttääksesi Enterprise-ominaisuudet."
 
 #. js-lingui-id: NTpA4U
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your enterprise subscription has been canceled."
 msgstr "Enterprise-tilauksesi on peruttu."
 
@@ -16356,22 +15708,22 @@ msgid "Your provider API key for authentication"
 msgstr "Tarjoajasi API-avain tunnistautumista varten"
 
 #. js-lingui-id: 319YPG
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your subscription is active but your validity token is invalid or has expired. Try reloading it or contact support."
 msgstr "Tilauksesi on aktiivinen, mutta voimassaolotunnuksesi on virheellinen tai vanhentunut. Yritä ladata se uudelleen tai ota yhteyttä tukeen."
 
 #. js-lingui-id: Fx0axg
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your subscription is scheduled for cancellation"
 msgstr "Tilauksesi on ajastettu peruutettavaksi"
 
 #. js-lingui-id: XgIa/8
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your subscription setup was not completed."
 msgstr "Tilauksesi määritys ei valmistunut."
 
 #. js-lingui-id: Z9kbt6
-#: src/pages/settings/enterprise/SettingsEnterprise.tsx
+#: src/pages/settings/enterprise/EnterpriseSubscriptionStatusSection.tsx
 msgid "Your subscription status is: {statusLabel}"
 msgstr "Tilauksesi tila on: {statusLabel}"
 
