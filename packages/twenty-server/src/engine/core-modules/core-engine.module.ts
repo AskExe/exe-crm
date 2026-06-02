@@ -71,6 +71,7 @@ import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/
 import { ChannelSyncModule } from 'src/modules/connected-account/channel-sync/channel-sync.module';
 import { DashboardModule } from 'src/modules/dashboard/dashboard.module';
 import { DataIngestionModule } from 'src/engine/core-modules/data-ingestion/data-ingestion.module';
+import { ErrorForwardingModule } from 'src/engine/core-modules/error-forwarding/error-forwarding.module';
 import { FieldAuditModule } from 'src/engine/core-modules/field-audit/field-audit.module';
 
 import { AuditModule } from './audit/audit.module';
@@ -160,6 +161,7 @@ import { FileModule } from './file/file.module';
     EventLogsModule,
     FieldAuditModule,
     DataIngestionModule,
+    ErrorForwardingModule,
   ],
   exports: [
     AuditModule,

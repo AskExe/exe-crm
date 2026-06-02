@@ -1,4 +1,5 @@
 import { AppErrorBoundaryEffect } from '@/error-handler/components/internal/AppErrorBoundaryEffect';
+import { reportError } from '@/error-handler/utils/errorReporter';
 import { checkIfItsAViteStaleChunkLazyLoadingError } from '@/error-handler/utils/checkIfItsAViteStaleChunkLazyLoadingError';
 import { type ErrorInfo, type ReactNode } from 'react';
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary';
@@ -22,6 +23,12 @@ export const AppErrorBoundary = ({
   resetOnLocationChange = true,
 }: AppErrorBoundaryProps) => {
   const handleError = async (error: Error | CustomError, info: ErrorInfo) => {
+    // Forward to exe-monitor-hub via backend proxy
+    reportError(error, {
+      source: 'react-error-boundary',
+      componentStack: info.componentStack ?? undefined,
+    });
+
     try {
       const { captureException } = await import('@sentry/react');
       captureException(error, (scope) => {
