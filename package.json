@@ -206,7 +206,7 @@
     "@opentelemetry/exporter-prometheus": "0.218.0",
     "@opentelemetry/sdk-node": "0.218.0"
   },
-  "version": "0.9.25",
+  "version": "0.9.26",
   "nx": {},
   "scripts": {
     "docs:generate": "tsx packages/twenty-docs/scripts/generate-docs-json.ts",
