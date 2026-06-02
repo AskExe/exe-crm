@@ -75,7 +75,7 @@ export class PinoDriver {
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
   error(message: any, context?: string, ...args: any[]) {
     // NestJS sometimes passes the stack trace as the second arg
-    if (context && context.includes('\n')) {
+    if (context && typeof context === 'string' && context.includes('\n')) {
       this.logger.error(
         { stack: context, args: args.length ? args : undefined },
         String(message),
