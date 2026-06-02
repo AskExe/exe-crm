@@ -226,7 +226,7 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         if (data.tokens?.accessToken?.token) {
           document.cookie = `tokenPair=${JSON.stringify({
-            accessToken: data.tokens.accessToken,
+            accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
             refreshToken: data.tokens.refreshToken,
           })};path=/`;
           window.location.href = '/';
@@ -297,7 +297,7 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         if (data.tokens?.accessToken?.token) {
           document.cookie = `tokenPair=${JSON.stringify({
-            accessToken: data.tokens.accessToken,
+            accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
             refreshToken: data.tokens.refreshToken,
           })};path=/`;
           window.location.href = '/';
