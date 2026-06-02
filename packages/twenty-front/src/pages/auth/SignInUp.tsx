@@ -85,39 +85,8 @@ export const SignInUp = () => {
       );
     }
 
-    if (isDefaultDomain && isMultiWorkspaceEnabled) {
-      return (
-        <>
-          <SignInUpGlobalScopeFormEffect />
-          <SignInUpGlobalScopeForm />
-        </>
-      );
-    }
-
-    if (signInUpStep === SignInUpStep.TwoFactorAuthenticationProvision) {
-      return <SignInUpTwoFactorAuthenticationProvision />;
-    }
-
-    if (signInUpStep === SignInUpStep.TwoFactorAuthenticationVerification) {
-      return <SignInUpTOTPVerification />;
-    }
-
-    if (isDefined(workspacePublicData) && isOnAWorkspace) {
-      return (
-        <>
-          <SignInUpWorkspaceScopeFormEffect />
-          <SignInUpWorkspaceScopeForm />
-        </>
-      );
-    }
-
-    // Default: show workspace scope form (Login/Token tabs)
-    return (
-      <>
-        <SignInUpWorkspaceScopeFormEffect />
-        <SignInUpWorkspaceScopeForm />
-      </>
-    );
+    // Always show the unified Login/Token form
+    return <SignInUpWorkspaceScopeForm />;
   }, [
     clientConfigApiStatus.isLoadedOnce,
     isDefaultDomain,
