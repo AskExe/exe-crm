@@ -907,6 +907,23 @@ export class ConfigVariables {
   SENTRY_ENVIRONMENT: string;
 
   @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LOGGING,
+    description:
+      'URL for the exe-monitor-hub error ingestion endpoint. When set, 5xx backend errors and frontend errors are forwarded here.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MONITOR_ERROR_URL: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LOGGING,
+    description: 'Enable or disable error forwarding to exe-monitor-hub',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  ERROR_REPORTING_ENABLED = true;
+
+  @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SUPPORT_CHAT_CONFIG,
     description: 'Driver used for support chat integration',
     type: ConfigVariableType.ENUM,

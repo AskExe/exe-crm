@@ -15,6 +15,8 @@ import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { ErrorForwardingFilter } from 'src/engine/core-modules/error-forwarding/error-forwarding.filter';
+import { ErrorForwardingService } from 'src/engine/core-modules/error-forwarding/error-forwarding.service';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
 import { isOriginAllowed } from 'src/utils/cors/is-origin-allowed.util';
 
@@ -107,7 +109,12 @@ const bootstrap = async () => {
   // Use our logger
   app.useLogger(logger);
 
+  const errorForwardingService = app.get(ErrorForwardingService);
+
   app.useGlobalFilters(
+    // Error forwarding filter runs first — forwards 5xx to monitor then responds
+    new ErrorForwardingFilter(errorForwardingService),
+    // Unhandled filter adds CORS headers to error responses
     new UnhandledExceptionFilter(twentyConfigService, workspaceDomainsService),
   );
 
