@@ -227,17 +227,22 @@ export class GoTrueAuthController {
           throw new Error('User context missing after provisioning');
         }
 
-        // CRM: activate workspace
+        // CRM: activate workspace (non-fatal — login still works if this crashes)
         if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
-          await this.workspaceService.activateWorkspace(
-            ctx.user,
-            ctx.workspace,
-            { displayName: wsName },
-          );
-          ctx = await this.getUserContext(email);
+          try {
+            await this.workspaceService.activateWorkspace(
+              ctx.user,
+              ctx.workspace,
+              { displayName: wsName },
+            );
+            ctx = await this.getUserContext(email);
 
-          if (!ctx) {
-            throw new Error('User context missing after activation');
+            if (!ctx) {
+              throw new Error('User context missing after activation');
+            }
+          } catch (activateErr) {
+            this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
+            // Continue — user can still log in with PENDING workspace
           }
         }
 
@@ -256,7 +261,7 @@ export class GoTrueAuthController {
       }
     }
 
-    // Activate if still pending (edge case: previous provision crashed mid-way)
+    // Activate if still pending (non-fatal — login works regardless)
     if (ctx!.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
       try {
         await this.workspaceService.activateWorkspace(
@@ -265,14 +270,8 @@ export class GoTrueAuthController {
           { displayName: ctx!.workspace.displayName || workspaceName || 'Exe' },
         );
         ctx = await this.getUserContext(email);
-
-        if (!ctx) {
-          return res.status(500).json({ error: 'Workspace activation failed' });
-        }
       } catch (activateErr) {
-        this.logger.error(`Workspace activation failed: ${activateErr}`);
-
-        return res.status(500).json({ error: 'Failed to activate workspace' });
+        this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
       }
     }
 
