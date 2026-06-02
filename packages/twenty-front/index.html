@@ -87,23 +87,9 @@
       }
     </script>
     <style>
-      :root {
-        /* THEME_DARK.background.tertiary — Exe Foundry Bold */
-        --theme-dark-background-tertiary: #0F0E1A;
-        /* THEME_LIGHT.background.tertiary — Exe Foundry Bold */
-        --theme-light-background-tertiary: #F5F5F0;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        html, body {
-          background-color: var(--theme-dark-background-tertiary);
-        }
-      }
-
-      @media (prefers-color-scheme: light) {
-        html, body {
-          background-color: var(--theme-light-background-tertiary);
-        }
+      /* Exe Foundry Bold — always dark. No light theme flash. */
+      html, body {
+        background-color: #0F0E1A !important;
       }
     </style>
   </head>
