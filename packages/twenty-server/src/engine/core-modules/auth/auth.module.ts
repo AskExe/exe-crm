@@ -49,6 +49,7 @@ import { TwoFactorAuthenticationMethodEntity } from 'src/engine/core-modules/two
 import { TwoFactorAuthenticationModule } from 'src/engine/core-modules/two-factor-authentication/two-factor-authentication.module';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
+import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-invitation/workspace-invitation.module';
@@ -93,6 +94,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
       ConnectedAccountEntity,
     ]),
     UserWorkspaceModule,
+    WorkspaceModule,
     OnboardingModule,
     ConnectedAccountModule,
     MessagingCommonModule,
