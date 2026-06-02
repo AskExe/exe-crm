@@ -20,6 +20,8 @@
     <link rel="manifest" href="/manifest.json" />
 
     <meta name="theme-color" content="#0F0E1A" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="description" content="Exe CRM" />
     <meta property="og:description" content="Exe CRM" />
     <meta property="og:title" content="Exe CRM" />
@@ -66,7 +68,7 @@
     </script>
     <!-- END: Exe CRM Config -->
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <script type="module">
       const disableInputAutoZoom = () => {
         const viewportMetadata = document.querySelector('meta[name=viewport]');
@@ -74,7 +76,7 @@
         if (viewportMetadata !== null) {
           viewportMetadata.setAttribute(
             'content',
-            'width=device-width, initial-scale=1.0, maximum-scale=1.0',
+            'width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover',
           );
         }
       };
@@ -107,7 +109,27 @@
   </head>
   <body style="background-color: #0F0E1A;">
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root" style="
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    "></div>
     <script type="module" src="/src/index.tsx"></script>
+    <script>
+      // Register service worker for PWA offline support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // Trim caches periodically (every 30 min)
+            setInterval(() => {
+              reg.active?.postMessage({ type: 'TRIM_CACHES' });
+            }, 30 * 60 * 1000);
+          }).catch((err) => {
+            console.warn('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

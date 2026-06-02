@@ -46,7 +46,8 @@ const StyledTab = styled.button<{ isActive: boolean }>`
   font-family: 'Manrope', sans-serif;
   font-size: 13px;
   font-weight: 400;
-  padding: 8px 0;
+  min-height: 44px;
+  padding: 10px 0;
   transition: background 0.15s, color 0.15s;
 
   &:hover {
@@ -82,7 +83,7 @@ const StyledInput = styled.input`
   border-radius: ${TOKENS.radiusMd};
   color: ${TOKENS.textPrimary};
   font-family: 'Space Grotesk', monospace;
-  font-size: 14px;
+  font-size: 16px;
   height: 42px;
   outline: none;
   padding: 0 14px;
@@ -116,7 +117,7 @@ const StyledGoldButton = styled.button`
   color: #0f0e1a;
   cursor: pointer;
   font-family: 'Epilogue', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   height: 42px;
   letter-spacing: 0.08em;

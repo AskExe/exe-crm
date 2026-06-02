@@ -19,7 +19,7 @@ const StyledCardsContainer = styled.div`
   gap: ${themeCssVariables.spacing[4]};
   margin-top: ${themeCssVariables.spacing[6]};
 
-  @media (max-width: ${MOBILE_VIEWPORT}pxF) {
+  @media (max-width: ${MOBILE_VIEWPORT}px) {
     flex-direction: column;
   }
 `;
