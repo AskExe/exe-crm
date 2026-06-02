@@ -3,6 +3,7 @@ import { ApolloDevLogEffect } from '@/debug/components/ApolloDevLogEffect';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { AppRootErrorFallback } from '@/error-handler/components/AppRootErrorFallback';
 import { ExceptionHandlerProvider } from '@/error-handler/components/ExceptionHandlerProvider';
+import { GlobalErrorHandlerEffect } from '@/error-handler/components/GlobalErrorHandlerEffect';
 import { SnackBarComponentInstanceContext } from '@/ui/feedback/snack-bar-manager/contexts/SnackBarComponentInstanceContext';
 import { ClickOutsideListenerContext } from '@/ui/utilities/pointer-event/contexts/ClickOutsideListenerContext';
 import { i18n } from '@lingui/core';
@@ -24,6 +25,7 @@ export const App = () => {
       >
         <I18nProvider i18n={i18n}>
           <ApolloDevLogEffect />
+          <GlobalErrorHandlerEffect />
           <SnackBarComponentInstanceContext.Provider
             value={{ instanceId: 'snack-bar-manager' }}
           >
