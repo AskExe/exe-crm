@@ -1,6 +1,8 @@
 import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
 
+import { cookieStorage } from '~/utils/cookie-storage';
+
 type AuthTab = 'credentials' | 'admin-token';
 
 // Design tokens — Exe Foundry Bold
@@ -225,10 +227,14 @@ export const SignInUpWorkspaceScopeForm = () => {
         }
 
         if (data.tokens?.accessToken?.token) {
-          document.cookie = `tokenPair=${JSON.stringify({
-            accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
-            refreshToken: data.tokens.refreshToken,
-          })};path=/`;
+          cookieStorage.setItem(
+            'tokenPair',
+            JSON.stringify({
+              accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
+              refreshToken: data.tokens.refreshToken,
+            }),
+            { path: '/' },
+          );
           window.location.href = '/';
         } else {
           throw new Error('No token received');
@@ -296,10 +302,14 @@ export const SignInUpWorkspaceScopeForm = () => {
         const data = await response.json();
 
         if (data.tokens?.accessToken?.token) {
-          document.cookie = `tokenPair=${JSON.stringify({
-            accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
-            refreshToken: data.tokens.refreshToken,
-          })};path=/`;
+          cookieStorage.setItem(
+            'tokenPair',
+            JSON.stringify({
+              accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
+              refreshToken: data.tokens.refreshToken,
+            }),
+            { path: '/' },
+          );
           window.location.href = '/';
         } else {
           throw new Error('No token received from server');
