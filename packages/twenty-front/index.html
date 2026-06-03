@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" translate="no" class="light">
+<html lang="en" translate="no" class="dark">
   <head>
     <meta charset="UTF-8" />
 
@@ -34,19 +34,19 @@
         font-family: 'Epilogue';
         src: url('/fonts/Epilogue-Variable.woff2') format('woff2');
         font-weight: 400 900;
-        font-display: swap;
+        font-display: block;
       }
       @font-face {
         font-family: 'Manrope';
         src: url('/fonts/Manrope-Variable.woff2') format('woff2');
         font-weight: 400 700;
-        font-display: swap;
+        font-display: block;
       }
       @font-face {
         font-family: 'Space Grotesk';
         src: url('/fonts/SpaceGrotesk-Variable.woff2') format('woff2');
         font-weight: 400 700;
-        font-display: swap;
+        font-display: block;
       }
 
       /* Exe Foundry Bold — brand rule #3: display headlines */
@@ -90,6 +90,17 @@
       /* Exe Foundry Bold — always dark. No light theme flash. */
       html, body {
         background-color: #0F0E1A !important;
+        color: #F0EDE8 !important;
+        margin: 0;
+        padding: 0;
+      }
+      /* Hide root until React hydrates — prevents white flash from empty div */
+      #root:empty {
+        visibility: hidden;
+      }
+      /* Kill any stray borders/lines from Twenty's default light theme */
+      *, *::before, *::after {
+        border-color: rgba(240, 237, 232, 0.1) !important;
       }
     </style>
   </head>
