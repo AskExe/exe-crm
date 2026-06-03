@@ -1,8 +1,6 @@
 import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
 
-import { cookieStorage } from '~/utils/cookie-storage';
-
 type AuthTab = 'credentials' | 'admin-token';
 
 // Design tokens — Exe Foundry Bold
@@ -192,7 +190,6 @@ export const SignInUpWorkspaceScopeForm = () => {
   const [adminToken, setAdminToken] = useState('');
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
-
   // Setup wizard state
   const [showSetup, setShowSetup] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
@@ -226,18 +223,11 @@ export const SignInUpWorkspaceScopeForm = () => {
           return;
         }
 
-        if (data.tokens?.accessToken?.token) {
-          cookieStorage.setItem(
-            'tokenPair',
-            JSON.stringify({
-              accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
-              refreshToken: data.tokens.refreshToken,
-            }),
-            { path: '/' },
-          );
-          window.location.href = '/';
+        if (data.redirectUrl) {
+          // Option 3: redirect to Twenty's native /verify?loginToken=... flow
+          window.location.href = data.redirectUrl;
         } else {
-          throw new Error('No token received');
+          throw new Error('No redirect URL received');
         }
       } catch (err) {
         setCredError(
@@ -301,18 +291,10 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         const data = await response.json();
 
-        if (data.tokens?.accessToken?.token) {
-          cookieStorage.setItem(
-            'tokenPair',
-            JSON.stringify({
-              accessOrWorkspaceAgnosticToken: data.tokens.accessToken,
-              refreshToken: data.tokens.refreshToken,
-            }),
-            { path: '/' },
-          );
-          window.location.href = '/';
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
         } else {
-          throw new Error('No token received from server');
+          throw new Error('No redirect URL received from server');
         }
       } catch (err) {
         setAdminTokenError(

@@ -5,8 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 
 import * as bcrypt from 'bcrypt';
 
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
-import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
+import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
@@ -16,22 +15,26 @@ import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/worksp
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 /**
- * /api/auth/gotrue-login  — email+password via GoTrue → CRM token pair
- * /api/auth/admin-token   — admin token bypass → CRM token pair
+ * /api/auth/gotrue-login  — email+password via GoTrue → redirect to /verify
+ * /api/auth/admin-token   — admin token bypass → redirect to /verify
  *
- * First login auto-provisions workspace + user in BOTH CRM and Wiki.
- * GoTrue owns identity. CRM mints session tokens. Wiki gets a matching
- * workspace + user via direct SQL (same exe-db Postgres).
+ * Option 3: GoTrue proves identity, then we hand off to Twenty's native
+ * /verify?loginToken=... flow. This avoids the Jotai/cookie race condition
+ * that caused the blank dashboard bug.
+ *
+ * Flow: GoTrue auth → find/create Twenty user → LoginTokenService.generateLoginToken
+ * → redirect to /verify?loginToken=... → Twenty's VerifyLoginTokenEffect handles
+ * everything: sets token via Jotai, loads currentUser, hydrates workspace state.
  */
 @Controller('api/auth')
 export class GoTrueAuthController {
   private readonly logger = new Logger(GoTrueAuthController.name);
   private readonly gotrueUrl: string | undefined;
   private readonly adminToken: string | undefined;
+  private readonly serverBaseUrl: string | undefined;
 
   constructor(
-    private readonly accessTokenService: AccessTokenService,
-    private readonly refreshTokenService: RefreshTokenService,
+    private readonly loginTokenService: LoginTokenService,
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
     private readonly dataSource: DataSource,
@@ -44,6 +47,7 @@ export class GoTrueAuthController {
   ) {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
     this.adminToken = process.env.EXE_CRM_ADMIN_TOKEN;
+    this.serverBaseUrl = process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
   }
 
   private async getWorkspace(): Promise<WorkspaceEntity | null> {
@@ -71,22 +75,23 @@ export class GoTrueAuthController {
     return { user, workspace, userWorkspace };
   }
 
-  private async generateTokenPair(userId: string, workspaceId: string) {
-    const accessToken = await this.accessTokenService.generateAccessToken({
-      userId,
+  /**
+   * Generate a Twenty-native login token and return redirect URL.
+   * The frontend's VerifyLoginTokenEffect will handle the rest.
+   */
+  private async generateLoginTokenRedirect(
+    email: string,
+    workspaceId: string,
+  ): Promise<string> {
+    const loginToken = await this.loginTokenService.generateLoginToken(
+      email,
       workspaceId,
-      authProvider: AuthProviderEnum.SSO,
-    });
-
-    const refreshToken = await this.refreshTokenService.generateRefreshToken(
-      userId,
-      workspaceId,
+      AuthProviderEnum.SSO,
     );
 
-    return {
-      accessToken: { token: accessToken.token, expiresAt: accessToken.expiresAt },
-      refreshToken: { token: refreshToken.token, expiresAt: refreshToken.expiresAt },
-    };
+    const baseUrl = this.serverBaseUrl || 'https://crm.askexe.com';
+
+    return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
 
   /**
@@ -103,8 +108,6 @@ export class GoTrueAuthController {
       const slug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'exe';
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Check if wiki schema exists
-      // Check if wiki tables exist in public schema
       const tableCheck = await this.dataSource.query(
         `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'workspaces'`,
       );
@@ -114,21 +117,18 @@ export class GoTrueAuthController {
         return;
       }
 
-      // Create wiki workspace (idempotent)
       await this.dataSource.query(`
         INSERT INTO public.workspaces (name, slug, "createdAt", "lastUpdatedAt")
         SELECT $1, $2, NOW(), NOW()
         WHERE NOT EXISTS (SELECT 1 FROM public.workspaces WHERE slug = $2)
       `, [workspaceName, slug]);
 
-      // Create wiki user (idempotent by username)
       await this.dataSource.query(`
         INSERT INTO public.users (username, password, role, gotrue_id, "createdAt", "lastUpdatedAt")
         SELECT $1, $2, 'admin', $3, NOW(), NOW()
         WHERE NOT EXISTS (SELECT 1 FROM public.users WHERE username = $1)
       `, [email.toLowerCase().trim(), passwordHash, gotrueUserId ?? null]);
 
-      // Link user to workspace (idempotent)
       await this.dataSource.query(`
         INSERT INTO public.workspace_users (user_id, workspace_id, "createdAt", "lastUpdatedAt")
         SELECT u.id, w.id, NOW(), NOW()
@@ -142,7 +142,6 @@ export class GoTrueAuthController {
 
       this.logger.log(`Wiki provisioned: workspace=${slug} user=${email}`);
     } catch (err) {
-      // Non-fatal — CRM login works even if wiki provisioning fails
       this.logger.error(`Wiki provisioning failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
     }
   }
@@ -210,7 +209,6 @@ export class GoTrueAuthController {
       this.logger.log(`First login for ${email} — provisioning workspace "${wsName}"`);
 
       try {
-        // CRM: create workspace + user
         await this.signInUpService.signUpOnNewWorkspace({
           type: 'newUserWithPicture',
           newUserWithPicture: {
@@ -227,7 +225,7 @@ export class GoTrueAuthController {
           throw new Error('User context missing after provisioning');
         }
 
-        // CRM: activate workspace (non-fatal — login still works if this crashes)
+        // Activate workspace
         if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
           try {
             await this.workspaceService.activateWorkspace(
@@ -242,11 +240,10 @@ export class GoTrueAuthController {
             }
           } catch (activateErr) {
             this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
-            // Continue — user can still log in with PENDING workspace
           }
         }
 
-        // Wiki: create matching workspace + user
+        // Wiki provisioning
         await this.provisionWiki(email, wsName, gotrueData.user?.id, password);
 
         this.logger.log(
@@ -261,7 +258,7 @@ export class GoTrueAuthController {
       }
     }
 
-    // Activate if still pending (non-fatal — login works regardless)
+    // Activate if still pending
     if (ctx!.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
       try {
         await this.workspaceService.activateWorkspace(
@@ -275,16 +272,18 @@ export class GoTrueAuthController {
       }
     }
 
-    // Step 3: Generate token pair
+    // Step 3: Generate Twenty-native login token and redirect
     try {
-      const tokens = await this.generateTokenPair(ctx!.user.id, ctx!.workspace.id);
+      const redirectUrl = await this.generateLoginTokenRedirect(
+        ctx!.user.email,
+        ctx!.workspace.id,
+      );
 
-      return res.json({
-        tokens,
-        user: { id: ctx!.user.id, email: ctx!.user.email },
-      });
+      this.logger.log(`GoTrue login success for ${email} → redirecting to /verify`);
+
+      return res.json({ redirectUrl });
     } catch (err) {
-      this.logger.error(`Token generation failed for ${email}: ${err}`);
+      this.logger.error(`Login token generation failed for ${email}: ${err}`);
 
       return res.status(500).json({ error: 'Failed to generate session token' });
     }
@@ -324,17 +323,44 @@ export class GoTrueAuthController {
       return res.status(500).json({ error: 'No user found in workspace' });
     }
 
+    // Activate workspace if still pending
+    if (workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+      try {
+        const user = await this.userRepository.findOne({
+          where: { id: userWorkspace.userId },
+        });
+
+        if (user) {
+          await this.workspaceService.activateWorkspace(
+            user,
+            workspace,
+            { displayName: workspace.displayName || 'Exe' },
+          );
+          this.logger.log(`Workspace activated via admin-token (${workspace.id})`);
+        }
+      } catch (activateErr) {
+        this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
+      }
+    }
+
+    // Generate Twenty-native login token and return redirect URL
     try {
-      const tokens = await this.generateTokenPair(
-        userWorkspace.userId,
+      const user = await this.userRepository.findOne({
+        where: { id: userWorkspace.userId },
+      });
+
+      if (!user) {
+        return res.status(500).json({ error: 'User not found' });
+      }
+
+      const redirectUrl = await this.generateLoginTokenRedirect(
+        user.email,
         workspace.id,
       );
 
-      return res.json({
-        tokens,
-        user: { id: userWorkspace.userId },
-        isAdminToken: true,
-      });
+      this.logger.log(`Admin token login → redirecting to /verify`);
+
+      return res.json({ redirectUrl, user: { id: user.id }, isAdminToken: true });
     } catch (err) {
       this.logger.error(`Admin token generation failed: ${err}`);
 

@@ -4,7 +4,35 @@ class CookieStorage {
   private keys: Set<string> = new Set();
 
   getItem(key: string): string | undefined {
-    return Cookies.get(key);
+    // Primary: js-cookie
+    const value = Cookies.get(key);
+
+    if (value !== undefined && value.length > 0) {
+      return value;
+    }
+
+    // Fallback: read directly from document.cookie.
+    // js-cookie can silently return undefined when cookie encoding doesn't
+    // match its expected format (e.g. mixed encoded/unencoded values).
+    try {
+      const match = document.cookie
+        .split(';')
+        .find((c) => c.trim().startsWith(key + '='));
+
+      if (!match) return undefined;
+
+      const rawValue = match.trim().substring(key.length + 1);
+
+      if (!rawValue || rawValue.length === 0) return undefined;
+
+      try {
+        return decodeURIComponent(rawValue);
+      } catch {
+        return rawValue;
+      }
+    } catch {
+      return undefined;
+    }
   }
 
   setItem(

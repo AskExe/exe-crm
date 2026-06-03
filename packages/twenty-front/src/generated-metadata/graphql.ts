@@ -2046,12 +2046,10 @@ export type Index = {
   updatedAt: Scalars['DateTime'];
 };
 
-
 export type IndexIndexFieldMetadatasArgs = {
   filter?: IndexFieldFilter;
   paging?: CursorPaging;
 };
-
 
 export type IndexObjectMetadataArgs = {
   filter?: ObjectFilter;
@@ -2755,45 +2753,37 @@ export type Mutation = {
   verifyTwoFactorAuthenticationMethodForAuthenticatedUser: VerifyTwoFactorAuthenticationMethod;
 };
 
-
 export type MutationActivateSkillArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationActivateWorkspaceArgs = {
   data: ActivateWorkspaceInput;
 };
-
 
 export type MutationAddAiProviderArgs = {
   providerConfig: Scalars['JSON'];
   providerName: Scalars['String'];
 };
 
-
 export type MutationAddModelToProviderArgs = {
   modelConfig: Scalars['JSON'];
   providerName: Scalars['String'];
 };
 
-
 export type MutationAddQueryToEventStreamArgs = {
   input: AddQuerySubscriptionInput;
 };
-
 
 export type MutationAssignRoleToAgentArgs = {
   agentId: Scalars['UUID'];
   roleId: Scalars['UUID'];
 };
 
-
 export type MutationAssignRoleToApiKeyArgs = {
   apiKeyId: Scalars['UUID'];
   roleId: Scalars['UUID'];
 };
-
 
 export type MutationAuthorizeAppArgs = {
   clientId: Scalars['String'];
@@ -2803,11 +2793,9 @@ export type MutationAuthorizeAppArgs = {
   state?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationCheckPublicDomainValidRecordsArgs = {
   domain: Scalars['String'];
 };
-
 
 export type MutationCheckoutSessionArgs = {
   plan?: BillingPlanKey;
@@ -2816,84 +2804,68 @@ export type MutationCheckoutSessionArgs = {
   successUrlPath?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationCreateApiKeyArgs = {
   input: CreateApiKeyInput;
 };
-
 
 export type MutationCreateApplicationRegistrationArgs = {
   input: CreateApplicationRegistrationInput;
 };
 
-
 export type MutationCreateApplicationRegistrationVariableArgs = {
   input: CreateApplicationRegistrationVariableInput;
 };
-
 
 export type MutationCreateApprovedAccessDomainArgs = {
   input: CreateApprovedAccessDomainInput;
 };
 
-
 export type MutationCreateCommandMenuItemArgs = {
   input: CreateCommandMenuItemInput;
 };
-
 
 export type MutationCreateDatabaseConfigVariableArgs = {
   key: Scalars['String'];
   value: Scalars['JSON'];
 };
 
-
 export type MutationCreateDevelopmentApplicationArgs = {
   name: Scalars['String'];
   universalIdentifier: Scalars['String'];
 };
-
 
 export type MutationCreateEmailingDomainArgs = {
   domain: Scalars['String'];
   driver: EmailingDomainDriver;
 };
 
-
 export type MutationCreateFrontComponentArgs = {
   input: CreateFrontComponentInput;
 };
-
 
 export type MutationCreateManyNavigationMenuItemsArgs = {
   inputs: Array<CreateNavigationMenuItemInput>;
 };
 
-
 export type MutationCreateManyViewFieldGroupsArgs = {
   inputs: Array<CreateViewFieldGroupInput>;
 };
-
 
 export type MutationCreateManyViewFieldsArgs = {
   inputs: Array<CreateViewFieldInput>;
 };
 
-
 export type MutationCreateManyViewGroupsArgs = {
   inputs: Array<CreateViewGroupInput>;
 };
-
 
 export type MutationCreateNavigationMenuItemArgs = {
   input: CreateNavigationMenuItemInput;
 };
 
-
 export type MutationCreateOidcIdentityProviderArgs = {
   input: SetupOidcSsoInput;
 };
-
 
 export type MutationCreateObjectEventArgs = {
   event: Scalars['String'];
@@ -2902,355 +2874,285 @@ export type MutationCreateObjectEventArgs = {
   recordId: Scalars['UUID'];
 };
 
-
 export type MutationCreateOneAgentArgs = {
   input: CreateAgentInput;
 };
-
 
 export type MutationCreateOneAppTokenArgs = {
   input: CreateOneAppTokenInput;
 };
 
-
 export type MutationCreateOneFieldArgs = {
   input: CreateOneFieldMetadataInput;
 };
-
 
 export type MutationCreateOneLogicFunctionArgs = {
   input: CreateLogicFunctionFromSourceInput;
 };
 
-
 export type MutationCreateOneObjectArgs = {
   input: CreateOneObjectInput;
 };
-
 
 export type MutationCreateOneRoleArgs = {
   createRoleInput: CreateRoleInput;
 };
 
-
 export type MutationCreatePageLayoutArgs = {
   input: CreatePageLayoutInput;
 };
-
 
 export type MutationCreatePageLayoutTabArgs = {
   input: CreatePageLayoutTabInput;
 };
 
-
 export type MutationCreatePageLayoutWidgetArgs = {
   input: CreatePageLayoutWidgetInput;
 };
-
 
 export type MutationCreatePublicDomainArgs = {
   domain: Scalars['String'];
 };
 
-
 export type MutationCreateSamlIdentityProviderArgs = {
   input: SetupSamlSsoInput;
 };
-
 
 export type MutationCreateSkillArgs = {
   input: CreateSkillInput;
 };
 
-
 export type MutationCreateViewArgs = {
   input: CreateViewInput;
 };
-
 
 export type MutationCreateViewFieldArgs = {
   input: CreateViewFieldInput;
 };
 
-
 export type MutationCreateViewFieldGroupArgs = {
   input: CreateViewFieldGroupInput;
 };
-
 
 export type MutationCreateViewFilterArgs = {
   input: CreateViewFilterInput;
 };
 
-
 export type MutationCreateViewFilterGroupArgs = {
   input: CreateViewFilterGroupInput;
 };
-
 
 export type MutationCreateViewGroupArgs = {
   input: CreateViewGroupInput;
 };
 
-
 export type MutationCreateViewSortArgs = {
   input: CreateViewSortInput;
 };
-
 
 export type MutationCreateWebhookArgs = {
   input: CreateWebhookInput;
 };
 
-
 export type MutationDeactivateSkillArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type MutationDeleteApplicationRegistrationArgs = {
   id: Scalars['String'];
 };
 
-
 export type MutationDeleteApplicationRegistrationVariableArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDeleteApprovedAccessDomainArgs = {
   input: DeleteApprovedAccessDomainInput;
 };
 
-
 export type MutationDeleteCommandMenuItemArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type MutationDeleteConnectedAccountArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationDeleteDatabaseConfigVariableArgs = {
   key: Scalars['String'];
 };
-
 
 export type MutationDeleteEmailingDomainArgs = {
   id: Scalars['String'];
 };
 
-
 export type MutationDeleteFrontComponentArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type MutationDeleteJobsArgs = {
   jobIds: Array<Scalars['String']>;
   queueName: Scalars['String'];
 };
 
-
 export type MutationDeleteManyNavigationMenuItemsArgs = {
   ids: Array<Scalars['UUID']>;
 };
-
 
 export type MutationDeleteNavigationMenuItemArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationDeleteOneAgentArgs = {
   input: AgentIdInput;
 };
-
 
 export type MutationDeleteOneFieldArgs = {
   input: DeleteOneFieldInput;
 };
 
-
 export type MutationDeleteOneLogicFunctionArgs = {
   input: LogicFunctionIdInput;
 };
-
 
 export type MutationDeleteOneObjectArgs = {
   input: DeleteOneObjectInput;
 };
 
-
 export type MutationDeleteOneRoleArgs = {
   roleId: Scalars['UUID'];
 };
-
 
 export type MutationDeletePublicDomainArgs = {
   domain: Scalars['String'];
 };
 
-
 export type MutationDeleteSsoIdentityProviderArgs = {
   input: DeleteSsoInput;
 };
-
 
 export type MutationDeleteSkillArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationDeleteTwoFactorAuthenticationMethodArgs = {
   twoFactorAuthenticationMethodId: Scalars['UUID'];
 };
-
 
 export type MutationDeleteUserFromWorkspaceArgs = {
   workspaceMemberIdToDelete: Scalars['String'];
 };
 
-
 export type MutationDeleteViewArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDeleteViewFieldArgs = {
   input: DeleteViewFieldInput;
 };
 
-
 export type MutationDeleteViewFieldGroupArgs = {
   input: DeleteViewFieldGroupInput;
 };
-
 
 export type MutationDeleteViewFilterArgs = {
   input: DeleteViewFilterInput;
 };
 
-
 export type MutationDeleteViewFilterGroupArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDeleteViewGroupArgs = {
   input: DeleteViewGroupInput;
 };
 
-
 export type MutationDeleteViewSortArgs = {
   input: DeleteViewSortInput;
 };
-
 
 export type MutationDeleteWebhookArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationDeleteWorkspaceInvitationArgs = {
   appTokenId: Scalars['String'];
 };
-
 
 export type MutationDestroyPageLayoutArgs = {
   id: Scalars['String'];
 };
 
-
 export type MutationDestroyPageLayoutTabArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDestroyPageLayoutWidgetArgs = {
   id: Scalars['String'];
 };
 
-
 export type MutationDestroyViewArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDestroyViewFieldArgs = {
   input: DestroyViewFieldInput;
 };
 
-
 export type MutationDestroyViewFieldGroupArgs = {
   input: DestroyViewFieldGroupInput;
 };
-
 
 export type MutationDestroyViewFilterArgs = {
   input: DestroyViewFilterInput;
 };
 
-
 export type MutationDestroyViewFilterGroupArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationDestroyViewGroupArgs = {
   input: DestroyViewGroupInput;
 };
 
-
 export type MutationDestroyViewSortArgs = {
   input: DestroyViewSortInput;
 };
-
 
 export type MutationDuplicateDashboardArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type MutationEditSsoIdentityProviderArgs = {
   input: EditSsoInput;
 };
-
 
 export type MutationEmailPasswordResetLinkArgs = {
   email: Scalars['String'];
   workspaceId?: InputMaybe<Scalars['UUID']>;
 };
 
-
 export type MutationEvaluateAgentTurnArgs = {
   turnId: Scalars['UUID'];
 };
 
-
 export type MutationExecuteOneLogicFunctionArgs = {
   input: ExecuteOneLogicFunctionInput;
 };
-
 
 export type MutationGenerateApiKeyTokenArgs = {
   apiKeyId: Scalars['UUID'];
   expiresAt: Scalars['String'];
 };
 
-
 export type MutationGenerateApplicationTokenArgs = {
   applicationId: Scalars['UUID'];
 };
-
 
 export type MutationGetAuthTokensFromLoginTokenArgs = {
   loginToken: Scalars['String'];
   origin: Scalars['String'];
 };
-
 
 export type MutationGetAuthTokensFromOtpArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
@@ -3259,11 +3161,9 @@ export type MutationGetAuthTokensFromOtpArgs = {
   otp: Scalars['String'];
 };
 
-
 export type MutationGetAuthorizationUrlForSsoArgs = {
   input: GetAuthorizationUrlForSsoInput;
 };
-
 
 export type MutationGetLoginTokenFromCredentialsArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
@@ -3274,99 +3174,81 @@ export type MutationGetLoginTokenFromCredentialsArgs = {
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationImpersonateArgs = {
   userId: Scalars['UUID'];
   workspaceId: Scalars['UUID'];
 };
-
 
 export type MutationInitiateOtpProvisioningArgs = {
   loginToken: Scalars['String'];
   origin: Scalars['String'];
 };
 
-
 export type MutationInstallApplicationArgs = {
   appRegistrationId: Scalars['String'];
   version?: InputMaybe<Scalars['String']>;
 };
-
 
 export type MutationInstallMarketplaceAppArgs = {
   universalIdentifier: Scalars['String'];
   version?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationRemoveAiProviderArgs = {
   providerName: Scalars['String'];
 };
-
 
 export type MutationRemoveModelFromProviderArgs = {
   modelName: Scalars['String'];
   providerName: Scalars['String'];
 };
 
-
 export type MutationRemoveQueryFromEventStreamArgs = {
   input: RemoveQueryFromEventStreamInput;
 };
-
 
 export type MutationRemoveRoleFromAgentArgs = {
   agentId: Scalars['UUID'];
 };
 
-
 export type MutationRenewApplicationTokenArgs = {
   applicationRefreshToken: Scalars['String'];
 };
 
-
 export type MutationRenewTokenArgs = {
   appToken: Scalars['String'];
 };
-
 
 export type MutationResendEmailVerificationTokenArgs = {
   email: Scalars['String'];
   origin: Scalars['String'];
 };
 
-
 export type MutationResendWorkspaceInvitationArgs = {
   appTokenId: Scalars['String'];
 };
-
 
 export type MutationRetryJobsArgs = {
   jobIds: Array<Scalars['String']>;
   queueName: Scalars['String'];
 };
 
-
 export type MutationRevokeApiKeyArgs = {
   input: RevokeApiKeyInput;
 };
 
-
 export type MutationRotateApplicationRegistrationClientSecretArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationRunEvaluationInputArgs = {
   agentId: Scalars['UUID'];
   input: Scalars['String'];
 };
 
-
 export type MutationRunWorkspaceMigrationArgs = {
   workspaceMigration: WorkspaceMigrationInput;
 };
-
 
 export type MutationSaveImapSmtpCaldavAccountArgs = {
   accountOwnerId: Scalars['UUID'];
@@ -3375,40 +3257,33 @@ export type MutationSaveImapSmtpCaldavAccountArgs = {
   id?: InputMaybe<Scalars['UUID']>;
 };
 
-
 export type MutationSendInvitationsArgs = {
   emails: Array<Scalars['String']>;
   roleId?: InputMaybe<Scalars['UUID']>;
 };
-
 
 export type MutationSetAdminAiModelEnabledArgs = {
   enabled: Scalars['Boolean'];
   modelId: Scalars['String'];
 };
 
-
 export type MutationSetAdminAiModelRecommendedArgs = {
   modelId: Scalars['String'];
   recommended: Scalars['Boolean'];
 };
-
 
 export type MutationSetAdminDefaultAiModelArgs = {
   modelId: Scalars['String'];
   role: AiModelRole;
 };
 
-
 export type MutationSetEnterpriseKeyArgs = {
   enterpriseKey: Scalars['String'];
 };
 
-
 export type MutationSetMeteredSubscriptionPriceArgs = {
   priceId: Scalars['String'];
 };
-
 
 export type MutationSignInArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
@@ -3418,7 +3293,6 @@ export type MutationSignInArgs = {
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationSignUpArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
   email: Scalars['String'];
@@ -3426,7 +3300,6 @@ export type MutationSignUpArgs = {
   password: Scalars['String'];
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 };
-
 
 export type MutationSignUpInWorkspaceArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
@@ -3439,16 +3312,13 @@ export type MutationSignUpInWorkspaceArgs = {
   workspacePersonalInviteToken?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationStartChannelSyncArgs = {
   connectedAccountId: Scalars['UUID'];
 };
 
-
 export type MutationSyncApplicationArgs = {
   manifest: Scalars['JSON'];
 };
-
 
 export type MutationTrackAnalyticsArgs = {
   event?: InputMaybe<Scalars['String']>;
@@ -3457,93 +3327,75 @@ export type MutationTrackAnalyticsArgs = {
   type: AnalyticsType;
 };
 
-
 export type MutationTransferApplicationRegistrationOwnershipArgs = {
   applicationRegistrationId: Scalars['String'];
   targetWorkspaceSubdomain: Scalars['String'];
 };
 
-
 export type MutationUninstallApplicationArgs = {
   universalIdentifier: Scalars['String'];
 };
-
 
 export type MutationUpdateApiKeyArgs = {
   input: UpdateApiKeyInput;
 };
 
-
 export type MutationUpdateApplicationRegistrationArgs = {
   input: UpdateApplicationRegistrationInput;
 };
-
 
 export type MutationUpdateApplicationRegistrationVariableArgs = {
   input: UpdateApplicationRegistrationVariableInput;
 };
 
-
 export type MutationUpdateCalendarChannelArgs = {
   input: UpdateCalendarChannelInput;
 };
 
-
 export type MutationUpdateCommandMenuItemArgs = {
   input: UpdateCommandMenuItemInput;
 };
-
 
 export type MutationUpdateDatabaseConfigVariableArgs = {
   key: Scalars['String'];
   value: Scalars['JSON'];
 };
 
-
 export type MutationUpdateFrontComponentArgs = {
   input: UpdateFrontComponentInput;
 };
-
 
 export type MutationUpdateLabPublicFeatureFlagArgs = {
   input: UpdateLabPublicFeatureFlagInput;
 };
 
-
 export type MutationUpdateManyNavigationMenuItemsArgs = {
   inputs: Array<UpdateOneNavigationMenuItemInput>;
 };
-
 
 export type MutationUpdateManyViewGroupsArgs = {
   inputs: Array<UpdateViewGroupInput>;
 };
 
-
 export type MutationUpdateMessageChannelArgs = {
   input: UpdateMessageChannelInput;
 };
-
 
 export type MutationUpdateMessageFolderArgs = {
   input: UpdateMessageFolderInput;
 };
 
-
 export type MutationUpdateMessageFoldersArgs = {
   input: UpdateMessageFoldersInput;
 };
-
 
 export type MutationUpdateNavigationMenuItemArgs = {
   input: UpdateOneNavigationMenuItemInput;
 };
 
-
 export type MutationUpdateOneAgentArgs = {
   input: UpdateAgentInput;
 };
-
 
 export type MutationUpdateOneApplicationVariableArgs = {
   applicationId: Scalars['UUID'];
@@ -3551,114 +3403,93 @@ export type MutationUpdateOneApplicationVariableArgs = {
   value: Scalars['String'];
 };
 
-
 export type MutationUpdateOneFieldArgs = {
   input: UpdateOneFieldMetadataInput;
 };
-
 
 export type MutationUpdateOneLogicFunctionArgs = {
   input: UpdateLogicFunctionFromSourceInput;
 };
 
-
 export type MutationUpdateOneObjectArgs = {
   input: UpdateOneObjectInput;
 };
 
-
 export type MutationUpdateOneRoleArgs = {
   updateRoleInput: UpdateRoleInput;
 };
-
 
 export type MutationUpdatePageLayoutArgs = {
   id: Scalars['String'];
   input: UpdatePageLayoutInput;
 };
 
-
 export type MutationUpdatePageLayoutTabArgs = {
   id: Scalars['String'];
   input: UpdatePageLayoutTabInput;
 };
-
 
 export type MutationUpdatePageLayoutWidgetArgs = {
   id: Scalars['String'];
   input: UpdatePageLayoutWidgetInput;
 };
 
-
 export type MutationUpdatePageLayoutWithTabsAndWidgetsArgs = {
   id: Scalars['String'];
   input: UpdatePageLayoutWithTabsInput;
 };
-
 
 export type MutationUpdatePasswordViaResetTokenArgs = {
   newPassword: Scalars['String'];
   passwordResetToken: Scalars['String'];
 };
 
-
 export type MutationUpdateSkillArgs = {
   input: UpdateSkillInput;
 };
-
 
 export type MutationUpdateUserEmailArgs = {
   newEmail: Scalars['String'];
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 };
 
-
 export type MutationUpdateViewArgs = {
   id: Scalars['String'];
   input: UpdateViewInput;
 };
 
-
 export type MutationUpdateViewFieldArgs = {
   input: UpdateViewFieldInput;
 };
-
 
 export type MutationUpdateViewFieldGroupArgs = {
   input: UpdateViewFieldGroupInput;
 };
 
-
 export type MutationUpdateViewFilterArgs = {
   input: UpdateViewFilterInput;
 };
-
 
 export type MutationUpdateViewFilterGroupArgs = {
   id: Scalars['String'];
   input: UpdateViewFilterGroupInput;
 };
 
-
 export type MutationUpdateViewGroupArgs = {
   input: UpdateViewGroupInput;
 };
-
 
 export type MutationUpdateViewSortArgs = {
   input: UpdateViewSortInput;
 };
 
-
 export type MutationUpdateWebhookArgs = {
   input: UpdateWebhookInput;
 };
 
-
 export type MutationUpdateWorkspaceArgs = {
   data: UpdateWorkspaceInput;
 };
-
 
 export type MutationUpdateWorkspaceFeatureFlagArgs = {
   featureFlag: Scalars['String'];
@@ -3666,29 +3497,24 @@ export type MutationUpdateWorkspaceFeatureFlagArgs = {
   workspaceId: Scalars['UUID'];
 };
 
-
 export type MutationUpdateWorkspaceMemberRoleArgs = {
   roleId: Scalars['UUID'];
   workspaceMemberId: Scalars['UUID'];
 };
-
 
 export type MutationUpgradeApplicationArgs = {
   appRegistrationId: Scalars['String'];
   targetVersion: Scalars['String'];
 };
 
-
 export type MutationUploadAiChatFileArgs = {
   file: Scalars['Upload'];
 };
-
 
 export type MutationUploadAppTarballArgs = {
   file: Scalars['Upload'];
   universalIdentifier?: InputMaybe<Scalars['String']>;
 };
-
 
 export type MutationUploadApplicationFileArgs = {
   applicationUniversalIdentifier: Scalars['String'];
@@ -3697,68 +3523,55 @@ export type MutationUploadApplicationFileArgs = {
   filePath: Scalars['String'];
 };
 
-
 export type MutationUploadFilesFieldFileArgs = {
   fieldMetadataId: Scalars['String'];
   file: Scalars['Upload'];
 };
-
 
 export type MutationUploadFilesFieldFileByUniversalIdentifierArgs = {
   fieldMetadataUniversalIdentifier: Scalars['String'];
   file: Scalars['Upload'];
 };
 
-
 export type MutationUploadWorkflowFileArgs = {
   file: Scalars['Upload'];
 };
-
 
 export type MutationUploadWorkspaceLogoArgs = {
   file: Scalars['Upload'];
 };
 
-
 export type MutationUploadWorkspaceMemberProfilePictureArgs = {
   file: Scalars['Upload'];
 };
-
 
 export type MutationUpsertFieldPermissionsArgs = {
   upsertFieldPermissionsInput: UpsertFieldPermissionsInput;
 };
 
-
 export type MutationUpsertFieldsWidgetArgs = {
   input: UpsertFieldsWidgetInput;
 };
-
 
 export type MutationUpsertObjectPermissionsArgs = {
   upsertObjectPermissionsInput: UpsertObjectPermissionsInput;
 };
 
-
 export type MutationUpsertPermissionFlagsArgs = {
   upsertPermissionFlagsInput: UpsertPermissionFlagsInput;
 };
-
 
 export type MutationUpsertRowLevelPermissionPredicatesArgs = {
   input: UpsertRowLevelPermissionPredicatesInput;
 };
 
-
 export type MutationUserLookupAdminPanelArgs = {
   userIdentifier: Scalars['String'];
 };
 
-
 export type MutationValidateApprovedAccessDomainArgs = {
   input: ValidateApprovedAccessDomainInput;
 };
-
 
 export type MutationVerifyEmailAndGetLoginTokenArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
@@ -3767,18 +3580,15 @@ export type MutationVerifyEmailAndGetLoginTokenArgs = {
   origin: Scalars['String'];
 };
 
-
 export type MutationVerifyEmailAndGetWorkspaceAgnosticTokenArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
   email: Scalars['String'];
   emailVerificationToken: Scalars['String'];
 };
 
-
 export type MutationVerifyEmailingDomainArgs = {
   id: Scalars['String'];
 };
-
 
 export type MutationVerifyTwoFactorAuthenticationMethodForAuthenticatedUserArgs = {
   otp: Scalars['String'];
@@ -3855,12 +3665,10 @@ export type Object = {
   updatedAt: Scalars['DateTime'];
 };
 
-
 export type ObjectFieldsArgs = {
   filter?: FieldFilter;
   paging?: CursorPaging;
 };
-
 
 export type ObjectIndexMetadatasArgs = {
   filter?: IndexFilter;
@@ -4342,41 +4150,33 @@ export type Query = {
   webhooks: Array<Webhook>;
 };
 
-
 export type QueryAgentTurnsArgs = {
   agentId: Scalars['UUID'];
 };
-
 
 export type QueryApiKeyArgs = {
   input: GetApiKeyInput;
 };
 
-
 export type QueryApplicationRegistrationTarballUrlArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryBarChartDataArgs = {
   input: BarChartDataInput;
 };
 
-
 export type QueryBillingPortalSessionArgs = {
   returnUrlPath?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryChatMessagesArgs = {
   threadId: Scalars['UUID'];
 };
 
-
 export type QueryChatThreadArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type QueryChatThreadsArgs = {
   filter?: AgentChatThreadFilter;
@@ -4384,116 +4184,94 @@ export type QueryChatThreadsArgs = {
   sorting?: Array<AgentChatThreadSort>;
 };
 
-
 export type QueryCheckUserExistsArgs = {
   captchaToken?: InputMaybe<Scalars['String']>;
   email: Scalars['String'];
 };
 
-
 export type QueryCheckWorkspaceInviteHashIsValidArgs = {
   inviteHash: Scalars['String'];
 };
-
 
 export type QueryCommandMenuItemArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type QueryEnterpriseCheckoutSessionArgs = {
   billingInterval?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryEnterprisePortalSessionArgs = {
   returnUrlPath?: InputMaybe<Scalars['String']>;
 };
 
-
 export type QueryEventLogsArgs = {
   input: EventLogQueryInput;
 };
 
-
 export type QueryFieldArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type QueryFieldsArgs = {
   filter?: FieldFilter;
   paging?: CursorPaging;
 };
 
-
 export type QueryFindApplicationRegistrationByClientIdArgs = {
   clientId: Scalars['String'];
 };
-
 
 export type QueryFindApplicationRegistrationByUniversalIdentifierArgs = {
   universalIdentifier: Scalars['String'];
 };
 
-
 export type QueryFindApplicationRegistrationStatsArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryFindApplicationRegistrationVariablesArgs = {
   applicationRegistrationId: Scalars['String'];
 };
 
-
 export type QueryFindOneAgentArgs = {
   input: AgentIdInput;
 };
-
 
 export type QueryFindOneApplicationArgs = {
   id?: InputMaybe<Scalars['UUID']>;
   universalIdentifier?: InputMaybe<Scalars['UUID']>;
 };
 
-
 export type QueryFindOneApplicationRegistrationArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryFindOneLogicFunctionArgs = {
   input: LogicFunctionIdInput;
 };
 
-
 export type QueryFindOneMarketplaceAppArgs = {
   universalIdentifier: Scalars['String'];
 };
-
 
 export type QueryFindWorkspaceFromInviteHashArgs = {
   inviteHash: Scalars['String'];
 };
 
-
 export type QueryFrontComponentArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type QueryGetAddressDetailsArgs = {
   placeId: Scalars['String'];
   token: Scalars['String'];
 };
 
-
 export type QueryGetAdminAiUsageByWorkspaceArgs = {
   periodEnd?: InputMaybe<Scalars['DateTime']>;
   periodStart?: InputMaybe<Scalars['DateTime']>;
 };
-
 
 export type QueryGetAutoCompleteAddressArgs = {
   address: Scalars['String'];
@@ -4502,72 +4280,58 @@ export type QueryGetAutoCompleteAddressArgs = {
   token: Scalars['String'];
 };
 
-
 export type QueryGetAvailablePackagesArgs = {
   input: LogicFunctionIdInput;
 };
-
 
 export type QueryGetConnectedImapSmtpCaldavAccountArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type QueryGetDatabaseConfigVariableArgs = {
   key: Scalars['String'];
 };
-
 
 export type QueryGetIndicatorHealthStatusArgs = {
   indicatorId: HealthIndicatorId;
 };
 
-
 export type QueryGetLogicFunctionSourceCodeArgs = {
   input: LogicFunctionIdInput;
 };
-
 
 export type QueryGetModelsDevSuggestionsArgs = {
   providerType: Scalars['String'];
 };
 
-
 export type QueryGetPageLayoutArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryGetPageLayoutTabArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetPageLayoutTabsArgs = {
   pageLayoutId: Scalars['String'];
 };
-
 
 export type QueryGetPageLayoutWidgetArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetPageLayoutWidgetsArgs = {
   pageLayoutTabId: Scalars['String'];
 };
-
 
 export type QueryGetPageLayoutsArgs = {
   objectMetadataId?: InputMaybe<Scalars['String']>;
   pageLayoutType?: InputMaybe<PageLayoutType>;
 };
 
-
 export type QueryGetPublicWorkspaceDataByDomainArgs = {
   origin?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryGetQueueJobsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -4576,155 +4340,125 @@ export type QueryGetQueueJobsArgs = {
   state: JobState;
 };
 
-
 export type QueryGetQueueMetricsArgs = {
   queueName: Scalars['String'];
   timeRange?: InputMaybe<QueueMetricsTimeRange>;
 };
 
-
 export type QueryGetToolInputSchemaArgs = {
   toolName: Scalars['String'];
 };
-
 
 export type QueryGetUsageAnalyticsArgs = {
   input?: InputMaybe<UsageAnalyticsInput>;
 };
 
-
 export type QueryGetViewArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryGetViewFieldArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetViewFieldGroupArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryGetViewFieldGroupsArgs = {
   viewId: Scalars['String'];
 };
 
-
 export type QueryGetViewFieldsArgs = {
   viewId: Scalars['String'];
 };
-
 
 export type QueryGetViewFilterArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetViewFilterGroupArgs = {
   id: Scalars['String'];
 };
-
 
 export type QueryGetViewFilterGroupsArgs = {
   viewId?: InputMaybe<Scalars['String']>;
 };
 
-
 export type QueryGetViewFiltersArgs = {
   viewId?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryGetViewGroupArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetViewGroupsArgs = {
   viewId?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryGetViewSortArgs = {
   id: Scalars['String'];
 };
 
-
 export type QueryGetViewSortsArgs = {
   viewId?: InputMaybe<Scalars['String']>;
 };
-
 
 export type QueryGetViewsArgs = {
   objectMetadataId?: InputMaybe<Scalars['String']>;
   viewTypes?: InputMaybe<Array<ViewType>>;
 };
 
-
 export type QueryIndexArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type QueryIndexMetadatasArgs = {
   filter?: IndexFilter;
   paging?: CursorPaging;
 };
 
-
 export type QueryLineChartDataArgs = {
   input: LineChartDataInput;
 };
-
 
 export type QueryMyCalendarChannelsArgs = {
   connectedAccountId?: InputMaybe<Scalars['UUID']>;
 };
 
-
 export type QueryMyMessageChannelsArgs = {
   connectedAccountId?: InputMaybe<Scalars['UUID']>;
 };
-
 
 export type QueryMyMessageFoldersArgs = {
   messageChannelId?: InputMaybe<Scalars['UUID']>;
 };
 
-
 export type QueryNavigationMenuItemArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type QueryObjectArgs = {
   id: Scalars['UUID'];
 };
-
 
 export type QueryObjectsArgs = {
   filter?: ObjectFilter;
   paging?: CursorPaging;
 };
 
-
 export type QueryPieChartDataArgs = {
   input: PieChartDataInput;
 };
-
 
 export type QuerySkillArgs = {
   id: Scalars['UUID'];
 };
 
-
 export type QueryValidatePasswordResetTokenArgs = {
   passwordResetToken: Scalars['String'];
 };
-
 
 export type QueryWebhookArgs = {
   id: Scalars['UUID'];
@@ -5070,11 +4804,9 @@ export type Subscription = {
   onEventSubscription?: Maybe<EventSubscription>;
 };
 
-
 export type SubscriptionLogicFunctionLogsArgs = {
   input: LogicFunctionLogsInput;
 };
-
 
 export type SubscriptionOnEventSubscriptionArgs = {
   eventStreamId: Scalars['String'];
@@ -6232,7 +5964,6 @@ export type ActivateSkillMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type ActivateSkillMutation = { __typename?: 'Mutation', activateSkill: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } };
 
 export type AssignRoleToAgentMutationVariables = Exact<{
@@ -6240,11 +5971,9 @@ export type AssignRoleToAgentMutationVariables = Exact<{
   roleId: Scalars['UUID'];
 }>;
 
-
 export type AssignRoleToAgentMutation = { __typename?: 'Mutation', assignRoleToAgent: boolean };
 
 export type CreateChatThreadMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type CreateChatThreadMutation = { __typename?: 'Mutation', createChatThread: { __typename?: 'AgentChatThread', id: string, title?: string | null, createdAt: string, updatedAt: string } };
 
@@ -6252,13 +5981,11 @@ export type CreateOneAgentMutationVariables = Exact<{
   input: CreateAgentInput;
 }>;
 
-
 export type CreateOneAgentMutation = { __typename?: 'Mutation', createOneAgent: { __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
 export type CreateSkillMutationVariables = Exact<{
   input: CreateSkillInput;
 }>;
-
 
 export type CreateSkillMutation = { __typename?: 'Mutation', createSkill: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } };
 
@@ -6266,13 +5993,11 @@ export type DeactivateSkillMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type DeactivateSkillMutation = { __typename?: 'Mutation', deactivateSkill: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } };
 
 export type DeleteOneAgentMutationVariables = Exact<{
   input: AgentIdInput;
 }>;
-
 
 export type DeleteOneAgentMutation = { __typename?: 'Mutation', deleteOneAgent: { __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
@@ -6280,20 +6005,17 @@ export type DeleteSkillMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type DeleteSkillMutation = { __typename?: 'Mutation', deleteSkill: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } };
 
 export type EvaluateAgentTurnMutationVariables = Exact<{
   turnId: Scalars['UUID'];
 }>;
 
-
 export type EvaluateAgentTurnMutation = { __typename?: 'Mutation', evaluateAgentTurn: { __typename?: 'AgentTurnEvaluation', id: string, turnId: string, score: number, comment?: string | null, createdAt: string } };
 
 export type RemoveRoleFromAgentMutationVariables = Exact<{
   agentId: Scalars['UUID'];
 }>;
-
 
 export type RemoveRoleFromAgentMutation = { __typename?: 'Mutation', removeRoleFromAgent: boolean };
 
@@ -6302,13 +6024,11 @@ export type RunEvaluationInputMutationVariables = Exact<{
   input: Scalars['String'];
 }>;
 
-
 export type RunEvaluationInputMutation = { __typename?: 'Mutation', runEvaluationInput: { __typename?: 'AgentTurn', id: string, threadId: string, agentId?: string | null, createdAt: string, evaluations: Array<{ __typename?: 'AgentTurnEvaluation', id: string, score: number, comment?: string | null, createdAt: string }> } };
 
 export type UpdateOneAgentMutationVariables = Exact<{
   input: UpdateAgentInput;
 }>;
-
 
 export type UpdateOneAgentMutation = { __typename?: 'Mutation', updateOneAgent: { __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
@@ -6316,23 +6036,19 @@ export type UpdateSkillMutationVariables = Exact<{
   input: UpdateSkillInput;
 }>;
 
-
 export type UpdateSkillMutation = { __typename?: 'Mutation', updateSkill: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } };
 
 export type UploadAiChatFileMutationVariables = Exact<{
   file: Scalars['Upload'];
 }>;
 
-
 export type UploadAiChatFileMutation = { __typename?: 'Mutation', uploadAIChatFile: { __typename?: 'FileWithSignedUrl', id: string, path: string, size: number, createdAt: string, url: string } };
 
 export type FindManyAgentsQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type FindManyAgentsQuery = { __typename?: 'Query', findManyAgents: Array<{ __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string }> };
 
 export type FindManySkillsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManySkillsQuery = { __typename?: 'Query', skills: Array<{ __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string }> };
 
@@ -6340,13 +6056,11 @@ export type FindOneAgentQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type FindOneAgentQuery = { __typename?: 'Query', findOneAgent: { __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
 export type FindOneSkillQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
-
 
 export type FindOneSkillQuery = { __typename?: 'Query', skill?: { __typename?: 'Skill', id: string, name: string, label: string, description?: string | null, icon?: string | null, content: string, isCustom: boolean, isActive: boolean, createdAt: string, updatedAt: string } | null };
 
@@ -6354,13 +6068,11 @@ export type GetAgentTurnsQueryVariables = Exact<{
   agentId: Scalars['UUID'];
 }>;
 
-
 export type GetAgentTurnsQuery = { __typename?: 'Query', agentTurns: Array<{ __typename?: 'AgentTurn', id: string, threadId: string, agentId?: string | null, createdAt: string, evaluations: Array<{ __typename?: 'AgentTurnEvaluation', id: string, score: number, comment?: string | null, createdAt: string }>, messages: Array<{ __typename?: 'AgentMessage', id: string, role: string, createdAt: string, parts: Array<{ __typename?: 'AgentMessagePart', id: string, type: string, textContent?: string | null, reasoningContent?: string | null, toolName?: string | null, toolCallId?: string | null, toolInput?: any | null, toolOutput?: any | null, errorMessage?: string | null, state?: string | null, errorDetails?: any | null, sourceUrlSourceId?: string | null, sourceUrlUrl?: string | null, sourceUrlTitle?: string | null, sourceDocumentSourceId?: string | null, sourceDocumentMediaType?: string | null, sourceDocumentTitle?: string | null, sourceDocumentFilename?: string | null, fileMediaType?: string | null, fileFilename?: string | null, fileUrl?: string | null, providerMetadata?: any | null }> }> }> };
 
 export type GetChatMessagesQueryVariables = Exact<{
   threadId: Scalars['UUID'];
 }>;
-
 
 export type GetChatMessagesQuery = { __typename?: 'Query', chatMessages: Array<{ __typename?: 'AgentMessage', id: string, threadId: string, turnId: string, role: string, createdAt: string, parts: Array<{ __typename?: 'AgentMessagePart', id: string, messageId: string, orderIndex: number, type: string, textContent?: string | null, reasoningContent?: string | null, toolName?: string | null, toolCallId?: string | null, toolInput?: any | null, toolOutput?: any | null, state?: string | null, errorMessage?: string | null, errorDetails?: any | null, sourceUrlSourceId?: string | null, sourceUrlUrl?: string | null, sourceUrlTitle?: string | null, sourceDocumentSourceId?: string | null, sourceDocumentMediaType?: string | null, sourceDocumentTitle?: string | null, sourceDocumentFilename?: string | null, fileMediaType?: string | null, fileFilename?: string | null, fileUrl?: string | null, fileId?: string | null, providerMetadata?: any | null, createdAt: string }> }> };
 
@@ -6368,18 +6080,15 @@ export type GetChatThreadsQueryVariables = Exact<{
   paging?: InputMaybe<CursorPaging>;
 }>;
 
-
 export type GetChatThreadsQuery = { __typename?: 'Query', chatThreads: { __typename?: 'AgentChatThreadConnection', edges: Array<{ __typename?: 'AgentChatThreadEdge', cursor: any, node: { __typename?: 'AgentChatThread', id: string, title?: string | null, totalInputTokens: number, totalOutputTokens: number, contextWindowTokens?: number | null, conversationSize: number, totalInputCredits: number, totalOutputCredits: number, createdAt: string, updatedAt: string } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: any | null, hasNextPage?: boolean | null } } };
 
 export type GetToolIndexQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetToolIndexQuery = { __typename?: 'Query', getToolIndex: Array<{ __typename?: 'ToolIndexEntry', name: string, description: string, category: string, objectName?: string | null }> };
 
 export type GetToolInputSchemaQueryVariables = Exact<{
   toolName: Scalars['String'];
 }>;
-
 
 export type GetToolInputSchemaQuery = { __typename?: 'Query', getToolInputSchema?: any | null };
 
@@ -6390,13 +6099,11 @@ export type TrackAnalyticsMutationVariables = Exact<{
   properties?: InputMaybe<Scalars['JSON']>;
 }>;
 
-
 export type TrackAnalyticsMutation = { __typename?: 'Mutation', trackAnalytics: { __typename?: 'Analytics', success: boolean } };
 
 export type ApplicationFieldsFragment = { __typename?: 'Application', id: string, name: string, description?: string | null, version?: string | null, universalIdentifier: string, applicationRegistrationId?: string | null, canBeUninstalled: boolean, defaultRoleId?: string | null, settingsCustomTabFrontComponentId?: string | null, availablePackages: any, applicationRegistration?: { __typename?: 'ApplicationRegistrationSummary', id: string, latestAvailableVersion?: string | null, sourceType: ApplicationRegistrationSourceType } | null, applicationVariables: Array<{ __typename?: 'ApplicationVariable', id: string, key: string, value: string, description: string, isSecret: boolean }>, agents: Array<{ __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string }>, objects: Array<{ __typename?: 'Object', id: string, universalIdentifier: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, color?: string | null, description?: string | null, icon?: string | null, isCustom: boolean, isRemote: boolean, isActive: boolean, isSystem: boolean, isUIReadOnly: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, applicationId: string, shortcut?: string | null, isLabelSyncedWithName: boolean, isSearchable: boolean, duplicateCriteria?: Array<Array<string>> | null, indexMetadataList: Array<{ __typename?: 'Index', id: string, createdAt: string, updatedAt: string, name: string, indexWhereClause?: string | null, indexType: IndexType, isUnique: boolean, isCustom?: boolean | null, indexFieldMetadataList: Array<{ __typename?: 'IndexField', id: string, fieldMetadataId: string, createdAt: string, updatedAt: string, order: number }> }>, fieldsList: Array<{ __typename?: 'Field', id: string, universalIdentifier: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isSystem?: boolean | null, isUIReadOnly?: boolean | null, isNullable?: boolean | null, isUnique?: boolean | null, createdAt: string, updatedAt: string, defaultValue?: any | null, options?: any | null, settings?: any | null, isLabelSyncedWithName?: boolean | null, morphId?: string | null, applicationId: string, relation?: { __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } } | null, morphRelations?: Array<{ __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } }> | null }> }>, logicFunctions: Array<{ __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string }> };
 
 export type FindManyApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyApplicationsQuery = { __typename?: 'Query', findManyApplications: Array<{ __typename?: 'Application', id: string, name: string, description?: string | null, version?: string | null, universalIdentifier: string, applicationRegistrationId?: string | null, applicationRegistration?: { __typename?: 'ApplicationRegistrationSummary', id: string, latestAvailableVersion?: string | null, sourceType: ApplicationRegistrationSourceType } | null }> };
 
@@ -6404,13 +6111,11 @@ export type FindOneApplicationQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type FindOneApplicationQuery = { __typename?: 'Query', findOneApplication: { __typename?: 'Application', id: string, name: string, description?: string | null, version?: string | null, universalIdentifier: string, applicationRegistrationId?: string | null, canBeUninstalled: boolean, defaultRoleId?: string | null, settingsCustomTabFrontComponentId?: string | null, availablePackages: any, applicationRegistration?: { __typename?: 'ApplicationRegistrationSummary', id: string, latestAvailableVersion?: string | null, sourceType: ApplicationRegistrationSourceType } | null, applicationVariables: Array<{ __typename?: 'ApplicationVariable', id: string, key: string, value: string, description: string, isSecret: boolean }>, agents: Array<{ __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string }>, objects: Array<{ __typename?: 'Object', id: string, universalIdentifier: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, color?: string | null, description?: string | null, icon?: string | null, isCustom: boolean, isRemote: boolean, isActive: boolean, isSystem: boolean, isUIReadOnly: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, applicationId: string, shortcut?: string | null, isLabelSyncedWithName: boolean, isSearchable: boolean, duplicateCriteria?: Array<Array<string>> | null, indexMetadataList: Array<{ __typename?: 'Index', id: string, createdAt: string, updatedAt: string, name: string, indexWhereClause?: string | null, indexType: IndexType, isUnique: boolean, isCustom?: boolean | null, indexFieldMetadataList: Array<{ __typename?: 'IndexField', id: string, fieldMetadataId: string, createdAt: string, updatedAt: string, order: number }> }>, fieldsList: Array<{ __typename?: 'Field', id: string, universalIdentifier: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isSystem?: boolean | null, isUIReadOnly?: boolean | null, isNullable?: boolean | null, isUnique?: boolean | null, createdAt: string, updatedAt: string, defaultValue?: any | null, options?: any | null, settings?: any | null, isLabelSyncedWithName?: boolean | null, morphId?: string | null, applicationId: string, relation?: { __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } } | null, morphRelations?: Array<{ __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } }> | null }> }>, logicFunctions: Array<{ __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string }> } };
 
 export type FindOneApplicationByUniversalIdentifierQueryVariables = Exact<{
   universalIdentifier: Scalars['UUID'];
 }>;
-
 
 export type FindOneApplicationByUniversalIdentifierQuery = { __typename?: 'Query', findOneApplication: { __typename?: 'Application', id: string } };
 
@@ -6431,14 +6136,12 @@ export type AuthorizeAppMutationVariables = Exact<{
   state?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type AuthorizeAppMutation = { __typename?: 'Mutation', authorizeApp: { __typename?: 'AuthorizeApp', redirectUrl: string } };
 
 export type EmailPasswordResetLinkMutationVariables = Exact<{
   email: Scalars['String'];
   workspaceId?: InputMaybe<Scalars['UUID']>;
 }>;
-
 
 export type EmailPasswordResetLinkMutation = { __typename?: 'Mutation', emailPasswordResetLink: { __typename?: 'EmailPasswordResetLink', success: boolean } };
 
@@ -6447,11 +6150,9 @@ export type GenerateApiKeyTokenMutationVariables = Exact<{
   expiresAt: Scalars['String'];
 }>;
 
-
 export type GenerateApiKeyTokenMutation = { __typename?: 'Mutation', generateApiKeyToken: { __typename?: 'ApiKeyToken', token: string } };
 
 export type GenerateTransientTokenMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GenerateTransientTokenMutation = { __typename?: 'Mutation', generateTransientToken: { __typename?: 'TransientToken', transientToken: { __typename?: 'AuthToken', token: string } } };
 
@@ -6459,7 +6160,6 @@ export type GetAuthTokensFromLoginTokenMutationVariables = Exact<{
   loginToken: Scalars['String'];
   origin: Scalars['String'];
 }>;
-
 
 export type GetAuthTokensFromLoginTokenMutation = { __typename?: 'Mutation', getAuthTokensFromLoginToken: { __typename?: 'AuthTokens', tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
@@ -6470,13 +6170,11 @@ export type GetAuthTokensFromOtpMutationVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type GetAuthTokensFromOtpMutation = { __typename?: 'Mutation', getAuthTokensFromOTP: { __typename?: 'AuthTokens', tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
 export type GetAuthorizationUrlForSsoMutationVariables = Exact<{
   input: GetAuthorizationUrlForSsoInput;
 }>;
-
 
 export type GetAuthorizationUrlForSsoMutation = { __typename?: 'Mutation', getAuthorizationUrlForSSO: { __typename?: 'GetAuthorizationUrlForSSO', id: string, type: string, authorizationURL: string } };
 
@@ -6487,14 +6185,12 @@ export type GetLoginTokenFromCredentialsMutationVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type GetLoginTokenFromCredentialsMutation = { __typename?: 'Mutation', getLoginTokenFromCredentials: { __typename?: 'LoginToken', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } };
 
 export type ImpersonateMutationVariables = Exact<{
   userId: Scalars['UUID'];
   workspaceId: Scalars['UUID'];
 }>;
-
 
 export type ImpersonateMutation = { __typename?: 'Mutation', impersonate: { __typename?: 'Impersonate', workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null } }, loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } };
 
@@ -6503,18 +6199,15 @@ export type InitiateOtpProvisioningMutationVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type InitiateOtpProvisioningMutation = { __typename?: 'Mutation', initiateOTPProvisioning: { __typename?: 'InitiateTwoFactorAuthenticationProvisioning', uri: string } };
 
 export type InitiateOtpProvisioningForAuthenticatedUserMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type InitiateOtpProvisioningForAuthenticatedUserMutation = { __typename?: 'Mutation', initiateOTPProvisioningForAuthenticatedUser: { __typename?: 'InitiateTwoFactorAuthenticationProvisioning', uri: string } };
 
 export type RenewTokenMutationVariables = Exact<{
   appToken: Scalars['String'];
 }>;
-
 
 export type RenewTokenMutation = { __typename?: 'Mutation', renewToken: { __typename?: 'AuthTokens', tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
@@ -6523,13 +6216,11 @@ export type ResendEmailVerificationTokenMutationVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type ResendEmailVerificationTokenMutation = { __typename?: 'Mutation', resendEmailVerificationToken: { __typename?: 'ResendEmailVerificationToken', success: boolean } };
 
 export type DeleteTwoFactorAuthenticationMethodMutationVariables = Exact<{
   twoFactorAuthenticationMethodId: Scalars['UUID'];
 }>;
-
 
 export type DeleteTwoFactorAuthenticationMethodMutation = { __typename?: 'Mutation', deleteTwoFactorAuthenticationMethod: { __typename?: 'DeleteTwoFactorAuthenticationMethod', success: boolean } };
 
@@ -6538,7 +6229,6 @@ export type SignInMutationVariables = Exact<{
   password: Scalars['String'];
   captchaToken?: InputMaybe<Scalars['String']>;
 }>;
-
 
 export type SignInMutation = { __typename?: 'Mutation', signIn: { __typename?: 'AvailableWorkspacesAndAccessTokens', availableWorkspaces: { __typename?: 'AvailableWorkspaces', availableWorkspacesForSignIn: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }>, availableWorkspacesForSignUp: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }> }, tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
@@ -6550,11 +6240,9 @@ export type SignUpMutationVariables = Exact<{
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'AvailableWorkspacesAndAccessTokens', availableWorkspaces: { __typename?: 'AvailableWorkspaces', availableWorkspacesForSignIn: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }>, availableWorkspacesForSignUp: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }> }, tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
 export type SignUpInNewWorkspaceMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type SignUpInNewWorkspaceMutation = { __typename?: 'Mutation', signUpInNewWorkspace: { __typename?: 'SignUp', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null } } } };
 
@@ -6569,14 +6257,12 @@ export type SignUpInWorkspaceMutationVariables = Exact<{
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type SignUpInWorkspaceMutation = { __typename?: 'Mutation', signUpInWorkspace: { __typename?: 'SignUp', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, workspace: { __typename?: 'WorkspaceUrlsAndId', id: string, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null } } } };
 
 export type UpdatePasswordViaResetTokenMutationVariables = Exact<{
   token: Scalars['String'];
   newPassword: Scalars['String'];
 }>;
-
 
 export type UpdatePasswordViaResetTokenMutation = { __typename?: 'Mutation', updatePasswordViaResetToken: { __typename?: 'InvalidatePassword', success: boolean } };
 
@@ -6587,7 +6273,6 @@ export type VerifyEmailAndGetLoginTokenMutationVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type VerifyEmailAndGetLoginTokenMutation = { __typename?: 'Mutation', verifyEmailAndGetLoginToken: { __typename?: 'VerifyEmailAndGetLoginToken', loginToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null } } };
 
 export type VerifyEmailAndGetWorkspaceAgnosticTokenMutationVariables = Exact<{
@@ -6596,7 +6281,6 @@ export type VerifyEmailAndGetWorkspaceAgnosticTokenMutationVariables = Exact<{
   captchaToken?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type VerifyEmailAndGetWorkspaceAgnosticTokenMutation = { __typename?: 'Mutation', verifyEmailAndGetWorkspaceAgnosticToken: { __typename?: 'AvailableWorkspacesAndAccessTokens', availableWorkspaces: { __typename?: 'AvailableWorkspaces', availableWorkspacesForSignIn: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }>, availableWorkspacesForSignUp: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }> }, tokens: { __typename?: 'AuthTokenPair', accessOrWorkspaceAgnosticToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, refreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } } };
 
 export type CheckUserExistsQueryVariables = Exact<{
@@ -6604,13 +6288,11 @@ export type CheckUserExistsQueryVariables = Exact<{
   captchaToken?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type CheckUserExistsQuery = { __typename?: 'Query', checkUserExists: { __typename?: 'CheckUserExist', exists: boolean, availableWorkspacesCount: number, isEmailVerified: boolean } };
 
 export type FindApplicationRegistrationByClientIdQueryVariables = Exact<{
   clientId: Scalars['String'];
 }>;
-
 
 export type FindApplicationRegistrationByClientIdQuery = { __typename?: 'Query', findApplicationRegistrationByClientId?: { __typename?: 'PublicApplicationRegistration', id: string, logoUrl?: string | null, name: string, oAuthScopes: Array<string>, websiteUrl?: string | null } | null };
 
@@ -6618,20 +6300,17 @@ export type GetPublicWorkspaceDataByDomainQueryVariables = Exact<{
   origin: Scalars['String'];
 }>;
 
-
 export type GetPublicWorkspaceDataByDomainQuery = { __typename?: 'Query', getPublicWorkspaceDataByDomain: { __typename?: 'PublicWorkspaceData', id: string, logo?: string | null, displayName?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, authProviders: { __typename?: 'AuthProviders', google: boolean, magicLink: boolean, password: boolean, microsoft: boolean, sso: Array<{ __typename?: 'SSOIdentityProvider', id: string, name: string, type: IdentityProviderType, status: SsoIdentityProviderStatus, issuer: string }> }, authBypassProviders?: { __typename?: 'AuthBypassProviders', google: boolean, password: boolean, microsoft: boolean } | null } };
 
 export type ValidatePasswordResetTokenQueryVariables = Exact<{
   token: Scalars['String'];
 }>;
 
-
 export type ValidatePasswordResetTokenQuery = { __typename?: 'Query', validatePasswordResetToken: { __typename?: 'ValidatePasswordResetToken', id: string, email: string, hasPassword: boolean } };
 
 export type CommandMenuItemFieldsFragment = { __typename?: 'CommandMenuItem', id: string, workflowVersionId?: string | null, frontComponentId?: string | null, engineComponentKey: EngineComponentKey, label: string, icon?: string | null, shortLabel?: string | null, position: number, isPinned: boolean, hotKeys?: Array<string> | null, conditionalAvailabilityExpression?: string | null, availabilityType: CommandMenuItemAvailabilityType, availabilityObjectMetadataId?: string | null, frontComponent?: { __typename?: 'FrontComponent', id: string, name: string, isHeadless: boolean } | null };
 
 export type FindManyCommandMenuItemsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyCommandMenuItemsQuery = { __typename?: 'Query', commandMenuItems: Array<{ __typename?: 'CommandMenuItem', id: string, workflowVersionId?: string | null, frontComponentId?: string | null, engineComponentKey: EngineComponentKey, label: string, icon?: string | null, shortLabel?: string | null, position: number, isPinned: boolean, hotKeys?: Array<string> | null, conditionalAvailabilityExpression?: string | null, availabilityType: CommandMenuItemAvailabilityType, availabilityObjectMetadataId?: string | null, frontComponent?: { __typename?: 'FrontComponent', id: string, name: string, isHeadless: boolean } | null }> };
 
@@ -6643,13 +6322,11 @@ export type DuplicateDashboardMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type DuplicateDashboardMutation = { __typename?: 'Mutation', duplicateDashboard: { __typename?: 'DuplicatedDashboard', id: string, title?: string | null, pageLayoutId?: string | null, position: number, createdAt: string, updatedAt: string } };
 
 export type FindOnePageLayoutQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type FindOnePageLayoutQuery = { __typename?: 'Query', getPageLayout?: { __typename?: 'PageLayout', id: string, name: string, objectMetadataId?: string | null, type: PageLayoutType, defaultTabToFocusOnMobileAndSidePanelId?: string | null, createdAt: string, updatedAt: string, tabs?: Array<{ __typename?: 'PageLayoutTab', id: string, applicationId: string, title: string, icon?: string | null, position: number, layoutMode?: PageLayoutTabLayoutMode | null, isOverridden: boolean, pageLayoutId: string, createdAt: string, updatedAt: string, widgets?: Array<{ __typename?: 'PageLayoutWidget', id: string, title: string, type: WidgetType, objectMetadataId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, conditionalDisplay?: any | null, pageLayoutTabId: string, gridPosition: { __typename?: 'GridPosition', column: number, columnSpan: number, row: number, rowSpan: number }, position?: { __typename?: 'PageLayoutWidgetCanvasPosition', layoutMode: PageLayoutTabLayoutMode } | { __typename?: 'PageLayoutWidgetGridPosition', layoutMode: PageLayoutTabLayoutMode, row: number, column: number, rowSpan: number, columnSpan: number } | { __typename?: 'PageLayoutWidgetVerticalListPosition', layoutMode: PageLayoutTabLayoutMode, index: number } | null, configuration: { __typename?: 'AggregateChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, label?: string | null, displayDataLabel?: boolean | null, format?: string | null, description?: string | null, filter?: any | null, prefix?: string | null, suffix?: string | null, timezone?: string | null, firstDayOfTheWeek?: number | null, ratioAggregateConfig?: { __typename?: 'RatioAggregateConfig', fieldMetadataId: string, optionValue: string } | null } | { __typename?: 'BarChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, groupMode?: BarChartGroupMode | null, layout: BarChartLayout, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'CalendarConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'EmailsConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldConfiguration', configurationType: WidgetConfigurationType, fieldDisplayMode: FieldDisplayMode, fieldMetadataId: string } | { __typename?: 'FieldRichTextConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldsConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null, newFieldDefaultVisibility?: boolean | null, shouldAllowUserToSeeHiddenFields?: boolean | null } | { __typename?: 'FilesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FrontComponentConfiguration', configurationType: WidgetConfigurationType, frontComponentId: string } | { __typename?: 'GaugeChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, displayDataLabel?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'IframeConfiguration', configurationType: WidgetConfigurationType, url?: string | null } | { __typename?: 'LineChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, isStacked?: boolean | null, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'NotesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'PieChartConfiguration', configurationType: WidgetConfigurationType, groupByFieldMetadataId: string, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, groupBySubFieldName?: string | null, dateGranularity?: ObjectRecordGroupByDateGranularity | null, orderBy?: GraphOrderBy | null, manualSortOrder?: Array<string> | null, displayDataLabel?: boolean | null, showCenterMetric?: boolean | null, displayLegend?: boolean | null, hideEmptyCategory?: boolean | null, splitMultiValueFields?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'RecordTableConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null } | { __typename?: 'StandaloneRichTextConfiguration', configurationType: WidgetConfigurationType, body: { __typename?: 'RichTextBody', blocknote?: string | null, markdown?: string | null } } | { __typename?: 'TasksConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'TimelineConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'ViewConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowRunConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowVersionConfiguration', configurationType: WidgetConfigurationType } }> | null }> | null } | null };
 
@@ -6658,13 +6335,11 @@ export type UploadFilesFieldFileMutationVariables = Exact<{
   fieldMetadataId: Scalars['String'];
 }>;
 
-
 export type UploadFilesFieldFileMutation = { __typename?: 'Mutation', uploadFilesFieldFile: { __typename?: 'FileWithSignedUrl', id: string, path: string, size: number, createdAt: string, url: string } };
 
 export type UploadWorkflowFileMutationVariables = Exact<{
   file: Scalars['Upload'];
 }>;
-
 
 export type UploadWorkflowFileMutation = { __typename?: 'Mutation', uploadWorkflowFile: { __typename?: 'FileWithSignedUrl', id: string, path: string, size: number, createdAt: string, url: string } };
 
@@ -6672,18 +6347,15 @@ export type RenewApplicationTokenMutationVariables = Exact<{
   applicationRefreshToken: Scalars['String'];
 }>;
 
-
 export type RenewApplicationTokenMutation = { __typename?: 'Mutation', renewApplicationToken: { __typename?: 'ApplicationTokenPair', applicationAccessToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, applicationRefreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } };
 
 export type FindManyFrontComponentsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyFrontComponentsQuery = { __typename?: 'Query', frontComponents: Array<{ __typename?: 'FrontComponent', id: string, name: string, applicationId: string }> };
 
 export type FindOneFrontComponentQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
-
 
 export type FindOneFrontComponentQuery = { __typename?: 'Query', frontComponent?: { __typename?: 'FrontComponent', id: string, name: string, applicationId: string, builtComponentChecksum: string, isHeadless: boolean, usesSdkClient: boolean, applicationTokenPair?: { __typename?: 'ApplicationTokenPair', applicationAccessToken: { __typename?: 'AuthToken', token: string, expiresAt: string }, applicationRefreshToken: { __typename?: 'AuthToken', token: string, expiresAt: string } } | null } | null };
 
@@ -6693,13 +6365,11 @@ export type CreateOneLogicFunctionMutationVariables = Exact<{
   input: CreateLogicFunctionFromSourceInput;
 }>;
 
-
 export type CreateOneLogicFunctionMutation = { __typename?: 'Mutation', createOneLogicFunction: { __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
 export type DeleteOneLogicFunctionMutationVariables = Exact<{
   input: LogicFunctionIdInput;
 }>;
-
 
 export type DeleteOneLogicFunctionMutation = { __typename?: 'Mutation', deleteOneLogicFunction: { __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
@@ -6707,13 +6377,11 @@ export type ExecuteOneLogicFunctionMutationVariables = Exact<{
   input: ExecuteOneLogicFunctionInput;
 }>;
 
-
 export type ExecuteOneLogicFunctionMutation = { __typename?: 'Mutation', executeOneLogicFunction: { __typename?: 'LogicFunctionExecutionResult', data?: any | null, logs: string, duration: number, status: LogicFunctionExecutionStatus, error?: any | null } };
 
 export type UpdateOneLogicFunctionMutationVariables = Exact<{
   input: UpdateLogicFunctionFromSourceInput;
 }>;
-
 
 export type UpdateOneLogicFunctionMutation = { __typename?: 'Mutation', updateOneLogicFunction: boolean };
 
@@ -6721,11 +6389,9 @@ export type FindManyAvailablePackagesQueryVariables = Exact<{
   input: LogicFunctionIdInput;
 }>;
 
-
 export type FindManyAvailablePackagesQuery = { __typename?: 'Query', getAvailablePackages: any };
 
 export type FindManyLogicFunctionsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyLogicFunctionsQuery = { __typename?: 'Query', findManyLogicFunctions: Array<{ __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string }> };
 
@@ -6733,13 +6399,11 @@ export type FindOneLogicFunctionQueryVariables = Exact<{
   input: LogicFunctionIdInput;
 }>;
 
-
 export type FindOneLogicFunctionQuery = { __typename?: 'Query', findOneLogicFunction: { __typename?: 'LogicFunction', id: string, name: string, description?: string | null, runtime: string, timeoutSeconds: number, sourceHandlerPath: string, handlerName: string, toolInputSchema?: any | null, isTool: boolean, cronTriggerSettings?: any | null, databaseEventTriggerSettings?: any | null, httpRouteTriggerSettings?: any | null, applicationId?: string | null, createdAt: string, updatedAt: string } };
 
 export type GetLogicFunctionSourceCodeQueryVariables = Exact<{
   input: LogicFunctionIdInput;
 }>;
-
 
 export type GetLogicFunctionSourceCodeQuery = { __typename?: 'Query', getLogicFunctionSourceCode?: string | null };
 
@@ -6750,7 +6414,6 @@ export type InstallMarketplaceAppMutationVariables = Exact<{
   version?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type InstallMarketplaceAppMutation = { __typename?: 'Mutation', installMarketplaceApp: boolean };
 
 export type UpgradeApplicationMutationVariables = Exact<{
@@ -6758,18 +6421,15 @@ export type UpgradeApplicationMutationVariables = Exact<{
   targetVersion: Scalars['String'];
 }>;
 
-
 export type UpgradeApplicationMutation = { __typename?: 'Mutation', upgradeApplication: boolean };
 
 export type FindManyMarketplaceAppsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyMarketplaceAppsQuery = { __typename?: 'Query', findManyMarketplaceApps: Array<{ __typename?: 'MarketplaceApp', id: string, name: string, description: string, icon: string, version: string, author: string, category: string, logo?: string | null, screenshots: Array<string>, aboutDescription: string, providers: Array<string>, websiteUrl?: string | null, termsUrl?: string | null, sourcePackage?: string | null, isFeatured: boolean, objects: Array<{ __typename?: 'MarketplaceAppObject', universalIdentifier: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, fields: Array<{ __typename?: 'MarketplaceAppField', universalIdentifier?: string | null, name: string, type: string, label: string, description?: string | null, icon?: string | null }> }>, fields: Array<{ __typename?: 'MarketplaceAppField', name: string, type: string, label: string, description?: string | null, icon?: string | null, objectUniversalIdentifier?: string | null }>, logicFunctions: Array<{ __typename?: 'MarketplaceAppLogicFunction', name: string, description?: string | null, timeoutSeconds?: number | null }>, frontComponents: Array<{ __typename?: 'MarketplaceAppFrontComponent', name: string, description?: string | null }>, defaultRole?: { __typename?: 'MarketplaceAppDefaultRole', id: string, label: string, description?: string | null, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canUpdateAllSettings: boolean, canAccessAllTools: boolean, permissionFlags: Array<string>, objectPermissions: Array<{ __typename?: 'MarketplaceAppRoleObjectPermission', objectUniversalIdentifier: string, canReadObjectRecords?: boolean | null, canUpdateObjectRecords?: boolean | null, canSoftDeleteObjectRecords?: boolean | null, canDestroyObjectRecords?: boolean | null }>, fieldPermissions: Array<{ __typename?: 'MarketplaceAppRoleFieldPermission', objectUniversalIdentifier: string, fieldUniversalIdentifier: string, canReadFieldValue?: boolean | null, canUpdateFieldValue?: boolean | null }> } | null }> };
 
 export type FindOneMarketplaceAppQueryVariables = Exact<{
   universalIdentifier: Scalars['String'];
 }>;
-
 
 export type FindOneMarketplaceAppQuery = { __typename?: 'Query', findOneMarketplaceApp: { __typename?: 'MarketplaceApp', id: string, name: string, description: string, icon: string, version: string, author: string, category: string, logo?: string | null, screenshots: Array<string>, aboutDescription: string, providers: Array<string>, websiteUrl?: string | null, termsUrl?: string | null, sourcePackage?: string | null, isFeatured: boolean, objects: Array<{ __typename?: 'MarketplaceAppObject', universalIdentifier: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, fields: Array<{ __typename?: 'MarketplaceAppField', universalIdentifier?: string | null, name: string, type: string, label: string, description?: string | null, icon?: string | null }> }>, fields: Array<{ __typename?: 'MarketplaceAppField', name: string, type: string, label: string, description?: string | null, icon?: string | null, objectUniversalIdentifier?: string | null }>, logicFunctions: Array<{ __typename?: 'MarketplaceAppLogicFunction', name: string, description?: string | null, timeoutSeconds?: number | null }>, frontComponents: Array<{ __typename?: 'MarketplaceAppFrontComponent', name: string, description?: string | null }>, defaultRole?: { __typename?: 'MarketplaceAppDefaultRole', id: string, label: string, description?: string | null, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canUpdateAllSettings: boolean, canAccessAllTools: boolean, permissionFlags: Array<string>, objectPermissions: Array<{ __typename?: 'MarketplaceAppRoleObjectPermission', objectUniversalIdentifier: string, canReadObjectRecords?: boolean | null, canUpdateObjectRecords?: boolean | null, canSoftDeleteObjectRecords?: boolean | null, canDestroyObjectRecords?: boolean | null }>, fieldPermissions: Array<{ __typename?: 'MarketplaceAppRoleFieldPermission', objectUniversalIdentifier: string, fieldUniversalIdentifier: string, canReadFieldValue?: boolean | null, canUpdateFieldValue?: boolean | null }> } | null } };
 
@@ -6781,13 +6441,11 @@ export type CreateManyNavigationMenuItemsMutationVariables = Exact<{
   inputs: Array<CreateNavigationMenuItemInput> | CreateNavigationMenuItemInput;
 }>;
 
-
 export type CreateManyNavigationMenuItemsMutation = { __typename?: 'Mutation', createManyNavigationMenuItems: Array<{ __typename?: 'NavigationMenuItem', id: string, type: NavigationMenuItemType, userWorkspaceId?: string | null, targetRecordId?: string | null, targetObjectMetadataId?: string | null, viewId?: string | null, folderId?: string | null, name?: string | null, link?: string | null, icon?: string | null, color?: string | null, position: number, applicationId?: string | null, createdAt: string, updatedAt: string, targetRecordIdentifier?: { __typename?: 'RecordIdentifier', id: string, labelIdentifier: string, imageIdentifier?: string | null } | null }> };
 
 export type DeleteManyNavigationMenuItemsMutationVariables = Exact<{
   ids: Array<Scalars['UUID']> | Scalars['UUID'];
 }>;
-
 
 export type DeleteManyNavigationMenuItemsMutation = { __typename?: 'Mutation', deleteManyNavigationMenuItems: Array<{ __typename?: 'NavigationMenuItem', id: string, type: NavigationMenuItemType, userWorkspaceId?: string | null, targetRecordId?: string | null, targetObjectMetadataId?: string | null, viewId?: string | null, folderId?: string | null, name?: string | null, link?: string | null, icon?: string | null, color?: string | null, position: number, applicationId?: string | null, createdAt: string, updatedAt: string, targetRecordIdentifier?: { __typename?: 'RecordIdentifier', id: string, labelIdentifier: string, imageIdentifier?: string | null } | null }> };
 
@@ -6795,18 +6453,15 @@ export type UpdateManyNavigationMenuItemsMutationVariables = Exact<{
   inputs: Array<UpdateOneNavigationMenuItemInput> | UpdateOneNavigationMenuItemInput;
 }>;
 
-
 export type UpdateManyNavigationMenuItemsMutation = { __typename?: 'Mutation', updateManyNavigationMenuItems: Array<{ __typename?: 'NavigationMenuItem', id: string, type: NavigationMenuItemType, userWorkspaceId?: string | null, targetRecordId?: string | null, targetObjectMetadataId?: string | null, viewId?: string | null, folderId?: string | null, name?: string | null, link?: string | null, icon?: string | null, color?: string | null, position: number, applicationId?: string | null, createdAt: string, updatedAt: string, targetRecordIdentifier?: { __typename?: 'RecordIdentifier', id: string, labelIdentifier: string, imageIdentifier?: string | null } | null }> };
 
 export type FindManyNavigationMenuItemsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyNavigationMenuItemsQuery = { __typename?: 'Query', navigationMenuItems: Array<{ __typename?: 'NavigationMenuItem', id: string, type: NavigationMenuItemType, userWorkspaceId?: string | null, targetRecordId?: string | null, targetObjectMetadataId?: string | null, viewId?: string | null, folderId?: string | null, name?: string | null, link?: string | null, icon?: string | null, color?: string | null, position: number, applicationId?: string | null, createdAt: string, updatedAt: string, targetRecordIdentifier?: { __typename?: 'RecordIdentifier', id: string, labelIdentifier: string, imageIdentifier?: string | null } | null }> };
 
 export type FindOneNavigationMenuItemQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
-
 
 export type FindOneNavigationMenuItemQuery = { __typename?: 'Query', navigationMenuItem?: { __typename?: 'NavigationMenuItem', id: string, type: NavigationMenuItemType, userWorkspaceId?: string | null, targetRecordId?: string | null, targetObjectMetadataId?: string | null, viewId?: string | null, folderId?: string | null, name?: string | null, link?: string | null, icon?: string | null, color?: string | null, position: number, applicationId?: string | null, createdAt: string, updatedAt: string, targetRecordIdentifier?: { __typename?: 'RecordIdentifier', id: string, labelIdentifier: string, imageIdentifier?: string | null } | null } | null };
 
@@ -6816,13 +6471,11 @@ export type CreateOneObjectMetadataItemMutationVariables = Exact<{
   input: CreateOneObjectInput;
 }>;
 
-
 export type CreateOneObjectMetadataItemMutation = { __typename?: 'Mutation', createOneObject: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, color?: string | null, isCustom: boolean, isActive: boolean, isSearchable: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, isLabelSyncedWithName: boolean, fieldsList: Array<{ __typename?: 'Field', id: string, universalIdentifier: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isSystem?: boolean | null, isUIReadOnly?: boolean | null, isNullable?: boolean | null, isUnique?: boolean | null, createdAt: string, updatedAt: string, defaultValue?: any | null, options?: any | null, settings?: any | null, isLabelSyncedWithName?: boolean | null, morphId?: string | null, applicationId: string, relation?: { __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } } | null, morphRelations?: Array<{ __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } }> | null }> } };
 
 export type CreateOneFieldMetadataItemMutationVariables = Exact<{
   input: CreateOneFieldMetadataInput;
 }>;
-
 
 export type CreateOneFieldMetadataItemMutation = { __typename?: 'Mutation', createOneField: { __typename?: 'Field', id: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isUnique?: boolean | null, isNullable?: boolean | null, createdAt: string, updatedAt: string, settings?: any | null, defaultValue?: any | null, options?: any | null, isLabelSyncedWithName?: boolean | null, applicationId: string, object?: { __typename?: 'Object', id: string } | null, relation?: { __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } } | null, morphRelations?: Array<{ __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } }> | null } };
 
@@ -6831,7 +6484,6 @@ export type UpdateOneFieldMetadataItemMutationVariables = Exact<{
   updatePayload: UpdateFieldInput;
 }>;
 
-
 export type UpdateOneFieldMetadataItemMutation = { __typename?: 'Mutation', updateOneField: { __typename?: 'Field', id: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isUnique?: boolean | null, isNullable?: boolean | null, createdAt: string, updatedAt: string, settings?: any | null, isLabelSyncedWithName?: boolean | null, applicationId: string, object?: { __typename?: 'Object', id: string } | null } };
 
 export type UpdateOneObjectMetadataItemMutationVariables = Exact<{
@@ -6839,13 +6491,11 @@ export type UpdateOneObjectMetadataItemMutationVariables = Exact<{
   updatePayload: UpdateObjectPayload;
 }>;
 
-
 export type UpdateOneObjectMetadataItemMutation = { __typename?: 'Mutation', updateOneObject: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, color?: string | null, isCustom: boolean, isActive: boolean, isSearchable: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, isLabelSyncedWithName: boolean } };
 
 export type DeleteOneObjectMetadataItemMutationVariables = Exact<{
   idToDelete: Scalars['UUID'];
 }>;
-
 
 export type DeleteOneObjectMetadataItemMutation = { __typename?: 'Mutation', deleteOneObject: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, description?: string | null, icon?: string | null, color?: string | null, isCustom: boolean, isActive: boolean, isSearchable: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, isLabelSyncedWithName: boolean } };
 
@@ -6853,26 +6503,21 @@ export type DeleteOneFieldMetadataItemMutationVariables = Exact<{
   idToDelete: Scalars['UUID'];
 }>;
 
-
 export type DeleteOneFieldMetadataItemMutation = { __typename?: 'Mutation', deleteOneField: { __typename?: 'Field', id: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isUnique?: boolean | null, isNullable?: boolean | null, createdAt: string, updatedAt: string, settings?: any | null, applicationId: string, object?: { __typename?: 'Object', id: string } | null } };
 
 export type ObjectMetadataItemsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type ObjectMetadataItemsQuery = { __typename?: 'Query', objects: { __typename?: 'ObjectConnection', edges: Array<{ __typename?: 'ObjectEdge', node: { __typename?: 'Object', id: string, universalIdentifier: string, nameSingular: string, namePlural: string, labelSingular: string, labelPlural: string, color?: string | null, description?: string | null, icon?: string | null, isCustom: boolean, isRemote: boolean, isActive: boolean, isSystem: boolean, isUIReadOnly: boolean, createdAt: string, updatedAt: string, labelIdentifierFieldMetadataId?: string | null, imageIdentifierFieldMetadataId?: string | null, applicationId: string, shortcut?: string | null, isLabelSyncedWithName: boolean, isSearchable: boolean, duplicateCriteria?: Array<Array<string>> | null, indexMetadataList: Array<{ __typename?: 'Index', id: string, createdAt: string, updatedAt: string, name: string, indexWhereClause?: string | null, indexType: IndexType, isUnique: boolean, isCustom?: boolean | null, indexFieldMetadataList: Array<{ __typename?: 'IndexField', id: string, fieldMetadataId: string, createdAt: string, updatedAt: string, order: number }> }>, fieldsList: Array<{ __typename?: 'Field', id: string, universalIdentifier: string, type: FieldMetadataType, name: string, label: string, description?: string | null, icon?: string | null, isCustom?: boolean | null, isActive?: boolean | null, isSystem?: boolean | null, isUIReadOnly?: boolean | null, isNullable?: boolean | null, isUnique?: boolean | null, createdAt: string, updatedAt: string, defaultValue?: any | null, options?: any | null, settings?: any | null, isLabelSyncedWithName?: boolean | null, morphId?: string | null, applicationId: string, relation?: { __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } } | null, morphRelations?: Array<{ __typename?: 'Relation', type: RelationType, sourceObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, targetObjectMetadata: { __typename?: 'Object', id: string, nameSingular: string, namePlural: string }, sourceFieldMetadata: { __typename?: 'Field', id: string, name: string }, targetFieldMetadata: { __typename?: 'Field', id: string, name: string } }> | null }> } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage?: boolean | null, hasPreviousPage?: boolean | null, startCursor?: any | null, endCursor?: any | null } } };
 
 export type ObjectRecordCountsQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type ObjectRecordCountsQuery = { __typename?: 'Query', objectRecordCounts: Array<{ __typename?: 'ObjectRecordCount', objectNamePlural: string, totalCount: number }> };
 
 export type SkipBookOnboardingStepMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type SkipBookOnboardingStepMutation = { __typename?: 'Mutation', skipBookOnboardingStep: { __typename?: 'OnboardingStepSuccess', success: boolean } };
 
 export type SkipSyncEmailOnboardingStepMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type SkipSyncEmailOnboardingStepMutation = { __typename?: 'Mutation', skipSyncEmailOnboardingStep: { __typename?: 'OnboardingStepSuccess', success: boolean } };
 
@@ -6883,23 +6528,19 @@ export type UpdatePageLayoutWithTabsAndWidgetsMutationVariables = Exact<{
   input: UpdatePageLayoutWithTabsInput;
 }>;
 
-
 export type UpdatePageLayoutWithTabsAndWidgetsMutation = { __typename?: 'Mutation', updatePageLayoutWithTabsAndWidgets: { __typename?: 'PageLayout', id: string, name: string, type: PageLayoutType, objectMetadataId?: string | null, defaultTabToFocusOnMobileAndSidePanelId?: string | null, createdAt: string, updatedAt: string, deletedAt?: string | null, tabs?: Array<{ __typename?: 'PageLayoutTab', id: string, applicationId: string, title: string, icon?: string | null, position: number, layoutMode?: PageLayoutTabLayoutMode | null, isOverridden: boolean, pageLayoutId: string, createdAt: string, updatedAt: string, widgets?: Array<{ __typename?: 'PageLayoutWidget', id: string, title: string, type: WidgetType, objectMetadataId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, conditionalDisplay?: any | null, pageLayoutTabId: string, gridPosition: { __typename?: 'GridPosition', column: number, columnSpan: number, row: number, rowSpan: number }, position?: { __typename?: 'PageLayoutWidgetCanvasPosition', layoutMode: PageLayoutTabLayoutMode } | { __typename?: 'PageLayoutWidgetGridPosition', layoutMode: PageLayoutTabLayoutMode, row: number, column: number, rowSpan: number, columnSpan: number } | { __typename?: 'PageLayoutWidgetVerticalListPosition', layoutMode: PageLayoutTabLayoutMode, index: number } | null, configuration: { __typename?: 'AggregateChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, label?: string | null, displayDataLabel?: boolean | null, format?: string | null, description?: string | null, filter?: any | null, prefix?: string | null, suffix?: string | null, timezone?: string | null, firstDayOfTheWeek?: number | null, ratioAggregateConfig?: { __typename?: 'RatioAggregateConfig', fieldMetadataId: string, optionValue: string } | null } | { __typename?: 'BarChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, groupMode?: BarChartGroupMode | null, layout: BarChartLayout, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'CalendarConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'EmailsConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldConfiguration', configurationType: WidgetConfigurationType, fieldDisplayMode: FieldDisplayMode, fieldMetadataId: string } | { __typename?: 'FieldRichTextConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldsConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null, newFieldDefaultVisibility?: boolean | null, shouldAllowUserToSeeHiddenFields?: boolean | null } | { __typename?: 'FilesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FrontComponentConfiguration', configurationType: WidgetConfigurationType, frontComponentId: string } | { __typename?: 'GaugeChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, displayDataLabel?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'IframeConfiguration', configurationType: WidgetConfigurationType, url?: string | null } | { __typename?: 'LineChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, isStacked?: boolean | null, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'NotesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'PieChartConfiguration', configurationType: WidgetConfigurationType, groupByFieldMetadataId: string, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, groupBySubFieldName?: string | null, dateGranularity?: ObjectRecordGroupByDateGranularity | null, orderBy?: GraphOrderBy | null, manualSortOrder?: Array<string> | null, displayDataLabel?: boolean | null, showCenterMetric?: boolean | null, displayLegend?: boolean | null, hideEmptyCategory?: boolean | null, splitMultiValueFields?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'RecordTableConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null } | { __typename?: 'StandaloneRichTextConfiguration', configurationType: WidgetConfigurationType, body: { __typename?: 'RichTextBody', blocknote?: string | null, markdown?: string | null } } | { __typename?: 'TasksConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'TimelineConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'ViewConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowRunConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowVersionConfiguration', configurationType: WidgetConfigurationType } }> | null }> | null } };
 
 export type UpsertFieldsWidgetMutationVariables = Exact<{
   input: UpsertFieldsWidgetInput;
 }>;
 
-
 export type UpsertFieldsWidgetMutation = { __typename?: 'Mutation', upsertFieldsWidget: { __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
 export type FindAllPageLayoutsQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type FindAllPageLayoutsQuery = { __typename?: 'Query', getPageLayouts: Array<{ __typename?: 'PageLayout', id: string, name: string, objectMetadataId?: string | null, type: PageLayoutType, defaultTabToFocusOnMobileAndSidePanelId?: string | null, createdAt: string, updatedAt: string, tabs?: Array<{ __typename?: 'PageLayoutTab', id: string, applicationId: string, title: string, icon?: string | null, position: number, layoutMode?: PageLayoutTabLayoutMode | null, isOverridden: boolean, pageLayoutId: string, createdAt: string, updatedAt: string, widgets?: Array<{ __typename?: 'PageLayoutWidget', id: string, title: string, type: WidgetType, objectMetadataId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, conditionalDisplay?: any | null, pageLayoutTabId: string, gridPosition: { __typename?: 'GridPosition', column: number, columnSpan: number, row: number, rowSpan: number }, position?: { __typename?: 'PageLayoutWidgetCanvasPosition', layoutMode: PageLayoutTabLayoutMode } | { __typename?: 'PageLayoutWidgetGridPosition', layoutMode: PageLayoutTabLayoutMode, row: number, column: number, rowSpan: number, columnSpan: number } | { __typename?: 'PageLayoutWidgetVerticalListPosition', layoutMode: PageLayoutTabLayoutMode, index: number } | null, configuration: { __typename?: 'AggregateChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, label?: string | null, displayDataLabel?: boolean | null, format?: string | null, description?: string | null, filter?: any | null, prefix?: string | null, suffix?: string | null, timezone?: string | null, firstDayOfTheWeek?: number | null, ratioAggregateConfig?: { __typename?: 'RatioAggregateConfig', fieldMetadataId: string, optionValue: string } | null } | { __typename?: 'BarChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, groupMode?: BarChartGroupMode | null, layout: BarChartLayout, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'CalendarConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'EmailsConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldConfiguration', configurationType: WidgetConfigurationType, fieldDisplayMode: FieldDisplayMode, fieldMetadataId: string } | { __typename?: 'FieldRichTextConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldsConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null, newFieldDefaultVisibility?: boolean | null, shouldAllowUserToSeeHiddenFields?: boolean | null } | { __typename?: 'FilesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FrontComponentConfiguration', configurationType: WidgetConfigurationType, frontComponentId: string } | { __typename?: 'GaugeChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, displayDataLabel?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'IframeConfiguration', configurationType: WidgetConfigurationType, url?: string | null } | { __typename?: 'LineChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, isStacked?: boolean | null, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'NotesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'PieChartConfiguration', configurationType: WidgetConfigurationType, groupByFieldMetadataId: string, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, groupBySubFieldName?: string | null, dateGranularity?: ObjectRecordGroupByDateGranularity | null, orderBy?: GraphOrderBy | null, manualSortOrder?: Array<string> | null, displayDataLabel?: boolean | null, showCenterMetric?: boolean | null, displayLegend?: boolean | null, hideEmptyCategory?: boolean | null, splitMultiValueFields?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'RecordTableConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null } | { __typename?: 'StandaloneRichTextConfiguration', configurationType: WidgetConfigurationType, body: { __typename?: 'RichTextBody', blocknote?: string | null, markdown?: string | null } } | { __typename?: 'TasksConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'TimelineConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'ViewConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowRunConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowVersionConfiguration', configurationType: WidgetConfigurationType } }> | null }> | null }> };
 
 export type FindAllRecordPageLayoutsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindAllRecordPageLayoutsQuery = { __typename?: 'Query', getPageLayouts: Array<{ __typename?: 'PageLayout', id: string, name: string, objectMetadataId?: string | null, type: PageLayoutType, defaultTabToFocusOnMobileAndSidePanelId?: string | null, createdAt: string, updatedAt: string, tabs?: Array<{ __typename?: 'PageLayoutTab', id: string, applicationId: string, title: string, icon?: string | null, position: number, layoutMode?: PageLayoutTabLayoutMode | null, isOverridden: boolean, pageLayoutId: string, createdAt: string, updatedAt: string, widgets?: Array<{ __typename?: 'PageLayoutWidget', id: string, title: string, type: WidgetType, objectMetadataId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, conditionalDisplay?: any | null, pageLayoutTabId: string, gridPosition: { __typename?: 'GridPosition', column: number, columnSpan: number, row: number, rowSpan: number }, position?: { __typename?: 'PageLayoutWidgetCanvasPosition', layoutMode: PageLayoutTabLayoutMode } | { __typename?: 'PageLayoutWidgetGridPosition', layoutMode: PageLayoutTabLayoutMode, row: number, column: number, rowSpan: number, columnSpan: number } | { __typename?: 'PageLayoutWidgetVerticalListPosition', layoutMode: PageLayoutTabLayoutMode, index: number } | null, configuration: { __typename?: 'AggregateChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, label?: string | null, displayDataLabel?: boolean | null, format?: string | null, description?: string | null, filter?: any | null, prefix?: string | null, suffix?: string | null, timezone?: string | null, firstDayOfTheWeek?: number | null, ratioAggregateConfig?: { __typename?: 'RatioAggregateConfig', fieldMetadataId: string, optionValue: string } | null } | { __typename?: 'BarChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, groupMode?: BarChartGroupMode | null, layout: BarChartLayout, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'CalendarConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'EmailsConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldConfiguration', configurationType: WidgetConfigurationType, fieldDisplayMode: FieldDisplayMode, fieldMetadataId: string } | { __typename?: 'FieldRichTextConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FieldsConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null, newFieldDefaultVisibility?: boolean | null, shouldAllowUserToSeeHiddenFields?: boolean | null } | { __typename?: 'FilesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'FrontComponentConfiguration', configurationType: WidgetConfigurationType, frontComponentId: string } | { __typename?: 'GaugeChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, displayDataLabel?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'IframeConfiguration', configurationType: WidgetConfigurationType, url?: string | null } | { __typename?: 'LineChartConfiguration', configurationType: WidgetConfigurationType, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, primaryAxisGroupByFieldMetadataId: string, primaryAxisGroupBySubFieldName?: string | null, primaryAxisDateGranularity?: ObjectRecordGroupByDateGranularity | null, primaryAxisOrderBy?: GraphOrderBy | null, primaryAxisManualSortOrder?: Array<string> | null, secondaryAxisGroupByFieldMetadataId?: string | null, secondaryAxisGroupBySubFieldName?: string | null, secondaryAxisGroupByDateGranularity?: ObjectRecordGroupByDateGranularity | null, secondaryAxisOrderBy?: GraphOrderBy | null, secondaryAxisManualSortOrder?: Array<string> | null, omitNullValues?: boolean | null, axisNameDisplay?: AxisNameDisplay | null, displayDataLabel?: boolean | null, displayLegend?: boolean | null, rangeMin?: number | null, rangeMax?: number | null, color?: string | null, description?: string | null, filter?: any | null, isStacked?: boolean | null, isCumulative?: boolean | null, splitMultiValueFields?: boolean | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'NotesConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'PieChartConfiguration', configurationType: WidgetConfigurationType, groupByFieldMetadataId: string, aggregateFieldMetadataId: string, aggregateOperation: AggregateOperations, groupBySubFieldName?: string | null, dateGranularity?: ObjectRecordGroupByDateGranularity | null, orderBy?: GraphOrderBy | null, manualSortOrder?: Array<string> | null, displayDataLabel?: boolean | null, showCenterMetric?: boolean | null, displayLegend?: boolean | null, hideEmptyCategory?: boolean | null, splitMultiValueFields?: boolean | null, color?: string | null, description?: string | null, filter?: any | null, timezone?: string | null, firstDayOfTheWeek?: number | null } | { __typename?: 'RecordTableConfiguration', configurationType: WidgetConfigurationType, viewId?: string | null } | { __typename?: 'StandaloneRichTextConfiguration', configurationType: WidgetConfigurationType, body: { __typename?: 'RichTextBody', blocknote?: string | null, markdown?: string | null } } | { __typename?: 'TasksConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'TimelineConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'ViewConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowRunConfiguration', configurationType: WidgetConfigurationType } | { __typename?: 'WorkflowVersionConfiguration', configurationType: WidgetConfigurationType } }> | null }> | null }> };
 
@@ -6907,13 +6548,11 @@ export type BarChartDataQueryVariables = Exact<{
   input: BarChartDataInput;
 }>;
 
-
 export type BarChartDataQuery = { __typename?: 'Query', barChartData: { __typename?: 'BarChartData', data: Array<any>, indexBy: string, keys: Array<string>, xAxisLabel: string, yAxisLabel: string, showLegend: boolean, showDataLabels: boolean, layout: BarChartLayout, groupMode: BarChartGroupMode, hasTooManyGroups: boolean, formattedToRawLookup: any, series: Array<{ __typename?: 'BarChartSeries', key: string, label: string }> } };
 
 export type LineChartDataQueryVariables = Exact<{
   input: LineChartDataInput;
 }>;
-
 
 export type LineChartDataQuery = { __typename?: 'Query', lineChartData: { __typename?: 'LineChartData', xAxisLabel: string, yAxisLabel: string, showLegend: boolean, showDataLabels: boolean, hasTooManyGroups: boolean, formattedToRawLookup: any, series: Array<{ __typename?: 'LineChartSeries', id: string, label: string, data: Array<{ __typename?: 'LineChartDataPoint', x: string, y: number }> }> } };
 
@@ -6921,13 +6560,11 @@ export type PieChartDataQueryVariables = Exact<{
   input: PieChartDataInput;
 }>;
 
-
 export type PieChartDataQuery = { __typename?: 'Query', pieChartData: { __typename?: 'PieChartData', showLegend: boolean, showDataLabels: boolean, showCenterMetric: boolean, hasTooManyGroups: boolean, formattedToRawLookup: any, data: Array<{ __typename?: 'PieChartDataItem', id: string, value: number }> } };
 
 export type DeleteConnectedAccountMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
-
 
 export type DeleteConnectedAccountMutation = { __typename?: 'Mutation', deleteConnectedAccount: { __typename?: 'ConnectedAccountDTO', id: string } };
 
@@ -6938,13 +6575,11 @@ export type SaveImapSmtpCaldavAccountMutationVariables = Exact<{
   id?: InputMaybe<Scalars['UUID']>;
 }>;
 
-
 export type SaveImapSmtpCaldavAccountMutation = { __typename?: 'Mutation', saveImapSmtpCaldavAccount: { __typename?: 'ImapSmtpCaldavConnectionSuccess', success: boolean, connectedAccountId: string } };
 
 export type StartChannelSyncMutationVariables = Exact<{
   connectedAccountId: Scalars['UUID'];
 }>;
-
 
 export type StartChannelSyncMutation = { __typename?: 'Mutation', startChannelSync: { __typename?: 'ChannelSyncSuccess', success: boolean } };
 
@@ -6952,13 +6587,11 @@ export type UpdateCalendarChannelMutationVariables = Exact<{
   input: UpdateCalendarChannelInput;
 }>;
 
-
 export type UpdateCalendarChannelMutation = { __typename?: 'Mutation', updateCalendarChannel: { __typename?: 'CalendarChannel', id: string, visibility: CalendarChannelVisibility, isContactAutoCreationEnabled: boolean, contactAutoCreationPolicy: CalendarChannelContactAutoCreationPolicy } };
 
 export type UpdateMessageChannelMutationVariables = Exact<{
   input: UpdateMessageChannelInput;
 }>;
-
 
 export type UpdateMessageChannelMutation = { __typename?: 'Mutation', updateMessageChannel: { __typename?: 'MessageChannel', id: string, visibility: MessageChannelVisibility, contactAutoCreationPolicy: MessageChannelContactAutoCreationPolicy, excludeNonProfessionalEmails: boolean, excludeGroupEmails: boolean, messageFolderImportPolicy: MessageFolderImportPolicy } };
 
@@ -6966,13 +6599,11 @@ export type UpdateMessageFolderMutationVariables = Exact<{
   input: UpdateMessageFolderInput;
 }>;
 
-
 export type UpdateMessageFolderMutation = { __typename?: 'Mutation', updateMessageFolder: { __typename?: 'MessageFolder', id: string, isSynced: boolean } };
 
 export type UpdateMessageFoldersMutationVariables = Exact<{
   input: UpdateMessageFoldersInput;
 }>;
-
 
 export type UpdateMessageFoldersMutation = { __typename?: 'Mutation', updateMessageFolders: Array<{ __typename?: 'MessageFolder', id: string, isSynced: boolean }> };
 
@@ -6980,18 +6611,15 @@ export type GetConnectedImapSmtpCaldavAccountQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type GetConnectedImapSmtpCaldavAccountQuery = { __typename?: 'Query', getConnectedImapSmtpCaldavAccount: { __typename?: 'ConnectedImapSmtpCaldavAccount', id: string, handle: string, provider: string, accountOwnerId: string, connectionParameters?: { __typename?: 'ImapSmtpCaldavConnectionParameters', IMAP?: { __typename?: 'ConnectionParametersOutput', host: string, port: number, secure?: boolean | null, username?: string | null, password: string } | null, SMTP?: { __typename?: 'ConnectionParametersOutput', host: string, username?: string | null, port: number, secure?: boolean | null, password: string } | null, CALDAV?: { __typename?: 'ConnectionParametersOutput', host: string, username?: string | null, password: string } | null } | null } };
 
 export type MyCalendarChannelsQueryVariables = Exact<{
   connectedAccountId?: InputMaybe<Scalars['UUID']>;
 }>;
 
-
 export type MyCalendarChannelsQuery = { __typename?: 'Query', myCalendarChannels: Array<{ __typename?: 'CalendarChannel', id: string, handle: string, visibility: CalendarChannelVisibility, syncStatus: CalendarChannelSyncStatus, syncStage: CalendarChannelSyncStage, syncStageStartedAt?: string | null, isContactAutoCreationEnabled: boolean, contactAutoCreationPolicy: CalendarChannelContactAutoCreationPolicy, isSyncEnabled: boolean, connectedAccountId: string, createdAt: string, updatedAt: string }> };
 
 export type MyConnectedAccountsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type MyConnectedAccountsQuery = { __typename?: 'Query', myConnectedAccounts: Array<{ __typename?: 'ConnectedAccountDTO', id: string, handle: string, provider: string, authFailedAt?: string | null, scopes?: Array<string> | null, handleAliases?: Array<string> | null, lastSignedInAt?: string | null, userWorkspaceId: string, createdAt: string, updatedAt: string }> };
 
@@ -6999,13 +6627,11 @@ export type MyMessageChannelsQueryVariables = Exact<{
   connectedAccountId?: InputMaybe<Scalars['UUID']>;
 }>;
 
-
 export type MyMessageChannelsQuery = { __typename?: 'Query', myMessageChannels: Array<{ __typename?: 'MessageChannel', id: string, handle: string, visibility: MessageChannelVisibility, type: MessageChannelType, isContactAutoCreationEnabled: boolean, contactAutoCreationPolicy: MessageChannelContactAutoCreationPolicy, messageFolderImportPolicy: MessageFolderImportPolicy, excludeNonProfessionalEmails: boolean, excludeGroupEmails: boolean, isSyncEnabled: boolean, syncStatus: MessageChannelSyncStatus, syncStage: MessageChannelSyncStage, syncStageStartedAt?: string | null, connectedAccountId: string, createdAt: string, updatedAt: string }> };
 
 export type MyMessageFoldersQueryVariables = Exact<{
   messageChannelId?: InputMaybe<Scalars['UUID']>;
 }>;
-
 
 export type MyMessageFoldersQuery = { __typename?: 'Query', myMessageFolders: Array<{ __typename?: 'MessageFolder', id: string, name?: string | null, isSynced: boolean, isSentFolder: boolean, parentFolderId?: string | null, externalId?: string | null, messageChannelId: string, createdAt: string, updatedAt: string }> };
 
@@ -7014,7 +6640,6 @@ export type AddAiProviderMutationVariables = Exact<{
   providerConfig: Scalars['JSON'];
 }>;
 
-
 export type AddAiProviderMutation = { __typename?: 'Mutation', addAiProvider: boolean };
 
 export type AddModelToProviderMutationVariables = Exact<{
@@ -7022,13 +6647,11 @@ export type AddModelToProviderMutationVariables = Exact<{
   modelConfig: Scalars['JSON'];
 }>;
 
-
 export type AddModelToProviderMutation = { __typename?: 'Mutation', addModelToProvider: boolean };
 
 export type RemoveAiProviderMutationVariables = Exact<{
   providerName: Scalars['String'];
 }>;
-
 
 export type RemoveAiProviderMutation = { __typename?: 'Mutation', removeAiProvider: boolean };
 
@@ -7037,14 +6660,12 @@ export type RemoveModelFromProviderMutationVariables = Exact<{
   modelName: Scalars['String'];
 }>;
 
-
 export type RemoveModelFromProviderMutation = { __typename?: 'Mutation', removeModelFromProvider: boolean };
 
 export type SetAdminAiModelEnabledMutationVariables = Exact<{
   modelId: Scalars['String'];
   enabled: Scalars['Boolean'];
 }>;
-
 
 export type SetAdminAiModelEnabledMutation = { __typename?: 'Mutation', setAdminAiModelEnabled: boolean };
 
@@ -7053,7 +6674,6 @@ export type SetAdminAiModelRecommendedMutationVariables = Exact<{
   recommended: Scalars['Boolean'];
 }>;
 
-
 export type SetAdminAiModelRecommendedMutation = { __typename?: 'Mutation', setAdminAiModelRecommended: boolean };
 
 export type SetAdminDefaultAiModelMutationVariables = Exact<{
@@ -7061,11 +6681,9 @@ export type SetAdminDefaultAiModelMutationVariables = Exact<{
   modelId: Scalars['String'];
 }>;
 
-
 export type SetAdminDefaultAiModelMutation = { __typename?: 'Mutation', setAdminDefaultAiModel: boolean };
 
 export type GetAdminAiModelsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetAdminAiModelsQuery = { __typename?: 'Query', getAdminAiModels: { __typename?: 'AdminAIModels', defaultSmartModelId?: string | null, defaultFastModelId?: string | null, models: Array<{ __typename?: 'AdminAIModelConfig', modelId: string, label: string, modelFamily?: ModelFamily | null, sdkPackage?: string | null, isAvailable: boolean, isAdminEnabled: boolean, isDeprecated?: boolean | null, isRecommended?: boolean | null, contextWindowTokens?: number | null, maxOutputTokens?: number | null, inputCostPerMillionTokens?: number | null, outputCostPerMillionTokens?: number | null, providerName?: string | null, providerLabel?: string | null, name?: string | null, dataResidency?: string | null }> } };
 
@@ -7074,16 +6692,13 @@ export type GetAdminAiUsageByWorkspaceQueryVariables = Exact<{
   periodEnd?: InputMaybe<Scalars['DateTime']>;
 }>;
 
-
 export type GetAdminAiUsageByWorkspaceQuery = { __typename?: 'Query', getAdminAiUsageByWorkspace: Array<{ __typename?: 'UsageBreakdownItem', key: string, label?: string | null, creditsUsed: number }> };
 
 export type GetAiProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type GetAiProvidersQuery = { __typename?: 'Query', getAiProviders: any };
 
 export type GetModelsDevProvidersQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetModelsDevProvidersQuery = { __typename?: 'Query', getModelsDevProviders: Array<{ __typename?: 'ModelsDevProviderSuggestion', id: string, modelCount: number, npm: string }> };
 
@@ -7091,11 +6706,9 @@ export type GetModelsDevSuggestionsQueryVariables = Exact<{
   providerType: Scalars['String'];
 }>;
 
-
 export type GetModelsDevSuggestionsQuery = { __typename?: 'Query', getModelsDevSuggestions: Array<{ __typename?: 'ModelsDevModelSuggestion', modelId: string, name: string, inputCostPerMillionTokens: number, outputCostPerMillionTokens: number, cachedInputCostPerMillionTokens?: number | null, cacheCreationCostPerMillionTokens?: number | null, contextWindowTokens: number, maxOutputTokens: number, modalities: Array<string>, supportsReasoning: boolean }> };
 
 export type FindAllApplicationRegistrationsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindAllApplicationRegistrationsQuery = { __typename?: 'Query', findAllApplicationRegistrations: Array<{ __typename?: 'ApplicationRegistration', id: string, universalIdentifier: string, name: string, description?: string | null, logoUrl?: string | null, author?: string | null, oAuthClientId: string, oAuthRedirectUris: Array<string>, oAuthScopes: Array<string>, sourceType: ApplicationRegistrationSourceType, sourcePackage?: string | null, latestAvailableVersion?: string | null, websiteUrl?: string | null, termsUrl?: string | null, isListed: boolean, isFeatured: boolean, ownerWorkspaceId?: string | null, createdAt: string, updatedAt: string }> };
 
@@ -7104,13 +6717,11 @@ export type CreateDatabaseConfigVariableMutationVariables = Exact<{
   value: Scalars['JSON'];
 }>;
 
-
 export type CreateDatabaseConfigVariableMutation = { __typename?: 'Mutation', createDatabaseConfigVariable: boolean };
 
 export type DeleteDatabaseConfigVariableMutationVariables = Exact<{
   key: Scalars['String'];
 }>;
-
 
 export type DeleteDatabaseConfigVariableMutation = { __typename?: 'Mutation', deleteDatabaseConfigVariable: boolean };
 
@@ -7119,18 +6730,15 @@ export type UpdateDatabaseConfigVariableMutationVariables = Exact<{
   value: Scalars['JSON'];
 }>;
 
-
 export type UpdateDatabaseConfigVariableMutation = { __typename?: 'Mutation', updateDatabaseConfigVariable: boolean };
 
 export type GetConfigVariablesGroupedQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetConfigVariablesGroupedQuery = { __typename?: 'Query', getConfigVariablesGrouped: { __typename?: 'ConfigVariables', groups: Array<{ __typename?: 'ConfigVariablesGroupData', name: ConfigVariablesGroup, description: string, isHiddenOnLoad: boolean, variables: Array<{ __typename?: 'ConfigVariable', name: string, description: string, value?: any | null, isSensitive: boolean, isEnvOnly: boolean, type: ConfigVariableType, options?: any | null, source: ConfigSource }> }> } };
 
 export type GetDatabaseConfigVariableQueryVariables = Exact<{
   key: Scalars['String'];
 }>;
-
 
 export type GetDatabaseConfigVariableQuery = { __typename?: 'Query', getDatabaseConfigVariable: { __typename?: 'ConfigVariable', name: string, description: string, value?: any | null, isSensitive: boolean, isEnvOnly: boolean, type: ConfigVariableType, options?: any | null, source: ConfigSource } };
 
@@ -7140,18 +6748,15 @@ export type UpdateWorkspaceFeatureFlagMutationVariables = Exact<{
   value: Scalars['Boolean'];
 }>;
 
-
 export type UpdateWorkspaceFeatureFlagMutation = { __typename?: 'Mutation', updateWorkspaceFeatureFlag: boolean };
 
 export type UserLookupAdminPanelMutationVariables = Exact<{
   userIdentifier: Scalars['String'];
 }>;
 
-
 export type UserLookupAdminPanelMutation = { __typename?: 'Mutation', userLookupAdminPanel: { __typename?: 'UserLookup', user: { __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }, workspaces: Array<{ __typename?: 'WorkspaceInfo', id: string, name: string, logo?: string | null, totalUsers: number, allowImpersonation: boolean, workspaceUrls: { __typename?: 'WorkspaceUrls', customUrl?: string | null, subdomainUrl: string }, users: Array<{ __typename?: 'UserInfo', id: string, email: string, firstName?: string | null, lastName?: string | null }>, featureFlags: Array<{ __typename?: 'FeatureFlag', key: FeatureFlagKey, value: boolean }> }> } };
 
 export type GetVersionInfoQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetVersionInfoQuery = { __typename?: 'Query', versionInfo: { __typename?: 'VersionInfo', currentVersion?: string | null, latestVersion: string } };
 
@@ -7160,7 +6765,6 @@ export type DeleteJobsMutationVariables = Exact<{
   jobIds: Array<Scalars['String']> | Scalars['String'];
 }>;
 
-
 export type DeleteJobsMutation = { __typename?: 'Mutation', deleteJobs: { __typename?: 'DeleteJobsResponse', deletedCount: number, results: Array<{ __typename?: 'JobOperationResult', jobId: string, success: boolean, error?: string | null }> } };
 
 export type RetryJobsMutationVariables = Exact<{
@@ -7168,13 +6772,11 @@ export type RetryJobsMutationVariables = Exact<{
   jobIds: Array<Scalars['String']> | Scalars['String'];
 }>;
 
-
 export type RetryJobsMutation = { __typename?: 'Mutation', retryJobs: { __typename?: 'RetryJobsResponse', retriedCount: number, results: Array<{ __typename?: 'JobOperationResult', jobId: string, success: boolean, error?: string | null }> } };
 
 export type GetIndicatorHealthStatusQueryVariables = Exact<{
   indicatorId: HealthIndicatorId;
 }>;
-
 
 export type GetIndicatorHealthStatusQuery = { __typename?: 'Query', getIndicatorHealthStatus: { __typename?: 'AdminPanelHealthServiceData', id: HealthIndicatorId, label: string, description: string, status: AdminPanelHealthServiceStatus, errorMessage?: string | null, details?: string | null, queues?: Array<{ __typename?: 'AdminPanelWorkerQueueHealth', id: string, queueName: string, status: AdminPanelHealthServiceStatus }> | null } };
 
@@ -7185,7 +6787,6 @@ export type GetQueueJobsQueryVariables = Exact<{
   offset?: InputMaybe<Scalars['Int']>;
 }>;
 
-
 export type GetQueueJobsQuery = { __typename?: 'Query', getQueueJobs: { __typename?: 'QueueJobsResponse', count: number, totalCount: number, hasMore: boolean, jobs: Array<{ __typename?: 'QueueJob', id: string, name: string, data?: any | null, state: JobState, timestamp?: number | null, failedReason?: string | null, processedOn?: number | null, finishedOn?: number | null, attemptsMade: number, returnValue?: any | null, logs?: Array<string> | null, stackTrace?: Array<string> | null }>, retentionConfig: { __typename?: 'QueueRetentionConfig', completedMaxAge: number, completedMaxCount: number, failedMaxAge: number, failedMaxCount: number } } };
 
 export type GetQueueMetricsQueryVariables = Exact<{
@@ -7193,11 +6794,9 @@ export type GetQueueMetricsQueryVariables = Exact<{
   timeRange?: InputMaybe<QueueMetricsTimeRange>;
 }>;
 
-
 export type GetQueueMetricsQuery = { __typename?: 'Query', getQueueMetrics: { __typename?: 'QueueMetricsData', queueName: string, timeRange: QueueMetricsTimeRange, workers: number, details?: { __typename?: 'WorkerQueueMetrics', failed: number, completed: number, waiting: number, active: number, delayed: number, failureRate: number } | null, data: Array<{ __typename?: 'QueueMetricsSeries', id: string, data: Array<{ __typename?: 'QueueMetricsDataPoint', x: number, y: number }> }> } };
 
 export type GetSystemHealthStatusQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetSystemHealthStatusQuery = { __typename?: 'Query', getSystemHealthStatus: { __typename?: 'SystemHealth', services: Array<{ __typename?: 'SystemHealthService', id: HealthIndicatorId, label: string, status: AdminPanelHealthServiceStatus }> } };
 
@@ -7207,13 +6806,11 @@ export type DeleteApplicationRegistrationMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type DeleteApplicationRegistrationMutation = { __typename?: 'Mutation', deleteApplicationRegistration: boolean };
 
 export type RotateApplicationRegistrationClientSecretMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type RotateApplicationRegistrationClientSecretMutation = { __typename?: 'Mutation', rotateApplicationRegistrationClientSecret: { __typename?: 'RotateClientSecret', clientSecret: string } };
 
@@ -7222,13 +6819,11 @@ export type TransferApplicationRegistrationOwnershipMutationVariables = Exact<{
   targetWorkspaceSubdomain: Scalars['String'];
 }>;
 
-
 export type TransferApplicationRegistrationOwnershipMutation = { __typename?: 'Mutation', transferApplicationRegistrationOwnership: { __typename?: 'ApplicationRegistration', id: string, name: string } };
 
 export type UpdateApplicationRegistrationMutationVariables = Exact<{
   input: UpdateApplicationRegistrationInput;
 }>;
-
 
 export type UpdateApplicationRegistrationMutation = { __typename?: 'Mutation', updateApplicationRegistration: { __typename?: 'ApplicationRegistration', id: string, universalIdentifier: string, name: string, description?: string | null, logoUrl?: string | null, author?: string | null, oAuthClientId: string, oAuthRedirectUris: Array<string>, oAuthScopes: Array<string>, sourceType: ApplicationRegistrationSourceType, sourcePackage?: string | null, latestAvailableVersion?: string | null, websiteUrl?: string | null, termsUrl?: string | null, isListed: boolean, isFeatured: boolean, ownerWorkspaceId?: string | null, createdAt: string, updatedAt: string } };
 
@@ -7236,13 +6831,11 @@ export type UpdateApplicationRegistrationVariableMutationVariables = Exact<{
   input: UpdateApplicationRegistrationVariableInput;
 }>;
 
-
 export type UpdateApplicationRegistrationVariableMutation = { __typename?: 'Mutation', updateApplicationRegistrationVariable: { __typename?: 'ApplicationRegistrationVariable', id: string, key: string, description: string, isSecret: boolean, isRequired: boolean, isFilled: boolean, createdAt: string, updatedAt: string } };
 
 export type ApplicationRegistrationTarballUrlQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type ApplicationRegistrationTarballUrlQuery = { __typename?: 'Query', applicationRegistrationTarballUrl?: string | null };
 
@@ -7250,18 +6843,15 @@ export type FindApplicationRegistrationStatsQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type FindApplicationRegistrationStatsQuery = { __typename?: 'Query', findApplicationRegistrationStats: { __typename?: 'ApplicationRegistrationStats', activeInstalls: number, mostInstalledVersion?: string | null, versionDistribution: Array<{ __typename?: 'VersionDistributionEntry', version: string, count: number }> } };
 
 export type FindApplicationRegistrationVariablesQueryVariables = Exact<{
   applicationRegistrationId: Scalars['String'];
 }>;
 
-
 export type FindApplicationRegistrationVariablesQuery = { __typename?: 'Query', findApplicationRegistrationVariables: Array<{ __typename?: 'ApplicationRegistrationVariable', id: string, key: string, description: string, isSecret: boolean, isRequired: boolean, isFilled: boolean, createdAt: string, updatedAt: string }> };
 
 export type FindManyApplicationRegistrationsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyApplicationRegistrationsQuery = { __typename?: 'Query', findManyApplicationRegistrations: Array<{ __typename?: 'ApplicationRegistration', id: string, universalIdentifier: string, name: string, description?: string | null, logoUrl?: string | null, author?: string | null, oAuthClientId: string, oAuthRedirectUris: Array<string>, oAuthScopes: Array<string>, sourceType: ApplicationRegistrationSourceType, sourcePackage?: string | null, latestAvailableVersion?: string | null, websiteUrl?: string | null, termsUrl?: string | null, isListed: boolean, isFeatured: boolean, ownerWorkspaceId?: string | null, createdAt: string, updatedAt: string }> };
 
@@ -7269,13 +6859,11 @@ export type FindOneApplicationRegistrationQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type FindOneApplicationRegistrationQuery = { __typename?: 'Query', findOneApplicationRegistration: { __typename?: 'ApplicationRegistration', id: string, universalIdentifier: string, name: string, description?: string | null, logoUrl?: string | null, author?: string | null, oAuthClientId: string, oAuthRedirectUris: Array<string>, oAuthScopes: Array<string>, sourceType: ApplicationRegistrationSourceType, sourcePackage?: string | null, latestAvailableVersion?: string | null, websiteUrl?: string | null, termsUrl?: string | null, isListed: boolean, isFeatured: boolean, ownerWorkspaceId?: string | null, createdAt: string, updatedAt: string } };
 
 export type UninstallApplicationMutationVariables = Exact<{
   universalIdentifier: Scalars['String'];
 }>;
-
 
 export type UninstallApplicationMutation = { __typename?: 'Mutation', uninstallApplication: boolean };
 
@@ -7284,7 +6872,6 @@ export type UpdateOneApplicationVariableMutationVariables = Exact<{
   value: Scalars['String'];
   applicationId: Scalars['UUID'];
 }>;
-
 
 export type UpdateOneApplicationVariableMutation = { __typename?: 'Mutation', updateOneApplicationVariable: boolean };
 
@@ -7298,16 +6885,13 @@ export type BillingSubscriptionSchedulePhaseItemFragmentFragment = { __typename?
 
 export type CancelSwitchBillingIntervalMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type CancelSwitchBillingIntervalMutation = { __typename?: 'Mutation', cancelSwitchBillingInterval: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
 export type CancelSwitchMeteredPriceMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type CancelSwitchMeteredPriceMutation = { __typename?: 'Mutation', cancelSwitchMeteredPrice: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
 export type CancelSwitchBillingPlanMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type CancelSwitchBillingPlanMutation = { __typename?: 'Mutation', cancelSwitchBillingPlan: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
@@ -7318,11 +6902,9 @@ export type CheckoutSessionMutationVariables = Exact<{
   requirePaymentMethod: Scalars['Boolean'];
 }>;
 
-
 export type CheckoutSessionMutation = { __typename?: 'Mutation', checkoutSession: { __typename?: 'BillingSession', url?: string | null } };
 
 export type EndSubscriptionTrialPeriodMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type EndSubscriptionTrialPeriodMutation = { __typename?: 'Mutation', endSubscriptionTrialPeriod: { __typename?: 'BillingEndTrialPeriod', status?: SubscriptionStatus | null, hasPaymentMethod: boolean, billingPortalUrl?: string | null } };
 
@@ -7330,16 +6912,13 @@ export type SetMeteredSubscriptionPriceMutationVariables = Exact<{
   priceId: Scalars['String'];
 }>;
 
-
 export type SetMeteredSubscriptionPriceMutation = { __typename?: 'Mutation', setMeteredSubscriptionPrice: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
 export type SwitchBillingPlanMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type SwitchBillingPlanMutation = { __typename?: 'Mutation', switchBillingPlan: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
 export type SwitchSubscriptionIntervalMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type SwitchSubscriptionIntervalMutation = { __typename?: 'Mutation', switchSubscriptionInterval: { __typename?: 'BillingUpdate', currentBillingSubscription: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null }, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }> } };
 
@@ -7347,16 +6926,13 @@ export type BillingPortalSessionQueryVariables = Exact<{
   returnUrlPath?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type BillingPortalSessionQuery = { __typename?: 'Query', billingPortalSession: { __typename?: 'BillingSession', url?: string | null } };
 
 export type GetMeteredProductsUsageQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type GetMeteredProductsUsageQuery = { __typename?: 'Query', getMeteredProductsUsage: Array<{ __typename?: 'BillingMeteredProductUsage', productKey: BillingProductKey, usedCredits: number, grantedCredits: number, rolloverCredits: number, totalGrantedCredits: number, unitPriceCents: number }> };
 
 export type ListPlansQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type ListPlansQuery = { __typename?: 'Query', listPlans: Array<{ __typename?: 'BillingPlan', planKey: BillingPlanKey, licensedProducts: Array<{ __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, prices?: Array<{ __typename?: 'BillingPriceLicensed', stripePriceId: string, unitAmount: number, recurringInterval: SubscriptionInterval, priceUsageType: BillingUsageType }> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } }>, meteredProducts: Array<{ __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, prices?: Array<{ __typename?: 'BillingPriceMetered', priceUsageType: BillingUsageType, recurringInterval: SubscriptionInterval, stripePriceId: string, tiers: Array<{ __typename?: 'BillingPriceTier', flatAmount?: number | null, unitAmount?: number | null, upTo?: number | null }> }> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } }> }> };
 
@@ -7369,13 +6945,11 @@ export type AssignRoleToApiKeyMutationVariables = Exact<{
   roleId: Scalars['UUID'];
 }>;
 
-
 export type AssignRoleToApiKeyMutation = { __typename?: 'Mutation', assignRoleToApiKey: boolean };
 
 export type CreateApiKeyMutationVariables = Exact<{
   input: CreateApiKeyInput;
 }>;
-
 
 export type CreateApiKeyMutation = { __typename?: 'Mutation', createApiKey: { __typename?: 'ApiKey', id: string, name: string, expiresAt: string, revokedAt?: string | null, role: { __typename?: 'Role', id: string, label: string, icon?: string | null } } };
 
@@ -7383,13 +6957,11 @@ export type CreateWebhookMutationVariables = Exact<{
   input: CreateWebhookInput;
 }>;
 
-
 export type CreateWebhookMutation = { __typename?: 'Mutation', createWebhook: { __typename?: 'Webhook', id: string, targetUrl: string, operations: Array<string>, description?: string | null, secret: string } };
 
 export type DeleteWebhookMutationVariables = Exact<{
   id: Scalars['UUID'];
 }>;
-
 
 export type DeleteWebhookMutation = { __typename?: 'Mutation', deleteWebhook: { __typename?: 'Webhook', id: string, targetUrl: string, operations: Array<string>, description?: string | null, secret: string } };
 
@@ -7397,13 +6969,11 @@ export type RevokeApiKeyMutationVariables = Exact<{
   input: RevokeApiKeyInput;
 }>;
 
-
 export type RevokeApiKeyMutation = { __typename?: 'Mutation', revokeApiKey?: { __typename?: 'ApiKey', id: string } | null };
 
 export type UpdateApiKeyMutationVariables = Exact<{
   input: UpdateApiKeyInput;
 }>;
-
 
 export type UpdateApiKeyMutation = { __typename?: 'Mutation', updateApiKey?: { __typename?: 'ApiKey', id: string, name: string, expiresAt: string, revokedAt?: string | null, role: { __typename?: 'Role', id: string, label: string, icon?: string | null } } | null };
 
@@ -7411,18 +6981,15 @@ export type UpdateWebhookMutationVariables = Exact<{
   input: UpdateWebhookInput;
 }>;
 
-
 export type UpdateWebhookMutation = { __typename?: 'Mutation', updateWebhook: { __typename?: 'Webhook', id: string, targetUrl: string, operations: Array<string>, description?: string | null, secret: string } };
 
 export type GetApiKeyQueryVariables = Exact<{
   input: GetApiKeyInput;
 }>;
 
-
 export type GetApiKeyQuery = { __typename?: 'Query', apiKey?: { __typename?: 'ApiKey', createdAt: string, id: string, name: string, expiresAt: string, revokedAt?: string | null, role: { __typename?: 'Role', id: string, label: string, icon?: string | null } } | null };
 
 export type GetApiKeysQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetApiKeysQuery = { __typename?: 'Query', apiKeys: Array<{ __typename?: 'ApiKey', id: string, name: string, expiresAt: string, revokedAt?: string | null, role: { __typename?: 'Role', id: string, label: string, icon?: string | null } }> };
 
@@ -7430,11 +6997,9 @@ export type GetWebhookQueryVariables = Exact<{
   id: Scalars['UUID'];
 }>;
 
-
 export type GetWebhookQuery = { __typename?: 'Query', webhook?: { __typename?: 'Webhook', id: string, targetUrl: string, operations: Array<string>, description?: string | null, secret: string } | null };
 
 export type GetWebhooksQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetWebhooksQuery = { __typename?: 'Query', webhooks: Array<{ __typename?: 'Webhook', id: string, targetUrl: string, operations: Array<string>, description?: string | null, secret: string }> };
 
@@ -7442,13 +7007,11 @@ export type CheckPublicDomainValidRecordsMutationVariables = Exact<{
   domain: Scalars['String'];
 }>;
 
-
 export type CheckPublicDomainValidRecordsMutation = { __typename?: 'Mutation', checkPublicDomainValidRecords?: { __typename?: 'DomainValidRecords', id: string, domain: string, records: Array<{ __typename?: 'DomainRecord', type: string, key: string, value: string, validationType: string, status: string }> } | null };
 
 export type CreatePublicDomainMutationVariables = Exact<{
   domain: Scalars['String'];
 }>;
-
 
 export type CreatePublicDomainMutation = { __typename?: 'Mutation', createPublicDomain: { __typename?: 'PublicDomain', id: string, domain: string, isValidated: boolean, createdAt: string } };
 
@@ -7456,11 +7019,9 @@ export type DeletePublicDomainMutationVariables = Exact<{
   domain: Scalars['String'];
 }>;
 
-
 export type DeletePublicDomainMutation = { __typename?: 'Mutation', deletePublicDomain: boolean };
 
 export type FindManyPublicDomainsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type FindManyPublicDomainsQuery = { __typename?: 'Query', findManyPublicDomains: Array<{ __typename?: 'PublicDomain', id: string, domain: string, isValidated: boolean, createdAt: string }> };
 
@@ -7469,13 +7030,11 @@ export type CreateEmailingDomainMutationVariables = Exact<{
   driver: EmailingDomainDriver;
 }>;
 
-
 export type CreateEmailingDomainMutation = { __typename?: 'Mutation', createEmailingDomain: { __typename?: 'EmailingDomain', id: string, domain: string, driver: EmailingDomainDriver, status: EmailingDomainStatus, verifiedAt?: string | null, createdAt: string, updatedAt: string, verificationRecords?: Array<{ __typename?: 'VerificationRecord', type: string, key: string, value: string, priority?: number | null }> | null } };
 
 export type DeleteEmailingDomainMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type DeleteEmailingDomainMutation = { __typename?: 'Mutation', deleteEmailingDomain: boolean };
 
@@ -7483,16 +7042,13 @@ export type VerifyEmailingDomainMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type VerifyEmailingDomainMutation = { __typename?: 'Mutation', verifyEmailingDomain: { __typename?: 'EmailingDomain', id: string, domain: string, driver: EmailingDomainDriver, status: EmailingDomainStatus, verifiedAt?: string | null, createdAt: string, updatedAt: string } };
 
 export type GetEmailingDomainsQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type GetEmailingDomainsQuery = { __typename?: 'Query', getEmailingDomains: Array<{ __typename?: 'EmailingDomain', id: string, domain: string, driver: EmailingDomainDriver, status: EmailingDomainStatus, verifiedAt?: string | null, createdAt: string, updatedAt: string, verificationRecords?: Array<{ __typename?: 'VerificationRecord', type: string, key: string, value: string, priority?: number | null }> | null }> };
 
 export type RefreshEnterpriseValidityTokenMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type RefreshEnterpriseValidityTokenMutation = { __typename?: 'Mutation', refreshEnterpriseValidityToken: boolean };
 
@@ -7500,13 +7056,11 @@ export type SetEnterpriseKeyMutationVariables = Exact<{
   enterpriseKey: Scalars['String'];
 }>;
 
-
 export type SetEnterpriseKeyMutation = { __typename?: 'Mutation', setEnterpriseKey: { __typename?: 'EnterpriseLicenseInfoDTO', isValid: boolean, licensee?: string | null, expiresAt?: string | null, subscriptionId?: string | null } };
 
 export type EnterpriseCheckoutSessionQueryVariables = Exact<{
   billingInterval?: InputMaybe<Scalars['String']>;
 }>;
-
 
 export type EnterpriseCheckoutSessionQuery = { __typename?: 'Query', enterpriseCheckoutSession?: string | null };
 
@@ -7514,11 +7068,9 @@ export type EnterprisePortalSessionQueryVariables = Exact<{
   returnUrlPath?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type EnterprisePortalSessionQuery = { __typename?: 'Query', enterprisePortalSession?: string | null };
 
 export type EnterpriseSubscriptionStatusQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type EnterpriseSubscriptionStatusQuery = { __typename?: 'Query', enterpriseSubscriptionStatus?: { __typename?: 'EnterpriseSubscriptionStatusDTO', status: string, licensee?: string | null, expiresAt?: string | null, cancelAt?: string | null, currentPeriodEnd?: string | null, isCancellationScheduled: boolean } | null };
 
@@ -7526,13 +7078,11 @@ export type UpdateLabPublicFeatureFlagMutationVariables = Exact<{
   input: UpdateLabPublicFeatureFlagInput;
 }>;
 
-
 export type UpdateLabPublicFeatureFlagMutation = { __typename?: 'Mutation', updateLabPublicFeatureFlag: { __typename?: 'FeatureFlag', key: FeatureFlagKey, value: boolean } };
 
 export type UploadWorkspaceMemberProfilePictureMutationVariables = Exact<{
   file: Scalars['Upload'];
 }>;
-
 
 export type UploadWorkspaceMemberProfilePictureMutation = { __typename?: 'Mutation', uploadWorkspaceMemberProfilePicture: { __typename?: 'FileWithSignedUrl', url: string } };
 
@@ -7540,7 +7090,6 @@ export type UpdateUserEmailMutationVariables = Exact<{
   newEmail: Scalars['String'];
   verifyEmailRedirectPath?: InputMaybe<Scalars['String']>;
 }>;
-
 
 export type UpdateUserEmailMutation = { __typename?: 'Mutation', updateUserEmail: boolean };
 
@@ -7562,20 +7111,17 @@ export type CreateOneRoleMutationVariables = Exact<{
   createRoleInput: CreateRoleInput;
 }>;
 
-
 export type CreateOneRoleMutation = { __typename?: 'Mutation', createOneRole: { __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean } };
 
 export type DeleteOneRoleMutationVariables = Exact<{
   roleId: Scalars['UUID'];
 }>;
 
-
 export type DeleteOneRoleMutation = { __typename?: 'Mutation', deleteOneRole: string };
 
 export type UpdateOneRoleMutationVariables = Exact<{
   updateRoleInput: UpdateRoleInput;
 }>;
-
 
 export type UpdateOneRoleMutation = { __typename?: 'Mutation', updateOneRole: { __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean } };
 
@@ -7584,13 +7130,11 @@ export type UpdateWorkspaceMemberRoleMutationVariables = Exact<{
   roleId: Scalars['UUID'];
 }>;
 
-
 export type UpdateWorkspaceMemberRoleMutation = { __typename?: 'Mutation', updateWorkspaceMemberRole: { __typename?: 'WorkspaceMember', id: string, colorScheme: string, avatarUrl?: string | null, locale?: string | null, userEmail: string, userWorkspaceId?: string | null, timeZone?: string | null, dateFormat?: WorkspaceMemberDateFormatEnum | null, timeFormat?: WorkspaceMemberTimeFormatEnum | null, calendarStartDay?: number | null, numberFormat?: WorkspaceMemberNumberFormatEnum | null, roles?: Array<{ __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean }> | null, name: { __typename?: 'FullName', firstName: string, lastName: string } } };
 
 export type UpsertFieldPermissionsMutationVariables = Exact<{
   upsertFieldPermissionsInput: UpsertFieldPermissionsInput;
 }>;
-
 
 export type UpsertFieldPermissionsMutation = { __typename?: 'Mutation', upsertFieldPermissions: Array<{ __typename?: 'FieldPermission', objectMetadataId: string, fieldMetadataId: string, canReadFieldValue?: boolean | null, canUpdateFieldValue?: boolean | null, id: string, roleId: string }> };
 
@@ -7598,13 +7142,11 @@ export type UpsertObjectPermissionsMutationVariables = Exact<{
   upsertObjectPermissionsInput: UpsertObjectPermissionsInput;
 }>;
 
-
 export type UpsertObjectPermissionsMutation = { __typename?: 'Mutation', upsertObjectPermissions: Array<{ __typename?: 'ObjectPermission', objectMetadataId: string, canReadObjectRecords?: boolean | null, canUpdateObjectRecords?: boolean | null, canSoftDeleteObjectRecords?: boolean | null, canDestroyObjectRecords?: boolean | null, restrictedFields?: any | null, rowLevelPermissionPredicates?: Array<{ __typename?: 'RowLevelPermissionPredicate', id: string, fieldMetadataId: string, objectMetadataId: string, operand: RowLevelPermissionPredicateOperand, subFieldName?: string | null, workspaceMemberFieldMetadataId?: string | null, workspaceMemberSubFieldName?: string | null, rowLevelPermissionPredicateGroupId?: string | null, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, value?: any | null }> | null, rowLevelPermissionPredicateGroups?: Array<{ __typename?: 'RowLevelPermissionPredicateGroup', id: string, parentRowLevelPermissionPredicateGroupId?: string | null, logicalOperator: RowLevelPermissionPredicateGroupLogicalOperator, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, objectMetadataId: string }> | null }> };
 
 export type UpsertPermissionFlagsMutationVariables = Exact<{
   upsertPermissionFlagsInput: UpsertPermissionFlagsInput;
 }>;
-
 
 export type UpsertPermissionFlagsMutation = { __typename?: 'Mutation', upsertPermissionFlags: Array<{ __typename?: 'PermissionFlag', id: string, flag: PermissionFlagType, roleId: string }> };
 
@@ -7612,11 +7154,9 @@ export type UpsertRowLevelPermissionPredicatesMutationVariables = Exact<{
   input: UpsertRowLevelPermissionPredicatesInput;
 }>;
 
-
 export type UpsertRowLevelPermissionPredicatesMutation = { __typename?: 'Mutation', upsertRowLevelPermissionPredicates: { __typename?: 'UpsertRowLevelPermissionPredicatesResult', predicates: Array<{ __typename?: 'RowLevelPermissionPredicate', id: string, fieldMetadataId: string, objectMetadataId: string, operand: RowLevelPermissionPredicateOperand, subFieldName?: string | null, workspaceMemberFieldMetadataId?: string | null, workspaceMemberSubFieldName?: string | null, rowLevelPermissionPredicateGroupId?: string | null, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, value?: any | null }>, predicateGroups: Array<{ __typename?: 'RowLevelPermissionPredicateGroup', id: string, parentRowLevelPermissionPredicateGroupId?: string | null, logicalOperator: RowLevelPermissionPredicateGroupLogicalOperator, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, objectMetadataId: string }> } };
 
 export type GetRolesQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetRolesQuery = { __typename?: 'Query', getRoles: Array<{ __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean, workspaceMembers: Array<{ __typename?: 'WorkspaceMember', id: string, avatarUrl?: string | null, userEmail: string, userWorkspaceId?: string | null, name: { __typename?: 'FullName', firstName: string, lastName: string } }>, agents: Array<{ __typename?: 'Agent', id: string, name: string, label: string, description?: string | null, icon?: string | null, prompt: string, modelId: string, responseFormat?: any | null, roleId?: string | null, isCustom: boolean, modelConfiguration?: any | null, evaluationInputs: Array<string>, applicationId?: string | null, createdAt: string, updatedAt: string }>, apiKeys: Array<{ __typename?: 'ApiKeyForRole', id: string, name: string, expiresAt: string, revokedAt?: string | null }>, permissionFlags?: Array<{ __typename?: 'PermissionFlag', id: string, flag: PermissionFlagType, roleId: string }> | null, objectPermissions?: Array<{ __typename?: 'ObjectPermission', objectMetadataId: string, canReadObjectRecords?: boolean | null, canUpdateObjectRecords?: boolean | null, canSoftDeleteObjectRecords?: boolean | null, canDestroyObjectRecords?: boolean | null, restrictedFields?: any | null, rowLevelPermissionPredicates?: Array<{ __typename?: 'RowLevelPermissionPredicate', id: string, fieldMetadataId: string, objectMetadataId: string, operand: RowLevelPermissionPredicateOperand, subFieldName?: string | null, workspaceMemberFieldMetadataId?: string | null, workspaceMemberSubFieldName?: string | null, rowLevelPermissionPredicateGroupId?: string | null, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, value?: any | null }> | null, rowLevelPermissionPredicateGroups?: Array<{ __typename?: 'RowLevelPermissionPredicateGroup', id: string, parentRowLevelPermissionPredicateGroupId?: string | null, logicalOperator: RowLevelPermissionPredicateGroupLogicalOperator, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, objectMetadataId: string }> | null }> | null, fieldPermissions?: Array<{ __typename?: 'FieldPermission', objectMetadataId: string, fieldMetadataId: string, canReadFieldValue?: boolean | null, canUpdateFieldValue?: boolean | null, id: string, roleId: string }> | null, rowLevelPermissionPredicates?: Array<{ __typename?: 'RowLevelPermissionPredicate', id: string, fieldMetadataId: string, objectMetadataId: string, operand: RowLevelPermissionPredicateOperand, subFieldName?: string | null, workspaceMemberFieldMetadataId?: string | null, workspaceMemberSubFieldName?: string | null, rowLevelPermissionPredicateGroupId?: string | null, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, value?: any | null }> | null, rowLevelPermissionPredicateGroups?: Array<{ __typename?: 'RowLevelPermissionPredicateGroup', id: string, parentRowLevelPermissionPredicateGroupId?: string | null, logicalOperator: RowLevelPermissionPredicateGroupLogicalOperator, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, objectMetadataId: string }> | null }> };
 
@@ -7624,13 +7164,11 @@ export type CreateApprovedAccessDomainMutationVariables = Exact<{
   input: CreateApprovedAccessDomainInput;
 }>;
 
-
 export type CreateApprovedAccessDomainMutation = { __typename?: 'Mutation', createApprovedAccessDomain: { __typename?: 'ApprovedAccessDomain', id: string, domain: string, isValidated: boolean, createdAt: string } };
 
 export type CreateOidcIdentityProviderMutationVariables = Exact<{
   input: SetupOidcSsoInput;
 }>;
-
 
 export type CreateOidcIdentityProviderMutation = { __typename?: 'Mutation', createOIDCIdentityProvider: { __typename?: 'SetupSso', id: string, type: IdentityProviderType, issuer: string, name: string, status: SsoIdentityProviderStatus } };
 
@@ -7638,13 +7176,11 @@ export type CreateSamlIdentityProviderMutationVariables = Exact<{
   input: SetupSamlSsoInput;
 }>;
 
-
 export type CreateSamlIdentityProviderMutation = { __typename?: 'Mutation', createSAMLIdentityProvider: { __typename?: 'SetupSso', id: string, type: IdentityProviderType, issuer: string, name: string, status: SsoIdentityProviderStatus } };
 
 export type DeleteApprovedAccessDomainMutationVariables = Exact<{
   input: DeleteApprovedAccessDomainInput;
 }>;
-
 
 export type DeleteApprovedAccessDomainMutation = { __typename?: 'Mutation', deleteApprovedAccessDomain: boolean };
 
@@ -7652,13 +7188,11 @@ export type DeleteSsoIdentityProviderMutationVariables = Exact<{
   input: DeleteSsoInput;
 }>;
 
-
 export type DeleteSsoIdentityProviderMutation = { __typename?: 'Mutation', deleteSSOIdentityProvider: { __typename?: 'DeleteSso', identityProviderId: string } };
 
 export type EditSsoIdentityProviderMutationVariables = Exact<{
   input: EditSsoInput;
 }>;
-
 
 export type EditSsoIdentityProviderMutation = { __typename?: 'Mutation', editSSOIdentityProvider: { __typename?: 'EditSso', id: string, type: IdentityProviderType, issuer: string, name: string, status: SsoIdentityProviderStatus } };
 
@@ -7666,16 +7200,13 @@ export type ValidateApprovedAccessDomainMutationVariables = Exact<{
   input: ValidateApprovedAccessDomainInput;
 }>;
 
-
 export type ValidateApprovedAccessDomainMutation = { __typename?: 'Mutation', validateApprovedAccessDomain: { __typename?: 'ApprovedAccessDomain', id: string, isValidated: boolean, domain: string, createdAt: string } };
 
 export type GetApprovedAccessDomainsQueryVariables = Exact<{ [key: string]: never; }>;
 
-
 export type GetApprovedAccessDomainsQuery = { __typename?: 'Query', getApprovedAccessDomains: Array<{ __typename?: 'ApprovedAccessDomain', id: string, createdAt: string, domain: string, isValidated: boolean }> };
 
 export type GetSsoIdentityProvidersQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetSsoIdentityProvidersQuery = { __typename?: 'Query', getSSOIdentityProviders: Array<{ __typename?: 'FindAvailableSSOIDP', type: IdentityProviderType, id: string, name: string, issuer: string, status: SsoIdentityProviderStatus }> };
 
@@ -7683,13 +7214,11 @@ export type VerifyTwoFactorAuthenticationMethodForAuthenticatedUserMutationVaria
   otp: Scalars['String'];
 }>;
 
-
 export type VerifyTwoFactorAuthenticationMethodForAuthenticatedUserMutation = { __typename?: 'Mutation', verifyTwoFactorAuthenticationMethodForAuthenticatedUser: { __typename?: 'VerifyTwoFactorAuthenticationMethod', success: boolean } };
 
 export type GetUsageAnalyticsQueryVariables = Exact<{
   input?: InputMaybe<UsageAnalyticsInput>;
 }>;
-
 
 export type GetUsageAnalyticsQuery = { __typename?: 'Query', getUsageAnalytics: { __typename?: 'UsageAnalytics', periodStart: string, periodEnd: string, usageByUser: Array<{ __typename?: 'UsageBreakdownItem', key: string, label?: string | null, creditsUsed: number }>, usageByOperationType: Array<{ __typename?: 'UsageBreakdownItem', key: string, creditsUsed: number }>, usageByModel: Array<{ __typename?: 'UsageBreakdownItem', key: string, creditsUsed: number }>, timeSeries: Array<{ __typename?: 'UsageTimeSeries', date: string, creditsUsed: number }>, userDailyUsage?: { __typename?: 'UsageUserDaily', userWorkspaceId: string, dailyUsage: Array<{ __typename?: 'UsageTimeSeries', date: string, creditsUsed: number }> } | null } };
 
@@ -7703,18 +7232,15 @@ export type WorkspaceUrlsFragmentFragment = { __typename?: 'WorkspaceUrls', subd
 
 export type DeleteUserAccountMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type DeleteUserAccountMutation = { __typename?: 'Mutation', deleteUser: { __typename?: 'User', id: string } };
 
 export type DeleteUserWorkspaceMutationVariables = Exact<{
   workspaceMemberIdToDelete: Scalars['String'];
 }>;
 
-
 export type DeleteUserWorkspaceMutation = { __typename?: 'Mutation', deleteUserFromWorkspace: { __typename?: 'UserWorkspace', id: string } };
 
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetCurrentUserQuery = { __typename?: 'Query', currentUser: { __typename?: 'User', id: string, firstName: string, lastName: string, email: string, hasPassword: boolean, canAccessFullAdminPanel: boolean, canImpersonate: boolean, supportUserHash?: string | null, onboardingStatus?: OnboardingStatus | null, userVars?: any | null, workspaceMember?: { __typename?: 'WorkspaceMember', id: string, colorScheme: string, avatarUrl?: string | null, locale?: string | null, userEmail: string, userWorkspaceId?: string | null, timeZone?: string | null, dateFormat?: WorkspaceMemberDateFormatEnum | null, timeFormat?: WorkspaceMemberTimeFormatEnum | null, calendarStartDay?: number | null, numberFormat?: WorkspaceMemberNumberFormatEnum | null, name: { __typename?: 'FullName', firstName: string, lastName: string } } | null, workspaceMembers?: Array<{ __typename?: 'WorkspaceMember', id: string, avatarUrl?: string | null, userEmail: string, userWorkspaceId?: string | null, name: { __typename?: 'FullName', firstName: string, lastName: string } }> | null, deletedWorkspaceMembers?: Array<{ __typename?: 'DeletedWorkspaceMember', id: string, avatarUrl?: string | null, userEmail: string, name: { __typename?: 'FullName', firstName: string, lastName: string } }> | null, currentUserWorkspace?: { __typename?: 'UserWorkspace', id: string, permissionFlags?: Array<PermissionFlagType> | null, objectsPermissions?: Array<{ __typename?: 'ObjectPermission', objectMetadataId: string, canReadObjectRecords?: boolean | null, canUpdateObjectRecords?: boolean | null, canSoftDeleteObjectRecords?: boolean | null, canDestroyObjectRecords?: boolean | null, restrictedFields?: any | null, rowLevelPermissionPredicates?: Array<{ __typename?: 'RowLevelPermissionPredicate', id: string, fieldMetadataId: string, objectMetadataId: string, operand: RowLevelPermissionPredicateOperand, subFieldName?: string | null, workspaceMemberFieldMetadataId?: string | null, workspaceMemberSubFieldName?: string | null, rowLevelPermissionPredicateGroupId?: string | null, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, value?: any | null }> | null, rowLevelPermissionPredicateGroups?: Array<{ __typename?: 'RowLevelPermissionPredicateGroup', id: string, parentRowLevelPermissionPredicateGroupId?: string | null, logicalOperator: RowLevelPermissionPredicateGroupLogicalOperator, positionInRowLevelPermissionPredicateGroup?: number | null, roleId: string, objectMetadataId: string }> | null }> | null, twoFactorAuthenticationMethodSummary?: Array<{ __typename?: 'TwoFactorAuthenticationMethodSummary', twoFactorAuthenticationMethodId: string, status: string, strategy: string }> | null } | null, currentWorkspace?: { __typename?: 'Workspace', id: string, displayName?: string | null, logo?: string | null, inviteHash?: string | null, allowImpersonation: boolean, activationStatus: WorkspaceActivationStatus, isPublicInviteLinkEnabled: boolean, isGoogleAuthEnabled: boolean, isMicrosoftAuthEnabled: boolean, isPasswordAuthEnabled: boolean, isGoogleAuthBypassEnabled: boolean, isMicrosoftAuthBypassEnabled: boolean, isPasswordAuthBypassEnabled: boolean, subdomain: string, customDomain?: string | null, hasValidEnterpriseKey: boolean, hasValidSignedEnterpriseKey: boolean, hasValidEnterpriseValidityToken: boolean, isCustomDomainEnabled: boolean, metadataVersion: number, workspaceMembersCount?: number | null, fastModel: string, smartModel: string, aiAdditionalInstructions?: string | null, enabledAiModelIds?: Array<string> | null, useRecommendedModels: boolean, isTwoFactorAuthenticationEnforced: boolean, trashRetentionDays: number, eventLogRetentionDays: number, editableProfileFields?: Array<string> | null, workspaceCustomApplication?: { __typename?: 'Application', id: string } | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, featureFlags?: Array<{ __typename?: 'FeatureFlag', key: FeatureFlagKey, value: boolean }> | null, currentBillingSubscription?: { __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, interval?: SubscriptionInterval | null, metadata: any, currentPeriodEnd?: string | null, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }>, billingSubscriptionItems?: Array<{ __typename?: 'BillingSubscriptionItem', id: string, hasReachedCurrentPeriodCap: boolean, quantity?: number | null, stripePriceId: string, billingProduct: { __typename?: 'BillingLicensedProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } | { __typename?: 'BillingMeteredProduct', name: string, description: string, images?: Array<string> | null, metadata: { __typename?: 'BillingProductMetadata', productKey: BillingProductKey, planKey: BillingPlanKey, priceUsageBased: BillingUsageType } } }> | null } | null, billingSubscriptions: Array<{ __typename?: 'BillingSubscription', id: string, status: SubscriptionStatus, metadata: any, phases: Array<{ __typename?: 'BillingSubscriptionSchedulePhase', start_date: number, end_date: number, items: Array<{ __typename?: 'BillingSubscriptionSchedulePhaseItem', price: string, quantity?: number | null }> }> }>, billingEntitlements: Array<{ __typename?: 'BillingEntitlement', key: BillingEntitlementKey, value: boolean }>, defaultRole?: { __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean } | null } | null, availableWorkspaces: { __typename?: 'AvailableWorkspaces', availableWorkspacesForSignIn: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }>, availableWorkspacesForSignUp: Array<{ __typename?: 'AvailableWorkspace', id: string, displayName?: string | null, loginToken?: string | null, inviteHash?: string | null, personalInviteToken?: string | null, logo?: string | null, workspaceUrls: { __typename?: 'WorkspaceUrls', subdomainUrl: string, customUrl?: string | null }, sso: Array<{ __typename?: 'SSOConnection', type: IdentityProviderType, id: string, issuer: string, name: string, status: SsoIdentityProviderStatus }> }> } } };
 
@@ -7736,13 +7262,11 @@ export type CreateManyViewFieldGroupsMutationVariables = Exact<{
   inputs: Array<CreateViewFieldGroupInput> | CreateViewFieldGroupInput;
 }>;
 
-
 export type CreateManyViewFieldGroupsMutation = { __typename?: 'Mutation', createManyViewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }> };
 
 export type CreateManyViewFieldsMutationVariables = Exact<{
   inputs: Array<CreateViewFieldInput> | CreateViewFieldInput;
 }>;
-
 
 export type CreateManyViewFieldsMutation = { __typename?: 'Mutation', createManyViewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
@@ -7750,13 +7274,11 @@ export type CreateManyViewGroupsMutationVariables = Exact<{
   inputs: Array<CreateViewGroupInput> | CreateViewGroupInput;
 }>;
 
-
 export type CreateManyViewGroupsMutation = { __typename?: 'Mutation', createManyViewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
 export type CreateViewMutationVariables = Exact<{
   input: CreateViewInput;
 }>;
-
 
 export type CreateViewMutation = { __typename?: 'Mutation', createView: { __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
@@ -7764,13 +7286,11 @@ export type CreateViewFieldMutationVariables = Exact<{
   input: CreateViewFieldInput;
 }>;
 
-
 export type CreateViewFieldMutation = { __typename?: 'Mutation', createViewField: { __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
 export type CreateViewFieldGroupMutationVariables = Exact<{
   input: CreateViewFieldGroupInput;
 }>;
-
 
 export type CreateViewFieldGroupMutation = { __typename?: 'Mutation', createViewFieldGroup: { __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
@@ -7778,13 +7298,11 @@ export type CreateViewFilterMutationVariables = Exact<{
   input: CreateViewFilterInput;
 }>;
 
-
 export type CreateViewFilterMutation = { __typename?: 'Mutation', createViewFilter: { __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
 export type CreateViewFilterGroupMutationVariables = Exact<{
   input: CreateViewFilterGroupInput;
 }>;
-
 
 export type CreateViewFilterGroupMutation = { __typename?: 'Mutation', createViewFilterGroup: { __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string } };
 
@@ -7792,13 +7310,11 @@ export type CreateViewGroupMutationVariables = Exact<{
   input: CreateViewGroupInput;
 }>;
 
-
 export type CreateViewGroupMutation = { __typename?: 'Mutation', createViewGroup: { __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
 export type CreateViewSortMutationVariables = Exact<{
   input: CreateViewSortInput;
 }>;
-
 
 export type CreateViewSortMutation = { __typename?: 'Mutation', createViewSort: { __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string } };
 
@@ -7806,13 +7322,11 @@ export type DeleteViewMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type DeleteViewMutation = { __typename?: 'Mutation', deleteView: boolean };
 
 export type DeleteViewFieldMutationVariables = Exact<{
   input: DeleteViewFieldInput;
 }>;
-
 
 export type DeleteViewFieldMutation = { __typename?: 'Mutation', deleteViewField: { __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7820,13 +7334,11 @@ export type DeleteViewFieldGroupMutationVariables = Exact<{
   input: DeleteViewFieldGroupInput;
 }>;
 
-
 export type DeleteViewFieldGroupMutation = { __typename?: 'Mutation', deleteViewFieldGroup: { __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
 export type DeleteViewFilterMutationVariables = Exact<{
   input: DeleteViewFilterInput;
 }>;
-
 
 export type DeleteViewFilterMutation = { __typename?: 'Mutation', deleteViewFilter: { __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7834,13 +7346,11 @@ export type DeleteViewFilterGroupMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type DeleteViewFilterGroupMutation = { __typename?: 'Mutation', deleteViewFilterGroup: boolean };
 
 export type DeleteViewGroupMutationVariables = Exact<{
   input: DeleteViewGroupInput;
 }>;
-
 
 export type DeleteViewGroupMutation = { __typename?: 'Mutation', deleteViewGroup: { __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7848,13 +7358,11 @@ export type DeleteViewSortMutationVariables = Exact<{
   input: DeleteViewSortInput;
 }>;
 
-
 export type DeleteViewSortMutation = { __typename?: 'Mutation', deleteViewSort: boolean };
 
 export type DestroyViewMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type DestroyViewMutation = { __typename?: 'Mutation', destroyView: boolean };
 
@@ -7862,13 +7370,11 @@ export type DestroyViewFieldMutationVariables = Exact<{
   input: DestroyViewFieldInput;
 }>;
 
-
 export type DestroyViewFieldMutation = { __typename?: 'Mutation', destroyViewField: { __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
 export type DestroyViewFilterMutationVariables = Exact<{
   input: DestroyViewFilterInput;
 }>;
-
 
 export type DestroyViewFilterMutation = { __typename?: 'Mutation', destroyViewFilter: { __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7876,13 +7382,11 @@ export type DestroyViewFilterGroupMutationVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type DestroyViewFilterGroupMutation = { __typename?: 'Mutation', destroyViewFilterGroup: boolean };
 
 export type DestroyViewGroupMutationVariables = Exact<{
   input: DestroyViewGroupInput;
 }>;
-
 
 export type DestroyViewGroupMutation = { __typename?: 'Mutation', destroyViewGroup: { __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7890,13 +7394,11 @@ export type DestroyViewSortMutationVariables = Exact<{
   input: DestroyViewSortInput;
 }>;
 
-
 export type DestroyViewSortMutation = { __typename?: 'Mutation', destroyViewSort: boolean };
 
 export type UpdateManyViewGroupsMutationVariables = Exact<{
   inputs: Array<UpdateViewGroupInput> | UpdateViewGroupInput;
 }>;
-
 
 export type UpdateManyViewGroupsMutation = { __typename?: 'Mutation', updateManyViewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
@@ -7905,13 +7407,11 @@ export type UpdateViewMutationVariables = Exact<{
   input: UpdateViewInput;
 }>;
 
-
 export type UpdateViewMutation = { __typename?: 'Mutation', updateView: { __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
 export type UpdateViewFieldMutationVariables = Exact<{
   input: UpdateViewFieldInput;
 }>;
-
 
 export type UpdateViewFieldMutation = { __typename?: 'Mutation', updateViewField: { __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7919,13 +7419,11 @@ export type UpdateViewFieldGroupMutationVariables = Exact<{
   input: UpdateViewFieldGroupInput;
 }>;
 
-
 export type UpdateViewFieldGroupMutation = { __typename?: 'Mutation', updateViewFieldGroup: { __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> } };
 
 export type UpdateViewFilterMutationVariables = Exact<{
   input: UpdateViewFilterInput;
 }>;
-
 
 export type UpdateViewFilterMutation = { __typename?: 'Mutation', updateViewFilter: { __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7934,13 +7432,11 @@ export type UpdateViewFilterGroupMutationVariables = Exact<{
   input: UpdateViewFilterGroupInput;
 }>;
 
-
 export type UpdateViewFilterGroupMutation = { __typename?: 'Mutation', updateViewFilterGroup: { __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string } };
 
 export type UpdateViewGroupMutationVariables = Exact<{
   input: UpdateViewGroupInput;
 }>;
-
 
 export type UpdateViewGroupMutation = { __typename?: 'Mutation', updateViewGroup: { __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } };
 
@@ -7948,13 +7444,11 @@ export type UpdateViewSortMutationVariables = Exact<{
   input: UpdateViewSortInput;
 }>;
 
-
 export type UpdateViewSortMutation = { __typename?: 'Mutation', updateViewSort: { __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string } };
 
 export type FindAllViewsQueryVariables = Exact<{
   viewTypes?: InputMaybe<Array<ViewType> | ViewType>;
 }>;
-
 
 export type FindAllViewsQuery = { __typename?: 'Query', getViews: Array<{ __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> }> };
 
@@ -7962,13 +7456,11 @@ export type FindFieldsWidgetViewsQueryVariables = Exact<{
   viewTypes?: InputMaybe<Array<ViewType> | ViewType>;
 }>;
 
-
 export type FindFieldsWidgetViewsQuery = { __typename?: 'Query', getViews: Array<{ __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> }> };
 
 export type FindManyViewFieldsQueryVariables = Exact<{
   viewId: Scalars['String'];
 }>;
-
 
 export type FindManyViewFieldsQuery = { __typename?: 'Query', getViewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
@@ -7976,13 +7468,11 @@ export type FindManyViewFilterGroupsQueryVariables = Exact<{
   viewId?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type FindManyViewFilterGroupsQuery = { __typename?: 'Query', getViewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }> };
 
 export type FindManyViewFiltersQueryVariables = Exact<{
   viewId?: InputMaybe<Scalars['String']>;
 }>;
-
 
 export type FindManyViewFiltersQuery = { __typename?: 'Query', getViewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
@@ -7990,13 +7480,11 @@ export type FindManyViewGroupsQueryVariables = Exact<{
   viewId?: InputMaybe<Scalars['String']>;
 }>;
 
-
 export type FindManyViewGroupsQuery = { __typename?: 'Query', getViewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> };
 
 export type FindManyViewSortsQueryVariables = Exact<{
   viewId?: InputMaybe<Scalars['String']>;
 }>;
-
 
 export type FindManyViewSortsQuery = { __typename?: 'Query', getViewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }> };
 
@@ -8005,13 +7493,11 @@ export type FindManyViewsQueryVariables = Exact<{
   viewTypes?: InputMaybe<Array<ViewType> | ViewType>;
 }>;
 
-
 export type FindManyViewsQuery = { __typename?: 'Query', getViews: Array<{ __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> }> };
 
 export type FindOneViewQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type FindOneViewQuery = { __typename?: 'Query', getView?: { __typename?: 'View', id: string, name: string, objectMetadataId: string, type: ViewType, key?: ViewKey | null, icon: string, position: number, isCompact: boolean, openRecordIn: ViewOpenRecordIn, kanbanAggregateOperation?: AggregateOperations | null, kanbanAggregateOperationFieldMetadataId?: string | null, mainGroupByFieldMetadataId?: string | null, shouldHideEmptyGroups: boolean, anyFieldFilterValue?: string | null, calendarFieldMetadataId?: string | null, calendarLayout?: ViewCalendarLayout | null, visibility: ViewVisibility, createdByUserWorkspaceId?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFieldGroups: Array<{ __typename?: 'ViewFieldGroup', id: string, name: string, position: number, isVisible: boolean, viewId: string, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null, viewFields: Array<{ __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null }> }>, viewFilters: Array<{ __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }>, viewFilterGroups: Array<{ __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string }>, viewSorts: Array<{ __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string }>, viewGroups: Array<{ __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null }> } | null };
 
@@ -8019,13 +7505,11 @@ export type FindOneViewFieldQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type FindOneViewFieldQuery = { __typename?: 'Query', getViewField?: { __typename?: 'ViewField', id: string, fieldMetadataId: string, viewId: string, isVisible: boolean, position: number, size: number, aggregateOperation?: AggregateOperations | null, viewFieldGroupId?: string | null, isOverridden: boolean, createdAt: string, updatedAt: string, deletedAt?: string | null } | null };
 
 export type FindOneViewFilterQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type FindOneViewFilterQuery = { __typename?: 'Query', getViewFilter?: { __typename?: 'ViewFilter', id: string, fieldMetadataId: string, operand: ViewFilterOperand, value: any, viewFilterGroupId?: string | null, positionInViewFilterGroup?: number | null, subFieldName?: string | null, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } | null };
 
@@ -8033,13 +7517,11 @@ export type FindOneViewFilterGroupQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type FindOneViewFilterGroupQuery = { __typename?: 'Query', getViewFilterGroup?: { __typename?: 'ViewFilterGroup', id: string, parentViewFilterGroupId?: string | null, logicalOperator: ViewFilterGroupLogicalOperator, positionInViewFilterGroup?: number | null, viewId: string } | null };
 
 export type FindOneViewGroupQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
-
 
 export type FindOneViewGroupQuery = { __typename?: 'Query', getViewGroup?: { __typename?: 'ViewGroup', id: string, isVisible: boolean, fieldValue: string, position: number, viewId: string, createdAt: string, updatedAt: string, deletedAt?: string | null } | null };
 
@@ -8047,20 +7529,17 @@ export type FindOneViewSortQueryVariables = Exact<{
   id: Scalars['String'];
 }>;
 
-
 export type FindOneViewSortQuery = { __typename?: 'Query', getViewSort?: { __typename?: 'ViewSort', id: string, fieldMetadataId: string, direction: ViewSortDirection, viewId: string, createdAt: string, deletedAt?: string | null, updatedAt: string } | null };
 
 export type DeleteWorkspaceInvitationMutationVariables = Exact<{
   appTokenId: Scalars['String'];
 }>;
 
-
 export type DeleteWorkspaceInvitationMutation = { __typename?: 'Mutation', deleteWorkspaceInvitation: string };
 
 export type ResendWorkspaceInvitationMutationVariables = Exact<{
   appTokenId: Scalars['String'];
 }>;
-
 
 export type ResendWorkspaceInvitationMutation = { __typename?: 'Mutation', resendWorkspaceInvitation: { __typename?: 'SendInvitations', success: boolean, errors: Array<string>, result: Array<{ __typename?: 'WorkspaceInvitation', id: string, email: string, roleId?: string | null, expiresAt: string }> } };
 
@@ -8069,11 +7548,9 @@ export type SendInvitationsMutationVariables = Exact<{
   roleId?: InputMaybe<Scalars['UUID']>;
 }>;
 
-
 export type SendInvitationsMutation = { __typename?: 'Mutation', sendInvitations: { __typename?: 'SendInvitations', success: boolean, errors: Array<string>, result: Array<{ __typename?: 'WorkspaceInvitation', id: string, email: string, roleId?: string | null, expiresAt: string }> } };
 
 export type GetWorkspaceInvitationsQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetWorkspaceInvitationsQuery = { __typename?: 'Query', findWorkspaceInvitations: Array<{ __typename?: 'WorkspaceInvitation', id: string, email: string, roleId?: string | null, expiresAt: string }> };
 
@@ -8087,11 +7564,9 @@ export type ActivateWorkspaceMutationVariables = Exact<{
   input: ActivateWorkspaceInput;
 }>;
 
-
 export type ActivateWorkspaceMutation = { __typename?: 'Mutation', activateWorkspace: { __typename?: 'Workspace', id: string } };
 
 export type DeleteCurrentWorkspaceMutationVariables = Exact<{ [key: string]: never; }>;
-
 
 export type DeleteCurrentWorkspaceMutation = { __typename?: 'Mutation', deleteCurrentWorkspace: { __typename?: 'Workspace', id: string } };
 
@@ -8099,30 +7574,25 @@ export type UpdateWorkspaceMutationVariables = Exact<{
   input: UpdateWorkspaceInput;
 }>;
 
-
 export type UpdateWorkspaceMutation = { __typename?: 'Mutation', updateWorkspace: { __typename?: 'Workspace', id: string, customDomain?: string | null, subdomain: string, displayName?: string | null, logo?: string | null, allowImpersonation: boolean, isPublicInviteLinkEnabled: boolean, isGoogleAuthEnabled: boolean, isMicrosoftAuthEnabled: boolean, isPasswordAuthEnabled: boolean, isTwoFactorAuthenticationEnforced: boolean, defaultRole?: { __typename?: 'Role', id: string, label: string, description?: string | null, icon?: string | null, canUpdateAllSettings: boolean, canAccessAllTools: boolean, isEditable: boolean, canReadAllObjectRecords: boolean, canUpdateAllObjectRecords: boolean, canSoftDeleteAllObjectRecords: boolean, canDestroyAllObjectRecords: boolean, canBeAssignedToUsers: boolean, canBeAssignedToAgents: boolean, canBeAssignedToApiKeys: boolean } | null } };
 
 export type UploadWorkspaceLogoMutationVariables = Exact<{
   file: Scalars['Upload'];
 }>;
 
-
 export type UploadWorkspaceLogoMutation = { __typename?: 'Mutation', uploadWorkspaceLogo: { __typename?: 'FileWithSignedUrl', url: string } };
 
 export type CheckCustomDomainValidRecordsMutationVariables = Exact<{ [key: string]: never; }>;
 
-
 export type CheckCustomDomainValidRecordsMutation = { __typename?: 'Mutation', checkCustomDomainValidRecords?: { __typename?: 'DomainValidRecords', id: string, domain: string, records: Array<{ __typename?: 'DomainRecord', type: string, key: string, value: string, validationType: string, status: string }> } | null };
 
 export type GetAiSystemPromptPreviewQueryVariables = Exact<{ [key: string]: never; }>;
-
 
 export type GetAiSystemPromptPreviewQuery = { __typename?: 'Query', getAISystemPromptPreview: { __typename?: 'AISystemPromptPreview', estimatedTokenCount: number, sections: Array<{ __typename?: 'AISystemPromptSection', title: string, content: string, estimatedTokenCount: number }> } };
 
 export type GetWorkspaceFromInviteHashQueryVariables = Exact<{
   inviteHash: Scalars['String'];
 }>;
-
 
 export type GetWorkspaceFromInviteHashQuery = { __typename?: 'Query', findWorkspaceFromInviteHash: { __typename?: 'Workspace', id: string, displayName?: string | null, logo?: string | null, allowImpersonation: boolean } };
 
@@ -8156,14 +7626,11 @@ export const RowLevelPermissionPredicateFragmentFragmentDoc = {"kind":"Document"
 export const RowLevelPermissionPredicateGroupFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}}]} as unknown as DocumentNode<RowLevelPermissionPredicateGroupFragmentFragment, unknown>;
 export const ObjectPermissionFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ObjectPermissionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectPermission"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"canReadObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"restrictedFields"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicates"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicate"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberSubFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}}]} as unknown as DocumentNode<ObjectPermissionFragmentFragment, unknown>;
 export const WorkspaceUrlsFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceUrlsFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceUrls"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}}]} as unknown as DocumentNode<WorkspaceUrlsFragmentFragment, unknown>;
-export const BillingSubscriptionSchedulePhaseItemFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}}]} as unknown as DocumentNode<BillingSubscriptionSchedulePhaseItemFragmentFragment, unknown>;
-export const BillingSubscriptionSchedulePhaseFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}}]} as unknown as DocumentNode<BillingSubscriptionSchedulePhaseFragmentFragment, unknown>;
-export const CurrentBillingSubscriptionFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}}]} as unknown as DocumentNode<CurrentBillingSubscriptionFragmentFragment, unknown>;
-export const BillingSubscriptionFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}}]} as unknown as DocumentNode<BillingSubscriptionFragmentFragment, unknown>;
+
 export const RoleFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoleFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Role"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllSettings"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessAllTools"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"canReadAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToUsers"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToAgents"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToApiKeys"}}]}}]} as unknown as DocumentNode<RoleFragmentFragment, unknown>;
 export const AvailableWorkspaceFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<AvailableWorkspaceFragmentFragment, unknown>;
 export const AvailableWorkspacesFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspacesFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspaces"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignIn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignUp"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<AvailableWorkspacesFragmentFragment, unknown>;
-export const UserQueryFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"UserQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"hasPassword"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessFullAdminPanel"}},{"kind":"Field","name":{"kind":"Name","value":"canImpersonate"}},{"kind":"Field","name":{"kind":"Name","value":"supportUserHash"}},{"kind":"Field","name":{"kind":"Name","value":"onboardingStatus"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMember"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"deletedWorkspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentUserWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissionFlags"}},{"kind":"Field","name":{"kind":"Name","value":"objectsPermissions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ObjectPermissionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"strategy"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"allowImpersonation"}},{"kind":"Field","name":{"kind":"Name","value":"activationStatus"}},{"kind":"Field","name":{"kind":"Name","value":"isPublicInviteLinkEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"subdomain"}},{"kind":"Field","name":{"kind":"Name","value":"customDomain"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidSignedEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseValidityToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceCustomApplication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCustomDomainEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceUrlsFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"featureFlags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadataVersion"}},{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingEntitlements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembersCount"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRole"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoleFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fastModel"}},{"kind":"Field","name":{"kind":"Name","value":"smartModel"}},{"kind":"Field","name":{"kind":"Name","value":"aiAdditionalInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"enabledAiModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"useRecommendedModels"}},{"kind":"Field","name":{"kind":"Name","value":"isTwoFactorAuthenticationEnforced"}},{"kind":"Field","name":{"kind":"Name","value":"trashRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"eventLogRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"editableProfileFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspaces"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspacesFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"userVars"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicate"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberSubFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"colorScheme"}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"timeZone"}},{"kind":"Field","name":{"kind":"Name","value":"dateFormat"}},{"kind":"Field","name":{"kind":"Name","value":"timeFormat"}},{"kind":"Field","name":{"kind":"Name","value":"calendarStartDay"}},{"kind":"Field","name":{"kind":"Name","value":"numberFormat"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DeletedWorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ObjectPermissionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectPermission"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"canReadObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"restrictedFields"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicates"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceUrlsFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceUrls"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoleFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Role"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllSettings"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessAllTools"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"canReadAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToUsers"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToAgents"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToApiKeys"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspacesFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspaces"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignIn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignUp"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}}]}}]} as unknown as DocumentNode<UserQueryFragmentFragment, unknown>;
+export const UserQueryFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"UserQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"hasPassword"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessFullAdminPanel"}},{"kind":"Field","name":{"kind":"Name","value":"canImpersonate"}},{"kind":"Field","name":{"kind":"Name","value":"supportUserHash"}},{"kind":"Field","name":{"kind":"Name","value":"onboardingStatus"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMember"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"deletedWorkspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentUserWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissionFlags"}},{"kind":"Field","name":{"kind":"Name","value":"objectsPermissions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ObjectPermissionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"strategy"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"allowImpersonation"}},{"kind":"Field","name":{"kind":"Name","value":"activationStatus"}},{"kind":"Field","name":{"kind":"Name","value":"isPublicInviteLinkEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"subdomain"}},{"kind":"Field","name":{"kind":"Name","value":"customDomain"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidSignedEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseValidityToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceCustomApplication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCustomDomainEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceUrlsFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"featureFlags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadataVersion"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembersCount"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRole"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoleFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fastModel"}},{"kind":"Field","name":{"kind":"Name","value":"smartModel"}},{"kind":"Field","name":{"kind":"Name","value":"aiAdditionalInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"enabledAiModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"useRecommendedModels"}},{"kind":"Field","name":{"kind":"Name","value":"isTwoFactorAuthenticationEnforced"}},{"kind":"Field","name":{"kind":"Name","value":"trashRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"eventLogRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"editableProfileFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspaces"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspacesFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"userVars"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicate"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberSubFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"colorScheme"}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"timeZone"}},{"kind":"Field","name":{"kind":"Name","value":"dateFormat"}},{"kind":"Field","name":{"kind":"Name","value":"timeFormat"}},{"kind":"Field","name":{"kind":"Name","value":"calendarStartDay"}},{"kind":"Field","name":{"kind":"Name","value":"numberFormat"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DeletedWorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ObjectPermissionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectPermission"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"canReadObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"restrictedFields"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicates"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceUrlsFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceUrls"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoleFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Role"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllSettings"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessAllTools"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"canReadAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToUsers"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToAgents"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToApiKeys"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspacesFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspaces"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignIn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignUp"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}}]}}]} as unknown as DocumentNode<UserQueryFragmentFragment, unknown>;
 export const ViewFieldFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewField"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"aggregateOperation"}},{"kind":"Field","name":{"kind":"Name","value":"viewFieldGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}}]} as unknown as DocumentNode<ViewFieldFragmentFragment, unknown>;
 export const ViewFieldGroupFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewFieldGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}},{"kind":"Field","name":{"kind":"Name","value":"viewFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ViewFieldFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewField"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"aggregateOperation"}},{"kind":"Field","name":{"kind":"Name","value":"viewFieldGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}}]} as unknown as DocumentNode<ViewFieldGroupFragmentFragment, unknown>;
 export const ViewFilterFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFilterFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewFilter"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"viewFilterGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInViewFilterGroup"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}}]} as unknown as DocumentNode<ViewFilterFragmentFragment, unknown>;
@@ -8316,14 +7783,14 @@ export const FindManyApplicationRegistrationsDocument = {"kind":"Document","defi
 export const FindOneApplicationRegistrationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FindOneApplicationRegistration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"findOneApplicationRegistration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ApplicationRegistrationFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ApplicationRegistrationFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ApplicationRegistration"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"universalIdentifier"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"logoUrl"}},{"kind":"Field","name":{"kind":"Name","value":"author"}},{"kind":"Field","name":{"kind":"Name","value":"oAuthClientId"}},{"kind":"Field","name":{"kind":"Name","value":"oAuthRedirectUris"}},{"kind":"Field","name":{"kind":"Name","value":"oAuthScopes"}},{"kind":"Field","name":{"kind":"Name","value":"sourceType"}},{"kind":"Field","name":{"kind":"Name","value":"sourcePackage"}},{"kind":"Field","name":{"kind":"Name","value":"latestAvailableVersion"}},{"kind":"Field","name":{"kind":"Name","value":"websiteUrl"}},{"kind":"Field","name":{"kind":"Name","value":"termsUrl"}},{"kind":"Field","name":{"kind":"Name","value":"isListed"}},{"kind":"Field","name":{"kind":"Name","value":"isFeatured"}},{"kind":"Field","name":{"kind":"Name","value":"ownerWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]} as unknown as DocumentNode<FindOneApplicationRegistrationQuery, FindOneApplicationRegistrationQueryVariables>;
 export const UninstallApplicationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UninstallApplication"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"universalIdentifier"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"uninstallApplication"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"universalIdentifier"},"value":{"kind":"Variable","name":{"kind":"Name","value":"universalIdentifier"}}}]}]}}]} as unknown as DocumentNode<UninstallApplicationMutation, UninstallApplicationMutationVariables>;
 export const UpdateOneApplicationVariableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateOneApplicationVariable"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"key"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"value"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"applicationId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UUID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateOneApplicationVariable"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"key"},"value":{"kind":"Variable","name":{"kind":"Name","value":"key"}}},{"kind":"Argument","name":{"kind":"Name","value":"value"},"value":{"kind":"Variable","name":{"kind":"Name","value":"value"}}},{"kind":"Argument","name":{"kind":"Name","value":"applicationId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"applicationId"}}}]}]}}]} as unknown as DocumentNode<UpdateOneApplicationVariableMutation, UpdateOneApplicationVariableMutationVariables>;
-export const CancelSwitchBillingIntervalDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CancelSwitchBillingInterval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cancelSwitchBillingInterval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<CancelSwitchBillingIntervalMutation, CancelSwitchBillingIntervalMutationVariables>;
-export const CancelSwitchMeteredPriceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CancelSwitchMeteredPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cancelSwitchMeteredPrice"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<CancelSwitchMeteredPriceMutation, CancelSwitchMeteredPriceMutationVariables>;
-export const CancelSwitchBillingPlanDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CancelSwitchBillingPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cancelSwitchBillingPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<CancelSwitchBillingPlanMutation, CancelSwitchBillingPlanMutationVariables>;
+export const CancelSwitchBillingIntervalDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<CancelSwitchBillingIntervalMutation, CancelSwitchBillingIntervalMutationVariables>;
+export const CancelSwitchMeteredPriceDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<CancelSwitchMeteredPriceMutation, CancelSwitchMeteredPriceMutationVariables>;
+export const CancelSwitchBillingPlanDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<CancelSwitchBillingPlanMutation, CancelSwitchBillingPlanMutationVariables>;
 export const CheckoutSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CheckoutSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"recurringInterval"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SubscriptionInterval"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"successUrlPath"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"plan"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BillingPlanKey"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"requirePaymentMethod"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkoutSession"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"recurringInterval"},"value":{"kind":"Variable","name":{"kind":"Name","value":"recurringInterval"}}},{"kind":"Argument","name":{"kind":"Name","value":"successUrlPath"},"value":{"kind":"Variable","name":{"kind":"Name","value":"successUrlPath"}}},{"kind":"Argument","name":{"kind":"Name","value":"plan"},"value":{"kind":"Variable","name":{"kind":"Name","value":"plan"}}},{"kind":"Argument","name":{"kind":"Name","value":"requirePaymentMethod"},"value":{"kind":"Variable","name":{"kind":"Name","value":"requirePaymentMethod"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}}]}}]}}]} as unknown as DocumentNode<CheckoutSessionMutation, CheckoutSessionMutationVariables>;
 export const EndSubscriptionTrialPeriodDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"EndSubscriptionTrialPeriod"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"endSubscriptionTrialPeriod"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"hasPaymentMethod"}},{"kind":"Field","name":{"kind":"Name","value":"billingPortalUrl"}}]}}]}}]} as unknown as DocumentNode<EndSubscriptionTrialPeriodMutation, EndSubscriptionTrialPeriodMutationVariables>;
-export const SetMeteredSubscriptionPriceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SetMeteredSubscriptionPrice"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"priceId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"setMeteredSubscriptionPrice"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"priceId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"priceId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<SetMeteredSubscriptionPriceMutation, SetMeteredSubscriptionPriceMutationVariables>;
-export const SwitchBillingPlanDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SwitchBillingPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"switchBillingPlan"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<SwitchBillingPlanMutation, SwitchBillingPlanMutationVariables>;
-export const SwitchSubscriptionIntervalDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SwitchSubscriptionInterval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"switchSubscriptionInterval"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}}]} as unknown as DocumentNode<SwitchSubscriptionIntervalMutation, SwitchSubscriptionIntervalMutationVariables>;
+export const SetMeteredSubscriptionPriceDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<SetMeteredSubscriptionPriceMutation, SetMeteredSubscriptionPriceMutationVariables>;
+export const SwitchBillingPlanDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<SwitchBillingPlanMutation, SwitchBillingPlanMutationVariables>;
+export const SwitchSubscriptionIntervalDocument = {"kind":"Document","definitions":[]} as unknown as DocumentNode<SwitchSubscriptionIntervalMutation, SwitchSubscriptionIntervalMutationVariables>;
 export const BillingPortalSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BillingPortalSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"returnUrlPath"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"billingPortalSession"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"returnUrlPath"},"value":{"kind":"Variable","name":{"kind":"Name","value":"returnUrlPath"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}}]}}]}}]} as unknown as DocumentNode<BillingPortalSessionQuery, BillingPortalSessionQueryVariables>;
 export const GetMeteredProductsUsageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMeteredProductsUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getMeteredProductsUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"usedCredits"}},{"kind":"Field","name":{"kind":"Name","value":"grantedCredits"}},{"kind":"Field","name":{"kind":"Name","value":"rolloverCredits"}},{"kind":"Field","name":{"kind":"Name","value":"totalGrantedCredits"}},{"kind":"Field","name":{"kind":"Name","value":"unitPriceCents"}}]}}]}}]} as unknown as DocumentNode<GetMeteredProductsUsageQuery, GetMeteredProductsUsageQueryVariables>;
 export const ListPlansDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"listPlans"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"listPlans"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"licensedProducts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingLicensedProduct"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"prices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingPriceLicensedFragment"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"meteredProducts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingMeteredProduct"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"prices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingPriceMeteredFragment"}}]}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingPriceLicensedFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingPriceLicensed"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"unitAmount"}},{"kind":"Field","name":{"kind":"Name","value":"recurringInterval"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageType"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingPriceMeteredFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingPriceMetered"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"priceUsageType"}},{"kind":"Field","name":{"kind":"Name","value":"recurringInterval"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"tiers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"flatAmount"}},{"kind":"Field","name":{"kind":"Name","value":"unitAmount"}},{"kind":"Field","name":{"kind":"Name","value":"upTo"}}]}}]}}]} as unknown as DocumentNode<ListPlansQuery, ListPlansQueryVariables>;
@@ -8376,7 +7843,7 @@ export const VerifyTwoFactorAuthenticationMethodForAuthenticatedUserDocument = {
 export const GetUsageAnalyticsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsageAnalytics"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"UsageAnalyticsInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getUsageAnalytics"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usageByUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"creditsUsed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usageByOperationType"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"creditsUsed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usageByModel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"creditsUsed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"timeSeries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"creditsUsed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"periodStart"}},{"kind":"Field","name":{"kind":"Name","value":"periodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"userDailyUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"dailyUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"creditsUsed"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetUsageAnalyticsQuery, GetUsageAnalyticsQueryVariables>;
 export const DeleteUserAccountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteUserAccount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<DeleteUserAccountMutation, DeleteUserAccountMutationVariables>;
 export const DeleteUserWorkspaceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteUserWorkspace"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"workspaceMemberIdToDelete"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteUserFromWorkspace"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"workspaceMemberIdToDelete"},"value":{"kind":"Variable","name":{"kind":"Name","value":"workspaceMemberIdToDelete"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<DeleteUserWorkspaceMutation, DeleteUserWorkspaceMutationVariables>;
-export const GetCurrentUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCurrentUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"UserQueryFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"colorScheme"}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"timeZone"}},{"kind":"Field","name":{"kind":"Name","value":"dateFormat"}},{"kind":"Field","name":{"kind":"Name","value":"timeFormat"}},{"kind":"Field","name":{"kind":"Name","value":"calendarStartDay"}},{"kind":"Field","name":{"kind":"Name","value":"numberFormat"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DeletedWorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicate"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberSubFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ObjectPermissionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectPermission"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"canReadObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"restrictedFields"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicates"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceUrlsFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceUrls"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItem"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"price"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhase"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"start_date"}},{"kind":"Field","name":{"kind":"Name","value":"end_date"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseItemFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"currentPeriodEnd"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptionItems"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"hasReachedCurrentPeriodCap"}},{"kind":"Field","name":{"kind":"Name","value":"quantity"}},{"kind":"Field","name":{"kind":"Name","value":"stripePriceId"}},{"kind":"Field","name":{"kind":"Name","value":"billingProduct"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"productKey"}},{"kind":"Field","name":{"kind":"Name","value":"planKey"}},{"kind":"Field","name":{"kind":"Name","value":"priceUsageBased"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BillingSubscriptionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BillingSubscription"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"}},{"kind":"Field","name":{"kind":"Name","value":"phases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionSchedulePhaseFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoleFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Role"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllSettings"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessAllTools"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"canReadAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToUsers"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToAgents"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToApiKeys"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspacesFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspaces"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignIn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignUp"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"UserQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"hasPassword"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessFullAdminPanel"}},{"kind":"Field","name":{"kind":"Name","value":"canImpersonate"}},{"kind":"Field","name":{"kind":"Name","value":"supportUserHash"}},{"kind":"Field","name":{"kind":"Name","value":"onboardingStatus"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMember"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"deletedWorkspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentUserWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissionFlags"}},{"kind":"Field","name":{"kind":"Name","value":"objectsPermissions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ObjectPermissionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"strategy"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"allowImpersonation"}},{"kind":"Field","name":{"kind":"Name","value":"activationStatus"}},{"kind":"Field","name":{"kind":"Name","value":"isPublicInviteLinkEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"subdomain"}},{"kind":"Field","name":{"kind":"Name","value":"customDomain"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidSignedEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseValidityToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceCustomApplication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCustomDomainEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceUrlsFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"featureFlags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadataVersion"}},{"kind":"Field","name":{"kind":"Name","value":"currentBillingSubscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CurrentBillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingSubscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"BillingSubscriptionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"billingEntitlements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembersCount"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRole"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoleFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fastModel"}},{"kind":"Field","name":{"kind":"Name","value":"smartModel"}},{"kind":"Field","name":{"kind":"Name","value":"aiAdditionalInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"enabledAiModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"useRecommendedModels"}},{"kind":"Field","name":{"kind":"Name","value":"isTwoFactorAuthenticationEnforced"}},{"kind":"Field","name":{"kind":"Name","value":"trashRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"eventLogRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"editableProfileFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspaces"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspacesFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"userVars"}}]}}]} as unknown as DocumentNode<GetCurrentUserQuery, GetCurrentUserQueryVariables>;
+export const GetCurrentUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCurrentUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"UserQueryFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"colorScheme"}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}},{"kind":"Field","name":{"kind":"Name","value":"timeZone"}},{"kind":"Field","name":{"kind":"Name","value":"dateFormat"}},{"kind":"Field","name":{"kind":"Name","value":"timeFormat"}},{"kind":"Field","name":{"kind":"Name","value":"calendarStartDay"}},{"kind":"Field","name":{"kind":"Name","value":"numberFormat"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userWorkspaceId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"DeletedWorkspaceMember"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicate"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"operand"}},{"kind":"Field","name":{"kind":"Name","value":"subFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberFieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMemberSubFieldName"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"parentRowLevelPermissionPredicateGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"logicalOperator"}},{"kind":"Field","name":{"kind":"Name","value":"positionInRowLevelPermissionPredicateGroup"}},{"kind":"Field","name":{"kind":"Name","value":"roleId"}},{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ObjectPermissionFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectPermission"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"objectMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"canReadObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"restrictedFields"}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicates"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rowLevelPermissionPredicateGroups"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RowLevelPermissionPredicateGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"WorkspaceUrlsFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"WorkspaceUrls"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoleFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Role"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllSettings"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessAllTools"}},{"kind":"Field","name":{"kind":"Name","value":"isEditable"}},{"kind":"Field","name":{"kind":"Name","value":"canReadAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canUpdateAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canSoftDeleteAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canDestroyAllObjectRecords"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToUsers"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToAgents"}},{"kind":"Field","name":{"kind":"Name","value":"canBeAssignedToApiKeys"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspaceFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspace"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"loginToken"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"personalInviteToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subdomainUrl"}},{"kind":"Field","name":{"kind":"Name","value":"customUrl"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"sso"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"issuer"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AvailableWorkspacesFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AvailableWorkspaces"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignIn"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspacesForSignUp"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspaceFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"UserQueryFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"hasPassword"}},{"kind":"Field","name":{"kind":"Name","value":"canAccessFullAdminPanel"}},{"kind":"Field","name":{"kind":"Name","value":"canImpersonate"}},{"kind":"Field","name":{"kind":"Name","value":"supportUserHash"}},{"kind":"Field","name":{"kind":"Name","value":"onboardingStatus"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMember"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PartialWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"deletedWorkspaceMembers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"DeletedWorkspaceMemberQueryFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentUserWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissionFlags"}},{"kind":"Field","name":{"kind":"Name","value":"objectsPermissions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ObjectPermissionFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"twoFactorAuthenticationMethodId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"strategy"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"currentWorkspace"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"logo"}},{"kind":"Field","name":{"kind":"Name","value":"inviteHash"}},{"kind":"Field","name":{"kind":"Name","value":"allowImpersonation"}},{"kind":"Field","name":{"kind":"Name","value":"activationStatus"}},{"kind":"Field","name":{"kind":"Name","value":"isPublicInviteLinkEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGoogleAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isMicrosoftAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isPasswordAuthBypassEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"subdomain"}},{"kind":"Field","name":{"kind":"Name","value":"customDomain"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidSignedEnterpriseKey"}},{"kind":"Field","name":{"kind":"Name","value":"hasValidEnterpriseValidityToken"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceCustomApplication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCustomDomainEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceUrls"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"WorkspaceUrlsFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"featureFlags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"metadataVersion"}},{"kind":"Field","name":{"kind":"Name","value":"workspaceMembersCount"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRole"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoleFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fastModel"}},{"kind":"Field","name":{"kind":"Name","value":"smartModel"}},{"kind":"Field","name":{"kind":"Name","value":"aiAdditionalInstructions"}},{"kind":"Field","name":{"kind":"Name","value":"enabledAiModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"useRecommendedModels"}},{"kind":"Field","name":{"kind":"Name","value":"isTwoFactorAuthenticationEnforced"}},{"kind":"Field","name":{"kind":"Name","value":"trashRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"eventLogRetentionDays"}},{"kind":"Field","name":{"kind":"Name","value":"editableProfileFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"availableWorkspaces"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AvailableWorkspacesFragment"}}]}},{"kind":"Field","name":{"kind":"Name","value":"userVars"}}]}}]} as unknown as DocumentNode<GetCurrentUserQuery, GetCurrentUserQueryVariables>;
 export const CreateManyViewFieldGroupsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateManyViewFieldGroups"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateViewFieldGroupInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createManyViewFieldGroups"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"inputs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ViewFieldGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewField"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"aggregateOperation"}},{"kind":"Field","name":{"kind":"Name","value":"viewFieldGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewFieldGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}},{"kind":"Field","name":{"kind":"Name","value":"viewFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ViewFieldFragment"}}]}}]}}]} as unknown as DocumentNode<CreateManyViewFieldGroupsMutation, CreateManyViewFieldGroupsMutationVariables>;
 export const CreateManyViewFieldsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateManyViewFields"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateViewFieldInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createManyViewFields"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"inputs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ViewFieldFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewFieldFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewField"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fieldMetadataId"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"aggregateOperation"}},{"kind":"Field","name":{"kind":"Name","value":"viewFieldGroupId"}},{"kind":"Field","name":{"kind":"Name","value":"isOverridden"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}}]} as unknown as DocumentNode<CreateManyViewFieldsMutation, CreateManyViewFieldsMutationVariables>;
 export const CreateManyViewGroupsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateManyViewGroups"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateViewGroupInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createManyViewGroups"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"inputs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"inputs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"ViewGroupFragment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ViewGroupFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ViewGroup"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isVisible"}},{"kind":"Field","name":{"kind":"Name","value":"fieldValue"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"viewId"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"deletedAt"}}]}}]} as unknown as DocumentNode<CreateManyViewGroupsMutation, CreateManyViewGroupsMutationVariables>;
