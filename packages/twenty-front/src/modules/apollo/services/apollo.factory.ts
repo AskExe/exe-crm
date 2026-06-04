@@ -161,14 +161,47 @@ export class ApolloFactory implements ApolloManager {
 
       const attemptTokenRenewal = async (): Promise<void> => {
         const graphqlUri = `${REACT_APP_SERVER_BASE_URL}/metadata`;
+        const tokenPair = getTokenPair();
+
+        if (!tokenPair) {
+          // oxlint-disable-next-line no-console
+          console.log(
+            '[Auth] Token renewal skipped — no token pair in cookie',
+          );
+          throw new Error('No token pair available for renewal');
+        }
+
+        // oxlint-disable-next-line no-console
+        console.log(
+          '[Auth] Attempting token renewal',
+          'hasRefreshToken:',
+          isDefined(tokenPair.refreshToken?.token),
+        );
 
         const tokens = await retryWithBackoff(
           () => renewToken(graphqlUri, getTokenPair()),
           {
             maxRetries: TOKEN_RENEWAL_MAX_RETRIES,
             baseDelayMs: TOKEN_RENEWAL_RETRY_DELAY_MS,
-            shouldRetry: (error) =>
-              !CombinedGraphQLErrors.is(error) && isDefined(getTokenPair()),
+            shouldRetry: (error) => {
+              const hasTokenPair = isDefined(getTokenPair());
+              const isGraphQLError = CombinedGraphQLErrors.is(error);
+
+              // oxlint-disable-next-line no-console
+              console.log(
+                '[Auth] Token renewal retry check:',
+                'isGraphQLError:',
+                isGraphQLError,
+                'hasTokenPair:',
+                hasTokenPair,
+                'willRetry:',
+                !isGraphQLError && hasTokenPair,
+                'error:',
+                error instanceof Error ? error.message : String(error),
+              );
+
+              return !isGraphQLError && hasTokenPair;
+            },
           },
         );
 
@@ -183,10 +216,12 @@ export class ApolloFactory implements ApolloManager {
       ) => {
         if (!renewalPromise) {
           renewalPromise = attemptTokenRenewal()
-            .catch(() => {
+            .catch((error) => {
               // oxlint-disable-next-line no-console
               console.log(
-                'Failed to renew token after retries, triggering unauthenticated error',
+                '[Auth] Token renewal failed, redirecting to sign-in.',
+                'Error:',
+                error instanceof Error ? error.message : String(error),
               );
               onUnauthenticatedError?.();
             })

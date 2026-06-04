@@ -8,6 +8,9 @@ export const isValidAuthTokenPair = (
     typeof tokenPair === 'object' &&
     tokenPair.accessOrWorkspaceAgnosticToken &&
     typeof tokenPair.accessOrWorkspaceAgnosticToken === 'object' &&
-    typeof tokenPair.accessOrWorkspaceAgnosticToken.token === 'string'
+    typeof tokenPair.accessOrWorkspaceAgnosticToken.token === 'string' &&
+    tokenPair.refreshToken &&
+    typeof tokenPair.refreshToken === 'object' &&
+    typeof tokenPair.refreshToken.token === 'string'
   );
 };

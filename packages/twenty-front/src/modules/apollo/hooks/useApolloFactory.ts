@@ -66,23 +66,45 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        // oxlint-disable-next-line no-console
+        console.log(
+          '[Auth] Token renewal failed — clearing session and redirecting to sign-in',
+        );
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);
         setCurrentWorkspace(null);
         setCurrentUserWorkspace(null);
-        if (
-          !isMatchingLocation(location, AppPath.Verify) &&
-          !isMatchingLocation(location, AppPath.SignInUp) &&
-          !isMatchingLocation(location, AppPath.Invite) &&
-          !isMatchingLocation(location, AppPath.ResetPassword)
-        ) {
-          const path = `${location.pathname}${location.search}${location.hash}`;
 
-          if (isValidReturnToPath(path)) {
-            setReturnToPath(path);
+        // Use window.location for fresh pathname — the `location` from
+        // useLocation() is captured once in the useMemo closure and may be
+        // stale by the time this callback fires.
+        const currentPath = window.location.pathname;
+        const authPaths = [
+          AppPath.Verify,
+          AppPath.SignInUp,
+          AppPath.Invite,
+          AppPath.ResetPassword,
+        ];
+        const isOnAuthPage = authPaths.some(
+          (authPath) =>
+            currentPath === authPath || currentPath.startsWith(authPath + '/'),
+        );
+
+        if (!isOnAuthPage) {
+          const fullPath = `${currentPath}${window.location.search}${window.location.hash}`;
+
+          if (isValidReturnToPath(fullPath)) {
+            setReturnToPath(fullPath);
           }
-          navigate(AppPath.SignInUp);
+
+          try {
+            navigate(AppPath.SignInUp);
+          } catch {
+            // Fallback: if React Router navigate fails (e.g. during
+            // unmount or render cycle), use hard redirect.
+            window.location.href = AppPath.SignInUp;
+          }
         }
       },
       onAppVersionMismatch: (message) => {

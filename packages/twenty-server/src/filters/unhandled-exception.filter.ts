@@ -56,7 +56,7 @@ export class UnhandledExceptionFilter implements ExceptionFilter {
       );
       response.header(
         'Access-Control-Allow-Headers',
-        'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-locale, X-Schema-Version, X-App-Version',
       );
     }
 

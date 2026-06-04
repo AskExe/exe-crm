@@ -83,6 +83,17 @@ const bootstrap = async () => {
 
   app.enableCors({
     credentials: true,
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'x-locale',
+      'X-Schema-Version',
+      'X-App-Version',
+    ],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     origin: (origin, callback) => {
       void isOriginAllowed({
         origin,

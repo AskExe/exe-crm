@@ -53,6 +53,12 @@ export const renewToken = async (
     throw new Error('Refresh token is not defined');
   }
 
+  if (!tokenPair.refreshToken?.token) {
+    throw new Error(
+      'Refresh token is missing from token pair — cookie may be corrupt',
+    );
+  }
+
   const data = await renewTokenMutation(uri, tokenPair.refreshToken.token);
 
   return data?.renewToken.tokens;

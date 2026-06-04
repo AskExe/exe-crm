@@ -180,6 +180,9 @@ describe('getTokenPair', () => {
         accessOrWorkspaceAgnosticToken: {
           token: 'minimal-access-token',
         },
+        refreshToken: {
+          token: 'minimal-refresh-token',
+        },
       };
       mockCookieStorage.getItem.mockReturnValue(JSON.stringify(validTokenPair));
 
@@ -187,6 +190,22 @@ describe('getTokenPair', () => {
 
       expect(result).toEqual(validTokenPair);
       expect(mockCookieStorage.removeItem).not.toHaveBeenCalled();
+    });
+
+    it('should remove cookie and return undefined when refreshToken is missing', () => {
+      const missingRefresh = {
+        accessOrWorkspaceAgnosticToken: {
+          token: 'access-token',
+        },
+      };
+      mockCookieStorage.getItem.mockReturnValue(
+        JSON.stringify(missingRefresh),
+      );
+
+      const result = getTokenPair();
+
+      expect(result).toBeUndefined();
+      expect(mockCookieStorage.removeItem).toHaveBeenCalledWith('tokenPair');
     });
 
     it('should return valid tokenPair with extra fields', () => {
@@ -234,6 +253,9 @@ describe('getTokenPair', () => {
         accessOrWorkspaceAgnosticToken: {
           token: longToken,
         },
+        refreshToken: {
+          token: 'refresh-token',
+        },
       };
       mockCookieStorage.getItem.mockReturnValue(JSON.stringify(validTokenPair));
 
@@ -248,6 +270,9 @@ describe('getTokenPair', () => {
       const validTokenPair = {
         accessOrWorkspaceAgnosticToken: {
           token: unicodeToken,
+        },
+        refreshToken: {
+          token: 'refresh-token',
         },
       };
       mockCookieStorage.getItem.mockReturnValue(JSON.stringify(validTokenPair));
