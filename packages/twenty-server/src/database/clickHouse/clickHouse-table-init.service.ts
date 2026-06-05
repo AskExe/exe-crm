@@ -14,7 +14,7 @@ const TABLE_DEFINITIONS = [
     \`properties\`  JSON
   ) ENGINE = MergeTree
     ORDER BY (workspaceId, timestamp, event, userId)
-    TTL timestamp + INTERVAL 3 YEAR DELETE`,
+    TTL toDateTime(timestamp) + INTERVAL 3 YEAR DELETE`,
 
   `CREATE TABLE IF NOT EXISTS pageview (
     \`name\`        LowCardinality(String) NOT NULL,
@@ -24,7 +24,7 @@ const TABLE_DEFINITIONS = [
     \`properties\`  JSON
   ) ENGINE = MergeTree
     ORDER BY (workspaceId, timestamp, name, userId)
-    TTL timestamp + INTERVAL 3 YEAR DELETE`,
+    TTL toDateTime(timestamp) + INTERVAL 3 YEAR DELETE`,
 
   `CREATE TABLE IF NOT EXISTS objectEvent (
     \`event\`            LowCardinality(String) NOT NULL,
@@ -37,7 +37,7 @@ const TABLE_DEFINITIONS = [
     \`isCustom\`         Boolean DEFAULT FALSE
   ) ENGINE = MergeTree
     ORDER BY (workspaceId, timestamp, event, userId)
-    TTL timestamp + INTERVAL 3 YEAR DELETE`,
+    TTL toDateTime(timestamp) + INTERVAL 3 YEAR DELETE`,
 
   `CREATE TABLE IF NOT EXISTS usageEvent (
     \`timestamp\`          DateTime64(3) NOT NULL,
@@ -53,7 +53,7 @@ const TABLE_DEFINITIONS = [
     \`metadata\`           JSON
   ) ENGINE = MergeTree
     ORDER BY (workspaceId, timestamp, resourceType, operationType, userWorkspaceId, resourceId)
-    TTL timestamp + INTERVAL 3 YEAR DELETE`,
+    TTL toDateTime(timestamp) + INTERVAL 3 YEAR DELETE`,
 ];
 
 @Injectable()
