@@ -23,6 +23,7 @@ import { CheckCustomDomainValidRecordsCronCommand } from 'src/engine/core-module
 import { CheckCustomDomainValidRecordsCronJob } from 'src/engine/core-modules/workspace/crons/jobs/check-custom-domain-valid-records.cron.job';
 import { CoreEntityCacheModule } from 'src/engine/core-entity-cache/core-entity-cache.module';
 import { WorkspaceEntityCacheProviderService } from 'src/engine/core-modules/workspace/services/workspace-entity-cache-provider.service';
+import { WorkspaceBootstrapService } from 'src/engine/core-modules/workspace/services/workspace-bootstrap.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceGaugeService } from 'src/engine/core-modules/workspace/workspace-gauge.service';
 import { workspaceAutoResolverOpts } from 'src/engine/core-modules/workspace/workspace.auto-resolver-opts';
@@ -86,6 +87,7 @@ import { StandardObjectsPrefillModule } from 'src/engine/workspace-manager/stand
   providers: [
     WorkspaceResolver,
     WorkspaceService,
+    WorkspaceBootstrapService,
     WorkspaceGaugeService,
     WorkspaceEntityCacheProviderService,
     CheckCustomDomainValidRecordsCronCommand,
