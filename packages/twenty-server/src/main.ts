@@ -85,6 +85,20 @@ const bootstrap = async () => {
 
   app.enableCors({
     credentials: true,
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Schema-Version',
+      'X-App-Version',
+      'x-locale',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      // Agent/webhook headers used by exe-os integrations
+      'X-Agent-Id',
+      'X-Agent-Role',
+      'X-Webhook-Signature',
+    ],
     origin: (origin, callback) => {
       void isOriginAllowed({
         origin,
