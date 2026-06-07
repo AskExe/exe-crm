@@ -215,7 +215,7 @@ export class GoTrueAuthController {
             email,
             firstName: email.split('@')[0] ?? 'User',
             lastName: '',
-            picture: null,
+            picture: undefined,
           },
         });
 
@@ -229,7 +229,7 @@ export class GoTrueAuthController {
         if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
           try {
             await this.workspaceService.activateWorkspace(
-              ctx.user,
+              ctx.user as any,
               ctx.workspace,
               { displayName: wsName },
             );
@@ -262,7 +262,7 @@ export class GoTrueAuthController {
     if (ctx!.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
       try {
         await this.workspaceService.activateWorkspace(
-          ctx!.user,
+          ctx!.user as any,
           ctx!.workspace,
           { displayName: ctx!.workspace.displayName || workspaceName || 'Exe' },
         );
@@ -332,7 +332,7 @@ export class GoTrueAuthController {
 
         if (user) {
           await this.workspaceService.activateWorkspace(
-            user,
+            user as any,
             workspace,
             { displayName: workspace.displayName || 'Exe' },
           );
