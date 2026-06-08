@@ -63,6 +63,13 @@ export class UnhandledExceptionFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : 500;
 
-    response.status(status).json(exception.response);
+    // Never leak internal error details (stack traces, DB URLs) to clients.
+    // HttpException responses are safe (controlled by our code).
+    // Non-HttpException (500) errors are sanitized to prevent info disclosure.
+    const body = exception instanceof HttpException
+      ? exception.getResponse()
+      : { statusCode: 500, message: "Internal Server Error" };
+
+    response.status(status).json(body);
   }
 }
