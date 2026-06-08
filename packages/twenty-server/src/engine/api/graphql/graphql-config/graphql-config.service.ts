@@ -59,8 +59,6 @@ export class GraphQLConfigService implements GqlOptionsFactory<
   ) {}
 
   createGqlOptions(): YogaDriverConfig {
-    const isDebugMode =
-      this.twentyConfigService.get('NODE_ENV') === NodeEnvironment.DEVELOPMENT;
     const plugins = [
       useGraphQLQueryTiming({
         featureFlagService: this.featureFlagService,
@@ -84,6 +82,7 @@ export class GraphQLConfigService implements GqlOptionsFactory<
         maximumAllowedRootResolvers: this.twentyConfigService.get(
           'GRAPHQL_MAX_ROOT_RESOLVERS',
         ),
+        maximumAllowedNestedFields: 10,
         checkDuplicateRootResolvers: true,
       }),
     ];
@@ -161,7 +160,7 @@ export class GraphQLConfigService implements GqlOptionsFactory<
       }),
     };
 
-    if (isDebugMode) {
+    if (process.env.ENABLE_GRAPHQL_PLAYGROUND === 'true') {
       config.renderGraphiQL = () => {
         return renderApolloPlayground();
       };

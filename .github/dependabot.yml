@@ -12,9 +12,13 @@ updates:
       - "mabdullahabaid"
     ignore:
       - dependency-name: "@graphql-yoga/nestjs"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "@nestjs/graphql"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "@ptc-org/nestjs-query-graphql"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "typeorm"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "docker"
     directory: "/packages/twenty-docker/twenty"

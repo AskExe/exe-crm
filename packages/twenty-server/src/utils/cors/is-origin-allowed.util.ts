@@ -34,7 +34,7 @@ export const isOriginAllowed = async ({
   workspaceDomainsService: WorkspaceDomainsService;
 }) => {
   if (!origin) {
-    return true;
+    return false;
   }
 
   const normalizedOrigin = normalizeOrigin(origin);

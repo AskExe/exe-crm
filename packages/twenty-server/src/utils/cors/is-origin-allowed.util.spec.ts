@@ -87,6 +87,16 @@ describe('isOriginAllowed', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('rejects requests with no origin (null origin bypass prevention)', async () => {
+    await expect(
+      isOriginAllowed({
+        origin: undefined,
+        twentyConfigService,
+        workspaceDomainsService,
+      }),
+    ).resolves.toBe(false);
+  });
+
   it('allows workspace origins resolved through the workspace domains service', async () => {
     mockConfig({
       IS_MULTIWORKSPACE_ENABLED: true,

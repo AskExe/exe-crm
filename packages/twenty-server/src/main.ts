@@ -5,6 +5,7 @@ import fs from 'fs';
 
 import bytes from 'bytes';
 import { useContainer } from 'class-validator';
+import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
@@ -114,6 +115,16 @@ const bootstrap = async () => {
         .catch((error) => callback(error, false));
     },
   });
+
+  // Global rate limiting: 300 requests per minute per IP
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      max: 300,
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
+  );
 
   app.use(session(getSessionStorageOptions(twentyConfigService)));
 

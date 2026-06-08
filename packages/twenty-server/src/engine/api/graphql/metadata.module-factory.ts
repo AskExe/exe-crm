@@ -35,9 +35,6 @@ export const metadataModuleFactory = async (
     buildSchemaOptions: {
       orphanedTypes: [ClientConfig],
     },
-    renderGraphiQL() {
-      return renderApolloPlayground({ path: 'metadata' });
-    },
     resolvers: { JSON: GraphQLJSON },
     plugins: [
       useGraphQLQueryTiming({ featureFlagService }),
@@ -68,7 +65,7 @@ export const metadataModuleFactory = async (
     }),
   };
 
-  if (twentyConfigService.get('NODE_ENV') === NodeEnvironment.DEVELOPMENT) {
+  if (process.env.ENABLE_GRAPHQL_PLAYGROUND === 'true') {
     config.renderGraphiQL = () => {
       return renderApolloPlayground({ path: 'metadata' });
     };
