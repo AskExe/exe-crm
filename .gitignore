@@ -65,3 +65,4 @@ TRANSLATION_QA_REPORT.md
 
 # Agent/runtime local state (exe-os)
 .claude/scheduled_tasks.lock
+packages/twenty-docker/.env
