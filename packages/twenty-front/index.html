@@ -94,9 +94,26 @@
         margin: 0;
         padding: 0;
       }
-      /* Hide root until React hydrates — prevents white flash from empty div */
+      /* Pre-React loading state — visible on first paint while JS parses.
+         Fixes mobile Safari black screen on initial load (bug 3526a764).
+         React.createRoot replaces #root children, removing the spinner. */
       #root:empty {
-        visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+      }
+      #root:empty::after {
+        content: '';
+        width: 28px;
+        height: 28px;
+        border: 2.5px solid rgba(245, 215, 110, 0.15);
+        border-top-color: #F5D76E;
+        border-radius: 50%;
+        animation: exe-spin 0.7s linear infinite;
+      }
+      @keyframes exe-spin {
+        to { transform: rotate(360deg); }
       }
       /* Kill any stray borders/lines from Twenty's default light theme */
       *, *::before, *::after {
