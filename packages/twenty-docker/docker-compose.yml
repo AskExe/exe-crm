@@ -17,7 +17,7 @@ services:
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
       SERVER_URL: '${SERVER_URL:?SERVER_URL is required - set to your externally-reachable origin e.g. https://crm.example.com}'
       FRONTEND_URL: '${FRONTEND_URL:-${SERVER_URL}}'
-      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-exe-crm-redis-default}@redis:6379}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379}
       DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS:-}
       DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION:-}
 
@@ -95,7 +95,7 @@ services:
       PG_DATABASE_URL: ${PG_DATABASE_URL:-postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}}
       SERVER_URL: '${SERVER_URL:?SERVER_URL is required - set to your externally-reachable origin e.g. https://crm.example.com}'
       FRONTEND_URL: '${FRONTEND_URL:-${SERVER_URL}}'
-      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-exe-crm-redis-default}@redis:6379}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379}
       DISABLE_DB_MIGRATIONS: 'true' # it already runs on the server
       DISABLE_CRON_JOBS_REGISTRATION: 'true' # it already runs on the server
 
@@ -191,9 +191,9 @@ services:
         limits:
           memory: 512m
           cpus: '0.5'
-    command: ['--maxmemory-policy', 'noeviction', '--requirepass', '${REDIS_PASSWORD:-exe-crm-redis-default}']
+    command: ['--maxmemory-policy', 'noeviction', '--requirepass', '${REDIS_PASSWORD:?Set REDIS_PASSWORD}']
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-exe-crm-redis-default}', '--no-auth-warning', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:?Set REDIS_PASSWORD}', '--no-auth-warning', 'ping']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -204,7 +204,11 @@ services:
     command:
       - -c
       - |
+        apk add --no-cache gnupg >/dev/null 2>&1
         echo "Starting backup cron (every 6 hours)..."
+        if [ -z "$${EXE_BACKUP_KEY}" ]; then
+          echo "WARNING: EXE_BACKUP_KEY not set — backups will NOT be encrypted!"
+        fi
         while true; do
           TIMESTAMP=$$(date +%Y%m%d_%H%M%S)
           echo "[$${TIMESTAMP}] Running pg_dump..."
@@ -212,8 +216,17 @@ services:
             -h db -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-default} \
             --format=custom \
             --file=/backups/exe-crm_$${TIMESTAMP}.dump
-          # Keep only the last 7 backups (42 hours of coverage)
-          ls -t /backups/exe-crm_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+          if [ -n "$${EXE_BACKUP_KEY}" ]; then
+            echo "[$${TIMESTAMP}] Encrypting backup with GPG..."
+            gpg --batch --yes --symmetric --cipher-algo AES256 \
+              --passphrase "$${EXE_BACKUP_KEY}" \
+              --output /backups/exe-crm_$${TIMESTAMP}.dump.gpg \
+              /backups/exe-crm_$${TIMESTAMP}.dump
+            rm -f /backups/exe-crm_$${TIMESTAMP}.dump
+            ls -t /backups/exe-crm_*.dump.gpg 2>/dev/null | tail -n +8 | xargs -r rm -f
+          else
+            ls -t /backups/exe-crm_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+          fi
           echo "[$${TIMESTAMP}] Backup complete. Next in 6h."
           sleep 21600
         done
@@ -221,6 +234,7 @@ services:
       POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:?Set PG_DATABASE_PASSWORD}
       POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
       POSTGRES_DB: ${PG_DATABASE_NAME:-default}
+      EXE_BACKUP_KEY: ${EXE_BACKUP_KEY:-}
     volumes:
       - db-backups:/backups
     healthcheck:
