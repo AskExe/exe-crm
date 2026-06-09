@@ -68,11 +68,12 @@ export class WorkspaceBootstrapService implements OnModuleInit {
 
     try {
       // 1. Create the application record (workspace FK requires it)
+      // universalIdentifier is a uuid column — must be a valid UUID, not a slug
       await queryRunner.query(
         `INSERT INTO core.application (id, name, "universalIdentifier")
          VALUES ($1, $2, $3)
          ON CONFLICT DO NOTHING`,
-        [applicationId, 'Exe CRM', `exe-crm-${workspaceId.slice(0, 8)}`],
+        [applicationId, 'Exe CRM', applicationId],
       );
 
       // 2. Create the workspace

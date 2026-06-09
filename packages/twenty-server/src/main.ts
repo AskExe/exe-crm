@@ -101,17 +101,27 @@ const bootstrap = async () => {
       'X-Webhook-Signature',
     ],
     origin: (origin, callback) => {
+      // Requests without an Origin header (curl, server-to-server, same-origin
+      // navigations that browsers suppress) are allowed through — the browser
+      // won't expose the response anyway.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
       void isOriginAllowed({
         origin,
         twentyConfigService,
         workspaceDomainsService,
       })
-        .then((allowed) =>
-          callback(
-            allowed ? null : new Error('Origin not allowed by CORS'),
-            allowed,
-          ),
-        )
+        .then((allowed) => {
+          // Pass null (not an Error) for rejected origins so the CORS middleware
+          // returns a proper 403/no-CORS-headers response instead of a 500.
+          // Passing `new Error(...)` causes Express to treat it as a server
+          // error, which is why browsers see 500 but curl (no Origin header)
+          // sees 200 for the same static assets.
+          callback(null, allowed);
+        })
         .catch((error) => callback(error, false));
     },
   });
