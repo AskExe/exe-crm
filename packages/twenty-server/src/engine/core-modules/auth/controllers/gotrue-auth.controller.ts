@@ -1,6 +1,7 @@
 import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
 import { type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash, timingSafeEqual } from 'crypto';
 import { DataSource, Repository } from 'typeorm';
 
 import * as bcrypt from 'bcrypt';
@@ -30,7 +31,7 @@ import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 export class GoTrueAuthController {
   private readonly logger = new Logger(GoTrueAuthController.name);
   private readonly gotrueUrl: string | undefined;
-  private readonly adminToken: string | undefined;
+  private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
 
   constructor(
@@ -46,7 +47,11 @@ export class GoTrueAuthController {
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
   ) {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
-    this.adminToken = process.env.EXE_CRM_ADMIN_TOKEN;
+    const rawToken = process.env.EXE_CRM_ADMIN_TOKEN;
+
+    this.adminTokenHash = rawToken
+      ? createHash('sha256').update(rawToken).digest()
+      : undefined;
     this.serverBaseUrl = process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
   }
 
@@ -178,8 +183,13 @@ export class GoTrueAuthController {
       if (!gotrueRes.ok) {
         const errBody = await gotrueRes.json().catch(() => ({}));
 
+        this.logger.warn(
+          `GoTrue auth failed for ${email}: status=${gotrueRes.status} ` +
+            `error=${errBody?.error_description || errBody?.msg || 'unknown'}`,
+        );
+
         return res.status(401).json({
-          error: errBody?.error_description || errBody?.msg || 'Invalid email or password',
+          error: 'Authentication failed',
         });
       }
 
@@ -300,12 +310,19 @@ export class GoTrueAuthController {
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    if (!this.adminToken) {
+    if (!this.adminTokenHash) {
       return res.status(500).json({ error: 'Admin token not configured' });
     }
 
-    if (token !== this.adminToken) {
-      return res.status(401).json({ error: 'Invalid admin token' });
+    const incomingHash = createHash('sha256').update(token).digest();
+
+    if (
+      incomingHash.length !== this.adminTokenHash.length ||
+      !timingSafeEqual(incomingHash, this.adminTokenHash)
+    ) {
+      this.logger.warn('Admin token login rejected');
+
+      return res.status(401).json({ error: 'Authentication failed' });
     }
 
     const workspace = await this.getWorkspace();
