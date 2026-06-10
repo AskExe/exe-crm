@@ -143,9 +143,51 @@ Exe CRM does not currently expose its own MCP server. It is consumed as a standa
 
 > **Note:** `twenty-companies.com` is an upstream (Twenty) service. It is not Exe-controlled. Customer data (company names) is sent to this service for enrichment. If this conflicts with data sovereignty requirements, disable company enrichment or replace the `TWENTY_COMPANIES_BASE_URL` constant in `packages/twenty-shared/src/constants/TwentyCompaniesBaseUrl.ts`.
 
+## Stack Contract Compliance
+
+### GoTrue Security Policy
+
+When `GOTRUE_URL` is configured for external auth:
+- Signup endpoint MUST be disabled on the GoTrue instance
+- `MAILER_AUTOCONFIRM` must be set to `false` (users confirm email)
+- JWT audience MUST match `GOTRUE_JWT_AUDIENCE`
+
+### UI Section States
+
+All major UI sections (tables, forms, sidebars, panels) must implement:
+- **loading** — data is being fetched
+- **ready** — data loaded and displayed
+- **empty** — no data exists (distinguish from error)
+- **error** — fetch/operation failed with human-readable message and retry affordance
+- **degraded** — partial function available, names what is unavailable
+
+CRM tables/API contracts must fail with explicit degraded/error states, not skeleton forever.
+
+### Progress Events
+
+Long-running operations (workflow execution, data imports) must emit events with:
+
+| Field | Required | Description |
+|---|---|---|
+| `operationId` | Yes | Unique ID for the operation |
+| `phase` | Yes | Current phase name |
+| `label` | Yes | Human-readable description |
+| `status` | Yes | queued / running / blocked / degraded / succeeded / failed / cancelled |
+| `updatedAt` | Yes | ISO timestamp |
+| `current` / `total` | Optional | Only when accurately measurable |
+
+Fake, timer-only, or cosmetic progress is forbidden.
+
+### Error Forwarding
+
+All 5xx backend errors are forwarded to exe-monitor-hub via `ErrorForwardingFilter` and `ErrorForwardingService`.
+Configured by `MONITOR_ERROR_URL` and `ERROR_REPORTING_ENABLED` (default: `true`).
+Fire-and-forget with 5-second timeout.
+
 ## Cross-Repo Dependencies
 
 | Dependency | Relationship                                                                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **exe-os** | Orchestration layer. Launches exe-crm via Docker Compose. Reads `SERVER_URL` to proxy API calls.                                                 |
 | **exe-db** | Optional shared PostgreSQL instance. When using exe-db, set `PG_DATABASE_URL` to point at the exe-db host instead of the bundled `db` container. |
+| **exe-monitor-hub** | Receives error/degradation alerts via error-forwarding service.                                                                         |
