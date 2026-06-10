@@ -29,6 +29,20 @@ async function bootstrap() {
 
   await CommandFactory.runApplication(app);
 
-  app.close();
+  // Graceful shutdown: await close so NestJS runs onModuleDestroy hooks
+  // (Redis quit, TypeORM disconnect, etc.). Without await, the process hangs
+  // because open connections keep the event loop alive.
+  // Safety timeout: force exit if close itself hangs (e.g., stuck Redis conn).
+  const forceExitTimer = setTimeout(() => {
+    loggerService.warn(
+      'app.close() did not finish within 10 s — forcing exit',
+    );
+    process.exit(0);
+  }, 10_000);
+
+  // Unref so the timer alone doesn't keep the process alive
+  forceExitTimer.unref();
+
+  await app.close();
 }
 bootstrap();
