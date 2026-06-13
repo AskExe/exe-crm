@@ -1,6 +1,7 @@
 import { RecordPageSidePanelCommandMenu } from '@/command-menu-item/components/RecordPageSidePanelCommandMenu';
 import { RecordShowSidePanelOpenRecordButton } from '@/command-menu-item/components/RecordShowSidePanelOpenRecordButton';
 import { InformationBannerDeletedRecord } from '@/information-banner/components/deleted-record/InformationBannerDeletedRecord';
+import { InformationBannerProjectionFreshness } from '@/information-banner/components/freshness/InformationBannerProjectionFreshness';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
 import { RecordShowContainerContextStoreTargetedRecordsEffect } from '@/object-record/record-show/components/RecordShowContainerContextStoreTargetedRecordsEffect';
 import { RecordShowEffect } from '@/object-record/record-show/components/RecordShowEffect';
@@ -65,6 +66,10 @@ export const PageLayoutRecordPageRenderer = ({
       <RecordShowContainerContextStoreTargetedRecordsEffect
         recordId={targetRecordIdentifier.id}
       />
+
+      <StyledShowPageBannerContainer>
+        <InformationBannerProjectionFreshness />
+      </StyledShowPageBannerContainer>
 
       {recordDeletedAt && (
         <StyledShowPageBannerContainer>
