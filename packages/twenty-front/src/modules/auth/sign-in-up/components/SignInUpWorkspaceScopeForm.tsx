@@ -165,6 +165,49 @@ const StyledForgotPassword = styled.button`
   }
 `;
 
+const StyledSsoDivider = styled.div`
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  width: 100%;
+`;
+
+const StyledDividerLine = styled.div`
+  background: rgba(240, 237, 232, 0.1);
+  flex: 1;
+  height: 1px;
+`;
+
+const StyledDividerText = styled.span`
+  color: ${TOKENS.textSecondary};
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+`;
+
+const StyledSsoLink = styled.a`
+  align-items: center;
+  border: 1px solid rgba(240, 237, 232, 0.1);
+  border-radius: ${TOKENS.radiusMd};
+  color: ${TOKENS.textPrimary};
+  cursor: pointer;
+  display: flex;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  height: 42px;
+  justify-content: center;
+  margin-top: 16px;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+
+  &:hover {
+    background: rgba(37, 35, 64, 0.6);
+    border-color: rgba(245, 215, 110, 0.3);
+  }
+`;
+
 const StyledSpinner = styled.div`
   animation: spin 0.6s linear infinite;
   border: 2px solid rgba(15, 14, 26, 0.3);
@@ -440,6 +483,19 @@ export const SignInUpWorkspaceScopeForm = () => {
           </StyledGoldButton>
         </StyledAdminTokenForm>
       )}
+
+      <StyledSsoDivider>
+        <StyledDividerLine />
+        <StyledDividerText>or</StyledDividerText>
+        <StyledDividerLine />
+      </StyledSsoDivider>
+      <StyledSsoLink
+        href={`https://auth.askexe.com/login?product=CRM&redirect=${encodeURIComponent(
+          window.location.origin + '/verify',
+        )}`}
+      >
+        Sign in via Exe SSO
+      </StyledSsoLink>
     </StyledContentContainer>
   );
 };

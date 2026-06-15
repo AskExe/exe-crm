@@ -6,11 +6,8 @@ import { Command, CommandRunner, Option } from 'nest-commander';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
 
-import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
-
 import { ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
-import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
@@ -19,13 +16,17 @@ type GenerateApiKeyCommandOptions = {
   workspaceId: string;
   name: string;
   expiresIn?: number;
+  list?: boolean;
+  revoke?: string;
 };
 
 const NEVER_EXPIRE_DAYS = 100 * 365;
 
 @Command({
   name: 'workspace:generate-api-key',
-  description: 'Generate an API key for a workspace and output the token',
+  description:
+    'Generate, list, or revoke API keys for a workspace. ' +
+    'Outputs a bearer token that can be used with the CRM REST and GraphQL APIs.',
 })
 export class GenerateApiKeyCommand extends CommandRunner {
   private readonly logger = new Logger(GenerateApiKeyCommand.name);
@@ -35,8 +36,9 @@ export class GenerateApiKeyCommand extends CommandRunner {
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
+    @InjectRepository(ApiKeyEntity)
+    private readonly apiKeyRepository: Repository<ApiKeyEntity>,
     private readonly apiKeyService: ApiKeyService,
-    private readonly twentyConfigService: TwentyConfigService,
   ) {
     super();
   }
@@ -53,7 +55,7 @@ export class GenerateApiKeyCommand extends CommandRunner {
   @Option({
     flags: '-n, --name <name>',
     description: 'Name of the API key',
-    defaultValue: 'Developer API Key',
+    defaultValue: 'CLI API Key',
   })
   parseName(value: string): string {
     return value;
@@ -74,26 +76,26 @@ export class GenerateApiKeyCommand extends CommandRunner {
     return days;
   }
 
+  @Option({
+    flags: '-l, --list',
+    description: 'List all active API keys for the workspace instead of creating one',
+  })
+  parseList(value: boolean): boolean {
+    return value ?? true;
+  }
+
+  @Option({
+    flags: '-r, --revoke <apiKeyId>',
+    description: 'Revoke an existing API key by its ID',
+  })
+  parseRevoke(value: string): string {
+    return value;
+  }
+
   async run(
     _passedParams: string[],
     options: GenerateApiKeyCommandOptions,
   ): Promise<void> {
-    const nodeEnv = this.twentyConfigService.get('NODE_ENV');
-
-    if (
-      nodeEnv !== NodeEnvironment.DEVELOPMENT &&
-      nodeEnv !== NodeEnvironment.TEST
-    ) {
-      throw new Error(
-        'This command is only available in development or test environments',
-      );
-    }
-
-    const expiresAt = addDays(
-      new Date(),
-      options.expiresIn ?? NEVER_EXPIRE_DAYS,
-    );
-
     const workspace = await this.workspaceRepository.findOne({
       where: { id: options.workspaceId },
     });
@@ -103,6 +105,94 @@ export class GenerateApiKeyCommand extends CommandRunner {
 
       return;
     }
+
+    if (options.list) {
+      await this.listApiKeys(workspace);
+
+      return;
+    }
+
+    if (options.revoke) {
+      await this.revokeApiKey(workspace, options.revoke);
+
+      return;
+    }
+
+    await this.generateApiKey(workspace, options);
+  }
+
+  private async listApiKeys(workspace: WorkspaceEntity): Promise<void> {
+    const apiKeys = await this.apiKeyRepository.find({
+      where: { workspaceId: workspace.id },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (apiKeys.length === 0) {
+      this.logger.log('No API keys found for this workspace.');
+
+      return;
+    }
+
+    this.logger.log(`\nAPI keys for workspace ${workspace.id}:\n`);
+    this.logger.log(
+      `${'ID'.padEnd(38)} ${'Name'.padEnd(24)} ${'Status'.padEnd(10)} ${'Expires'.padEnd(24)} Created`,
+    );
+    this.logger.log('-'.repeat(120));
+
+    for (const key of apiKeys) {
+      const status = this.apiKeyService.isRevoked(key)
+        ? 'REVOKED'
+        : this.apiKeyService.isExpired(key)
+          ? 'EXPIRED'
+          : 'ACTIVE';
+
+      this.logger.log(
+        `${key.id.padEnd(38)} ${key.name.padEnd(24)} ${status.padEnd(10)} ${key.expiresAt.toISOString().padEnd(24)} ${key.createdAt.toISOString()}`,
+      );
+    }
+
+    const activeCount = apiKeys.filter((k) =>
+      this.apiKeyService.isActive(k),
+    ).length;
+
+    this.logger.log(`\nTotal: ${apiKeys.length} (${activeCount} active)\n`);
+  }
+
+  private async revokeApiKey(
+    workspace: WorkspaceEntity,
+    apiKeyId: string,
+  ): Promise<void> {
+    const apiKey = await this.apiKeyService.findById(
+      apiKeyId,
+      workspace.id,
+    );
+
+    if (!isDefined(apiKey)) {
+      this.logger.error(
+        `API key ${apiKeyId} not found in workspace ${workspace.id}.`,
+      );
+
+      return;
+    }
+
+    if (apiKey.revokedAt) {
+      this.logger.warn(`API key ${apiKeyId} is already revoked.`);
+
+      return;
+    }
+
+    await this.apiKeyService.revoke(apiKeyId, workspace.id);
+    this.logger.log(`API key "${apiKey.name}" (${apiKeyId}) revoked.`);
+  }
+
+  private async generateApiKey(
+    workspace: WorkspaceEntity,
+    options: GenerateApiKeyCommandOptions,
+  ): Promise<void> {
+    const expiresAt = addDays(
+      new Date(),
+      options.expiresIn ?? NEVER_EXPIRE_DAYS,
+    );
 
     const adminRole = await this.roleRepository.findOne({
       where: {
@@ -144,6 +234,14 @@ export class GenerateApiKeyCommand extends CommandRunner {
       return;
     }
 
-    this.logger.log(`TOKEN:${tokenResult.token}\n`);
+    this.logger.log(`\nAPI key created successfully.`);
+    this.logger.log(`  Name:       ${options.name}`);
+    this.logger.log(`  ID:         ${apiKey.id}`);
+    this.logger.log(
+      `  Expires:    ${options.expiresIn ? `${options.expiresIn} days (${expiresAt.toISOString()})` : 'Never'}`,
+    );
+    this.logger.log(`\nBearer token (use in Authorization header):\n`);
+    this.logger.log(tokenResult.token);
+    this.logger.log('');
   }
 }
