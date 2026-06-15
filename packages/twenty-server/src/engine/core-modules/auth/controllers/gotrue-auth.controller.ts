@@ -130,7 +130,7 @@ export class GoTrueAuthController {
 
       await this.dataSource.query(`
         INSERT INTO public.users (username, password, role, gotrue_id, "createdAt", "lastUpdatedAt")
-        SELECT $1, $2, 'admin', $3, NOW(), NOW()
+        SELECT $1, $2, 'default', $3, NOW(), NOW()
         WHERE NOT EXISTS (SELECT 1 FROM public.users WHERE username = $1)
       `, [email.toLowerCase().trim(), passwordHash, gotrueUserId ?? null]);
 
