@@ -25,10 +25,20 @@ export type ProjectionWorkerStatus = {
   last_error: string | null;
 };
 
+/**
+ * FreshnessState discriminated union.
+ *
+ * - fresh:        data is current (no banner shown)
+ * - stale:        data is outdated — high backlog or old last_processed
+ * - error:        projection worker has a recorded error
+ * - disconnected: unable to reach the data source (network error, timeout, CORS)
+ * - unknown:      no last_processed and no error — genuinely indeterminate
+ */
 export type FreshnessState =
   | { kind: 'fresh'; last_processed: string }
   | { kind: 'stale'; last_processed: string | null; backlog: number }
   | { kind: 'error'; last_error: string; last_processed: string | null }
+  | { kind: 'disconnected' }
   | { kind: 'unknown' };
 
 /**

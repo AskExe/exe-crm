@@ -150,3 +150,26 @@ describe('computeFreshnessState — fresh', () => {
     expect(result.kind).toBe('stale');
   });
 });
+
+// ─── disconnected state (handled at hook level, not by computeFreshnessState)
+//     The `disconnected` kind is returned by useProjectionFreshness when the
+//     fetch itself fails.  computeFreshnessState only handles worker-level
+//     status objects.  This section documents that contract for clarity.
+
+describe('computeFreshnessState — disconnected is not returned', () => {
+  it('does not produce disconnected — that is the hook responsibility', () => {
+    // computeFreshnessState only returns fresh/stale/error/unknown
+    const allInputs: (ProjectionWorkerStatus | null | undefined)[] = [
+      null,
+      undefined,
+      baseStatus(),
+      { ...baseStatus(), last_error: 'boom' },
+      { ...baseStatus(), backlog: 999 },
+      { ...baseStatus(), last_processed: null },
+    ];
+    for (const input of allInputs) {
+      const result = computeFreshnessState(input);
+      expect(result.kind).not.toBe('disconnected');
+    }
+  });
+});
