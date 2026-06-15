@@ -12,4 +12,19 @@ declare global {
     >;
     FrontChat?: (method: string, ...args: any[]) => void;
   }
+
+  // Web Component: <exe-service-switcher>
+  // Allows JSX usage without TypeScript complaining about unknown elements.
+  namespace JSX {
+    interface IntrinsicElements {
+      'exe-service-switcher': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          current?: string;
+          user?: string;
+          'base-url'?: string;
+        },
+        HTMLElement
+      >;
+    }
+  }
 }
