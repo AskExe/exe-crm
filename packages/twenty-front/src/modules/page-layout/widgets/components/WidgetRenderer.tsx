@@ -10,6 +10,7 @@ import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
 import { PageLayoutWidgetForbiddenDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetForbiddenDisplay';
 import { PageLayoutWidgetInvalidConfigDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetInvalidConfigDisplay';
 import { WidgetContentRenderer } from '@/page-layout/widgets/components/WidgetContentRenderer';
+import { SectionErrorBoundary } from '@/ui/layout/section-state/components/SectionErrorBoundary';
 import { useIsCurrentWidgetLastOfTab } from '@/page-layout/widgets/hooks/useIsCurrentWidgetLastOfTab';
 import { useIsInPinnedTab } from '@/page-layout/widgets/hooks/useIsInPinnedTab';
 import { useWidgetActions } from '@/page-layout/widgets/hooks/useWidgetActions';
@@ -202,16 +203,21 @@ export const WidgetRenderer = ({ widget }: WidgetRendererProps) => {
         hasInteractiveContent={widget.type === WidgetType.RECORD_TABLE}
       >
         {hasAccess ? (
-          <ErrorBoundary
-            FallbackComponent={PageLayoutWidgetInvalidConfigDisplay}
-            resetKeys={[
-              widget.id,
-              widget.configuration,
-              widget.objectMetadataId,
-            ]}
+          <SectionErrorBoundary
+            sectionName={`widget-${widget.type}-${widget.id}`}
+            resetKeys={[widget.id, widget.configuration, widget.objectMetadataId]}
           >
-            <WidgetContentRenderer widget={widget} />
-          </ErrorBoundary>
+            <ErrorBoundary
+              FallbackComponent={PageLayoutWidgetInvalidConfigDisplay}
+              resetKeys={[
+                widget.id,
+                widget.configuration,
+                widget.objectMetadataId,
+              ]}
+            >
+              <WidgetContentRenderer widget={widget} />
+            </ErrorBoundary>
+          </SectionErrorBoundary>
         ) : (
           <StyledNoAccessContainer>
             <IconLock

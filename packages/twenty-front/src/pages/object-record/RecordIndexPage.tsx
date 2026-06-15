@@ -5,6 +5,7 @@ import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadat
 import { RecordIndexContainerGater } from '@/object-record/record-index/components/RecordIndexContainerGater';
 import { RecordIndexSkeletonLoader } from '@/object-record/record-index/components/RecordIndexSkeletonLoader';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
+import { SectionErrorBoundary } from '@/ui/layout/section-state/components/SectionErrorBoundary';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { isUndefined } from '@sniptt/guards';
 
@@ -36,7 +37,12 @@ export const RecordIndexPage = () => {
           instanceId: MAIN_CONTEXT_STORE_INSTANCE_ID,
         }}
       >
-        <RecordIndexContainerGater />
+        <SectionErrorBoundary
+          sectionName={`record-index-${objectMetadataItem?.namePlural ?? 'unknown'}`}
+          resetKeys={[contextStoreCurrentObjectMetadataItemId]}
+        >
+          <RecordIndexContainerGater />
+        </SectionErrorBoundary>
       </ContextStoreComponentInstanceContext.Provider>
     </PageContainer>
   );
