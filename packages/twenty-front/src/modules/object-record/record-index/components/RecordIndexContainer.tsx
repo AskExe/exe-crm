@@ -5,6 +5,7 @@ import { RecordBoardContainer } from '@/object-record/record-board/components/Re
 import { RecordIndexTableContainer } from '@/object-record/record-index/components/RecordIndexTableContainer';
 import { RecordIndexViewBarEffect } from '@/object-record/record-index/components/RecordIndexViewBarEffect';
 import { recordIndexViewTypeState } from '@/object-record/record-index/states/recordIndexViewTypeState';
+import { SectionErrorBoundary } from '@/ui/layout/section-state/components/SectionErrorBoundary';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { InformationBannerWrapper } from '@/information-banner/components/InformationBannerWrapper';
@@ -65,26 +66,39 @@ export const RecordIndexContainer = () => {
         </SpreadsheetImportProvider>
         <RecordIndexFiltersToContextStoreEffect />
         {recordIndexViewType === ViewType.TABLE && (
-          <>
+          <SectionErrorBoundary
+            sectionName={`record-table-${objectNamePlural}`}
+            resetKeys={[recordIndexId]}
+          >
             <RecordIndexTableContainer recordTableId={recordIndexId} />
-          </>
+          </SectionErrorBoundary>
         )}
         {recordIndexViewType === ViewType.KANBAN && (
-          <StyledContainerWithPadding>
-            <RecordBoardContainer
-              recordBoardId={recordIndexId}
-              viewBarId={recordIndexId}
-              objectNameSingular={objectNameSingular}
-            />
-          </StyledContainerWithPadding>
+          <SectionErrorBoundary
+            sectionName={`record-board-${objectNamePlural}`}
+            resetKeys={[recordIndexId]}
+          >
+            <StyledContainerWithPadding>
+              <RecordBoardContainer
+                recordBoardId={recordIndexId}
+                viewBarId={recordIndexId}
+                objectNameSingular={objectNameSingular}
+              />
+            </StyledContainerWithPadding>
+          </SectionErrorBoundary>
         )}
         {recordIndexViewType === ViewType.CALENDAR && (
-          <StyledContainerWithPadding>
-            <RecordIndexCalendarContainer
-              recordCalendarInstanceId={recordIndexId}
-              viewBarInstanceId={recordIndexId}
-            />
-          </StyledContainerWithPadding>
+          <SectionErrorBoundary
+            sectionName={`record-calendar-${objectNamePlural}`}
+            resetKeys={[recordIndexId]}
+          >
+            <StyledContainerWithPadding>
+              <RecordIndexCalendarContainer
+                recordCalendarInstanceId={recordIndexId}
+                viewBarInstanceId={recordIndexId}
+              />
+            </StyledContainerWithPadding>
+          </SectionErrorBoundary>
         )}
       </StyledContainer>
     </>

@@ -15,6 +15,7 @@ import { useRecordShowPage } from '@/object-record/record-show/hooks/useRecordSh
 import { computeRecordShowComponentInstanceId } from '@/object-record/record-show/utils/computeRecordShowComponentInstanceId';
 import { PageHeaderToggleSidePanelButton } from '@/ui/layout/page-header/components/PageHeaderToggleSidePanelButton';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
+import { SectionErrorBoundary } from '@/ui/layout/section-state/components/SectionErrorBoundary';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { RecordShowPageHeader } from '~/pages/object-record/RecordShowPageHeader';
@@ -71,23 +72,28 @@ export const RecordShowPage = () => {
               )}
             </RecordShowPageHeader>
             <MainContainerLayoutWithSidePanel>
-              <TimelineActivityContext.Provider
-                value={{
-                  recordId: objectRecordId,
-                }}
+              <SectionErrorBoundary
+                sectionName={`record-show-${objectNameSingular}`}
+                resetKeys={[objectRecordId, objectNameSingular]}
               >
-                <PageLayoutRecordPageRenderer
-                  targetRecordIdentifier={{
-                    id: objectRecordId,
-                    targetObjectNameSingular: objectNameSingular,
+                <TimelineActivityContext.Provider
+                  value={{
+                    recordId: objectRecordId,
                   }}
-                  isInSidePanel={false}
-                />
-                <RecordShowPageSSESubscribeEffect
-                  objectNameSingular={objectNameSingular}
-                  recordId={objectRecordId}
-                />
-              </TimelineActivityContext.Provider>
+                >
+                  <PageLayoutRecordPageRenderer
+                    targetRecordIdentifier={{
+                      id: objectRecordId,
+                      targetObjectNameSingular: objectNameSingular,
+                    }}
+                    isInSidePanel={false}
+                  />
+                  <RecordShowPageSSESubscribeEffect
+                    objectNameSingular={objectNameSingular}
+                    recordId={objectRecordId}
+                  />
+                </TimelineActivityContext.Provider>
+              </SectionErrorBoundary>
             </MainContainerLayoutWithSidePanel>
           </PageContainer>
         </CommandMenuComponentInstanceContext.Provider>
