@@ -12,3 +12,10 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(<App />);
+
+// Remove the dark preloader overlay after React hydrates
+const preloader = document.getElementById('preloader');
+if (preloader) {
+  preloader.style.opacity = '0';
+  setTimeout(() => preloader.remove(), 300);
+}

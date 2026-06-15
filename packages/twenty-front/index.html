@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" translate="no" class="dark">
+<html lang="en" translate="no" class="dark" style="background-color:#0F0E1A;">
   <head>
     <meta charset="UTF-8" />
 
@@ -122,6 +122,12 @@
     </style>
   </head>
   <body style="background-color: #0F0E1A;">
+    <!-- Dark preloader — covers viewport instantly to prevent white flash (FOUC).
+         Matches wiki.askexe.com. Removed by React in src/index.tsx after mount. -->
+    <div id="preloader" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0F0E1A;z-index:9999;transition:opacity 0.3s ease;">
+      <style>@keyframes preloader-spin{to{transform:rotate(360deg)}}</style>
+      <div style="width:28px;height:28px;border:2.5px solid rgba(245,215,110,0.15);border-top-color:#F5D76E;border-radius:50%;animation:preloader-spin 0.7s linear infinite;"></div>
+    </div>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root" style="
       padding-top: env(safe-area-inset-top);
