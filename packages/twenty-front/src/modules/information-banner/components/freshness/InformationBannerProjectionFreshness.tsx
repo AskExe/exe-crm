@@ -5,43 +5,22 @@
  * projection-status endpoint.
  *
  * States:
- *  fresh   → no banner (optionally: subtle "Updated {relative}" chip)
- *  stale   → "⚠ Data as of {last_processed} · {backlog} events behind"
- *  error   → "⚠ Projection error: {last_error}"
- *  unknown → "Freshness unknown" (neutral, never fake-green)
+ *  fresh        → no banner (data is current — nothing to show)
+ *  stale        → warning: "Data last synced X ago — may be outdated"  [Refresh now]
+ *  error        → danger: "Projection error: {last_error}"             [Refresh now]
+ *  disconnected → danger: "Unable to reach data source — showing cached data" [Retry]
+ *  unknown      → no banner (either not configured or genuinely indeterminate)
  *
  * Wire-up note:
  *  The exe-db URL must be configured via REACT_APP_EXE_DB_BASE_URL at deploy
- *  time.  Without it, all requests fail gracefully and the banner shows
- *  "Freshness unknown" rather than a fake healthy state.
+ *  time.  Without it, all requests return "not-configured" and no banner is shown.
  */
 
+import { InformationBanner } from '@/information-banner/components/InformationBanner';
 import { useProjectionFreshness } from '@/information-banner/hooks/useProjectionFreshness';
-import { styled } from '@linaria/react';
-import { Banner } from 'twenty-ui/display';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconRefresh } from 'twenty-ui/display';
 
-// ─── Styled helpers ──────────────────────────────────────────────────────────
-
-const StyledFreshnessBannerWrapper = styled.div`
-  height: 40px;
-  position: relative;
-
-  &:empty {
-    height: 0;
-  }
-`;
-
-const StyledNeutralBanner = styled(Banner)`
-  background: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.secondary};
-`;
-
-const StyledBannerText = styled.span`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
+const COMPONENT_INSTANCE_ID = 'information-banner-projection-freshness';
 
 // ─── Relative-time formatter (no dep on date-fns) ────────────────────────────
 
@@ -75,64 +54,64 @@ type InformationBannerProjectionFreshnessProps = {
 export const InformationBannerProjectionFreshness = ({
   workerName,
 }: InformationBannerProjectionFreshnessProps) => {
-  const { freshnessState, isLoading } = useProjectionFreshness({ workerName });
+  const { freshnessState, isLoading, refresh, isRefreshing } =
+    useProjectionFreshness({ workerName });
 
   // Don't flash anything while loading the first response
   if (isLoading) return null;
 
   switch (freshnessState.kind) {
-    case 'fresh': {
-      // Fresh: show a subtle chip so the user knows data is live.
-      // Keep it unobtrusive — no red/orange, no action required.
-      return (
-        <StyledFreshnessBannerWrapper>
-          <StyledNeutralBanner>
-            <StyledBannerText>
-              Updated {formatRelative(freshnessState.last_processed)}
-            </StyledBannerText>
-          </StyledNeutralBanner>
-        </StyledFreshnessBannerWrapper>
-      );
+    case 'fresh':
+    case 'unknown': {
+      // Fresh: data is current — no banner needed.
+      // Unknown: not configured or indeterminate — no banner either.
+      return null;
     }
 
     case 'stale': {
       const lastProcessedText =
         freshnessState.last_processed != null
-          ? `Data as of ${formatRelative(freshnessState.last_processed)}`
-          : 'Last sync time unknown';
+          ? `Data last synced ${formatRelative(freshnessState.last_processed)} — may be outdated`
+          : 'Last sync time unknown — data may be outdated';
 
       return (
-        <StyledFreshnessBannerWrapper>
-          <Banner variant="default">
-            <StyledBannerText>
-              ⚠ {lastProcessedText} · {freshnessState.backlog} events behind
-            </StyledBannerText>
-          </Banner>
-        </StyledFreshnessBannerWrapper>
+        <InformationBanner
+          componentInstanceId={COMPONENT_INSTANCE_ID}
+          variant="default"
+          message={lastProcessedText}
+          buttonTitle="Refresh now"
+          buttonIcon={IconRefresh}
+          buttonOnClick={refresh}
+          isButtonDisabled={isRefreshing}
+        />
       );
     }
 
     case 'error': {
       return (
-        <StyledFreshnessBannerWrapper>
-          <Banner variant="danger">
-            <StyledBannerText>
-              ⚠ Projection error: {freshnessState.last_error}
-            </StyledBannerText>
-          </Banner>
-        </StyledFreshnessBannerWrapper>
+        <InformationBanner
+          componentInstanceId={COMPONENT_INSTANCE_ID}
+          variant="danger"
+          message={`Projection error: ${freshnessState.last_error}`}
+          buttonTitle="Refresh now"
+          buttonIcon={IconRefresh}
+          buttonOnClick={refresh}
+          isButtonDisabled={isRefreshing}
+        />
       );
     }
 
-    case 'unknown': {
-      // Neutral — never fake-green. The user knows the status is genuinely
-      // unavailable rather than healthy.
+    case 'disconnected': {
       return (
-        <StyledFreshnessBannerWrapper>
-          <StyledNeutralBanner>
-            <StyledBannerText>Freshness unknown</StyledBannerText>
-          </StyledNeutralBanner>
-        </StyledFreshnessBannerWrapper>
+        <InformationBanner
+          componentInstanceId={COMPONENT_INSTANCE_ID}
+          variant="danger"
+          message="Unable to reach data source — showing cached data"
+          buttonTitle="Retry"
+          buttonIcon={IconRefresh}
+          buttonOnClick={refresh}
+          isButtonDisabled={isRefreshing}
+        />
       );
     }
 

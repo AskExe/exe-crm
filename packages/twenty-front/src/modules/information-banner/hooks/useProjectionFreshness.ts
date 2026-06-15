@@ -6,10 +6,13 @@
  * if workerName is omitted, the "worst" state across all workers is returned.
  *
  * Polling interval: 60 s.
- * The hook does NOT throw — all errors result in { kind: 'unknown' }.
+ * The hook does NOT throw — all errors result in { kind: 'unknown' } or
+ * { kind: 'disconnected' }.
+ *
+ * Exposes a manual `refresh()` callback for the "Refresh now" button.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   computeFreshnessState,
@@ -18,12 +21,14 @@ import {
 } from '@/information-banner/utils/computeFreshnessState';
 import {
   fetchProjectionStatus,
+  type ProjectionFetchResult,
   type ProjectionStatusResponse,
 } from '@/information-banner/services/ProjectionStatusClient';
 
 const POLL_INTERVAL_MS = 60_000;
 
 const FRESHNESS_STATE_PRIORITY: Record<FreshnessState['kind'], number> = {
+  disconnected: 4,
   error: 3,
   stale: 2,
   unknown: 1,
@@ -51,26 +56,32 @@ type UseProjectionFreshnessOptions = {
 type UseProjectionFreshnessResult = {
   freshnessState: FreshnessState;
   isLoading: boolean;
+  /** Trigger an immediate re-fetch (for the "Refresh now" button). */
+  refresh: () => void;
+  /** True while a manual refresh is in flight. */
+  isRefreshing: boolean;
 };
 
 export const useProjectionFreshness = ({
   workerName,
 }: UseProjectionFreshnessOptions = {}): UseProjectionFreshnessResult => {
-  const [statusMap, setStatusMap] = useState<ProjectionStatusResponse | null>(
+  const [fetchResult, setFetchResult] = useState<ProjectionFetchResult | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const cancelledRef = useRef(false);
+
+  const load = useCallback(async () => {
+    const result = await fetchProjectionStatus();
+    if (!cancelledRef.current) {
+      setFetchResult(result);
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      const result = await fetchProjectionStatus();
-      if (!cancelled) {
-        setStatusMap(result);
-        setIsLoading(false);
-      }
-    };
+    cancelledRef.current = false;
 
     void load();
 
@@ -79,15 +90,36 @@ export const useProjectionFreshness = ({
     }, POLL_INTERVAL_MS);
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [load]);
+
+  const refresh = useCallback(() => {
+    setIsRefreshing(true);
+    void (async () => {
+      await load();
+      setIsRefreshing(false);
+    })();
+  }, [load]);
 
   const freshnessState = (() => {
-    if (statusMap === null) {
+    // Not yet loaded
+    if (fetchResult === null) {
       return { kind: 'unknown' } satisfies FreshnessState;
     }
+
+    // URL not configured — treat as unknown (not an error)
+    if (fetchResult.status === 'not-configured') {
+      return { kind: 'unknown' } satisfies FreshnessState;
+    }
+
+    // Connection failed — distinct from stale
+    if (fetchResult.status === 'disconnected') {
+      return { kind: 'disconnected' } satisfies FreshnessState;
+    }
+
+    const statusMap: ProjectionStatusResponse = fetchResult.data;
 
     if (workerName !== undefined) {
       const worker: ProjectionWorkerStatus | undefined = statusMap[workerName];
@@ -101,5 +133,5 @@ export const useProjectionFreshness = ({
     return worstState(states);
   })();
 
-  return { freshnessState, isLoading };
+  return { freshnessState, isLoading, refresh, isRefreshing };
 };

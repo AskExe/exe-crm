@@ -15,12 +15,24 @@
  *   ⚠ DEPLOY NOTE: Set REACT_APP_EXE_DB_BASE_URL (or window._env_.REACT_APP_EXE_DB_BASE_URL)
  *   to the exe-db service URL before deploying.  Without this, the client
  *   will use the fallback empty string and all fetches will fail gracefully
- *   (returning null, which renders "Freshness unknown").
+ *   (returning { status: 'not-configured' }).
  */
 
 import { type ProjectionWorkerStatus } from '@/information-banner/utils/computeFreshnessState';
 
 export type ProjectionStatusResponse = Record<string, ProjectionWorkerStatus>;
+
+/**
+ * Fetch result discriminated union.
+ *
+ * - ok:              endpoint responded with valid JSON
+ * - not-configured:  REACT_APP_EXE_DB_BASE_URL is not set
+ * - disconnected:    network error, timeout, CORS, or non-2xx response
+ */
+export type ProjectionFetchResult =
+  | { status: 'ok'; data: ProjectionStatusResponse }
+  | { status: 'not-configured' }
+  | { status: 'disconnected' };
 
 const getExeDbBaseUrl = (): string => {
   const w = window as Window &
@@ -36,11 +48,10 @@ const getExeDbBaseUrl = (): string => {
 };
 
 export const fetchProjectionStatus =
-  async (): Promise<ProjectionStatusResponse | null> => {
+  async (): Promise<ProjectionFetchResult> => {
     const baseUrl = getExeDbBaseUrl();
     if (!baseUrl) {
-      // No URL configured — return null so the banner shows "Freshness unknown"
-      return null;
+      return { status: 'not-configured' };
     }
 
     try {
@@ -52,18 +63,18 @@ export const fetchProjectionStatus =
       });
 
       if (!response.ok) {
-        return null;
+        return { status: 'disconnected' };
       }
 
       const json: unknown = await response.json();
 
       if (typeof json !== 'object' || json === null || Array.isArray(json)) {
-        return null;
+        return { status: 'disconnected' };
       }
 
-      return json as ProjectionStatusResponse;
+      return { status: 'ok', data: json as ProjectionStatusResponse };
     } catch {
-      // Network error, timeout, CORS, etc. — degrade gracefully
-      return null;
+      // Network error, timeout, CORS, etc.
+      return { status: 'disconnected' };
     }
   };
