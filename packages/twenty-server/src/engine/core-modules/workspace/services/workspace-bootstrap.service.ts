@@ -48,11 +48,16 @@ export class WorkspaceBootstrapService implements OnModuleInit {
       'No workspaces found — bootstrapping default workspace and admin user...',
     );
 
-    const adminEmail = (
-      process.env.EXE_CRM_ADMIN_EMAIL || 'admin@askexe.com'
-    )
-      .toLowerCase()
-      .trim();
+    const rawAdminEmail = process.env.EXE_CRM_ADMIN_EMAIL;
+
+    if (!rawAdminEmail) {
+      throw new Error(
+        'EXE_CRM_ADMIN_EMAIL must be set to bootstrap the workspace admin user. ' +
+          'Set it in your environment before starting the server.',
+      );
+    }
+
+    const adminEmail = rawAdminEmail.toLowerCase().trim();
 
     const workspaceId = v4();
     const userId = v4();

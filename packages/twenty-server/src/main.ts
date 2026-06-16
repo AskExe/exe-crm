@@ -136,6 +136,19 @@ const bootstrap = async () => {
     }),
   );
 
+  // Stricter per-IP rate limit on the admin-token endpoint:
+  // 10 requests per minute to limit brute-force attempts.
+  app.use(
+    '/api/auth/admin-token',
+    rateLimit({
+      windowMs: 60_000,
+      max: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Too many requests — try again later.' },
+    }),
+  );
+
   app.use(session(getSessionStorageOptions(twentyConfigService)));
 
   // Apply class-validator container so that we can use injection in validators

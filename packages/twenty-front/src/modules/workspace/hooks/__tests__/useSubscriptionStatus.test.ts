@@ -1,67 +1,25 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { createElement } from 'react';
 import { Provider as JotaiProvider } from 'jotai';
-import { v4 } from 'uuid';
 
-import {
-  type CurrentWorkspace,
-  currentWorkspaceState,
-} from '@/auth/states/currentWorkspaceState';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
-import {
-  SubscriptionStatus,
-  WorkspaceActivationStatus,
-} from '~/generated-metadata/graphql';
 
-const currentWorkspace = {
-  id: '1',
-  currentBillingSubscription: { status: SubscriptionStatus.Incomplete },
-  activationStatus: WorkspaceActivationStatus.ACTIVE,
-  allowImpersonation: true,
-} as CurrentWorkspace;
+/**
+ * Billing is stripped from this fork.
+ * useSubscriptionStatus is stubbed to always return undefined.
+ * These tests verify the stub contract — not real billing behaviour.
+ */
 
 const Wrapper = ({ children }: { children: React.ReactNode }) =>
   createElement(JotaiProvider, { store: jotaiStore }, children);
 
-const renderHooks = () => {
-  const { result } = renderHook(
-    () => {
-      const subscriptionStatus = useSubscriptionStatus();
-      const setCurrentWorkspace = useSetAtomState(currentWorkspaceState);
-
-      return {
-        subscriptionStatus,
-        setCurrentWorkspace,
-      };
-    },
-    {
-      wrapper: Wrapper,
-    },
-  );
-  return { result };
-};
-
 describe('useSubscriptionStatus', () => {
-  Object.values(SubscriptionStatus).forEach((subscriptionStatus) => {
-    it(`should return "${subscriptionStatus}"`, async () => {
-      const { result } = renderHooks();
-      const { setCurrentWorkspace } = result.current;
-
-      act(() => {
-        setCurrentWorkspace({
-          ...currentWorkspace,
-          currentBillingSubscription: {
-            id: v4(),
-            status: subscriptionStatus,
-            metadata: {},
-            phases: [],
-          },
-        });
-      });
-
-      expect(result.current.subscriptionStatus).toBe(subscriptionStatus);
+  it('always returns undefined (billing stripped from this fork)', () => {
+    const { result } = renderHook(() => useSubscriptionStatus(), {
+      wrapper: Wrapper,
     });
+
+    expect(result.current).toBeUndefined();
   });
 });

@@ -36,6 +36,7 @@ async function bootstrap() {
   const forceExitTimer = setTimeout(() => {
     loggerService.warn(
       'app.close() did not finish within 10 s — forcing exit',
+      'command',
     );
     process.exit(0);
   }, 10_000);

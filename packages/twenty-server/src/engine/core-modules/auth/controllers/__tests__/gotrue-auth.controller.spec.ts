@@ -2,8 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
-import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
+import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
@@ -48,15 +47,12 @@ const MOCK_USER_WORKSPACE = {
   createdAt: new Date(),
 };
 
-const MOCK_ACCESS_TOKEN = {
-  token: 'access-token-abc',
-  expiresAt: new Date(Date.now() + 3600_000),
+const MOCK_LOGIN_TOKEN = {
+  token: 'login-token-xyz',
+  expiresAt: new Date(Date.now() + 900_000),
 };
 
-const MOCK_REFRESH_TOKEN = {
-  token: 'refresh-token-xyz',
-  expiresAt: new Date(Date.now() + 86400_000),
-};
+const MOCK_REDIRECT_URL = `http://localhost:3000/verify?loginToken=${encodeURIComponent(MOCK_LOGIN_TOKEN.token)}`;
 
 /* ------------------------------------------------------------------ */
 /*  Test suite                                                        */
@@ -64,8 +60,7 @@ const MOCK_REFRESH_TOKEN = {
 
 describe('GoTrueAuthController', () => {
   let controller: GoTrueAuthController;
-  let accessTokenService: AccessTokenService;
-  let refreshTokenService: RefreshTokenService;
+  let loginTokenService: LoginTokenService;
   let signInUpService: SignInUpService;
   let workspaceService: WorkspaceService;
 
@@ -76,32 +71,14 @@ describe('GoTrueAuthController', () => {
   const originalFetch = global.fetch;
   const originalEnv = { ...process.env };
 
-  beforeEach(async () => {
-    // Set env vars the controller reads in its constructor
-    process.env.GOTRUE_URL = 'http://gotrue:9999';
-    process.env.EXE_CRM_ADMIN_TOKEN = 'admin-secret-123';
-
-    userRepo = { findOne: jest.fn() };
-    userWorkspaceRepo = { findOne: jest.fn() };
-    workspaceRepo = { findOne: jest.fn() };
-
-    const module: TestingModule = await Test.createTestingModule({
+  const buildTestModule = (overrideProviders?: any[]) =>
+    Test.createTestingModule({
       controllers: [GoTrueAuthController],
       providers: [
         {
-          provide: AccessTokenService,
+          provide: LoginTokenService,
           useValue: {
-            generateAccessToken: jest
-              .fn()
-              .mockResolvedValue(MOCK_ACCESS_TOKEN),
-          },
-        },
-        {
-          provide: RefreshTokenService,
-          useValue: {
-            generateRefreshToken: jest
-              .fn()
-              .mockResolvedValue(MOCK_REFRESH_TOKEN),
+            generateLoginToken: jest.fn().mockResolvedValue(MOCK_LOGIN_TOKEN),
           },
         },
         {
@@ -134,12 +111,24 @@ describe('GoTrueAuthController', () => {
           provide: getRepositoryToken(WorkspaceEntity),
           useValue: workspaceRepo,
         },
+        ...(overrideProviders ?? []),
       ],
     }).compile();
 
+  beforeEach(async () => {
+    // Set env vars the controller reads in its constructor
+    process.env.GOTRUE_URL = 'http://gotrue:9999';
+    process.env.EXE_CRM_ADMIN_TOKEN = 'admin-secret-123';
+    process.env.SERVER_URL = 'http://localhost:3000';
+
+    userRepo = { findOne: jest.fn() };
+    userWorkspaceRepo = { findOne: jest.fn() };
+    workspaceRepo = { findOne: jest.fn() };
+
+    const module: TestingModule = await buildTestModule();
+
     controller = module.get(GoTrueAuthController);
-    accessTokenService = module.get(AccessTokenService);
-    refreshTokenService = module.get(RefreshTokenService);
+    loginTokenService = module.get(LoginTokenService);
     signInUpService = module.get(SignInUpService);
     workspaceService = module.get(WorkspaceService);
   });
@@ -182,20 +171,7 @@ describe('GoTrueAuthController', () => {
       delete process.env.GOTRUE_URL;
       delete process.env.EXE_GOTRUE_URL;
 
-      const module: TestingModule = await Test.createTestingModule({
-        controllers: [GoTrueAuthController],
-        providers: [
-          { provide: AccessTokenService, useValue: { generateAccessToken: jest.fn() } },
-          { provide: RefreshTokenService, useValue: { generateRefreshToken: jest.fn() } },
-          { provide: SignInUpService, useValue: { signUpOnNewWorkspace: jest.fn() } },
-          { provide: WorkspaceService, useValue: { activateWorkspace: jest.fn() } },
-          { provide: DataSource, useValue: { query: jest.fn() } },
-          { provide: getRepositoryToken(UserEntity), useValue: { findOne: jest.fn() } },
-          { provide: getRepositoryToken(UserWorkspaceEntity), useValue: { findOne: jest.fn() } },
-          { provide: getRepositoryToken(WorkspaceEntity), useValue: { findOne: jest.fn() } },
-        ],
-      }).compile();
-
+      const module: TestingModule = await buildTestModule();
       const ctrl = module.get(GoTrueAuthController);
       const res = mockResponse();
 
@@ -247,7 +223,7 @@ describe('GoTrueAuthController', () => {
       );
     });
 
-    it('returns 200 with tokens and user on success (existing user)', async () => {
+    it('returns 200 with redirectUrl on success (existing user)', async () => {
       // Mock GoTrue success
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -270,16 +246,10 @@ describe('GoTrueAuthController', () => {
         res,
       );
 
+      // Controller returns { redirectUrl } pointing to /verify?loginToken=...
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          tokens: expect.objectContaining({
-            accessToken: expect.objectContaining({ token: MOCK_ACCESS_TOKEN.token }),
-            refreshToken: expect.objectContaining({ token: MOCK_REFRESH_TOKEN.token }),
-          }),
-          user: expect.objectContaining({
-            id: MOCK_USER.id,
-            email: MOCK_USER.email,
-          }),
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
         }),
       );
       // Should NOT have called res.status (direct res.json for 200)
@@ -325,11 +295,10 @@ describe('GoTrueAuthController', () => {
         }),
       );
 
-      // Should still return tokens
+      // Should return redirectUrl pointing to /verify
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          tokens: expect.any(Object),
-          user: expect.any(Object),
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
         }),
       );
     });
@@ -396,7 +365,9 @@ describe('GoTrueAuthController', () => {
 
       expect(workspaceService.activateWorkspace).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ tokens: expect.any(Object) }),
+        expect.objectContaining({
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
+        }),
       );
     });
   });
@@ -420,20 +391,7 @@ describe('GoTrueAuthController', () => {
     it('returns 500 if EXE_CRM_ADMIN_TOKEN is not configured', async () => {
       delete process.env.EXE_CRM_ADMIN_TOKEN;
 
-      const module: TestingModule = await Test.createTestingModule({
-        controllers: [GoTrueAuthController],
-        providers: [
-          { provide: AccessTokenService, useValue: { generateAccessToken: jest.fn() } },
-          { provide: RefreshTokenService, useValue: { generateRefreshToken: jest.fn() } },
-          { provide: SignInUpService, useValue: { signUpOnNewWorkspace: jest.fn() } },
-          { provide: WorkspaceService, useValue: { activateWorkspace: jest.fn() } },
-          { provide: DataSource, useValue: { query: jest.fn() } },
-          { provide: getRepositoryToken(UserEntity), useValue: { findOne: jest.fn() } },
-          { provide: getRepositoryToken(UserWorkspaceEntity), useValue: { findOne: jest.fn() } },
-          { provide: getRepositoryToken(WorkspaceEntity), useValue: { findOne: jest.fn() } },
-        ],
-      }).compile();
-
+      const module: TestingModule = await buildTestModule();
       const ctrl = module.get(GoTrueAuthController);
       const res = mockResponse();
 
@@ -489,24 +447,19 @@ describe('GoTrueAuthController', () => {
       );
     });
 
-    it('returns 200 with tokens, user, and isAdminToken on success', async () => {
+    it('returns 200 with redirectUrl, user, and isAdminToken on success', async () => {
       workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
 
       const res = mockResponse();
 
       await controller.adminTokenLogin({ token: 'admin-secret-123' }, res);
 
+      // Controller now returns { redirectUrl, user: { id }, isAdminToken }
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          tokens: expect.objectContaining({
-            accessToken: expect.objectContaining({
-              token: MOCK_ACCESS_TOKEN.token,
-            }),
-            refreshToken: expect.objectContaining({
-              token: MOCK_REFRESH_TOKEN.token,
-            }),
-          }),
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
           user: expect.objectContaining({ id: MOCK_USER.id }),
           isAdminToken: true,
         }),

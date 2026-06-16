@@ -94,7 +94,14 @@ export class GoTrueAuthController {
       AuthProviderEnum.SSO,
     );
 
-    const baseUrl = this.serverBaseUrl || 'https://crm.askexe.com';
+    if (!this.serverBaseUrl) {
+      throw new Error(
+        'SERVER_URL (or REACT_APP_SERVER_BASE_URL) must be set. ' +
+          'Cannot generate login redirect without a configured base URL.',
+      );
+    }
+
+    const baseUrl = this.serverBaseUrl;
 
     return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
@@ -256,8 +263,15 @@ export class GoTrueAuthController {
         // Wiki provisioning
         await this.provisionWiki(email, wsName, gotrueData.user?.id, password);
 
+        // ctx is non-null here: if getUserContext returned null after
+        // provisioning or activation, we threw above (lines 241-242 or
+        // 255-256), which would be caught by the outer catch (line 269)
+        // causing an early return. TypeScript cannot track this across
+        // nested try/catch reassignments, so we use a local narrowed ref.
+        const provisionedCtx = ctx!;
+
         this.logger.log(
-          `Provisioned: CRM workspace=${ctx.workspace.id} (${ctx.workspace.activationStatus}) + Wiki`,
+          `Provisioned: CRM workspace=${provisionedCtx.workspace.id} (${provisionedCtx.workspace.activationStatus}) + Wiki`,
         );
       } catch (provisionErr) {
         this.logger.error(`Provisioning failed for ${email}: ${provisionErr}`);
@@ -268,15 +282,28 @@ export class GoTrueAuthController {
       }
     }
 
+    // Null guard: ctx must be defined at this point. If not, something went
+    // wrong during provisioning that wasn't caught above.
+    if (!ctx) {
+      this.logger.error(`User context unexpectedly null after provisioning for ${email}`);
+
+      return res.status(500).json({ error: 'Failed to set up your workspace. Please try again.' });
+    }
+
     // Activate if still pending
-    if (ctx!.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+    if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
       try {
         await this.workspaceService.activateWorkspace(
-          ctx!.user as any,
-          ctx!.workspace,
-          { displayName: ctx!.workspace.displayName || workspaceName || 'Exe' },
+          ctx.user as any,
+          ctx.workspace,
+          { displayName: ctx.workspace.displayName || workspaceName || 'Exe' },
         );
-        ctx = await this.getUserContext(email);
+
+        const refreshedCtx = await this.getUserContext(email);
+
+        if (refreshedCtx) {
+          ctx = refreshedCtx;
+        }
       } catch (activateErr) {
         this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
       }
@@ -285,8 +312,8 @@ export class GoTrueAuthController {
     // Step 3: Generate Twenty-native login token and redirect
     try {
       const redirectUrl = await this.generateLoginTokenRedirect(
-        ctx!.user.email,
-        ctx!.workspace.id,
+        ctx.user.email,
+        ctx.workspace.id,
       );
 
       this.logger.log(`GoTrue login success for ${email} → redirecting to /verify`);
