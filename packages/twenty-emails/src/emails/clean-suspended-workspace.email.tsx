@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react';
+import { getEmailBranding } from 'src/common-style';
 import { BaseEmail } from 'src/components/BaseEmail';
 import { CallToAction } from 'src/components/CallToAction';
 import { MainText } from 'src/components/MainText';
@@ -20,6 +21,7 @@ export const CleanSuspendedWorkspaceEmail = ({
   locale,
 }: CleanSuspendedWorkspaceEmailProps) => {
   const i18n = createI18nInstance(locale);
+  const branding = getEmailBranding();
 
   return (
     <BaseEmail width={333} locale={locale}>
@@ -46,7 +48,7 @@ export const CleanSuspendedWorkspaceEmail = ({
       </MainText>
       <br />
       <CallToAction
-        href="https://crm.askexe.com/"
+        href={branding.frontBaseUrl || branding.websiteUrl}
         value={i18n._('Create a new workspace')}
       />
       <br />

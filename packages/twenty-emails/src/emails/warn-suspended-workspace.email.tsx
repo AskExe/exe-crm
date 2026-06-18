@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react';
+import { getEmailBranding } from 'src/common-style';
 import { BaseEmail } from 'src/components/BaseEmail';
 import { CallToAction } from 'src/components/CallToAction';
 import { MainText } from 'src/components/MainText';
@@ -25,6 +26,7 @@ export const WarnSuspendedWorkspaceEmail = ({
   const daysLeft = inactiveDaysBeforeDelete - daysSinceInactive;
   const dayOrDays = daysLeft > 1 ? 'days' : 'day';
   const remainingDays = daysLeft > 0 ? daysLeft : 0;
+  const branding = getEmailBranding();
 
   return (
     <BaseEmail width={333} locale={locale}>
@@ -57,7 +59,7 @@ export const WarnSuspendedWorkspaceEmail = ({
       </MainText>
       <br />
       <CallToAction
-        href="https://crm.askexe.com/settings/billing"
+        href={branding.billingUrl}
         value={i18n._('Update your subscription')}
       />
       <br />
