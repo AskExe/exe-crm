@@ -157,6 +157,26 @@ const StyledInput = styled.input<
     font-weight: ${themeCssVariables.font.weight.medium};
   }
 
+  /*
+   * Browser autofill (Chrome/Safari) paints a hardcoded light/lavender
+   * background and dark text on email/password fields, which clashes with the
+   * dark theme (e.g. the sign-in form). Repaint the field with the theme
+   * background + text colors so autofilled inputs match the active theme.
+   */
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-text-fill-color: ${themeCssVariables.font.color.primary};
+    caret-color: ${themeCssVariables.font.color.primary};
+    -webkit-box-shadow: 0 0 0 1000px ${themeCssVariables.background.secondary}
+      inset;
+    box-shadow: 0 0 0 1000px ${themeCssVariables.background.secondary} inset;
+    transition:
+      background-color 600000s 0s,
+      color 600000s 0s;
+  }
+
   &:disabled {
     color: ${themeCssVariables.font.color.tertiary};
   }

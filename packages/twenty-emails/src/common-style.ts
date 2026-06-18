@@ -7,6 +7,48 @@
  * light-mode only. See email-style-spec.md for rationale.
  */
 
+/*
+ * Email branding URLs — env-driven, no hardcoded customer/vendor domains.
+ *
+ * All transactional-email links (logo, footer, website, docs, billing) are
+ * resolved from environment variables at render time so that emails carry the
+ * deploying customer's own domains. Defaults fall back to FRONT_BASE_URL (the
+ * frontend the email already links to) so a single env var configures the
+ * common case; each link can still be overridden individually.
+ */
+const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+
+export const getEmailBranding = () => {
+  const frontBaseUrl = stripTrailingSlash(process.env.FRONT_BASE_URL ?? '');
+
+  const orFront = (value: string | undefined, fallbackPath = '') => {
+    const explicit = value?.trim();
+
+    if (explicit) {
+      return stripTrailingSlash(explicit);
+    }
+
+    return frontBaseUrl ? `${frontBaseUrl}${fallbackPath}` : '';
+  };
+
+  return {
+    frontBaseUrl,
+    name: process.env.EMAIL_BRAND_NAME?.trim() || 'Exe CRM',
+    websiteUrl: orFront(process.env.EMAIL_WEBSITE_URL),
+    footerUrl: orFront(process.env.EMAIL_FOOTER_URL),
+    billingUrl: orFront(process.env.EMAIL_BILLING_URL, '/settings/billing'),
+    docsUrl: orFront(process.env.EMAIL_DOCS_URL),
+    docsUserGuideUrl: orFront(process.env.EMAIL_DOCS_USER_GUIDE_URL),
+    githubUrl:
+      process.env.EMAIL_GITHUB_URL?.trim() ||
+      'https://github.com/AskExe/exe-crm',
+    logoUrl: orFront(
+      process.env.EMAIL_LOGO_URL,
+      '/images/icons/exe-crm/exe-crm-logo-480.png',
+    ),
+  };
+};
+
 const exe = {
   void: '#0F0E1A',
   stratum: '#1A1832',
@@ -30,7 +72,7 @@ export const emailTheme = {
       primary: exe.textSecondary,
       tertiary: exe.textTertiary,
       inverted: exe.void, // Exe uses dark text on gold CTA — inverted means "on-brand-accent"
-      blue: exe.aura,     // Aura stands in for the "blue" slot (inline links)
+      blue: exe.aura, // Aura stands in for the "blue" slot (inline links)
     },
     // Trebuchet is the last web-safe sans that has real weight contrast; see:
     // https://templates.mailchimp.com/design/typography/
@@ -57,18 +99,18 @@ export const emailTheme = {
       card: exe.white,
       highlight: exe.goldHighlight,
     },
-    button: exe.gold,           // primary CTA fill
-    buttonTextColor: exe.void,  // text color on primary CTA
+    button: exe.gold, // primary CTA fill
+    buttonTextColor: exe.void, // text color on primary CTA
     transparent: {
       medium: 'rgba(15, 14, 26, 0.08)',
       light: 'rgba(15, 14, 26, 0.04)',
     },
   },
   brand: {
-    name: 'Exe CRM',
+    name: getEmailBranding().name,
     tagline: "Hire the team you couldn't afford.",
-    footerUrl: 'https://crm.askexe.com',
-    logoUrl: 'https://crm.askexe.com/email-assets/exe-crm-logo-480.png',
+    footerUrl: getEmailBranding().footerUrl,
+    logoUrl: getEmailBranding().logoUrl,
     logoWidth: 120,
     logoHeight: 28,
   },
