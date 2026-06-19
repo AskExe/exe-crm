@@ -120,6 +120,16 @@
         border-color: rgba(240, 237, 232, 0.1) !important;
       }
     </style>
+    <!-- SSO redirect: unauthenticated users go to auth.<domain> -->
+    <script>
+    (function(){
+      var token = document.cookie.match(/exe_sso_token=([^;]+)/);
+      if (!token) {
+        var domain = window.location.hostname.split('.').slice(-2).join('.');
+        window.location.href = 'https://auth.' + domain + '?redirect=' + encodeURIComponent(window.location.href) + '&product=CRM';
+      }
+    })();
+    </script>
   </head>
   <body style="background-color: #0F0E1A;">
     <!-- Dark preloader — covers viewport instantly to prevent white flash (FOUC).
