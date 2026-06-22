@@ -21,10 +21,12 @@ type ErrorReport = {
 export class ErrorForwardingService {
   private readonly logger = new Logger(ErrorForwardingService.name);
   private readonly monitorUrl: string | undefined;
+  private readonly monitorKey: string | undefined;
   private readonly enabled: boolean;
 
   constructor(private readonly twentyConfigService: TwentyConfigService) {
     this.monitorUrl = this.twentyConfigService.get('MONITOR_ERROR_URL');
+    this.monitorKey = this.twentyConfigService.get('MONITOR_API_KEY');
     this.enabled = this.twentyConfigService.get('ERROR_REPORTING_ENABLED');
   }
 
@@ -34,9 +36,17 @@ export class ErrorForwardingService {
       return;
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.monitorKey) {
+      headers['X-Monitor-Key'] = this.monitorKey;
+    }
+
     fetch(this.monitorUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(report),
       signal: AbortSignal.timeout(5000),
     }).catch((err) => {
