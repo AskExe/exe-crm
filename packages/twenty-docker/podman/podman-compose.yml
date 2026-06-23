@@ -25,7 +25,7 @@ services:
 
   server:
     container_name: twenty-server
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
     environment:
       NODE_PORT: '3000'
       SERVER_URL: ${SERVER_URL}
@@ -41,7 +41,7 @@ services:
 
   worker:
     container_name: twenty-worker
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
     command: yarn worker:prod
     environment:
       SERVER_URL: ${SERVER_URL}
