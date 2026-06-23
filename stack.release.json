@@ -27,15 +27,15 @@
       }
     ],
     "migrations": {
-      "command": "yarn database:migrate:prod",
+      "command": "# no-op — the exe-crm image entrypoint runs setup + migrations automatically on server boot (packages/twenty-docker/twenty/entrypoint.sh). Do not run migrations from the stack-update host context; the yarn database:migrate:prod script lives under packages/twenty-server and is not runnable at repo root.",
       "rollback": "Restore previous CRM_IMAGE_TAG and database backup if migration is non-additive. CRM migrations must be reviewed before stack manifest publication."
     },
     "config": {
       "envExample": "packages/twenty-docker/.env.example",
       "requiredEnv": [
         "CRM_IMAGE_TAG",
-        "CRM_SERVER_URL",
-        "CRM_APP_SECRET",
+        "SERVER_URL",
+        "APP_SECRET",
         "PG_DATABASE_URL",
         "REDIS_URL"
       ]

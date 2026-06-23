@@ -2,7 +2,7 @@ name: exe-crm
 
 services:
   server:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
     logging:
       driver: json-file
       options:
@@ -82,7 +82,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
     logging:
       driver: json-file
       options:

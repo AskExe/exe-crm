@@ -85,6 +85,6 @@ helm install my-twenty ./packages/twenty-docker/helm/twenty -f values-secrets.ya
 
 ## Production Tips
 
-- **Image versioning:** Pin `image.tag` to the Exe CRM stack release tag from `stack.release.json` (for example `v0.9.3`). Do not use `latest` in production.
+- **Image versioning:** Pin `image.tag` to the Exe CRM stack release tag from `stack.release.json` (for example `v0.9.51`). Do not use `latest` in production.
 - **Keep secrets secure:** Avoid `--set` for sensitive values; use `-f values-secrets.yaml` or reference existing Kubernetes Secrets via `server.extraEnvFrom`.
   - S3 credentials can be referenced via `storage.s3.secretName + accessKeyIdKey/secretAccessKeyKey` to avoid embedding them in pod specs.
