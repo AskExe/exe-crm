@@ -12,11 +12,6 @@ import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import { GoTrueAuthController } from '../gotrue-auth.controller';
 
-// bcrypt.hash uses setTimeout internally which deadlocks with Jest fake timers
-jest.mock('bcryptjs', () => ({
-  hash: jest.fn().mockResolvedValue('$2a$10$mockedhash'),
-}));
-
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
@@ -67,6 +62,10 @@ describe('GoTrueAuthController', () => {
   let userRepo: { findOne: jest.Mock };
   let userWorkspaceRepo: { findOne: jest.Mock };
   let workspaceRepo: { findOne: jest.Mock };
+  // Boundary guard: a DataSource is still registered so that if anyone
+  // re-introduces a raw-SQL injection into the controller, this spy will catch
+  // any write to Wiki-owned tables (public.workspaces/users/workspace_users).
+  let dataSource: { query: jest.Mock };
 
   const originalFetch = global.fetch;
   const originalEnv = { ...process.env };
@@ -95,9 +94,7 @@ describe('GoTrueAuthController', () => {
         },
         {
           provide: DataSource,
-          useValue: {
-            query: jest.fn().mockResolvedValue([]),
-          },
+          useValue: dataSource,
         },
         {
           provide: getRepositoryToken(UserEntity),
@@ -124,6 +121,7 @@ describe('GoTrueAuthController', () => {
     userRepo = { findOne: jest.fn() };
     userWorkspaceRepo = { findOne: jest.fn() };
     workspaceRepo = { findOne: jest.fn() };
+    dataSource = { query: jest.fn().mockResolvedValue([]) };
 
     const module: TestingModule = await buildTestModule();
 
@@ -179,7 +177,9 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.stringContaining('not configured') }),
+        expect.objectContaining({
+          error: expect.stringContaining('not configured'),
+        }),
       );
     });
 
@@ -204,16 +204,11 @@ describe('GoTrueAuthController', () => {
     });
 
     it('returns 502 if GoTrue is unreachable', async () => {
-      global.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error('ECONNREFUSED'));
+      global.fetch = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
 
       const res = mockResponse();
 
-      await controller.gotrueLogin(
-        { email: 'a@b.com', password: 'pass' },
-        res,
-      );
+      await controller.gotrueLogin({ email: 'a@b.com', password: 'pass' }, res);
 
       expect(res.status).toHaveBeenCalledWith(502);
       expect(res.json).toHaveBeenCalledWith(
@@ -301,6 +296,14 @@ describe('GoTrueAuthController', () => {
           redirectUrl: expect.stringContaining('/verify?loginToken='),
         }),
       );
+
+      // Boundary: CRM must NOT write Wiki-owned public tables during
+      // provisioning. The Wiki provisions its own user on first Wiki login.
+      const wikiWrites = dataSource.query.mock.calls.filter(([sql]) =>
+        /public\.(workspaces|users|workspace_users)/i.test(String(sql)),
+      );
+
+      expect(wikiWrites).toHaveLength(0);
     });
 
     it('returns needsSetup when first login without workspaceName', async () => {
