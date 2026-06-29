@@ -154,9 +154,18 @@ jobs:
         run: npx nx build twenty-shared
 
       - name: Run server tests
-        # Known: Nx test wrapper exits non-zero on some CI environments
-        # despite all test suites passing. Root cause: twenty-emails and
-        # twenty-client-sdk workspace deps not resolved in jest context.
-        # TODO: fix module resolution for CI jest runs
-        run: npx nx test twenty-server -- --passWithNoTests
-        continue-on-error: true
+        # Fail closed: a non-zero exit from the test run must fail the job so
+        # release green-CI gates cannot pass while server tests fail.
+        #
+        # Root cause of the previous (removed) `continue-on-error: true`:
+        # jest.config.mjs enforced global coverage thresholds (30/20/25/30) and
+        # the codebase currently sits below them (~27% statements). jest then
+        # exited non-zero *even when every test passed*, so CI swallowed the
+        # exit code — which ALSO masked genuine test failures. Coverage
+        # enforcement is now opt-in (JEST_ENFORCE_COVERAGE, see jest.config.mjs),
+        # so this step's exit code reflects test pass/fail only: a failing test
+        # (and only a failing test) fails the job.
+        # `^build` (nx targetDefaults) builds workspace deps (twenty-emails /
+        # twenty-client-sdk) first so they resolve in the jest module context;
+        # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
+        run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
