@@ -169,3 +169,71 @@ jobs:
         # twenty-client-sdk) first so they resolve in the jest module context;
         # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
         run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
+
+  dep-audit:
+    name: Dependency vulnerability audit (yarn npm audit)
+    # NON-BLOCKING (continue-on-error: true): this large upstream fork is expected
+    # to carry pre-existing high-severity findings. The job runs, surfaces findings
+    # in the CI summary, and never gates merges. Promote to blocking once the
+    # baseline is clean (remove continue-on-error and file a remediation task).
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Audit production dependencies (high+ severity)
+        # --all:         audit every package in the lockfile (not just direct deps)
+        # --recursive:   include transitive dependencies
+        # --environment: restrict to production — devDependencies excluded
+        # --severity:    fail closed on HIGH and above (CRITICAL included)
+        # Exit-code is absorbed by job-level continue-on-error while the baseline
+        # is dirty; remove that flag to make this gate hard.
+        run: yarn npm audit --all --recursive --environment production --severity high
+
+  container-scan:
+    name: Container vulnerability scan (Trivy)
+    # NON-BLOCKING (continue-on-error: true): same rationale as dep-audit — the
+    # node:24-alpine base image and upstream Dockerfile will carry pre-existing
+    # OS-level CVEs. Findings are surfaced and tracked; the job never blocks PRs
+    # until the baseline is remediated.
+    # NOTE: action tags used instead of SHA pins because Trivy tags are required
+    # for this non-blocking scan. Pin to SHA before promoting to blocking.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Scan Dockerfile for misconfigurations
+        # Checks the Dockerfile against CIS Docker Benchmark and known
+        # bad practices (privileged containers, root user, ADD vs COPY, etc.)
+        uses: aquasecurity/trivy-action@0.32.0
+        with:
+          scan-type: config
+          scan-ref: packages/twenty-docker/twenty/Dockerfile
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+
+      - name: Scan repository filesystem for vulnerabilities
+        # Parses yarn.lock and any embedded manifests for CVE matches;
+        # also flags secrets accidentally committed to the tree.
+        uses: aquasecurity/trivy-action@0.32.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
