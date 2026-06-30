@@ -39,9 +39,23 @@ export class ErrorForwardingService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(report),
       signal: AbortSignal.timeout(5000),
-    }).catch((err) => {
-      this.logger.debug(`Failed to forward error to monitor: ${err.message}`);
-    });
+    })
+      .then((res) => {
+        // exe-monitor-hub reachable but rejecting — surface so operators notice
+        // sustained CRM->monitor forwarding failures (dropped 5xx reports).
+        if (!res.ok) {
+          this.logger.warn(
+            `exe-monitor-hub returned ${res.status} forwarding error report (report dropped)`,
+          );
+        }
+      })
+      .catch((err) => {
+        // Network failure / timeout (monitor down). Was debug-only, which hid
+        // sustained outages; warn so operators see dropped error reports.
+        this.logger.warn(
+          `Failed to forward error to exe-monitor-hub (report dropped): ${err.message}`,
+        );
+      });
   }
 
   forwardBackendError(params: {
@@ -69,12 +83,22 @@ export class ErrorForwardingService {
     });
   }
 
-  forwardFrontendError(report: ErrorReport): void {
-    // Re-stamp the service to ensure consistency
+  forwardFrontendError(report: Partial<ErrorReport> & { message: string }): void {
+    // Re-stamp service/type and backfill any optional fields the validated
+    // payload omitted, so exe-monitor-hub always receives a complete report.
     this.forwardError({
-      ...report,
       service: 'exe-crm',
       type: 'frontend',
+      message: report.message,
+      level: report.level ?? 'error',
+      stack: report.stack ?? null,
+      url: report.url ?? '',
+      method: report.method ?? '',
+      status_code: report.status_code ?? 0,
+      user_id: report.user_id ?? '',
+      release: report.release ?? process.env.npm_package_version ?? 'unknown',
+      timestamp: report.timestamp ?? new Date().toISOString(),
+      metadata: report.metadata ?? {},
     });
   }
 }

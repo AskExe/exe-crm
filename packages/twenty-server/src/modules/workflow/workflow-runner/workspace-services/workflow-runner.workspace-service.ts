@@ -267,7 +267,16 @@ export class WorkflowRunnerWorkspaceService {
       );
 
       return false;
-    } catch {
+    } catch (error) {
+      // Throttle hit (or throttling check failed). Keep current behavior
+      // (treat as throttled) but log so the cause is visible — a swallowed
+      // error here can silently stall WhatsApp-triggered workflow runs.
+      this.logger.warn(
+        `Workflow run throttled for workspace=${workspaceId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
       this.metricsService.incrementCounter({
         key: MetricsKeys.WorkflowRunThrottled,
         eventId: workspaceId,
