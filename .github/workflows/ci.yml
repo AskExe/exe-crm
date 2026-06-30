@@ -16,7 +16,9 @@ concurrency:
 jobs:
   lint-typecheck:
     name: Lint & Typecheck
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    # Hybrid runner routing: no secrets, no Docker → GitHub-hosted to free the
+    # 2 self-hosted slots (was dependabot→ubuntu-latest escape hatch, now all).
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -28,6 +30,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -57,7 +60,8 @@ jobs:
 
   brand-drift:
     name: Brand drift check
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    # Hybrid runner routing: pure git-diff scan, no secrets/Docker → GitHub-hosted.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     if: github.event_name == 'pull_request'
     steps:
@@ -136,7 +140,9 @@ jobs:
 
   server-tests:
     name: Server unit tests
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    # Hybrid runner routing: unit tests run --configuration=ci (maxWorkers=1),
+    # no secrets/Docker → GitHub-hosted to free the self-hosted slots.
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -146,6 +152,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -187,6 +194,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable
