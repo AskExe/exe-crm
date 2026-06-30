@@ -71,6 +71,25 @@ The `CRM_IMAGE_TAG` env var in `.env` controls which exe-crm image version is pu
 | `GOTRUE_JWT_ISSUER`   | —               |                                             |
 | `GOTRUE_JWT_AUDIENCE` | `authenticated` |                                             |
 
+### Optional — Gateway / Admin API auth
+
+| Variable             | Default | Description                                                                                                                                                                                                 |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXE_CRM_ADMIN_TOKEN` | —       | Shared bearer secret for admin-scoped GraphQL/REST access (used by the Exe Gateway). When set, `AdminTokenMiddleware` authenticates `Authorization: Bearer <token>` requests against the first workspace. Generate: `openssl rand -hex 32`. |
+
+**Gateway contract:** this value MUST equal the gateway's `CRM_API_TOKEN`
+(see exe-gateway env). The gateway sends it as `Authorization: Bearer <token>`
+on every CRM push; the middleware SHA-256-hashes and timing-safe-compares it,
+then resolves the first workspace (oldest by `createdAt`) — correct for the
+single-tenant HYGO deployment. If unset, admin-token auth is disabled and the
+gateway cannot push contacts via the admin path.
+
+Two ways to obtain a token the gateway can use:
+1. **Shared secret (simplest):** set `EXE_CRM_ADMIN_TOKEN` to a random value and
+   copy the same value into the gateway's `CRM_API_TOKEN`.
+2. **Per-workspace API key:** run the `workspace:generate-api-key` CLI (see
+   DEPLOY.md) and use the emitted bearer token as the gateway's `CRM_API_TOKEN`.
+
 ### Optional — Worker / Migration
 
 | Variable                         | Default | Description                                       |
