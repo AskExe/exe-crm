@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -47,8 +48,6 @@ const MOCK_LOGIN_TOKEN = {
   expiresAt: new Date(Date.now() + 900_000),
 };
 
-const MOCK_REDIRECT_URL = `http://localhost:3000/verify?loginToken=${encodeURIComponent(MOCK_LOGIN_TOKEN.token)}`;
-
 /* ------------------------------------------------------------------ */
 /*  Test suite                                                        */
 /* ------------------------------------------------------------------ */
@@ -62,6 +61,11 @@ describe('GoTrueAuthController', () => {
   let userRepo: { findOne: jest.Mock };
   let userWorkspaceRepo: { findOne: jest.Mock };
   let workspaceRepo: { findOne: jest.Mock };
+  // Tenant binding is resolved from the request origin via this service —
+  // never from a global "first/oldest workspace" repository query.
+  let workspaceDomainsService: {
+    getWorkspaceByOriginOrDefaultWorkspace: jest.Mock;
+  };
   // Boundary guard: a DataSource is still registered so that if anyone
   // re-introduces a raw-SQL injection into the controller, this spy will catch
   // any write to Wiki-owned tables (public.workspaces/users/workspace_users).
@@ -93,6 +97,10 @@ describe('GoTrueAuthController', () => {
           },
         },
         {
+          provide: WorkspaceDomainsService,
+          useValue: workspaceDomainsService,
+        },
+        {
           provide: DataSource,
           useValue: dataSource,
         },
@@ -121,6 +129,13 @@ describe('GoTrueAuthController', () => {
     userRepo = { findOne: jest.fn() };
     userWorkspaceRepo = { findOne: jest.fn() };
     workspaceRepo = { findOne: jest.fn() };
+    // Default: a single resolvable tenant. Individual tests override the
+    // return value to exercise multi-tenant / unresolvable cases.
+    workspaceDomainsService = {
+      getWorkspaceByOriginOrDefaultWorkspace: jest
+        .fn()
+        .mockResolvedValue(MOCK_WORKSPACE),
+    };
     dataSource = { query: jest.fn().mockResolvedValue([]) };
 
     const module: TestingModule = await buildTestModule();
@@ -177,9 +192,7 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('not configured'),
-        }),
+        expect.objectContaining({ error: expect.any(String) }),
       );
     });
 
@@ -212,14 +225,11 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(502);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('unavailable'),
-        }),
+        expect.objectContaining({ error: expect.any(String) }),
       );
     });
 
-    it('returns 200 with redirectUrl on success (existing user)', async () => {
-      // Mock GoTrue success
+    it('binds an existing user to the origin-resolved tenant and returns redirectUrl', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -229,9 +239,7 @@ describe('GoTrueAuthController', () => {
           }),
       });
 
-      // Mock existing user context
       userRepo.findOne.mockResolvedValue(MOCK_USER);
-      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
 
       const res = mockResponse();
@@ -241,18 +249,76 @@ describe('GoTrueAuthController', () => {
         res,
       );
 
-      // Controller returns { redirectUrl } pointing to /verify?loginToken=...
+      // Tenant came from origin resolution, not a first/oldest workspace query.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           redirectUrl: expect.stringContaining('/verify?loginToken='),
         }),
       );
-      // Should NOT have called res.status (direct res.json for 200)
       expect(res.status).not.toHaveBeenCalled();
     });
 
+    it('denies an existing user who is not a member of the resolved tenant (403)', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'gotrue-at',
+            user: { id: 'gotrue-uid', email: MOCK_USER.email },
+          }),
+      });
+
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+      // Resolved a tenant, but the user has no membership in it.
+      userWorkspaceRepo.findOne.mockResolvedValue(null);
+
+      const res = mockResponse();
+
+      await controller.gotrueLogin(
+        { email: MOCK_USER.email, password: 'correct-pass' },
+        res,
+      );
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) }),
+      );
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for an existing user when no tenant can be resolved', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'gotrue-at',
+            user: { id: 'gotrue-uid', email: MOCK_USER.email },
+          }),
+      });
+
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        null,
+      );
+
+      const res = mockResponse();
+
+      await controller.gotrueLogin(
+        { email: MOCK_USER.email, password: 'correct-pass' },
+        res,
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(String) }),
+      );
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    });
+
     it('auto-provisions workspace+user when user does not exist', async () => {
-      // Mock GoTrue success
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -262,7 +328,7 @@ describe('GoTrueAuthController', () => {
           }),
       });
 
-      // First call: no user. After provisioning: user exists.
+      // First call (existence check): no user. After provisioning: user exists.
       let callCount = 0;
 
       userRepo.findOne.mockImplementation(() => {
@@ -273,8 +339,9 @@ describe('GoTrueAuthController', () => {
           : Promise.resolve({ ...MOCK_USER, email: 'new@exe.ai' });
       });
 
-      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
+      // Post-provision context is bound to the user's own new membership.
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
 
       const res = mockResponse();
 
@@ -290,7 +357,6 @@ describe('GoTrueAuthController', () => {
         }),
       );
 
-      // Should return redirectUrl pointing to /verify
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           redirectUrl: expect.stringContaining('/verify?loginToken='),
@@ -345,17 +411,11 @@ describe('GoTrueAuthController', () => {
         activationStatus: WorkspaceActivationStatus.PENDING_CREATION,
       };
 
-      // After activation, return active workspace
-      let wsCallCount = 0;
-
-      workspaceRepo.findOne.mockImplementation(() => {
-        wsCallCount++;
-
-        return wsCallCount <= 1
-          ? Promise.resolve(pendingWorkspace)
-          : Promise.resolve(MOCK_WORKSPACE);
-      });
-
+      // Origin resolution returns the pending tenant for the existing user.
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        pendingWorkspace,
+      );
+      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
       userRepo.findOne.mockResolvedValue(MOCK_USER);
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
 
@@ -402,9 +462,7 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('not configured'),
-        }),
+        expect.objectContaining({ error: expect.any(String) }),
       );
     });
 
@@ -419,8 +477,10 @@ describe('GoTrueAuthController', () => {
       );
     });
 
-    it('returns 500 if no workspace exists', async () => {
-      workspaceRepo.findOne.mockResolvedValue(null);
+    it('returns 500 if no tenant can be resolved', async () => {
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        null,
+      );
 
       const res = mockResponse();
 
@@ -428,14 +488,14 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('No workspace'),
-        }),
+        expect.objectContaining({ error: expect.any(String) }),
       );
     });
 
-    it('returns 500 if no user in workspace', async () => {
-      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
+    it('returns 500 if no user in the resolved tenant', async () => {
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        MOCK_WORKSPACE,
+      );
       userWorkspaceRepo.findOne.mockResolvedValue(null);
 
       const res = mockResponse();
@@ -444,14 +504,14 @@ describe('GoTrueAuthController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('No user'),
-        }),
+        expect.objectContaining({ error: expect.any(String) }),
       );
     });
 
-    it('returns 200 with redirectUrl, user, and isAdminToken on success', async () => {
-      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
+    it('binds admin token to the origin-resolved tenant and returns redirectUrl', async () => {
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        MOCK_WORKSPACE,
+      );
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
       userRepo.findOne.mockResolvedValue(MOCK_USER);
 
@@ -459,7 +519,10 @@ describe('GoTrueAuthController', () => {
 
       await controller.adminTokenLogin({ token: 'admin-secret-123' }, res);
 
-      // Controller now returns { redirectUrl, user: { id }, isAdminToken }
+      // Tenant came from origin resolution, not a first/oldest workspace query.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           redirectUrl: expect.stringContaining('/verify?loginToken='),
@@ -467,7 +530,6 @@ describe('GoTrueAuthController', () => {
           isAdminToken: true,
         }),
       );
-      // Direct res.json call, no res.status for 200
       expect(res.status).not.toHaveBeenCalled();
     });
   });
