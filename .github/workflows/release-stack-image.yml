@@ -17,7 +17,67 @@ permissions:
   actions: read
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Fail-closed gate: never build/push a release image unless the exact commit
+  # the tag points at has a GREEN CI run. Polls the CI workflow for this SHA and
+  # fails closed on failure, on a non-success conclusion, or on timeout.
+  # ---------------------------------------------------------------------------
+  require-green-ci:
+    name: Require green CI for commit
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - name: Gate on green CI of exact SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os, sys, time, urllib.request, urllib.error
+          repo = os.environ["REPO"]; sha = os.environ["SHA"]; token = os.environ["GH_TOKEN"]
+          api = (f"https://api.github.com/repos/{repo}/actions/workflows/ci.yml/runs"
+                 f"?head_sha={sha}&per_page=100")
+
+          def fetch():
+              req = urllib.request.Request(api, headers={
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              })
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.load(r)
+
+          deadline = time.time() + 1800  # 30 min, then fail closed
+          while True:
+              runs = None
+              try:
+                  runs = fetch().get("workflow_runs", [])
+              except (urllib.error.URLError, TimeoutError) as e:
+                  print(f"::warning::CI status query failed ({e}); will retry")
+              if runs is not None:
+                  mine = [r for r in runs if r.get("head_sha") == sha]
+                  if not mine:
+                      print(f"No CI run found yet for {sha}; waiting...")
+                  else:
+                      latest = max(mine, key=lambda r: r.get("id", 0))
+                      st, concl = latest.get("status"), latest.get("conclusion")
+                      print(f"Latest CI run {latest.get('id')}: status={st} conclusion={concl}")
+                      if st == "completed":
+                          if concl == "success":
+                              print(f"::notice::CI is green for {sha}. Proceeding with release.")
+                              sys.exit(0)
+                          print(f"::error::CI conclusion for {sha} is '{concl}' "
+                                f"(not success). Refusing to release. Failing closed.")
+                          sys.exit(1)
+              if time.time() > deadline:
+                  print(f"::error::Timed out waiting for green CI on {sha}. Failing closed.")
+                  sys.exit(1)
+              time.sleep(30)
+          PY
+
   release-image:
+    needs: require-green-ci
     runs-on: [self-hosted, linux, x64]
     env:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || github.token }}
@@ -30,15 +90,21 @@ jobs:
         run: |
           python -m json.tool stack.release.json >/dev/null
           python - <<'PY2' >> "$GITHUB_OUTPUT"
-          import json
+          import json, re
           rel = json.load(open('stack.release.json'))
           assert rel.get('schemaVersion') == 1, 'schemaVersion must be 1'
           assert rel.get('version'), 'version required'
           assert rel.get('image', '').endswith(':v' + rel['version']), 'image must use stack release tag'
+          # Fail-closed: a release must pin a real, resolvable image digest.
+          # A missing/placeholder (e.g. "TODO") imageDigest blocks the release.
+          digest = rel.get('imageDigest', '')
+          assert re.match(r'^sha256:[0-9a-f]{64}$', digest), \
+              'imageDigest must be a resolvable sha256 digest (tag-only releases are not allowed)'
           assert rel.get('stackParticipation', {}).get('health'), 'health checks required'
           assert rel.get('stackParticipation', {}).get('smokeTests'), 'smoke tests required'
           print('stack_version=' + rel['version'])
           print('image=' + rel['image'])
+          print('image_digest=' + digest)
           PY2
 
       - name: Login to GHCR
@@ -52,6 +118,7 @@ jobs:
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
       - name: Build image
+        id: build
         uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
         with:
           context: .
@@ -65,7 +132,47 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.release.outputs.stack_version }}
 
-      - name: Report image publish status
+      # Container/image vulnerability scan of the EXACT image we just pushed
+      # (referenced by its immutable build digest). Fails closed on HIGH/CRITICAL.
+      - name: Scan published image (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/askexe/exe-crm@${{ steps.build.outputs.digest }}
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      # Fail-closed digest verification: the image actually published must match
+      # the digest pinned in stack.release.json. On drift this fails with the
+      # built digest so the maintainer can update stack.release.json and re-tag.
+      #
+      # Release procedure for a NEW version (digest can't be known before build):
+      #   1) cut the tag — this run builds, pushes, then fails here printing the
+      #      built digest;
+      #   2) set stack.release.json imageDigest/imageRef to that digest, commit;
+      #   3) move the tag to the new commit (or re-dispatch) — verification passes.
+      - name: Verify published digest matches stack.release.json
+        shell: bash
+        env:
+          EXPECTED: ${{ steps.release.outputs.image_digest }}
+          BUILT: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ steps.release.outputs.image }}
         run: |
-          docker manifest inspect "${{ steps.release.outputs.image }}" >/dev/null
-          echo "Published and verified ${{ steps.release.outputs.image }}"
+          set -euo pipefail
+          echo "Declared (stack.release.json): ${EXPECTED}"
+          echo "Built/pushed (build-push):     ${BUILT}"
+          if [ "${BUILT}" != "${EXPECTED}" ]; then
+            echo "::error::Image digest drift: the built image (${BUILT}) does not match the"
+            echo "::error::pinned stack.release.json imageDigest (${EXPECTED}). Update imageDigest"
+            echo "::error::and imageRef to ${BUILT}, commit, and re-tag. Failing closed."
+            exit 1
+          fi
+          RESOLVED=$(docker buildx imagetools inspect "${IMAGE}" --raw | sha256sum | awk '{print "sha256:"$1}')
+          echo "Registry tag resolves to:      ${RESOLVED}"
+          if [ "${RESOLVED}" != "${EXPECTED}" ]; then
+            echo "::error::Registry tag ${IMAGE} resolves to ${RESOLVED}, expected ${EXPECTED}. Failing closed."
+            exit 1
+          fi
+          echo "Verified: ${IMAGE} is pinned to ${EXPECTED}"
