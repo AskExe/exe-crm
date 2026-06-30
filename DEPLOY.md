@@ -43,17 +43,37 @@ The `docker-compose.yml` includes a `db-backup` sidecar that runs `pg_dump` ever
 
 ### Restoring from backup
 
+> **Stop the `db-backup` sidecar before restoring.** A destructive
+> `pg_restore --clean --if-exists` drops and recreates objects. If the backup
+> cron fires its scheduled `pg_dump` during that window it will capture a
+> half-restored database as a "valid" dump and, because retention keeps only
+> the last 7 dumps, prune an older *good* backup to make room. Always suspend
+> the sidecar first, verify the restore, and resume backups only once the stack
+> is consistent.
+
 ```bash
-# List available backups
+# 1. List available backups (while the sidecar is still running)
 docker compose -f packages/twenty-docker/docker-compose.yml \
   exec db-backup ls -lt /backups/
 
-# Restore a specific backup (stops server first)
-docker compose -f packages/twenty-docker/docker-compose.yml stop server worker
+# 2. Quiesce the app AND the backup sidecar so nothing writes mid-restore
+docker compose -f packages/twenty-docker/docker-compose.yml stop server worker db-backup
+
+# 3. Restore the chosen backup (destructive: drops & recreates objects)
 docker compose -f packages/twenty-docker/docker-compose.yml \
   exec db pg_restore -U postgres -d default --clean --if-exists \
   /backups/exe-crm_YYYYMMDD_HHMMSS.dump
+
+# 4. VERIFY the restore succeeded before bringing anything back up
+#    (exit code 0, expected row counts, sanity-check key tables).
+#    Do NOT resume backups until you are satisfied the data is correct —
+#    resuming early lets the cron overwrite good dumps with a bad state.
+
+# 5. Bring the app back online
 docker compose -f packages/twenty-docker/docker-compose.yml start server worker
+
+# 6. Only AFTER verification, resume the backup sidecar
+docker compose -f packages/twenty-docker/docker-compose.yml start db-backup
 ```
 
 ### External backup (recommended for production)
