@@ -16,9 +16,7 @@ concurrency:
 jobs:
   lint-typecheck:
     name: Lint & Typecheck
-    # Hybrid runner routing: no secrets, no Docker → GitHub-hosted to free the
-    # 2 self-hosted slots (was dependabot→ubuntu-latest escape hatch, now all).
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -60,8 +58,7 @@ jobs:
 
   brand-drift:
     name: Brand drift check
-    # Hybrid runner routing: pure git-diff scan, no secrets/Docker → GitHub-hosted.
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
     timeout-minutes: 5
     if: github.event_name == 'pull_request'
     steps:
@@ -140,9 +137,7 @@ jobs:
 
   server-tests:
     name: Server unit tests
-    # Hybrid runner routing: unit tests run --configuration=ci (maxWorkers=1),
-    # no secrets/Docker → GitHub-hosted to free the self-hosted slots.
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
     timeout-minutes: 20
     steps:
       - name: Checkout
