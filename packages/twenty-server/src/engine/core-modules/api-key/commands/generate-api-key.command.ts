@@ -240,8 +240,19 @@ export class GenerateApiKeyCommand extends CommandRunner {
     this.logger.log(
       `  Expires:    ${options.expiresIn ? `${options.expiresIn} days (${expiresAt.toISOString()})` : 'Never'}`,
     );
-    this.logger.log(`\nBearer token (use in Authorization header):\n`);
-    this.logger.log(tokenResult.token);
-    this.logger.log('');
+    // SECURITY: write the raw bearer token directly to stdout (NOT through
+    // this.logger). The logger may be wired to a structured driver (PINO) or a
+    // remote sink (Sentry) where a persisted bearer token is a credential leak.
+    // The token is unrecoverable after this point, so it is shown exactly once.
+    // eslint-disable-next-line no-console
+    console.log(
+      '\nBearer token (use in the Authorization header as "Bearer <token>").' +
+        '\n⚠️  Shown once — copy it now and store it securely (e.g. the gateway\'s' +
+        '\n    CRM_API_TOKEN). It cannot be retrieved again.\n',
+    );
+    // eslint-disable-next-line no-console
+    console.log(tokenResult.token);
+    // eslint-disable-next-line no-console
+    console.log('');
   }
 }

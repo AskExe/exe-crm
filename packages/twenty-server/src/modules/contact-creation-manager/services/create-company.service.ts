@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { type AxiosInstance } from 'axios';
 import uniqBy from 'lodash.uniqby';
@@ -31,6 +31,7 @@ export type CompanyToCreate = {
 
 @Injectable()
 export class CreateCompanyService {
+  private readonly logger = new Logger(CreateCompanyService.name);
   private readonly httpService: AxiosInstance;
 
   constructor(
@@ -258,7 +259,16 @@ export class CreateCompanyService {
         name: data.name ?? getCompanyNameFromDomainName(domainName ?? ''),
         city: data.city,
       };
-    } catch {
+    } catch (error) {
+      // Enrichment lookup failed (twenty-companies unreachable/timeout). Fall
+      // back to the domain-derived name, but log so a persistently failing
+      // enrichment endpoint isn't invisible during contact/company creation.
+      this.logger.debug(
+        `Company enrichment failed for "${domainName ?? ''}", using domain-derived name: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
       return {
         name: getCompanyNameFromDomainName(domainName ?? ''),
         city: '',

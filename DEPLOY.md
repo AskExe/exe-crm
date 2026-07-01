@@ -105,6 +105,63 @@ If a migration fails or causes data issues:
 3. Revert to the previous `CRM_IMAGE_TAG` in `.env`
 4. Restart containers
 
+## Gateway authentication (fresh install → gateway can auth)
+
+The Exe Gateway authenticates to the CRM with a bearer token sent as
+`Authorization: Bearer <token>`. There are two supported paths to provision it
+on a fresh VPS. Pick one; both produce a token that goes into the gateway's
+`CRM_API_TOKEN`.
+
+### Path A — shared admin secret (simplest, recommended for HYGO)
+
+1. Generate a strong random secret:
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Set it as `EXE_CRM_ADMIN_TOKEN` in `packages/twenty-docker/.env` (CRM side).
+3. Set the **same value** as `CRM_API_TOKEN` in the gateway's env.
+4. Restart the CRM server container so `AdminTokenMiddleware` picks it up.
+
+The middleware SHA-256-hashes the configured secret and timing-safe-compares
+incoming tokens, then resolves the first (oldest) workspace — correct for the
+single-tenant HYGO deployment. No CLI step is required.
+
+### Path B — per-workspace API key (`workspace:generate-api-key` CLI)
+
+The server image ships a CLI that mints a real per-workspace API key bound to
+the Admin role. Run it inside the running `server` container:
+
+```bash
+# List workspaces' API keys (also confirms the workspace ID exists)
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --list
+
+# Generate a non-expiring key (omit --expires-in for no expiry)
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --name "exe-gateway"
+
+# Revoke a key by ID
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --revoke <API_KEY_ID>
+```
+
+Command name: `workspace:generate-api-key` (run via `yarn command:prod`).
+Flags: `-w/--workspace-id` (required), `-n/--name`, `-e/--expires-in <days>`
+(omit for never-expiring), `-l/--list`, `-r/--revoke <apiKeyId>`.
+
+On success the command prints the **raw bearer token to stdout exactly once**
+(it is not recoverable afterward and is intentionally not written to the
+structured logger). Copy that token and set it as the gateway's `CRM_API_TOKEN`.
+
+> Single-tenant note: the admin-token path always targets the first workspace,
+> so Path A needs no workspace ID. For Path B, find the workspace ID via the
+> CRM (Settings → Workspace) or `SELECT id FROM core."workspace";`.
+
+See CONTRACTS.md → "Optional — Gateway / Admin API auth" for the env contract.
+
 ## Running locally
 
 ```bash

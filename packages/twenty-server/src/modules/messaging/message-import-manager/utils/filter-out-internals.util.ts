@@ -1,7 +1,11 @@
+import { Logger } from '@nestjs/common';
+
 import { isDefined } from 'twenty-shared/utils';
 
 import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message';
 import { getDomainNameByEmail } from 'src/utils/get-domain-name-by-email';
+
+const logger = new Logger('filterOutInternals');
 
 export const filterOutInternals = (
   primaryHandle: string,
@@ -26,7 +30,15 @@ export const filterOutInternals = (
       if (isAllHandlesFromSameDomain) {
         return false;
       }
-    } catch {
+    } catch (error) {
+      // Keep the message (don't filter) but surface the failure — a swallowed
+      // error here silently mis-filters WhatsApp/email participants.
+      logger.warn(
+        `filterOutInternals: domain comparison failed, keeping message: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
       return true;
     }
 
