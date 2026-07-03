@@ -65,7 +65,7 @@ import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { WorkspaceManagerService } from 'src/engine/workspace-manager/workspace-manager.service';
 import { DEFAULT_FEATURE_FLAGS } from 'src/engine/workspace-manager/workspace-migration/constant/default-feature-flags';
-import { extractVersionMajorMinorPatch } from 'src/utils/version/extract-version-major-minor-patch';
+import { resolveEngineVersion } from 'src/utils/version/resolve-engine-version';
 
 @Injectable()
 // oxlint-disable-next-line exe-crm/inject-workspace-repository
@@ -362,7 +362,11 @@ export class WorkspaceService extends TypeOrmQueryService<WorkspaceEntity> {
     await this.workspaceRepository.update(workspace.id, {
       displayName: data.displayName,
       activationStatus: WorkspaceActivationStatus.ACTIVE,
-      version: extractVersionMajorMinorPatch(appVersion),
+      // workspace.version lives on the migration-engine track, not the
+      // exe-crm release track — stamping the raw APP_VERSION (0.9.x) would
+      // make the next upgrade abort with WORKSPACE_VERSION_MISSMATCH
+      // (bug 928a4140).
+      version: resolveEngineVersion(appVersion).version,
     });
 
     await this.coreEntityCacheService.invalidate(

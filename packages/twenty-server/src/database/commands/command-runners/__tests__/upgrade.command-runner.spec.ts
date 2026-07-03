@@ -303,6 +303,24 @@ describe('UpgradeCommandRunner', () => {
           },
         },
       },
+      {
+        title:
+          'even if APP_VERSION is not defined (falls back to the engine version, bug 928a4140)',
+        context: {
+          input: {
+            appVersion: null,
+          },
+        },
+      },
+      {
+        title:
+          'even if APP_VERSION is a fork release version off the engine track (maps to the engine version, bug 928a4140)',
+        context: {
+          input: {
+            appVersion: '0.9.52',
+          },
+        },
+      },
     ];
 
     it.each(eachTestingContextFilter(successfulTestUseCases))(
@@ -364,32 +382,6 @@ describe('UpgradeCommandRunner', () => {
           output: {
             failReportWorkspaceId: 'workspace_0',
             expectedErrorMessage: `Unable to run the upgrade command. Aborting the upgrade process.\nPlease ensure that all workspaces are on at least the previous minor version (${PREVIOUS_VERSION}).\nIf any workspaces are not on the previous minor version, roll back to that version and run the upgrade command again.`,
-          },
-        },
-      },
-      {
-        title: 'when APP_VERSION is not defined',
-        context: {
-          input: {
-            appVersion: null,
-          },
-          output: {
-            failReportWorkspaceId: 'global',
-            expectedErrorMessage:
-              'APP_VERSION is not defined, please double check your env variables',
-          },
-        },
-      },
-      {
-        title: 'when current version commands are not found',
-        context: {
-          input: {
-            appVersion: '42.0.0',
-          },
-          output: {
-            failReportWorkspaceId: 'global',
-            expectedErrorMessage:
-              'No command found for version 42.0.0. Please check the commands record.',
           },
         },
       },
