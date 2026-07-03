@@ -26,10 +26,16 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: redis
     spec:
+      # Hardening (bug be6e91fe): redis-stack-server runs as uid/gid 999;
+      # /data and /tmp are the only writable paths it needs.
+      securityContext:
+{{- toYaml .Values.redisInternal.securityContext | nindent 8 }}
       containers:
         - name: redis
           image: {{ .Values.redisInternal.image.repository }}:{{ .Values.redisInternal.image.tag }}
           imagePullPolicy: {{ default "IfNotPresent" .Values.redisInternal.image.pullPolicy }}
+          securityContext:
+{{- toYaml .Values.containerSecurityContext | nindent 12 }}
           command:
             - redis-stack-server
           args:
@@ -46,7 +52,11 @@ spec:
           volumeMounts:
             - name: redis-data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
       volumes:
+        - name: tmp
+          emptyDir: {}
         - name: redis-data
           {{- if .Values.redisInternal.persistence.enabled }}
           persistentVolumeClaim:

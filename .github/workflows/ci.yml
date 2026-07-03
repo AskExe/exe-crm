@@ -207,17 +207,16 @@ jobs:
         run: yarn npm audit --all --recursive --environment production --severity high
 
       # Container / IaC misconfiguration scan of the production Docker stack
-      # (Dockerfile + docker-compose). Complements the full image vulnerability
+      # (Dockerfile + docker-compose) AND the helm/ + k8s/ orchestration
+      # manifests (hardened in bug be6e91fe — securityContext, non-root,
+      # read-only rootfs, cap drops). Complements the full image vulnerability
       # scan run at release time (.github/workflows/release-stack-image.yml).
-      # Fails closed on HIGH+. The helm/ and k8s/ manifests are skipped here:
-      # they are separate orchestration artifacts with their own hardening scope
-      # (tracked follow-up) and are not part of the compose stack this PR hardens.
+      # Fails closed on HIGH+.
       - name: Container config scan (Trivy)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: config
           scan-ref: packages/twenty-docker
-          skip-dirs: packages/twenty-docker/helm,packages/twenty-docker/k8s
           format: table
           exit-code: '1'
           severity: CRITICAL,HIGH
