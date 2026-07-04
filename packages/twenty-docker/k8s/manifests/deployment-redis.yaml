@@ -21,11 +21,39 @@ spec:
       labels:
         app: twentycrm-redis
     spec:
+      # Hardening (bug be6e91fe): non-root, no privilege escalation, no caps,
+      # read-only root filesystem with explicit writable scratch mounts.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: redis-data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: redis
           image: redis/redis-stack-server:7.2.0-v15
           imagePullPolicy: Always
           args: ["--maxmemory-policy", "noeviction"]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - mountPath: /data
+              name: redis-data
+            - mountPath: /tmp
+              name: tmp
           env:
             - name: PORT
               value: "6379"

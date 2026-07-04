@@ -21,6 +21,15 @@ spec:
       labels:
         app: twentycrm-server
     spec:
+      # Hardening (bug be6e91fe): non-root, no privilege escalation, no caps,
+      # read-only root filesystem with explicit writable scratch mounts.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: twentycrm-server-data
           persistentVolumeClaim:
@@ -28,10 +37,21 @@ spec:
         - name: twentycrm-docker-data
           persistentVolumeClaim:
             claimName: twentycrm-docker-data-pvc
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: twentycrm
           image: ghcr.io/askexe/exe-crm:v0.9.51
           imagePullPolicy: Always
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: NODE_PORT
               value: 3000
@@ -72,5 +92,7 @@ spec:
               name: twentycrm-docker-data
             - mountPath: /app/packages/twenty-server/.local-storage
               name: twentycrm-server-data
+            - mountPath: /tmp
+              name: tmp
       dnsPolicy: ClusterFirst
       restartPolicy: Always
