@@ -41,7 +41,8 @@ export class ErrorForwardingFilter implements ExceptionFilter {
 
       const userId =
         // The workspace auth middleware attaches user to request
-        (request as unknown as Record<string, unknown>)?.['user']?.toString() ?? '';
+        (request as unknown as Record<string, unknown>)?.['user']?.toString() ??
+        '';
 
       this.errorForwardingService.forwardBackendError({
         message,

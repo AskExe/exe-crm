@@ -35,7 +35,9 @@ declare module 'file-type' {
     ): Promise<FileTypeResult | undefined>;
     fromTokenizer(tokenizer: unknown): Promise<FileTypeResult | undefined>;
     fromBlob(blob: Blob): Promise<FileTypeResult | undefined>;
-    fromStream(stream: ReadableStream<Uint8Array>): Promise<FileTypeResult | undefined>;
+    fromStream(
+      stream: ReadableStream<Uint8Array>,
+    ): Promise<FileTypeResult | undefined>;
     fromFile(filePath: string): Promise<FileTypeResult | undefined>;
   }
 

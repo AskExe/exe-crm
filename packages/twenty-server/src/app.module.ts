@@ -129,7 +129,11 @@ export class AppModule {
 
     for (const method of MIGRATED_REST_METHODS) {
       consumer
-        .apply(AdminTokenMiddleware, RestCoreMiddleware, WorkspaceAuthContextMiddleware)
+        .apply(
+          AdminTokenMiddleware,
+          RestCoreMiddleware,
+          WorkspaceAuthContextMiddleware,
+        )
         .forRoutes({ path: 'rest/*path', method });
     }
 

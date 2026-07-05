@@ -79,9 +79,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
 
     // Rate-limit check before any comparison
     if (this.rateLimiter.isRateLimited(clientIp)) {
-      this.logger.warn(
-        `Admin token rate limit exceeded for IP=${clientIp}`,
-      );
+      this.logger.warn(`Admin token rate limit exceeded for IP=${clientIp}`);
 
       next();
 
