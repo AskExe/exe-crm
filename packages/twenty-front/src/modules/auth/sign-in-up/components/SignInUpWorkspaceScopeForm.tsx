@@ -1,18 +1,19 @@
 import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
+import { exeFoundryBold } from 'twenty-ui/theme';
 
 type AuthTab = 'credentials' | 'admin-token';
 
 // Design tokens — Exe Foundry Bold
 const TOKENS = {
-  bgCard: '#1A1832',
-  bgInput: '#252340',
-  textPrimary: '#F0EDE8',
-  textSecondary: '#A09CAF',
-  accentGold: '#F5D76E',
-  accentGoldHover: '#E5C75E',
-  borderInput: '#2E2C47',
-  error: '#EF4444',
+  bgCard: exeFoundryBold.dark.background.tertiary,
+  bgInput: exeFoundryBold.dark.authSurface.inputBackground,
+  textPrimary: exeFoundryBold.dark.font.color.primary,
+  textSecondary: exeFoundryBold.dark.font.color.secondary,
+  accentGold: exeFoundryBold.dark.accent.primary,
+  accentGoldHover: exeFoundryBold.dark.authSurface.buttonHover,
+  borderInput: exeFoundryBold.dark.authSurface.inputBorder,
+  error: exeFoundryBold.dark.authSurface.error,
   radiusSm: '6px',
   radiusMd: '8px',
 } as const;
@@ -48,7 +49,9 @@ const StyledTab = styled.button<{ isActive: boolean }>`
   font-weight: 400;
   min-height: 44px;
   padding: 10px 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     color: ${TOKENS.textPrimary};
@@ -81,15 +84,17 @@ const StyledInput = styled.input`
   background: ${TOKENS.bgInput};
   border: 1px solid ${TOKENS.borderInput};
   border-radius: ${TOKENS.radiusMd};
+  box-sizing: border-box;
   color: ${TOKENS.textPrimary};
   font-family: 'Space Grotesk', monospace;
   font-size: 16px;
   height: 42px;
   outline: none;
   padding: 0 14px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
   width: 100%;
-  box-sizing: border-box;
 
   &::placeholder {
     color: ${TOKENS.textSecondary};
@@ -98,7 +103,7 @@ const StyledInput = styled.input`
 
   &:focus {
     border-color: ${TOKENS.accentGold};
-    box-shadow: 0 0 0 2px rgba(245, 215, 110, 0.15);
+    box-shadow: 0 0 0 2px ${exeFoundryBold.dark.authSurface.focusRing};
   }
 `;
 
@@ -114,7 +119,7 @@ const StyledGoldButton = styled.button`
   background: ${TOKENS.accentGold};
   border: none;
   border-radius: ${TOKENS.radiusMd};
-  color: #0f0e1a;
+  color: ${exeFoundryBold.dark.font.color.inverted};
   cursor: pointer;
   font-family: 'Epilogue', sans-serif;
   font-size: 16px;
@@ -136,14 +141,14 @@ const StyledGoldButton = styled.button`
 `;
 
 const StyledErrorMessage = styled.div`
-  background: rgba(239, 68, 68, 0.08);
+  background: ${exeFoundryBold.dark.authSurface.errorBackground};
   border-radius: ${TOKENS.radiusSm};
+  box-sizing: border-box;
   color: ${TOKENS.error};
   font-size: 13px;
   margin-top: 16px;
   padding: 8px 12px;
   width: 100%;
-  box-sizing: border-box;
 `;
 
 const StyledForgotPassword = styled.button`
@@ -174,7 +179,7 @@ const StyledSsoDivider = styled.div`
 `;
 
 const StyledDividerLine = styled.div`
-  background: rgba(240, 237, 232, 0.1);
+  background: ${exeFoundryBold.dark.authSurface.dividerLine};
   flex: 1;
   height: 1px;
 `;
@@ -187,7 +192,7 @@ const StyledDividerText = styled.span`
 
 const StyledSsoLink = styled.a`
   align-items: center;
-  border: 1px solid rgba(240, 237, 232, 0.1);
+  border: 1px solid ${exeFoundryBold.dark.authSurface.dividerLine};
   border-radius: ${TOKENS.radiusMd};
   color: ${TOKENS.textPrimary};
   cursor: pointer;
@@ -199,20 +204,22 @@ const StyledSsoLink = styled.a`
   justify-content: center;
   margin-top: 16px;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   width: 100%;
 
   &:hover {
-    background: rgba(37, 35, 64, 0.6);
-    border-color: rgba(245, 215, 110, 0.3);
+    background: ${exeFoundryBold.dark.authSurface.hoverOverlay};
+    border-color: ${exeFoundryBold.dark.authSurface.hoverBorder};
   }
 `;
 
 const StyledSpinner = styled.div`
   animation: spin 0.6s linear infinite;
-  border: 2px solid rgba(15, 14, 26, 0.3);
+  border: 2px solid ${exeFoundryBold.dark.authSurface.spinnerTrack};
   border-radius: 50%;
-  border-top-color: #0f0e1a;
+  border-top-color: ${exeFoundryBold.dark.font.color.inverted};
   display: inline-block;
   height: 16px;
   width: 16px;
@@ -327,9 +334,7 @@ export const SignInUpWorkspaceScopeForm = () => {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          throw new Error(
-            data.message || data.error || 'Invalid admin token',
-          );
+          throw new Error(data.message || data.error || 'Invalid admin token');
         }
 
         const data = await response.json();
@@ -356,7 +361,9 @@ export const SignInUpWorkspaceScopeForm = () => {
       <StyledContentContainer>
         <StyledAdminTokenForm onSubmit={handleSetupSubmit}>
           <StyledFieldGroup>
-            <StyledLabel htmlFor="workspace-name">Name your workspace</StyledLabel>
+            <StyledLabel htmlFor="workspace-name">
+              Name your workspace
+            </StyledLabel>
             <StyledInput
               id="workspace-name"
               type="text"

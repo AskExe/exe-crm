@@ -24,10 +24,5 @@ export const ExeServiceSwitcher = () => {
   // Don't render on auth/login screens
   if (showAuthModal) return null;
 
-  return (
-    <exe-service-switcher
-      current="CRM"
-      user={currentUser?.email ?? ''}
-    />
-  );
+  return <exe-service-switcher current="CRM" user={currentUser?.email ?? ''} />;
 };

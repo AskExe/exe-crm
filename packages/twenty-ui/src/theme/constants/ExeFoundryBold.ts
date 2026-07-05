@@ -126,6 +126,22 @@ export const exeFoundryBold = {
       ringDanger: '0 0 0 2px rgba(248, 113, 113, 0.45)',
     },
 
+    // Auth screen surface tokens — dedicated fills/overlays for the
+    // workspace-scope sign-in form (credentials + admin-token tabs).
+    // Not part of the primary background/accent scale; scoped to that screen.
+    authSurface: {
+      inputBackground: '#252340',
+      inputBorder: '#2E2C47',
+      buttonHover: '#E5C75E',
+      error: '#EF4444',
+      errorBackground: 'rgba(239, 68, 68, 0.08)',
+      focusRing: 'rgba(245, 215, 110, 0.15)',
+      hoverOverlay: 'rgba(37, 35, 64, 0.6)',
+      hoverBorder: 'rgba(245, 215, 110, 0.3)',
+      dividerLine: 'rgba(240, 237, 232, 0.1)',
+      spinnerTrack: 'rgba(15, 14, 26, 0.3)',
+    },
+
     name: 'exe-foundry-bold-dark',
   },
 

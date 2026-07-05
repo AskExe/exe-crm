@@ -70,6 +70,7 @@ export const useProjectionFreshness = ({
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // oxlint-disable-next-line exe-crm/no-state-useref
   const cancelledRef = useRef(false);
 
   const load = useCallback(async () => {
