@@ -37,9 +37,7 @@ export class WorkspaceBootstrapService implements OnModuleInit {
     );
 
     if (count > 0) {
-      this.logger.debug(
-        `Found ${count} workspace(s) — skipping bootstrap.`,
-      );
+      this.logger.debug(`Found ${count} workspace(s) — skipping bootstrap.`);
 
       return;
     }

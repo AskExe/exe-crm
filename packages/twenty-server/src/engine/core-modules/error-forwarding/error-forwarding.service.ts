@@ -83,7 +83,9 @@ export class ErrorForwardingService {
     });
   }
 
-  forwardFrontendError(report: Partial<ErrorReport> & { message: string }): void {
+  forwardFrontendError(
+    report: Partial<ErrorReport> & { message: string },
+  ): void {
     // Re-stamp service/type and backfill any optional fields the validated
     // payload omitted, so exe-monitor-hub always receives a complete report.
     this.forwardError({

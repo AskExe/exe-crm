@@ -78,7 +78,8 @@ export class GenerateApiKeyCommand extends CommandRunner {
 
   @Option({
     flags: '-l, --list',
-    description: 'List all active API keys for the workspace instead of creating one',
+    description:
+      'List all active API keys for the workspace instead of creating one',
   })
   parseList(value: boolean): boolean {
     return value ?? true;
@@ -162,10 +163,7 @@ export class GenerateApiKeyCommand extends CommandRunner {
     workspace: WorkspaceEntity,
     apiKeyId: string,
   ): Promise<void> {
-    const apiKey = await this.apiKeyService.findById(
-      apiKeyId,
-      workspace.id,
-    );
+    const apiKey = await this.apiKeyService.findById(apiKeyId, workspace.id);
 
     if (!isDefined(apiKey)) {
       this.logger.error(
@@ -247,7 +245,7 @@ export class GenerateApiKeyCommand extends CommandRunner {
     // eslint-disable-next-line no-console
     console.log(
       '\nBearer token (use in the Authorization header as "Bearer <token>").' +
-        '\n⚠️  Shown once — copy it now and store it securely (e.g. the gateway\'s' +
+        "\n⚠️  Shown once — copy it now and store it securely (e.g. the gateway's" +
         '\n    CRM_API_TOKEN). It cannot be retrieved again.\n',
     );
     // eslint-disable-next-line no-console

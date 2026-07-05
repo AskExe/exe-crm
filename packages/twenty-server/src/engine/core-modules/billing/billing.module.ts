@@ -6,7 +6,10 @@ import { Module, Global } from '@nestjs/common';
 import { BillingService } from './services/billing.service';
 import { BillingSubscriptionService } from './services/billing-subscription.service';
 import { BillingUsageService } from './services/billing-usage.service';
-import { StripeSdkService, STRIPE_SDK_SERVICE } from './stripe/stripe-sdk/services/stripe-sdk.service';
+import {
+  StripeSdkService,
+  STRIPE_SDK_SERVICE,
+} from './stripe/stripe-sdk/services/stripe-sdk.service';
 
 @Global()
 @Module({
