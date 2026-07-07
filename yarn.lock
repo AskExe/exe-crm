@@ -3925,15 +3925,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/plugin-fuses@npm:^7.8.0":
-  version: 7.11.1
-  resolution: "@electron-forge/plugin-fuses@npm:7.11.1"
+"@electron-forge/plugin-base@npm:7.11.2":
+  version: 7.11.2
+  resolution: "@electron-forge/plugin-base@npm:7.11.2"
   dependencies:
-    "@electron-forge/plugin-base": "npm:7.11.1"
-    "@electron-forge/shared-types": "npm:7.11.1"
+    "@electron-forge/shared-types": "npm:7.11.2"
+  checksum: 10c0/86e05c8361c35d2eaee9a434e236f5bb3f431c0ee075c0cc2e1db109131264389d622ee205ee6b6190618c84ed0caf7ee4148eb929063ea141a56351df92ca51
+  languageName: node
+  linkType: hard
+
+"@electron-forge/plugin-fuses@npm:^7.8.0":
+  version: 7.11.2
+  resolution: "@electron-forge/plugin-fuses@npm:7.11.2"
+  dependencies:
+    "@electron-forge/plugin-base": "npm:7.11.2"
+    "@electron-forge/shared-types": "npm:7.11.2"
   peerDependencies:
     "@electron/fuses": ^1.0.0
-  checksum: 10c0/10f088be36b3cf859ba3ab51bba482d2e87543aaff17f1648161fcb7d2262cd5350e523c0dfb6597e6c9bb3a552b95b04c102e6ef938ccd243c5c454dd98ea91
+  checksum: 10c0/46f713c2d6752be162e83e994881ea71426d78d5433aa8bfdad5ea161de4c762ef85f31177ac6f8b0e16b3a3032812c14ce1773a6330dcf40c0902d740882535
   languageName: node
   linkType: hard
 
@@ -3976,6 +3985,18 @@ __metadata:
     "@electron/rebuild": "npm:^3.7.0"
     listr2: "npm:^7.0.2"
   checksum: 10c0/4f9c547ff06e94e1ca9ccb946d6d0b98cadebf9c4945be25d06e07303a16456e7902b8502aacfb1584ad41696a2ece135f24bf8a5b8b9351073a4cf3a1bc2916
+  languageName: node
+  linkType: hard
+
+"@electron-forge/shared-types@npm:7.11.2":
+  version: 7.11.2
+  resolution: "@electron-forge/shared-types@npm:7.11.2"
+  dependencies:
+    "@electron-forge/tracer": "npm:7.11.2"
+    "@electron/packager": "npm:^18.3.5"
+    "@electron/rebuild": "npm:^3.7.0"
+    listr2: "npm:^7.0.2"
+  checksum: 10c0/0123c06eb8c3a775414018e9b1511c49c83120c223bbba84b176beece13899cb0c640a29fae7d90a669f07f3af00d0c9d94c13fdd460cd23ce890c26d18be25a
   languageName: node
   linkType: hard
 
@@ -4046,6 +4067,15 @@ __metadata:
   dependencies:
     chrome-trace-event: "npm:^1.0.3"
   checksum: 10c0/6a8a1560f29b2a252f5c46f31a9923f0cffc46d068c5a8fd8ea6a4a58614f6742da73e40df507f88bb01f1d43ed93144ad0ea3770bd878ff999cc53e494ad209
+  languageName: node
+  linkType: hard
+
+"@electron-forge/tracer@npm:7.11.2":
+  version: 7.11.2
+  resolution: "@electron-forge/tracer@npm:7.11.2"
+  dependencies:
+    chrome-trace-event: "npm:^1.0.3"
+  checksum: 10c0/28be174e68be14205277a945ea129e9785bb537001db120f039811e4ec3bbe079d00cba0cf421c49853fdcf3c0f3253636406d831262afb4b6a8ad0ca1fd3f61
   languageName: node
   linkType: hard
 
