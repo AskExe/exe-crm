@@ -2,7 +2,12 @@ name: exe-crm
 
 services:
   server:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
+    # Hardening: the server runs as uid 1000 and needs no Linux capabilities.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     logging:
       driver: json-file
       options:
@@ -82,7 +87,12 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.3}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
+    # Hardening: the worker runs as uid 1000 and needs no Linux capabilities.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     logging:
       driver: json-file
       options:
@@ -164,7 +174,20 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:16.9-alpine
+    # Digest-pinned for supply-chain integrity (re-audit blocker).
+    image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+    # Hardening: drop all caps, keep only the minimal set the official postgres
+    # entrypoint needs to chown the data dir and drop root -> postgres via gosu.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
@@ -184,8 +207,20 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7.4-alpine
+    # Digest-pinned for supply-chain integrity (re-audit blocker).
+    image: redis:7.4-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     restart: unless-stopped
+    # Hardening: drop all caps, keep only what the entrypoint needs to drop
+    # root -> redis via su-exec.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
     deploy:
       resources:
         limits:
@@ -199,35 +234,56 @@ services:
       retries: 10
 
   db-backup:
-    image: postgres:16.9-alpine
+    # Digest-pinned for supply-chain integrity (re-audit blocker).
+    image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+    # Hardening: minimal caps needed for apk to install gnupg and for file ops.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     entrypoint: /bin/sh
     command:
       - -c
       - |
-        apk add --no-cache gnupg >/dev/null 2>&1
-        echo "Starting backup cron (every 6 hours)..."
+        set -eu
+        # Fail closed: encryption is mandatory. Refuse to run if no key is set,
+        # so we never write unencrypted customer data to the backup volume.
         if [ -z "$${EXE_BACKUP_KEY}" ]; then
-          echo "WARNING: EXE_BACKUP_KEY not set — backups will NOT be encrypted!"
+          echo "FATAL: EXE_BACKUP_KEY is not set. Refusing to run unencrypted database backups."
+          echo "Generate one ('openssl rand -base64 32') and set EXE_BACKUP_KEY to enable encrypted backups."
+          exit 1
         fi
+        apk add --no-cache gnupg >/dev/null 2>&1
+        echo "Starting encrypted backup cron (every 6 hours)..."
         while true; do
           TIMESTAMP=$$(date +%Y%m%d_%H%M%S)
+          DUMP=/backups/exe-crm_$${TIMESTAMP}.dump
           echo "[$${TIMESTAMP}] Running pg_dump..."
-          PGPASSWORD=$${POSTGRES_PASSWORD} pg_dump \
-            -h db -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-default} \
-            --format=custom \
-            --file=/backups/exe-crm_$${TIMESTAMP}.dump
-          if [ -n "$${EXE_BACKUP_KEY}" ]; then
-            echo "[$${TIMESTAMP}] Encrypting backup with GPG..."
-            gpg --batch --yes --symmetric --cipher-algo AES256 \
-              --passphrase "$${EXE_BACKUP_KEY}" \
-              --output /backups/exe-crm_$${TIMESTAMP}.dump.gpg \
-              /backups/exe-crm_$${TIMESTAMP}.dump
-            rm -f /backups/exe-crm_$${TIMESTAMP}.dump
-            ls -t /backups/exe-crm_*.dump.gpg 2>/dev/null | tail -n +8 | xargs -r rm -f
+          if PGPASSWORD=$${POSTGRES_PASSWORD} pg_dump \
+              -h db -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-default} \
+              --format=custom --file="$${DUMP}"; then
+            echo "[$${TIMESTAMP}] Encrypting backup with GPG (AES256)..."
+            if gpg --batch --yes --symmetric --cipher-algo AES256 \
+                --passphrase "$${EXE_BACKUP_KEY}" \
+                --output "$${DUMP}.gpg" "$${DUMP}"; then
+              rm -f "$${DUMP}"
+              ls -t /backups/exe-crm_*.dump.gpg 2>/dev/null | tail -n +8 | xargs -r rm -f
+              echo "[$${TIMESTAMP}] Backup complete. Next in 6h."
+            else
+              # Never retain an unencrypted dump if encryption fails.
+              echo "[$${TIMESTAMP}] ERROR: GPG encryption failed — removing plaintext dump."
+              rm -f "$${DUMP}"
+            fi
           else
-            ls -t /backups/exe-crm_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+            echo "[$${TIMESTAMP}] ERROR: pg_dump failed — skipping this cycle."
+            rm -f "$${DUMP}"
           fi
-          echo "[$${TIMESTAMP}] Backup complete. Next in 6h."
           sleep 21600
         done
     environment:

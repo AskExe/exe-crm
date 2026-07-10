@@ -3,5 +3,5 @@ name: twenty
 description: A Helm chart to deploy Exe CRM (server + worker) with optional PostgreSQL and Redis dependencies.
 type: application
 version: 0.1.0
-appVersion: 'v0.9.3'
+appVersion: 'v0.9.51'
 icon: https://askexe.com/logo.svg

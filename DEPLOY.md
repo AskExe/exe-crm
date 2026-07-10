@@ -43,17 +43,37 @@ The `docker-compose.yml` includes a `db-backup` sidecar that runs `pg_dump` ever
 
 ### Restoring from backup
 
+> **Stop the `db-backup` sidecar before restoring.** A destructive
+> `pg_restore --clean --if-exists` drops and recreates objects. If the backup
+> cron fires its scheduled `pg_dump` during that window it will capture a
+> half-restored database as a "valid" dump and, because retention keeps only
+> the last 7 dumps, prune an older *good* backup to make room. Always suspend
+> the sidecar first, verify the restore, and resume backups only once the stack
+> is consistent.
+
 ```bash
-# List available backups
+# 1. List available backups (while the sidecar is still running)
 docker compose -f packages/twenty-docker/docker-compose.yml \
   exec db-backup ls -lt /backups/
 
-# Restore a specific backup (stops server first)
-docker compose -f packages/twenty-docker/docker-compose.yml stop server worker
+# 2. Quiesce the app AND the backup sidecar so nothing writes mid-restore
+docker compose -f packages/twenty-docker/docker-compose.yml stop server worker db-backup
+
+# 3. Restore the chosen backup (destructive: drops & recreates objects)
 docker compose -f packages/twenty-docker/docker-compose.yml \
   exec db pg_restore -U postgres -d default --clean --if-exists \
   /backups/exe-crm_YYYYMMDD_HHMMSS.dump
+
+# 4. VERIFY the restore succeeded before bringing anything back up
+#    (exit code 0, expected row counts, sanity-check key tables).
+#    Do NOT resume backups until you are satisfied the data is correct —
+#    resuming early lets the cron overwrite good dumps with a bad state.
+
+# 5. Bring the app back online
 docker compose -f packages/twenty-docker/docker-compose.yml start server worker
+
+# 6. Only AFTER verification, resume the backup sidecar
+docker compose -f packages/twenty-docker/docker-compose.yml start db-backup
 ```
 
 ### External backup (recommended for production)
@@ -84,6 +104,63 @@ If a migration fails or causes data issues:
 2. Restore from the pre-upgrade backup (see Backup & Disaster Recovery above)
 3. Revert to the previous `CRM_IMAGE_TAG` in `.env`
 4. Restart containers
+
+## Gateway authentication (fresh install → gateway can auth)
+
+The Exe Gateway authenticates to the CRM with a bearer token sent as
+`Authorization: Bearer <token>`. There are two supported paths to provision it
+on a fresh VPS. Pick one; both produce a token that goes into the gateway's
+`CRM_API_TOKEN`.
+
+### Path A — shared admin secret (simplest, recommended for HYGO)
+
+1. Generate a strong random secret:
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Set it as `EXE_CRM_ADMIN_TOKEN` in `packages/twenty-docker/.env` (CRM side).
+3. Set the **same value** as `CRM_API_TOKEN` in the gateway's env.
+4. Restart the CRM server container so `AdminTokenMiddleware` picks it up.
+
+The middleware SHA-256-hashes the configured secret and timing-safe-compares
+incoming tokens, then resolves the first (oldest) workspace — correct for the
+single-tenant HYGO deployment. No CLI step is required.
+
+### Path B — per-workspace API key (`workspace:generate-api-key` CLI)
+
+The server image ships a CLI that mints a real per-workspace API key bound to
+the Admin role. Run it inside the running `server` container:
+
+```bash
+# List workspaces' API keys (also confirms the workspace ID exists)
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --list
+
+# Generate a non-expiring key (omit --expires-in for no expiry)
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --name "exe-gateway"
+
+# Revoke a key by ID
+docker compose -f packages/twenty-docker/docker-compose.yml \
+  exec server yarn command:prod workspace:generate-api-key \
+  --workspace-id <WORKSPACE_ID> --revoke <API_KEY_ID>
+```
+
+Command name: `workspace:generate-api-key` (run via `yarn command:prod`).
+Flags: `-w/--workspace-id` (required), `-n/--name`, `-e/--expires-in <days>`
+(omit for never-expiring), `-l/--list`, `-r/--revoke <apiKeyId>`.
+
+On success the command prints the **raw bearer token to stdout exactly once**
+(it is not recoverable afterward and is intentionally not written to the
+structured logger). Copy that token and set it as the gateway's `CRM_API_TOKEN`.
+
+> Single-tenant note: the admin-token path always targets the first workspace,
+> so Path A needs no workspace ID. For Path B, find the workspace ID via the
+> CRM (Settings → Workspace) or `SELECT id FROM core."workspace";`.
+
+See CONTRACTS.md → "Optional — Gateway / Admin API auth" for the env contract.
 
 ## Running locally
 

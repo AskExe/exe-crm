@@ -2,7 +2,9 @@
 # Shared build stages (used by both targets)
 # ===========================================================================
 
-FROM node:24-alpine AS common-deps
+# Base images are pinned by digest for supply-chain integrity (re-audit blocker).
+# To bump: `docker buildx imagetools inspect <image>:<tag>` and copy the top-level Digest.
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS common-deps
 
 WORKDIR /app
 
@@ -76,7 +78,7 @@ RUN if [ -d /app/packages/twenty-front/build ]; then \
 #   docker build --target twenty-app-dev -f packages/twenty-docker/twenty/Dockerfile .
 # ===========================================================================
 
-FROM alpine:3.20 AS s6-fetch
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS s6-fetch
 ARG S6_OVERLAY_VERSION=3.2.0.2
 ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "arm64" ]; then echo "aarch64" > /tmp/s6arch; \
@@ -96,7 +98,7 @@ RUN S6_ARCH=$(cat /tmp/s6arch) && \
     echo "$NOARCH_SUM  s6-overlay-noarch.tar.xz" | sha256sum -c - && \
     echo "$ARCH_SUM  s6-overlay-arch.tar.xz" | sha256sum -c -
 
-FROM node:24-alpine AS twenty-app-dev
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS twenty-app-dev
 
 # s6-overlay
 COPY --from=s6-fetch /tmp/s6-overlay-noarch.tar.xz /tmp/
@@ -183,7 +185,7 @@ ENTRYPOINT ["/init"]
 #   docker build --target twenty -f packages/twenty-docker/twenty/Dockerfile .
 # ===========================================================================
 
-FROM node:24-alpine AS twenty
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS twenty
 
 RUN apk add --no-cache curl jq postgresql-client
 

@@ -1,0 +1,46 @@
+# gitleaks configuration for exe-crm (re-audit blocker: CI secret scan).
+#
+# CI runs (see .github/workflows/ci.yml):
+#   gitleaks detect --no-git --config .gitleaks.toml
+# and FAILS CLOSED on any secret found outside the allowlist below.
+#
+# The allowlist captures the pre-existing UPSTREAM (twentyhq/twenty) test
+# fixtures, mock data, Storybook stories, demo seed data, and vendored Yarn
+# release bundles that legitimately contain fake/example credentials. These are
+# triaged debt, not real secrets. A real secret committed to application source
+# (anything NOT matched below) turns CI red.
+#
+# Keep this list tight: only add a path here after confirming the value is a
+# fixture/example, never to silence a real leak.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Triaged upstream test fixtures, mock data, demo data, and vendored binaries."
+paths = [
+  # Vendored Yarn release bundles (binary-ish blobs, generic-api-key false positive)
+  '''(^|/)\.yarn/releases/.*\.cjs$''',
+  # Unit/integration test specs and helpers
+  '''\.spec\.ts$''',
+  '''(^|/)__tests__/''',
+  '''(^|/)__mocks__/''',
+  '''(^|/)test/integration/''',
+  '''(^|/)testing/mock-data/''',
+  '''test-template\.ts$''',
+  '''getBundleForTest\.ts$''',
+  '''(^|/)test\.json$''',
+  # Vitest configs carry example auth tokens for the test harness
+  '''vitest\..*config\.ts$''',
+  # Storybook stories
+  '''\.stories\.tsx$''',
+  '''(^|/)__stories__/''',
+  # Demo/seed data shipped with the product
+  '''prefill-opportunities\.util\.ts$''',
+  # GraphQL codegen helper for integration tests
+  '''(^|/)test/integration/graphql/codegen/index\.ts$''',
+  # CI helper action with a placeholder JWT used to spawn a throwaway test image
+  '''spawn-twenty-docker-image/action\.yaml$''',
+  # Documentation example (curl auth header)
+  '''webmetic/README\.md$''',
+]

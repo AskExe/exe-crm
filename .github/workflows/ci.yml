@@ -28,6 +28,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -146,6 +147,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: '.nvmrc'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -154,9 +156,67 @@ jobs:
         run: npx nx build twenty-shared
 
       - name: Run server tests
-        # Known: Nx test wrapper exits non-zero on some CI environments
-        # despite all test suites passing. Root cause: twenty-emails and
-        # twenty-client-sdk workspace deps not resolved in jest context.
-        # TODO: fix module resolution for CI jest runs
-        run: npx nx test twenty-server -- --passWithNoTests
-        continue-on-error: true
+        # Fail closed: a non-zero exit from the test run must fail the job so
+        # release green-CI gates cannot pass while server tests fail.
+        #
+        # Root cause of the previous (removed) `continue-on-error: true`:
+        # jest.config.mjs enforced global coverage thresholds (30/20/25/30) and
+        # the codebase currently sits below them (~27% statements). jest then
+        # exited non-zero *even when every test passed*, so CI swallowed the
+        # exit code — which ALSO masked genuine test failures. Coverage
+        # enforcement is now opt-in (JEST_ENFORCE_COVERAGE, see jest.config.mjs),
+        # so this step's exit code reflects test pass/fail only: a failing test
+        # (and only a failing test) fails the job.
+        # `^build` (nx targetDefaults) builds workspace deps (twenty-emails /
+        # twenty-client-sdk) first so they resolve in the jest module context;
+        # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
+        run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
+
+  security-scan:
+    name: Security scan (secrets, deps, container config)
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Secret scan (open-source gitleaks binary via its pinned-by-digest image;
+      # the gitleaks GitHub Action requires a paid license for org repos, the CLI
+      # does not). --no-git scans the current checkout. Fails closed on findings.
+      - name: Secret scan (gitleaks)
+        run: |
+          docker run --rm -v "$PWD:/repo" \
+            ghcr.io/gitleaks/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
+            detect --source=/repo --no-git --redact --no-banner --verbose \
+            --config=/repo/.gitleaks.toml
+
+      # Production dependency vulnerability scan. Fails closed on HIGH+ advisories
+      # in the runtime (non-dev) dependency graph across all workspaces.
+      - name: Dependency scan (yarn npm audit, production)
+        run: yarn npm audit --all --recursive --environment production --severity high
+
+      # Container / IaC misconfiguration scan of the production Docker stack
+      # (Dockerfile + docker-compose) AND the helm/ + k8s/ orchestration
+      # manifests (hardened in bug be6e91fe — securityContext, non-root,
+      # read-only rootfs, cap drops). Complements the full image vulnerability
+      # scan run at release time (.github/workflows/release-stack-image.yml).
+      # Fails closed on HIGH+.
+      - name: Container config scan (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: packages/twenty-docker
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH

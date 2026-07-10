@@ -32,8 +32,16 @@ tests:
 
   - it: does not mount storage by default
     asserts:
-      - isNull:
+      # Only the tmp scratch emptyDir (readOnlyRootFilesystem hardening,
+      # bug be6e91fe) — no storage/PVC volumes.
+      - lengthEqual:
           path: spec.template.spec.volumes
+          count: 1
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: tmp
+      - isNotNull:
+          path: spec.template.spec.volumes[0].emptyDir
 
   - it: uses correct command for worker process
     asserts:

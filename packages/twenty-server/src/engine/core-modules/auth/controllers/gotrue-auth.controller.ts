@@ -1,18 +1,18 @@
-import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
-import { type Response } from 'express';
+import { Body, Controller, Logger, Post, Req, Res } from '@nestjs/common';
+import { type Request, type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
-import { DataSource, Repository } from 'typeorm';
-
-import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { getRequestOrigin } from 'src/utils/get-request-origin';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 /**
@@ -38,7 +38,7 @@ export class GoTrueAuthController {
     private readonly loginTokenService: LoginTokenService,
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
-    private readonly dataSource: DataSource,
+    private readonly workspaceDomainsService: WorkspaceDomainsService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -52,30 +52,82 @@ export class GoTrueAuthController {
     this.adminTokenHash = rawToken
       ? createHash('sha256').update(rawToken).digest()
       : undefined;
-    this.serverBaseUrl = process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
+    this.serverBaseUrl =
+      process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
   }
 
-  private async getWorkspace(): Promise<WorkspaceEntity | null> {
-    return this.workspaceRepository.findOne({
-      where: {},
-      order: { createdAt: 'ASC' },
-    });
+  /**
+   * Resolve the caller's tenant/workspace from the verified request origin
+   * (subdomain / custom domain), falling back to the single default workspace
+   * only in single-workspace deployments. This NEVER silently selects the
+   * first/oldest workspace — in multi-tenant mode an unresolvable origin
+   * returns null and the caller must fail closed.
+   */
+  private async resolveWorkspaceFromRequest(
+    req: Request | undefined,
+  ): Promise<WorkspaceEntity | null> {
+    const origin = getRequestOrigin(req) ?? this.serverBaseUrl;
+
+    if (!origin) return null;
+
+    return (
+      (await this.workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+        origin,
+      )) ?? null
+    );
   }
 
-  private async getUserContext(email: string) {
-    const user = await this.userRepository.findOne({
+  private async findUser(email: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({
       where: { email: email.toLowerCase().trim() },
     });
+  }
+
+  /**
+   * Context for an existing user, bound to the workspace derived from the
+   * request. `userWorkspace` is null when the user is NOT a member of the
+   * resolved tenant — callers MUST reject in that case rather than issue a
+   * token, so a valid identity is never routed into the wrong tenant.
+   */
+  private async getUserContext(email: string, req: Request | undefined) {
+    const user = await this.findUser(email);
 
     if (!user) return null;
 
-    const workspace = await this.getWorkspace();
+    const workspace = await this.resolveWorkspaceFromRequest(req);
 
     if (!workspace) return null;
 
     const userWorkspace = await this.userWorkspaceRepository.findOne({
       where: { userId: user.id, workspaceId: workspace.id },
     });
+
+    return { user, workspace, userWorkspace };
+  }
+
+  /**
+   * Context for a freshly provisioned user, bound to the workspace the user
+   * was actually added to (their own membership) — not a global lookup. A
+   * just-provisioned user has exactly one membership, so this is unambiguous
+   * and cannot leak into another tenant.
+   */
+  private async getContextByMembership(email: string) {
+    const user = await this.findUser(email);
+
+    if (!user) return null;
+
+    const userWorkspace = await this.userWorkspaceRepository.findOne({
+      where: { userId: user.id },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!userWorkspace) return null;
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: userWorkspace.workspaceId },
+    });
+
+    if (!workspace) return null;
 
     return { user, workspace, userWorkspace };
   }
@@ -106,62 +158,19 @@ export class GoTrueAuthController {
     return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
 
-  /**
-   * Provision matching workspace + user in Wiki's tables (same Postgres).
-   * Idempotent — skips if already exists.
-   */
-  private async provisionWiki(
-    email: string,
-    workspaceName: string,
-    gotrueUserId: string | undefined,
-    password: string,
-  ) {
-    try {
-      const slug = workspaceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'exe';
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      const tableCheck = await this.dataSource.query(
-        `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'workspaces'`,
-      );
-
-      if (tableCheck.length === 0) {
-        this.logger.warn('Wiki tables do not exist in public schema — skipping wiki provisioning');
-        return;
-      }
-
-      await this.dataSource.query(`
-        INSERT INTO public.workspaces (name, slug, "createdAt", "lastUpdatedAt")
-        SELECT $1, $2, NOW(), NOW()
-        WHERE NOT EXISTS (SELECT 1 FROM public.workspaces WHERE slug = $2)
-      `, [workspaceName, slug]);
-
-      await this.dataSource.query(`
-        INSERT INTO public.users (username, password, role, gotrue_id, "createdAt", "lastUpdatedAt")
-        SELECT $1, $2, 'default', $3, NOW(), NOW()
-        WHERE NOT EXISTS (SELECT 1 FROM public.users WHERE username = $1)
-      `, [email.toLowerCase().trim(), passwordHash, gotrueUserId ?? null]);
-
-      await this.dataSource.query(`
-        INSERT INTO public.workspace_users (user_id, workspace_id, "createdAt", "lastUpdatedAt")
-        SELECT u.id, w.id, NOW(), NOW()
-        FROM public.users u, public.workspaces w
-        WHERE u.username = $1 AND w.slug = $2
-        AND NOT EXISTS (
-          SELECT 1 FROM public.workspace_users wu
-          WHERE wu.user_id = u.id AND wu.workspace_id = w.id
-        )
-      `, [email.toLowerCase().trim(), slug]);
-
-      this.logger.log(`Wiki provisioned: workspace=${slug} user=${email}`);
-    } catch (err) {
-      this.logger.error(`Wiki provisioning failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
+  // NOTE: CRM does NOT provision Wiki accounts. The Wiki owns its own data
+  // (public.workspaces / public.users / public.workspace_users) and provisions
+  // its user lazily on first Wiki login via the shared GoTrue identity
+  // (exe-wiki POST /api/request-token → resolveGoTrueUser). CRM writing those
+  // tables directly violated the Wiki data-ownership boundary, duplicated the
+  // Wiki's role-assignment / workspace-linking / audit-logging logic, and risked
+  // schema drift. Cross-service provisioning must go through the owning service.
 
   @Post('gotrue-login')
   async gotrueLogin(
     @Body() body: { email?: string; password?: string; workspaceName?: string },
     @Res() res: Response,
+    @Req() req?: Request,
   ) {
     const { email, password, workspaceName } = body ?? {};
 
@@ -174,8 +183,6 @@ export class GoTrueAuthController {
     }
 
     // Step 1: Authenticate with GoTrue
-    let gotrueData: { access_token?: string; user?: { id?: string; email?: string } };
-
     try {
       const gotrueRes = await fetch(
         `${this.gotrueUrl}/token?grant_type=password`,
@@ -200,16 +207,30 @@ export class GoTrueAuthController {
         });
       }
 
-      gotrueData = await gotrueRes.json();
+      // Identity is proven by gotrueRes.ok; drain the body so the socket is
+      // released. CRM no longer needs any GoTrue claims here.
+      await gotrueRes.json().catch(() => undefined);
     } catch (err) {
       this.logger.error(`GoTrue request failed: ${err}`);
 
-      return res.status(502).json({ error: 'Authentication service unavailable' });
+      return res
+        .status(502)
+        .json({ error: 'Authentication service unavailable' });
     }
 
-    // Step 2: Check if workspace exists
-    let ctx = await this.getUserContext(email);
-    const isFirstLogin = !ctx;
+    // Step 2: Resolve identity and tenant.
+    // A brand-new user (no Twenty account yet) goes through first-login
+    // provisioning. An existing user is bound to the workspace derived from the
+    // request origin and MUST be a member of it — we never select a global
+    // first/oldest workspace.
+    const existingUser = await this.findUser(email);
+    const isFirstLogin = !existingUser;
+
+    let ctx: {
+      user: UserEntity;
+      workspace: WorkspaceEntity;
+      userWorkspace: UserWorkspaceEntity | null;
+    } | null = null;
 
     // First login — need workspace name. If not provided, signal frontend to ask.
     if (isFirstLogin && !workspaceName) {
@@ -219,11 +240,14 @@ export class GoTrueAuthController {
       });
     }
 
-    // First login — provision everything
+    // First login — provision everything, then bind to the user's OWN new
+    // workspace membership (not a global lookup).
     if (isFirstLogin) {
       const wsName = workspaceName!.trim() || 'Exe';
 
-      this.logger.log(`First login for ${email} — provisioning workspace "${wsName}"`);
+      this.logger.log(
+        `First login for ${email} — provisioning workspace "${wsName}"`,
+      );
 
       try {
         await this.signInUpService.signUpOnNewWorkspace({
@@ -236,42 +260,43 @@ export class GoTrueAuthController {
           },
         });
 
-        ctx = await this.getUserContext(email);
+        ctx = await this.getContextByMembership(email);
 
         if (!ctx) {
           throw new Error('User context missing after provisioning');
         }
 
         // Activate workspace
-        if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+        if (
+          ctx.workspace.activationStatus ===
+          WorkspaceActivationStatus.PENDING_CREATION
+        ) {
           try {
             await this.workspaceService.activateWorkspace(
               ctx.user as any,
               ctx.workspace,
               { displayName: wsName },
             );
-            ctx = await this.getUserContext(email);
 
-            if (!ctx) {
+            const activatedCtx = await this.getContextByMembership(email);
+
+            if (!activatedCtx) {
               throw new Error('User context missing after activation');
             }
+
+            ctx = activatedCtx;
           } catch (activateErr) {
-            this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
+            this.logger.error(
+              `Workspace activation failed (non-fatal): ${activateErr}`,
+            );
           }
         }
 
-        // Wiki provisioning
-        await this.provisionWiki(email, wsName, gotrueData.user?.id, password);
-
-        // ctx is non-null here: if getUserContext returned null after
-        // provisioning or activation, we threw above (lines 241-242 or
-        // 255-256), which would be caught by the outer catch (line 269)
-        // causing an early return. TypeScript cannot track this across
-        // nested try/catch reassignments, so we use a local narrowed ref.
-        const provisionedCtx = ctx!;
+        // Wiki provisioning is intentionally NOT done here — the Wiki owns and
+        // provisions its own user/workspace on first Wiki login via GoTrue.
 
         this.logger.log(
-          `Provisioned: CRM workspace=${provisionedCtx.workspace.id} (${provisionedCtx.workspace.activationStatus}) + Wiki`,
+          `Provisioned: CRM workspace=${ctx.workspace.id} (${ctx.workspace.activationStatus})`,
         );
       } catch (provisionErr) {
         this.logger.error(`Provisioning failed for ${email}: ${provisionErr}`);
@@ -280,18 +305,38 @@ export class GoTrueAuthController {
           error: 'Failed to set up your workspace. Please try again.',
         });
       }
-    }
+    } else {
+      // Existing user — bind to the tenant derived from the request origin and
+      // enforce membership. If the user is not a member of the resolved
+      // workspace we MUST NOT issue a token (cross-tenant routing guard).
+      ctx = await this.getUserContext(email, req);
 
-    // Null guard: ctx must be defined at this point. If not, something went
-    // wrong during provisioning that wasn't caught above.
-    if (!ctx) {
-      this.logger.error(`User context unexpectedly null after provisioning for ${email}`);
+      if (!ctx) {
+        this.logger.warn(
+          `GoTrue login for ${email} — could not resolve a tenant for this request`,
+        );
 
-      return res.status(500).json({ error: 'Failed to set up your workspace. Please try again.' });
+        return res
+          .status(400)
+          .json({ error: 'Unable to determine workspace for this request' });
+      }
+
+      if (!ctx.userWorkspace) {
+        this.logger.warn(
+          `GoTrue login denied for ${email} — not a member of workspace ${ctx.workspace.id}`,
+        );
+
+        return res
+          .status(403)
+          .json({ error: 'You do not have access to this workspace' });
+      }
     }
 
     // Activate if still pending
-    if (ctx.workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+    if (
+      ctx.workspace.activationStatus ===
+      WorkspaceActivationStatus.PENDING_CREATION
+    ) {
       try {
         await this.workspaceService.activateWorkspace(
           ctx.user as any,
@@ -299,13 +344,17 @@ export class GoTrueAuthController {
           { displayName: ctx.workspace.displayName || workspaceName || 'Exe' },
         );
 
-        const refreshedCtx = await this.getUserContext(email);
+        const refreshedCtx = await this.workspaceRepository.findOne({
+          where: { id: ctx.workspace.id },
+        });
 
         if (refreshedCtx) {
-          ctx = refreshedCtx;
+          ctx = { ...ctx, workspace: refreshedCtx };
         }
       } catch (activateErr) {
-        this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
+        this.logger.error(
+          `Workspace activation failed (non-fatal): ${activateErr}`,
+        );
       }
     }
 
@@ -316,13 +365,17 @@ export class GoTrueAuthController {
         ctx.workspace.id,
       );
 
-      this.logger.log(`GoTrue login success for ${email} → redirecting to /verify`);
+      this.logger.log(
+        `GoTrue login success for ${email} → redirecting to /verify`,
+      );
 
       return res.json({ redirectUrl });
     } catch (err) {
       this.logger.error(`Login token generation failed for ${email}: ${err}`);
 
-      return res.status(500).json({ error: 'Failed to generate session token' });
+      return res
+        .status(500)
+        .json({ error: 'Failed to generate session token' });
     }
   }
 
@@ -330,6 +383,7 @@ export class GoTrueAuthController {
   async adminTokenLogin(
     @Body() body: { token?: string },
     @Res() res: Response,
+    @Req() req?: Request,
   ) {
     const { token } = body ?? {};
 
@@ -352,10 +406,16 @@ export class GoTrueAuthController {
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    const workspace = await this.getWorkspace();
+    // Bind the admin bypass to the tenant derived from the request origin
+    // (subdomain / custom domain), or the single default workspace in
+    // single-workspace deployments. Never select a global first/oldest
+    // workspace — that would route the admin into an arbitrary tenant.
+    const workspace = await this.resolveWorkspaceFromRequest(req);
 
     if (!workspace) {
-      return res.status(500).json({ error: 'No workspace found. Log in with email first to create one.' });
+      return res.status(500).json({
+        error: 'No workspace found. Log in with email first to create one.',
+      });
     }
 
     const userWorkspace = await this.userWorkspaceRepository.findOne({
@@ -368,7 +428,9 @@ export class GoTrueAuthController {
     }
 
     // Activate workspace if still pending
-    if (workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION) {
+    if (
+      workspace.activationStatus === WorkspaceActivationStatus.PENDING_CREATION
+    ) {
       try {
         const user = await this.userRepository.findOne({
           where: { id: userWorkspace.userId },
@@ -380,10 +442,14 @@ export class GoTrueAuthController {
             workspace,
             { displayName: workspace.displayName || 'Exe' },
           );
-          this.logger.log(`Workspace activated via admin-token (${workspace.id})`);
+          this.logger.log(
+            `Workspace activated via admin-token (${workspace.id})`,
+          );
         }
       } catch (activateErr) {
-        this.logger.error(`Workspace activation failed (non-fatal): ${activateErr}`);
+        this.logger.error(
+          `Workspace activation failed (non-fatal): ${activateErr}`,
+        );
       }
     }
 
@@ -404,11 +470,17 @@ export class GoTrueAuthController {
 
       this.logger.log(`Admin token login → redirecting to /verify`);
 
-      return res.json({ redirectUrl, user: { id: user.id }, isAdminToken: true });
+      return res.json({
+        redirectUrl,
+        user: { id: user.id },
+        isAdminToken: true,
+      });
     } catch (err) {
       this.logger.error(`Admin token generation failed: ${err}`);
 
-      return res.status(500).json({ error: 'Failed to generate session token' });
+      return res
+        .status(500)
+        .json({ error: 'Failed to generate session token' });
     }
   }
 }
