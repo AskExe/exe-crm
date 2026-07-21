@@ -477,6 +477,74 @@ describe('GoTrueAuthController', () => {
       );
     });
 
+    it('rate limits repeated failed admin token login attempts', async () => {
+      for (let requestIndex = 0; requestIndex < 10; requestIndex++) {
+        const res = mockResponse();
+
+        await controller.adminTokenLogin({ token: 'wrong-token' }, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+      }
+
+      const res = mockResponse();
+
+      await controller.adminTokenLogin({ token: 'wrong-token' }, res);
+
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Too many requests - try again later.',
+      });
+    });
+
+    it('does not rate limit repeated successful admin token logins', async () => {
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        MOCK_WORKSPACE,
+      );
+      userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+
+      for (let requestIndex = 0; requestIndex < 12; requestIndex++) {
+        const res = mockResponse();
+
+        await controller.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+        expect(res.status).not.toHaveBeenCalledWith(429);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            redirectUrl: expect.stringContaining('/verify?loginToken='),
+            isAdminToken: true,
+          }),
+        );
+      }
+    });
+
+    it('accepts a valid admin token after failed login attempts are limited', async () => {
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
+        MOCK_WORKSPACE,
+      );
+      userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+
+      for (let requestIndex = 0; requestIndex < 10; requestIndex++) {
+        await controller.adminTokenLogin(
+          { token: 'wrong-token' },
+          mockResponse(),
+        );
+      }
+
+      const res = mockResponse();
+
+      await controller.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      expect(res.status).not.toHaveBeenCalledWith(429);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
+          isAdminToken: true,
+        }),
+      );
+    });
+
     it('returns 500 if no tenant can be resolved', async () => {
       workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace.mockResolvedValue(
         null,

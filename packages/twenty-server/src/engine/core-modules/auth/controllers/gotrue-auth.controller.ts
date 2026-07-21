@@ -4,6 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 
+import {
+  ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+  AdminTokenAuthFailureRateLimiter,
+  getAdminTokenClientIp,
+} from 'src/engine/core-modules/auth/utils/admin-token-auth-failure-rate-limiter.util';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
@@ -33,6 +38,8 @@ export class GoTrueAuthController {
   private readonly gotrueUrl: string | undefined;
   private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
+  private readonly adminTokenAuthFailureRateLimiter =
+    new AdminTokenAuthFailureRateLimiter(10, 60_000);
 
   constructor(
     private readonly loginTokenService: LoginTokenService,
@@ -75,6 +82,20 @@ export class GoTrueAuthController {
         origin,
       )) ?? null
     );
+  }
+
+  private consumeAdminTokenAuthFailure(req: Request | undefined): boolean {
+    const clientIp = req ? getAdminTokenClientIp(req) : 'unknown';
+    const isRateLimited =
+      this.adminTokenAuthFailureRateLimiter.consumeFailure(clientIp);
+
+    if (isRateLimited) {
+      this.logger.warn(
+        `Admin token login failed-auth rate limit exceeded for IP=${clientIp}`,
+      );
+    }
+
+    return isRateLimited;
   }
 
   private async findUser(email: string): Promise<UserEntity | null> {
@@ -388,6 +409,12 @@ export class GoTrueAuthController {
     const { token } = body ?? {};
 
     if (!token) {
+      if (this.consumeAdminTokenAuthFailure(req)) {
+        return res.status(429).json({
+          error: ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+        });
+      }
+
       return res.status(400).json({ error: 'Token is required' });
     }
 
@@ -401,6 +428,12 @@ export class GoTrueAuthController {
       incomingHash.length !== this.adminTokenHash.length ||
       !timingSafeEqual(incomingHash, this.adminTokenHash)
     ) {
+      if (this.consumeAdminTokenAuthFailure(req)) {
+        return res.status(429).json({
+          error: ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+        });
+      }
+
       this.logger.warn('Admin token login rejected');
 
       return res.status(401).json({ error: 'Authentication failed' });

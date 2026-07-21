@@ -3,48 +3,25 @@ import { Injectable, Logger, type NestMiddleware } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'crypto';
 import { type NextFunction, type Request, type Response } from 'express';
 
+import {
+  ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+  AdminTokenAuthFailureRateLimiter,
+  getAdminTokenClientIp,
+} from 'src/engine/core-modules/auth/utils/admin-token-auth-failure-rate-limiter.util';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 
 /** SHA-256 hash a string and return a Buffer for timingSafeEqual. */
 const sha256 = (value: string): Buffer =>
   createHash('sha256').update(value).digest();
 
-/** Simple in-memory sliding-window rate limiter (per IP). */
-class AdminTokenRateLimiter {
-  private readonly attempts = new Map<string, number[]>();
-  private readonly maxAttempts: number;
-  private readonly windowMs: number;
-
-  constructor(maxAttempts = 10, windowMs = 60_000) {
-    this.maxAttempts = maxAttempts;
-    this.windowMs = windowMs;
-  }
-
-  isRateLimited(ip: string): boolean {
-    const now = Date.now();
-    const timestamps = this.attempts.get(ip) ?? [];
-    const recent = timestamps.filter((t) => now - t < this.windowMs);
-
-    this.attempts.set(ip, recent);
-
-    return recent.length >= this.maxAttempts;
-  }
-
-  record(ip: string): void {
-    const now = Date.now();
-    const timestamps = this.attempts.get(ip) ?? [];
-
-    timestamps.push(now);
-    this.attempts.set(ip, timestamps);
-  }
-}
-
 @Injectable()
 export class AdminTokenMiddleware implements NestMiddleware {
   private readonly logger = new Logger(AdminTokenMiddleware.name);
   private readonly adminTokenHash: Buffer | undefined;
-  private readonly rateLimiter = new AdminTokenRateLimiter(10, 60_000);
+  private readonly authFailureRateLimiter =
+    new AdminTokenAuthFailureRateLimiter(10, 60_000);
 
   constructor(
     private readonly workspaceDomainsService: WorkspaceDomainsService,
@@ -56,7 +33,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
     }
   }
 
-  async use(req: Request, _res: Response, next: NextFunction) {
+  async use(req: Request, res: Response, next: NextFunction) {
     if (!this.adminTokenHash) {
       next();
 
@@ -72,21 +49,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
     }
 
     const token = authHeader.slice(7);
-    const clientIp =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
-      req.socket.remoteAddress ??
-      'unknown';
-
-    // Rate-limit check before any comparison
-    if (this.rateLimiter.isRateLimited(clientIp)) {
-      this.logger.warn(`Admin token rate limit exceeded for IP=${clientIp}`);
-
-      next();
-
-      return;
-    }
-
-    this.rateLimiter.record(clientIp);
+    const clientIp = getAdminTokenClientIp(req);
 
     // Timing-safe comparison using SHA-256 hashes
     const incomingHash = sha256(token);
@@ -95,6 +58,18 @@ export class AdminTokenMiddleware implements NestMiddleware {
       incomingHash.length !== this.adminTokenHash.length ||
       !timingSafeEqual(incomingHash, this.adminTokenHash)
     ) {
+      if (this.authFailureRateLimiter.consumeFailure(clientIp)) {
+        this.logger.warn(
+          `Admin token failed-auth rate limit exceeded for IP=${clientIp}`,
+        );
+
+        res.status(429).json({
+          error: ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+        });
+
+        return;
+      }
+
       this.logger.warn(
         `Admin token rejected — IP=${clientIp} path=${req.path}`,
       );
@@ -125,7 +100,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
       return;
     }
 
-    req.workspace = workspace as any;
+    req.workspace = workspace as unknown as FlatWorkspace;
     req.workspaceId = workspace.id;
     req.adminTokenAuthenticated = true;
 
