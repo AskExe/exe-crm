@@ -31,6 +31,18 @@ class AdminTokenRateLimiter {
     return recent.length >= this.maxAttempts;
   }
 
+  getRetryAfterSeconds(ip: string): number {
+    const now = Date.now();
+    const timestamps = this.attempts.get(ip) ?? [];
+    const oldest = timestamps[0];
+
+    if (oldest === undefined) {
+      return Math.ceil(this.windowMs / 1000);
+    }
+
+    return Math.max(1, Math.ceil((oldest + this.windowMs - now) / 1000));
+  }
+
   record(ip: string): void {
     const now = Date.now();
     const timestamps = this.attempts.get(ip) ?? [];
@@ -56,7 +68,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
     }
   }
 
-  async use(req: Request, _res: Response, next: NextFunction) {
+  async use(req: Request, res: Response, next: NextFunction) {
     if (!this.adminTokenHash) {
       next();
 
@@ -77,16 +89,22 @@ export class AdminTokenMiddleware implements NestMiddleware {
       req.socket.remoteAddress ??
       'unknown';
 
-    // Rate-limit check before any comparison
+    // Check failed-attempt rate limit before any comparison
     if (this.rateLimiter.isRateLimited(clientIp)) {
       this.logger.warn(`Admin token rate limit exceeded for IP=${clientIp}`);
 
-      next();
+      res.setHeader(
+        'Retry-After',
+        this.rateLimiter.getRetryAfterSeconds(clientIp).toString(),
+      );
+      res.status(429).json({
+        error: 'rate_limit_exceeded',
+        error_description:
+          'Too many failed admin token attempts, please try again later',
+      });
 
       return;
     }
-
-    this.rateLimiter.record(clientIp);
 
     // Timing-safe comparison using SHA-256 hashes
     const incomingHash = sha256(token);
@@ -95,6 +113,8 @@ export class AdminTokenMiddleware implements NestMiddleware {
       incomingHash.length !== this.adminTokenHash.length ||
       !timingSafeEqual(incomingHash, this.adminTokenHash)
     ) {
+      this.rateLimiter.record(clientIp);
+
       this.logger.warn(
         `Admin token rejected — IP=${clientIp} path=${req.path}`,
       );
