@@ -1,49 +1,77 @@
+import { Logger } from '@nestjs/common';
+
 import { type NextFunction, type Request, type Response } from 'express';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
+import { ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR } from 'src/engine/core-modules/auth/utils/admin-token-auth-failure-rate-limiter.util';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
-import { AdminTokenMiddleware } from 'src/engine/middlewares/admin-token.middleware';
 
+import { AdminTokenMiddleware } from '../admin-token.middleware';
+
+const ADMIN_TOKEN = 'admin-secret-123';
 const MOCK_WORKSPACE = {
   id: 'workspace-id',
-  displayName: 'Exe',
+  displayName: 'Test Workspace',
   activationStatus: WorkspaceActivationStatus.ACTIVE,
+} as Request['workspace'];
+
+type MockResponse = Response & {
+  json: jest.Mock;
+  setHeader: jest.Mock;
+  status: jest.Mock;
 };
-
-const mockResponse = () => {
-  const response = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-
-  return response as unknown as Response & {
-    status: jest.Mock;
-    json: jest.Mock;
-  };
-};
-
-const mockRequest = (token: string): Request =>
-  ({
-    headers: {
-      authorization: `Bearer ${token}`,
-      origin: 'http://app.example.com',
-      'x-forwarded-for': '203.0.113.10',
-    },
-    socket: {
-      remoteAddress: '203.0.113.10',
-    },
-    path: '/graphql',
-  }) as unknown as Request;
 
 describe('AdminTokenMiddleware', () => {
-  const originalEnv = { ...process.env };
-  let workspaceDomainsService: {
-    getWorkspaceByOriginOrDefaultWorkspace: jest.Mock;
-  };
   let middleware: AdminTokenMiddleware;
+  let workspaceDomainsService: jest.Mocked<
+    Pick<WorkspaceDomainsService, 'getWorkspaceByOriginOrDefaultWorkspace'>
+  >;
+
+  const originalEnv = { ...process.env };
+
+  const buildRequest = ({
+    authorization,
+    forwardedFor = '203.0.113.10',
+  }: {
+    authorization?: string;
+    forwardedFor?: string;
+  } = {}): Request =>
+    ({
+      headers: {
+        ...(authorization ? { authorization } : {}),
+        origin: 'https://workspace.example.com',
+        'x-forwarded-for': forwardedFor,
+      },
+      path: '/graphql',
+      protocol: 'https',
+      socket: {
+        remoteAddress: '198.51.100.10',
+      },
+    }) as unknown as Request;
+
+  const buildResponse = (): MockResponse => {
+    const response = {
+      json: jest.fn(),
+      setHeader: jest.fn(),
+      status: jest.fn(),
+    } as unknown as MockResponse;
+
+    response.json.mockReturnValue(response);
+    response.status.mockReturnValue(response);
+
+    return response;
+  };
 
   beforeEach(() => {
-    process.env.EXE_CRM_ADMIN_TOKEN = 'admin-secret-123';
+    process.env = {
+      ...originalEnv,
+      EXE_CRM_ADMIN_TOKEN: ADMIN_TOKEN,
+    };
+
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
 
     workspaceDomainsService = {
       getWorkspaceByOriginOrDefaultWorkspace: jest
@@ -59,73 +87,111 @@ describe('AdminTokenMiddleware', () => {
   afterEach(() => {
     process.env = { ...originalEnv };
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
-  it('does not rate limit repeated successful authenticated admin requests', async () => {
-    for (let requestIndex = 0; requestIndex < 12; requestIndex++) {
-      const request = mockRequest('admin-secret-123');
-      const response = mockResponse();
+  it('should allow successful authenticated requests above the failed-attempt limit', async () => {
+    for (let index = 0; index < 25; index++) {
+      const req = buildRequest({
+        authorization: `Bearer ${ADMIN_TOKEN}`,
+      });
+      const res = buildResponse();
       const next = jest.fn() as NextFunction;
 
-      await middleware.use(request, response, next);
+      await middleware.use(req, res, next);
 
-      expect(response.status).not.toHaveBeenCalledWith(429);
       expect(next).toHaveBeenCalledTimes(1);
-      expect(request.adminTokenAuthenticated).toBe(true);
-      expect(request.workspaceId).toBe(MOCK_WORKSPACE.id);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.workspace).toBe(MOCK_WORKSPACE);
+      expect(req.workspaceId).toBe(MOCK_WORKSPACE?.id);
+      expect(req.adminTokenAuthenticated).toBe(true);
     }
 
     expect(
       workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
-    ).toHaveBeenCalledTimes(12);
+    ).toHaveBeenCalledTimes(25);
   });
 
-  it('rate limits repeated failed admin token attempts', async () => {
-    for (let requestIndex = 0; requestIndex < 10; requestIndex++) {
-      const request = mockRequest('wrong-token');
-      const response = mockResponse();
+  it('should count failed admin token attempts and reject the 11th with 429 and Retry-After', async () => {
+    for (let index = 0; index < 10; index++) {
+      const req = buildRequest({
+        authorization: 'Bearer wrong-token',
+      });
+      const res = buildResponse();
       const next = jest.fn() as NextFunction;
 
-      await middleware.use(request, response, next);
+      await middleware.use(req, res, next);
 
-      expect(response.status).not.toHaveBeenCalledWith(429);
       expect(next).toHaveBeenCalledTimes(1);
-      expect(request.adminTokenAuthenticated).toBeUndefined();
+      expect(res.status).not.toHaveBeenCalled();
+      expect(req.adminTokenAuthenticated).toBeUndefined();
     }
 
-    const blockedRequest = mockRequest('wrong-token');
-    const blockedResponse = mockResponse();
-    const blockedNext = jest.fn() as NextFunction;
-
-    await middleware.use(blockedRequest, blockedResponse, blockedNext);
-
-    expect(blockedResponse.status).toHaveBeenCalledWith(429);
-    expect(blockedResponse.json).toHaveBeenCalledWith({
-      error: 'Too many requests - try again later.',
+    const req = buildRequest({
+      authorization: 'Bearer wrong-token',
     });
-    expect(blockedNext).not.toHaveBeenCalled();
+    const res = buildResponse();
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith('Retry-After', '60');
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.json).toHaveBeenCalledWith({
+      error: ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+      error_description:
+        'Too many failed admin token attempts, please try again later',
+    });
     expect(
       workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
     ).not.toHaveBeenCalled();
   });
 
-  it('authenticates a valid admin token after failed attempts are limited', async () => {
-    for (let requestIndex = 0; requestIndex < 10; requestIndex++) {
+  it('should authenticate a valid admin token after failed attempts reach the limit', async () => {
+    for (let index = 0; index < 10; index++) {
       await middleware.use(
-        mockRequest('wrong-token'),
-        mockResponse(),
+        buildRequest({ authorization: 'Bearer wrong-token' }),
+        buildResponse(),
         jest.fn() as NextFunction,
       );
     }
 
-    const request = mockRequest('admin-secret-123');
-    const response = mockResponse();
+    const req = buildRequest({
+      authorization: `Bearer ${ADMIN_TOKEN}`,
+    });
+    const res = buildResponse();
     const next = jest.fn() as NextFunction;
 
-    await middleware.use(request, response, next);
+    await middleware.use(req, res, next);
 
-    expect(response.status).not.toHaveBeenCalledWith(429);
     expect(next).toHaveBeenCalledTimes(1);
-    expect(request.adminTokenAuthenticated).toBe(true);
+    expect(res.status).not.toHaveBeenCalled();
+    expect(req.adminTokenAuthenticated).toBe(true);
+    expect(req.workspaceId).toBe(MOCK_WORKSPACE?.id);
+  });
+
+  it('should leave requests without Authorization header unaffected', async () => {
+    for (let index = 0; index < 10; index++) {
+      await middleware.use(
+        buildRequest({ authorization: 'Bearer wrong-token' }),
+        buildResponse(),
+        jest.fn() as NextFunction,
+      );
+    }
+
+    const req = buildRequest();
+    const res = buildResponse();
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.setHeader).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+    expect(
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+    ).not.toHaveBeenCalled();
+    expect(req.adminTokenAuthenticated).toBeUndefined();
   });
 });

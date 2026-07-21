@@ -12,16 +12,25 @@ import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspac
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 
-/** SHA-256 hash a string and return a Buffer for timingSafeEqual. */
+// SHA-256 hash a string and return a Buffer for timingSafeEqual.
 const sha256 = (value: string): Buffer =>
   createHash('sha256').update(value).digest();
+
+const ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_MAX_ATTEMPTS = 10;
+const ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_WINDOW_MS = 60_000;
+const ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_RETRY_AFTER_SECONDS = Math.ceil(
+  ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_WINDOW_MS / 1000,
+).toString();
 
 @Injectable()
 export class AdminTokenMiddleware implements NestMiddleware {
   private readonly logger = new Logger(AdminTokenMiddleware.name);
   private readonly adminTokenHash: Buffer | undefined;
   private readonly authFailureRateLimiter =
-    new AdminTokenAuthFailureRateLimiter(10, 60_000);
+    new AdminTokenAuthFailureRateLimiter(
+      ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_MAX_ATTEMPTS,
+      ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_WINDOW_MS,
+    );
 
   constructor(
     private readonly workspaceDomainsService: WorkspaceDomainsService,
@@ -63,8 +72,14 @@ export class AdminTokenMiddleware implements NestMiddleware {
           `Admin token failed-auth rate limit exceeded for IP=${clientIp}`,
         );
 
+        res.setHeader(
+          'Retry-After',
+          ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_RETRY_AFTER_SECONDS,
+        );
         res.status(429).json({
           error: ADMIN_TOKEN_AUTH_FAILURE_RATE_LIMIT_ERROR,
+          error_description:
+            'Too many failed admin token attempts, please try again later',
         });
 
         return;
