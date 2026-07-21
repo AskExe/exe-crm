@@ -42,7 +42,7 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-type GoTrueJwtPayload = jwt.JwtPayload & {
+export type GoTrueJwtPayload = jwt.JwtPayload & {
   sub?: string;
   email?: string;
   given_name?: string;
@@ -338,7 +338,7 @@ export class AccessTokenService {
     };
   }
 
-  private async verifyGoTrueToken(
+  async verifyGoTrueToken(
     token: string,
     gotrueUrl: string,
   ): Promise<GoTrueJwtPayload | null> {

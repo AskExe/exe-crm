@@ -1,7 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { type Request } from 'express';
 import { DataSource } from 'typeorm';
 
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
@@ -22,6 +24,7 @@ const mockResponse = () => {
 
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
+  res.redirect = jest.fn().mockReturnValue(res);
   return res;
 };
 
@@ -54,6 +57,7 @@ const MOCK_LOGIN_TOKEN = {
 
 describe('GoTrueAuthController', () => {
   let controller: GoTrueAuthController;
+  let accessTokenService: AccessTokenService;
   let loginTokenService: LoginTokenService;
   let signInUpService: SignInUpService;
   let workspaceService: WorkspaceService;
@@ -78,6 +82,12 @@ describe('GoTrueAuthController', () => {
     Test.createTestingModule({
       controllers: [GoTrueAuthController],
       providers: [
+        {
+          provide: AccessTokenService,
+          useValue: {
+            verifyGoTrueToken: jest.fn(),
+          },
+        },
         {
           provide: LoginTokenService,
           useValue: {
@@ -141,6 +151,7 @@ describe('GoTrueAuthController', () => {
     const module: TestingModule = await buildTestModule();
 
     controller = module.get(GoTrueAuthController);
+    accessTokenService = module.get(AccessTokenService);
     loginTokenService = module.get(LoginTokenService);
     signInUpService = module.get(SignInUpService);
     workspaceService = module.get(WorkspaceService);
@@ -432,6 +443,89 @@ describe('GoTrueAuthController', () => {
           redirectUrl: expect.stringContaining('/verify?loginToken='),
         }),
       );
+    });
+  });
+
+  /* ================================================================ */
+  /*  GET /api/auth/gotrue-callback                                  */
+  /* ================================================================ */
+
+  describe('gotrueCallback', () => {
+    it('redirects to normal login when exe_sess is missing', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueCallback(res, {
+        headers: {},
+      } as unknown as Request);
+
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
+      expect(accessTokenService.verifyGoTrueToken).not.toHaveBeenCalled();
+    });
+
+    it('redirects to normal login when the GoTrue cookie cannot be verified', async () => {
+      jest
+        .mocked(accessTokenService.verifyGoTrueToken)
+        .mockRejectedValue(new Error('invalid token'));
+
+      const res = mockResponse();
+
+      await controller.gotrueCallback(res, {
+        headers: { cookie: 'exe_sess=bad.jwt' },
+      } as unknown as Request);
+
+      expect(accessTokenService.verifyGoTrueToken).toHaveBeenCalledWith(
+        'bad.jwt',
+        'http://gotrue:9999',
+      );
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    });
+
+    it('verifies exe_sess, binds an existing user to the resolved tenant, and redirects to /verify', async () => {
+      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
+        sub: 'gotrue-user-id',
+        email: MOCK_USER.email,
+      });
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+      userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+
+      const res = mockResponse();
+
+      await controller.gotrueCallback(res, {
+        headers: {
+          cookie: 'theme=light; exe_sess=verified.jwt; exe_access_token=1',
+          origin: 'http://localhost:3000',
+        },
+      } as unknown as Request);
+
+      expect(accessTokenService.verifyGoTrueToken).toHaveBeenCalledWith(
+        'verified.jwt',
+        'http://gotrue:9999',
+      );
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('/verify?loginToken='),
+      );
+    });
+
+    it('does not provision a first-login callback without workspace setup', async () => {
+      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
+        sub: 'gotrue-user-id',
+        email: 'new@exe.ai',
+      });
+      userRepo.findOne.mockResolvedValue(null);
+
+      const res = mockResponse();
+
+      await controller.gotrueCallback(res, {
+        headers: { cookie: 'exe_sess=verified.jwt' },
+      } as unknown as Request);
+
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
     });
   });
 
