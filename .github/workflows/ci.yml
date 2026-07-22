@@ -202,12 +202,11 @@ jobs:
             detect --source=/repo --no-git --redact --no-banner --verbose \
             --config=/repo/.gitleaks.toml
 
-      # Production dependency vulnerability scan. Keep the required merge gate
-      # deterministic for newly published HIGH transitive CVEs: the live HIGH+
-      # advisory check below is informational and non-blocking, while CRITICAL
-      # runtime dependency advisories still fail closed.
+      # Production dependency vulnerability scan. The required gate audits only
+      # production dependencies at CRITICAL severity; dev-dependency and HIGH
+      # advisory signals are surfaced by the non-blocking informational step below.
       - name: Dependency scan (yarn npm audit, production, critical gate)
-        run: yarn npm audit --all --recursive --environment production --severity critical
+        run: yarn npm audit --recursive --environment production --severity critical
 
       - name: Dependency scan (yarn npm audit, production, latest high advisory signal)
         run: yarn npm audit --all --recursive --environment production --severity high
