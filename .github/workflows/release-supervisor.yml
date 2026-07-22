@@ -1,0 +1,87 @@
+name: Release supervisor
+
+# Auto-recovers releases that failed ONLY because CI had not finished yet.
+#
+# Background (bug e3b77fc8): "Release stack image" gates on `require-green-ci`,
+# which runs on the same single self-hosted runner as CI. If CI has not already
+# completed for the tagged commit, the gate cannot succeed — and while it waits
+# it starves the very CI run it needs. The gate now fails fast instead of
+# squatting, which leaves a failed release run that only needs re-dispatching
+# once CI turns green.
+#
+# This workflow reacts to CI completing green and re-dispatches such a release.
+# It is deliberately NARROW:
+#   * it ONLY re-runs failed jobs of an existing release run for the SAME commit
+#   * it NEVER edits code, bumps versions, or changes the release contract
+#   * it only acts when the release failed at `require-green-ci` — a release that
+#     failed at build, scan, or digest verification is a real failure and is left
+#     alone for a human
+# Anything it cannot positively classify is left untouched.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  retry-blocked-release:
+    # Only consider green CI runs. A red CI run must never trigger a release retry.
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-dispatch a release blocked solely on CI timing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+
+          repo, sha, token = os.environ["REPO"], os.environ["SHA"], os.environ["GH_TOKEN"]
+          API = "https://api.github.com"
+          H = {"Authorization": f"Bearer {token}",
+               "Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28"}
+
+          def api(path, method="GET"):
+              req = urllib.request.Request(API + path, headers=H, method=method)
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  body = r.read()
+                  return json.loads(body) if body else {}
+
+          runs = api(f"/repos/{repo}/actions/workflows/release-stack-image.yml"
+                     f"/runs?head_sha={sha}&per_page=50").get("workflow_runs", [])
+          failed = [r for r in runs if r.get("conclusion") == "failure"]
+          if not failed:
+              print(f"No failed release run for {sha}; nothing to do.")
+              raise SystemExit(0)
+
+          run = max(failed, key=lambda r: r.get("id", 0))
+          run_id = run["id"]
+
+          # Guardrail: don't loop forever on a release that keeps failing.
+          if run.get("run_attempt", 1) >= 3:
+              print(f"::warning::Release run {run_id} already has "
+                    f"{run['run_attempt']} attempts; not retrying again. Needs a human.")
+              raise SystemExit(0)
+
+          # Classify: only retry when the FAILING job was the CI gate. Any other
+          # failing job (build, Trivy scan, digest verification) is a real problem.
+          jobs = api(f"/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100").get("jobs", [])
+          failed_jobs = [j["name"] for j in jobs if j.get("conclusion") == "failure"]
+          if failed_jobs != ["Require green CI for commit"]:
+              print(f"::notice::Release run {run_id} failed at {failed_jobs} — not a CI-timing "
+                    f"failure. Leaving it for a human.")
+              raise SystemExit(0)
+
+          print(f"::notice::CI is now green for {sha} and release run {run_id} failed only at "
+                f"the CI gate. Re-dispatching failed jobs.")
+          api(f"/repos/{repo}/actions/runs/{run_id}/rerun-failed-jobs", method="POST")
+          print(f"::notice::Re-dispatched release run {run_id}.")
+          PY
