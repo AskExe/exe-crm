@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { GoTrueCallbackRedirectEffect } from '@/auth/components/GoTrueCallbackRedirectEffect';
 import { AuthContext } from '@/auth/contexts/AuthContext';
 import { currentWorkspaceDeletedMembersState } from '@/auth/states/currentWorkspaceDeletedMembersState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }: React.PropsWithChildren) => {
         currentWorkspaceDeletedMembers,
       }}
     >
+      <GoTrueCallbackRedirectEffect />
       {children}
     </AuthContext.Provider>
   );
