@@ -458,7 +458,9 @@ describe('GoTrueAuthController', () => {
         headers: {},
       } as unknown as Request);
 
-      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://localhost:3000/welcome',
+      );
       expect(accessTokenService.verifyGoTrueToken).not.toHaveBeenCalled();
     });
 
@@ -477,7 +479,9 @@ describe('GoTrueAuthController', () => {
         'bad.jwt',
         'http://gotrue:9999',
       );
-      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://localhost:3000/welcome',
+      );
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
     });
 
@@ -525,7 +529,9 @@ describe('GoTrueAuthController', () => {
 
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
-      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/welcome');
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://localhost:3000/welcome',
+      );
     });
   });
 
