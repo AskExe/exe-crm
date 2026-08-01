@@ -5,6 +5,11 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
+import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
+import {
+  decodeJwtAppMetadata,
+  resolveExePermsForOrg,
+} from 'src/engine/core-modules/auth/services/exe-perms.util';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -33,12 +38,19 @@ export class GoTrueAuthController {
   private readonly gotrueUrl: string | undefined;
   private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
+  /**
+   * This deployment's canonical Exe org id (unified-permissions §2). When
+   * unset, CRM RBAC enforcement is OFF and native behavior is preserved for
+   * every login (backward compatible).
+   */
+  private readonly exeOrgId: string | undefined;
 
   constructor(
     private readonly loginTokenService: LoginTokenService,
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
+    private readonly roleSyncService: RoleSyncService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -47,6 +59,7 @@ export class GoTrueAuthController {
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
   ) {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
+    this.exeOrgId = process.env.EXE_ORG_ID;
     const rawToken = process.env.EXE_CRM_ADMIN_TOKEN;
 
     this.adminTokenHash = rawToken
@@ -182,6 +195,10 @@ export class GoTrueAuthController {
       return res.status(500).json({ error: 'GoTrue is not configured' });
     }
 
+    // app_metadata carried by the GoTrue-issued access token. Captured below
+    // (we STOP discarding the response) so we can enforce Exe unified perms.
+    let gotrueAppMetadata: Record<string, unknown> | undefined;
+
     // Step 1: Authenticate with GoTrue
     try {
       const gotrueRes = await fetch(
@@ -207,15 +224,42 @@ export class GoTrueAuthController {
         });
       }
 
-      // Identity is proven by gotrueRes.ok; drain the body so the socket is
-      // released. CRM no longer needs any GoTrue claims here.
-      await gotrueRes.json().catch(() => undefined);
+      // Identity is proven by gotrueRes.ok. Instead of discarding the body,
+      // read the access_token and decode its `app_metadata` (which GoTrue
+      // authenticated moments ago) so we can apply the mapped CRM role. This
+      // is the "stop discarding claims" point (unified-permissions §3.2C).
+      const tokenBody = (await gotrueRes.json().catch(() => undefined)) as
+        | { access_token?: string }
+        | undefined;
+
+      gotrueAppMetadata = decodeJwtAppMetadata(tokenBody?.access_token);
     } catch (err) {
       this.logger.error(`GoTrue request failed: ${err}`);
 
       return res
         .status(502)
         .json({ error: 'Authentication service unavailable' });
+    }
+
+    // Resolve this org's canonical CRM permission tier from the verified
+    // claim. `managed: false` (no exe_perms for this org, or EXE_ORG_ID unset)
+    // → existing native behavior is preserved end-to-end (backward compatible).
+    const permsResolution = resolveExePermsForOrg(
+      gotrueAppMetadata,
+      this.exeOrgId,
+    );
+
+    // Managed-DENY: a managed user with no CRM capability (role `none` / empty
+    // crm caps) must FAIL CLOSED — never provision, never mint a token, never
+    // leave usable default access.
+    if (permsResolution.managed && permsResolution.tier === 'none') {
+      this.logger.warn(
+        `GoTrue login denied for ${email} — managed org ${this.exeOrgId} grants no CRM access`,
+      );
+
+      return res
+        .status(403)
+        .json({ error: 'You do not have access to this workspace' });
     }
 
     // Step 2: Resolve identity and tenant.
@@ -356,6 +400,25 @@ export class GoTrueAuthController {
           `Workspace activation failed (non-fatal): ${activateErr}`,
         );
       }
+    }
+
+    // Step 2.5: Enforce Exe unified permissions (managed orgs only).
+    // Re-point the user's workspace-scoped role-target to the role mapped from
+    // their CRM capabilities. Non-fatal: a sync failure must never break a
+    // login that would otherwise succeed (the user keeps their existing role).
+    //
+    // NOTE (P0 staleness seam): Twenty mints its OWN access token after this,
+    // so a permission change only takes effect on the user's NEXT CRM login.
+    // For immediate downgrade, the control plane must call a future
+    // RoleSyncService reconcile endpoint AND revoke the user's Twenty session
+    // (see unified-permissions §2.4 / §5.3). Login-time reconcile below is the
+    // baseline; it self-heals within the access-token TTL.
+    if (permsResolution.managed && ctx.userWorkspace) {
+      await this.roleSyncService.applyCrmTier({
+        userWorkspaceId: ctx.userWorkspace.id,
+        workspaceId: ctx.workspace.id,
+        tier: permsResolution.tier,
+      });
     }
 
     // Step 3: Generate Twenty-native login token and redirect
