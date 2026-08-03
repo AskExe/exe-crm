@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
+import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -99,6 +100,12 @@ describe('GoTrueAuthController', () => {
         {
           provide: WorkspaceDomainsService,
           useValue: workspaceDomainsService,
+        },
+        {
+          // Unmanaged path (EXE_ORG_ID unset) never invokes role sync, but the
+          // controller declares it as a constructor dependency.
+          provide: RoleSyncService,
+          useValue: { applyCrmTier: jest.fn().mockResolvedValue({ status: 'noop' }) },
         },
         {
           provide: DataSource,

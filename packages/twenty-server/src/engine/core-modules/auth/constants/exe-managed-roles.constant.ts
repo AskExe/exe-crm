@@ -18,3 +18,19 @@ export const EXE_MANAGED_VIEWER_ROLE = {
   label: 'Viewer',
   description: 'Exe-managed read-only role (crm:read)',
 } as const;
+
+/**
+ * The ONLY permission shape the managed Viewer role may ever hold: read-only
+ * on object records, no write/delete, no settings, no tools. Source of truth
+ * for BOTH creation and drift-repair — `ensureViewerRoleId` verifies an
+ * existing Viewer against this every sync and repairs it if the flags were
+ * mutated, instead of trusting the role by its universalIdentifier alone.
+ */
+export const EXE_MANAGED_VIEWER_PERMISSION_FLAGS = {
+  canReadAllObjectRecords: true,
+  canUpdateAllObjectRecords: false,
+  canSoftDeleteAllObjectRecords: false,
+  canDestroyAllObjectRecords: false,
+  canUpdateAllSettings: false,
+  canAccessAllTools: false,
+} as const;

@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import {
+  type CrmRoleTier,
   decodeJwtAppMetadata,
   resolveExePermsForOrg,
 } from 'src/engine/core-modules/auth/services/exe-perms.util';
@@ -44,6 +45,14 @@ export class GoTrueAuthController {
    * every login (backward compatible).
    */
   private readonly exeOrgId: string | undefined;
+  /**
+   * Canonical Twenty workspace bound to this deployment's Exe org
+   * (unified-permissions §2, org ↔ workspace 1:1). REQUIRED whenever
+   * `EXE_ORG_ID` is set: a MANAGED login resolves THIS workspace and applies
+   * caps there — it never creates or owns an arbitrary new workspace. If it is
+   * unset while enforcement is on, managed logins fail closed.
+   */
+  private readonly exeOrgWorkspaceId: string | undefined;
 
   constructor(
     private readonly loginTokenService: LoginTokenService,
@@ -60,6 +69,7 @@ export class GoTrueAuthController {
   ) {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
     this.exeOrgId = process.env.EXE_ORG_ID;
+    this.exeOrgWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
     const rawToken = process.env.EXE_CRM_ADMIN_TOKEN;
 
     this.adminTokenHash = rawToken
@@ -270,6 +280,20 @@ export class GoTrueAuthController {
     const existingUser = await this.findUser(email);
     const isFirstLogin = !existingUser;
 
+    // MANAGED login — the org ↔ workspace binding is authoritative. Resolve the
+    // canonical workspace for this org and apply caps THERE. A managed user is
+    // never routed through new-workspace provisioning (which would make them
+    // its Admin/owner) nor request-origin binding. This fully handles the
+    // response for managed logins.
+    if (permsResolution.managed) {
+      return await this.handleManagedLogin(
+        res,
+        email,
+        existingUser,
+        permsResolution.tier,
+      );
+    }
+
     let ctx: {
       user: UserEntity;
       workspace: WorkspaceEntity;
@@ -402,24 +426,11 @@ export class GoTrueAuthController {
       }
     }
 
-    // Step 2.5: Enforce Exe unified permissions (managed orgs only).
-    // Re-point the user's workspace-scoped role-target to the role mapped from
-    // their CRM capabilities. Non-fatal: a sync failure must never break a
-    // login that would otherwise succeed (the user keeps their existing role).
-    //
-    // NOTE (P0 staleness seam): Twenty mints its OWN access token after this,
-    // so a permission change only takes effect on the user's NEXT CRM login.
-    // For immediate downgrade, the control plane must call a future
-    // RoleSyncService reconcile endpoint AND revoke the user's Twenty session
-    // (see unified-permissions §2.4 / §5.3). Login-time reconcile below is the
-    // baseline; it self-heals within the access-token TTL.
-    if (permsResolution.managed && ctx.userWorkspace) {
-      await this.roleSyncService.applyCrmTier({
-        userWorkspaceId: ctx.userWorkspace.id,
-        workspaceId: ctx.workspace.id,
-        tier: permsResolution.tier,
-      });
-    }
+    // NOTE: Exe unified-permissions enforcement is NOT applied on this
+    // unmanaged path — `permsResolution.managed === false` means no exe_perms
+    // entry applies to this org (or EXE_ORG_ID is unset), so native behavior is
+    // preserved end-to-end. Managed logins are fully handled by
+    // `handleManagedLogin` above and never reach here.
 
     // Step 3: Generate Twenty-native login token and redirect
     try {
@@ -430,6 +441,164 @@ export class GoTrueAuthController {
 
       this.logger.log(
         `GoTrue login success for ${email} → redirecting to /verify`,
+      );
+
+      return res.json({ redirectUrl });
+    } catch (err) {
+      this.logger.error(`Login token generation failed for ${email}: ${err}`);
+
+      return res
+        .status(500)
+        .json({ error: 'Failed to generate session token' });
+    }
+  }
+
+  /**
+   * Handle a MANAGED GoTrue login (this org has an `exe_perms` entry).
+   *
+   * Enforces the org ↔ workspace 1:1 binding (unified-permissions §2):
+   *   1. Resolve the canonical workspace from `EXE_ORG_WORKSPACE_ID`. If unset
+   *      or missing → FAIL CLOSED (never mint a new workspace).
+   *   2. Ensure the user is a member of that workspace with a NON-admin default
+   *      role (join via signInUpOnExistingWorkspace; never signUpOnNewWorkspace,
+   *      so the user is never the workspace's Admin/owner). If they can't be a
+   *      member → FAIL CLOSED.
+   *   3. Apply the caps → role mapping THERE. If a non-admin tier can't be
+   *      enforced because the user is the sole Admin (last-admin guard), the
+   *      user would retain a role their caps don't grant → FAIL CLOSED.
+   */
+  private async handleManagedLogin(
+    res: Response,
+    email: string,
+    existingUser: UserEntity | null,
+    tier: CrmRoleTier,
+  ): Promise<Response> {
+    // (1) Canonical workspace binding is mandatory under managed enforcement.
+    if (!this.exeOrgWorkspaceId) {
+      this.logger.error(
+        `Managed login for ${email} but EXE_ORG_WORKSPACE_ID is unset for org ${this.exeOrgId} — cannot bind to a canonical workspace`,
+      );
+
+      return res.status(500).json({
+        error:
+          'Your organization is not linked to a workspace. Contact your administrator.',
+      });
+    }
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: this.exeOrgWorkspaceId },
+    });
+
+    if (!workspace) {
+      this.logger.error(
+        `Managed login for ${email}: canonical workspace ${this.exeOrgWorkspaceId} (org ${this.exeOrgId}) not found`,
+      );
+
+      return res.status(500).json({
+        error:
+          'Your organization workspace is unavailable. Contact your administrator.',
+      });
+    }
+
+    // (2) Ensure membership in the canonical workspace with a non-admin role.
+    let user = existingUser ?? (await this.findUser(email));
+    let userWorkspace = user
+      ? await this.userWorkspaceRepository.findOne({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+      : null;
+
+    if (!userWorkspace) {
+      try {
+        await this.signInUpService.signInUpOnExistingWorkspace({
+          workspace,
+          // Join with the workspace's own default (seeded Member) role — a
+          // non-admin baseline. The correct tier is applied in step (3).
+          roleId: workspace.defaultRoleId,
+          userData: user
+            ? { type: 'existingUser', existingUser: user }
+            : {
+                type: 'newUserWithPicture',
+                newUserWithPicture: {
+                  email,
+                  firstName: email.split('@')[0] ?? 'User',
+                  lastName: '',
+                  picture: undefined,
+                },
+              },
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Managed login denied for ${email} — cannot join canonical workspace ${workspace.id}: ${err}`,
+        );
+
+        return res
+          .status(403)
+          .json({ error: 'You do not have access to this workspace' });
+      }
+
+      user = await this.findUser(email);
+      userWorkspace = user
+        ? await this.userWorkspaceRepository.findOne({
+            where: { userId: user.id, workspaceId: workspace.id },
+          })
+        : null;
+
+      if (!user || !userWorkspace) {
+        this.logger.error(
+          `Managed login for ${email}: membership missing after provisioning into ${workspace.id}`,
+        );
+
+        return res
+          .status(403)
+          .json({ error: 'You do not have access to this workspace' });
+      }
+    }
+
+    // Invariant: reaching here means the user is a member of the canonical
+    // workspace. (When `userWorkspace` was already present, `user` is the member
+    // it belongs to; the provisioning branch above re-fetches and guards both.)
+    if (!user) {
+      this.logger.error(
+        `Managed login for ${email}: user missing for membership ${userWorkspace.id}`,
+      );
+
+      return res
+        .status(403)
+        .json({ error: 'You do not have access to this workspace' });
+    }
+
+    // (3) Enforce caps → role. GoTrue caps are authoritative: a non-admin user
+    // must NOT retain Admin. If the demotion is blocked because they are the
+    // sole admin, fail closed — never mint a session for a role the caps don't
+    // grant. (The org's canonical workspace is expected to have a proper admin
+    // or service admin, so a healthy deployment never hits this.)
+    const applied = await this.roleSyncService.applyCrmTier({
+      userWorkspaceId: userWorkspace.id,
+      workspaceId: workspace.id,
+      tier,
+    });
+
+    if (tier !== 'admin' && applied.status === 'blocked_last_admin') {
+      this.logger.error(
+        `Managed login denied for ${email} — ${tier} caps cannot be enforced: user is the sole admin of ${workspace.id} and cannot be demoted`,
+      );
+
+      return res.status(403).json({
+        error:
+          'This workspace has no other authorized administrator, so your access cannot be granted. Contact your administrator.',
+      });
+    }
+
+    // Mint the Twenty-native login token bound to the canonical workspace.
+    try {
+      const redirectUrl = await this.generateLoginTokenRedirect(
+        user.email,
+        workspace.id,
+      );
+
+      this.logger.log(
+        `GoTrue managed login success for ${email} → /verify (tier ${tier}, workspace ${workspace.id})`,
       );
 
       return res.json({ redirectUrl });
