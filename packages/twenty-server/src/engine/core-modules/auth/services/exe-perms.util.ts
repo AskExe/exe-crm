@@ -110,7 +110,11 @@ export const mapCapsToCrmTier = (
  *   - there is no `exe_perms`, or
  *   - `orgId` is not configured (deployment opted out of enforcement), or
  *   - per-org shape has no entry for this org, or
- *   - legacy flat shape is scoped to a DIFFERENT org.
+ *   - legacy flat shape is scoped to a DIFFERENT org, OR is UNSCOPED (no `org`
+ *     field). An unscoped flat claim is NEVER applied to an arbitrary org — the
+ *     access-token is decoded without signature verification, so honoring an
+ *     org-less `exe_perms` would be a forgeable cross-org escalation path. A
+ *     flat claim must explicitly name THIS org to take effect.
  */
 export const resolveExePermsForOrg = (
   appMetadata: Record<string, unknown> | undefined,
@@ -140,9 +144,10 @@ export const resolveExePermsForOrg = (
     };
   }
 
-  // Legacy flat shape — only applies if it targets THIS org (or is
-  // unscoped, i.e. no `org` field, for the earliest single-org rollouts).
-  if (typeof exePerms.org === 'undefined' || exePerms.org === orgId) {
+  // Legacy flat shape — applies ONLY if it EXPLICITLY targets THIS org. An
+  // unscoped flat claim (no `org` field) is rejected: with an unverified token,
+  // honoring it would let a forged org-less claim grant access to any org.
+  if (typeof exePerms.org === 'string' && exePerms.org === orgId) {
     const caps = toCapArray(exePerms.caps);
 
     return {

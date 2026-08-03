@@ -95,8 +95,10 @@ describe('resolveExePermsForOrg — managed (legacy flat shape)', () => {
     });
   });
 
-  it('resolves flat shape with no org field (earliest single-org rollout)', () => {
-    const appMetadata = { exe_perms: { role: 'admin', caps: ['crm:admin'] } };
+  it('resolves flat shape ONLY when it explicitly names this org', () => {
+    const appMetadata = {
+      exe_perms: { org: ORG, role: 'admin', caps: ['crm:admin'] },
+    };
 
     expect(resolveExePermsForOrg(appMetadata, ORG)).toMatchObject({
       managed: true,
@@ -116,6 +118,17 @@ describe('resolveExePermsForOrg — unmanaged (preserve native behavior) Fail', 
     {
       label: 'flat shape scoped to a different org',
       appMetadata: { exe_perms: { org: 'other', caps: ['crm:admin'] } },
+    },
+    {
+      // SECURITY: an unscoped flat claim (no `org`) must NEVER apply to an
+      // arbitrary org — the token is decoded without signature verification, so
+      // honoring it would be a forgeable cross-org escalation.
+      label: 'UNSCOPED flat shape (no org field) — must not apply to any org',
+      appMetadata: { exe_perms: { role: 'admin', caps: ['crm:admin'] } },
+    },
+    {
+      label: 'flat shape with a non-string org field',
+      appMetadata: { exe_perms: { org: 123, caps: ['crm:admin'] } },
     },
   ])('returns managed:false for $label', ({ appMetadata }) => {
     expect(resolveExePermsForOrg(appMetadata, ORG)).toEqual({ managed: false });

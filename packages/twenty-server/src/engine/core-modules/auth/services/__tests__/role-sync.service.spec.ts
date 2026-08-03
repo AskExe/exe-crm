@@ -195,6 +195,36 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
       roleId: VIEWER_ROLE_ID,
     });
   });
+
+  it('admin→read downgrade repoints the SINGLE role-target (sweeps Admin, no union)', async () => {
+    const { service, roleService, userRoleService } = createService();
+
+    // User currently holds Admin; caps now say crm:read.
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(
+      securedManagedRole(VIEWER_ROLE_ID, EXE_MANAGED_VIEWER_PERMISSION_FLAGS),
+    );
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([[USER_WORKSPACE_ID, [{ id: ADMIN_ROLE_ID }]]]),
+    );
+
+    const result = await service.applyCrmTier({
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: WORKSPACE_ID,
+      tier: 'read',
+    });
+
+    // Twenty enforces exactly one role-target per userWorkspace
+    // (@Unique(workspaceId,userWorkspaceId)); assignRoleToManyUserWorkspace
+    // deletes the prior Admin target and creates the Viewer one atomically, so
+    // a single repoint fully removes Admin — there is no residual union role.
+    expect(result).toEqual({ status: 'applied' });
+    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledTimes(1);
+    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      userWorkspaceIds: [USER_WORKSPACE_ID],
+      roleId: VIEWER_ROLE_ID,
+    });
+  });
 });
 
 describe('RoleSyncService.applyCrmTier — idempotency + guards', () => {

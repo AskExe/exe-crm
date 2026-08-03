@@ -520,9 +520,13 @@ export class GoTrueAuthController {
         workspaceId: workspace.id,
       });
 
-      // For a non-admin tier the managed role MUST be securable; if not, fail
-      // closed WITHOUT creating any membership (no residue at all).
-      if (tier !== 'admin' && !seatRoleId) {
+      // The target role MUST be a VERIFIED role for EVERY tier — including
+      // admin (the seeded Admin role, resolved by universalIdentifier). We
+      // NEVER fall back to the mutable `workspace.defaultRoleId`: a local admin
+      // could repoint it at a powerful custom role, so seating any managed user
+      // (admin included) on it is the exact banned pattern. If the verified
+      // role can't be secured, fail closed WITHOUT creating any membership.
+      if (!seatRoleId) {
         this.logger.error(
           `Managed login denied for ${email} — ${tier} role could not be secured for workspace ${workspace.id}; not creating a membership`,
         );
@@ -536,11 +540,8 @@ export class GoTrueAuthController {
       try {
         await this.signInUpService.signInUpOnExistingWorkspace({
           workspace,
-          // Seat on the verified managed role (never the mutable defaultRoleId).
-          // For an admin tier where the standard Admin role is unexpectedly
-          // missing, seatRoleId may be null → signInUp falls back to the
-          // workspace default, which is acceptable: an admin is entitled to it.
-          roleId: seatRoleId ?? workspace.defaultRoleId,
+          // Seat on the verified role only (never the mutable defaultRoleId).
+          roleId: seatRoleId,
           userData: user
             ? { type: 'existingUser', existingUser: user }
             : {
@@ -594,29 +595,26 @@ export class GoTrueAuthController {
         .json({ error: 'You do not have access to this workspace' });
     }
 
-    // (3) Enforce caps → role. GoTrue caps are authoritative: a non-admin user
-    // must NOT retain (or be issued a session under) a role above their caps.
-    // For a NON-admin tier we only mint a session when enforcement actually
-    // took effect — `applied` (re-pointed) or `noop` (already at the correct
-    // role). Any other outcome means the role may be in an elevated/unknown
+    // (3) Enforce caps → role. GoTrue caps are authoritative: a managed user
+    // must NOT be issued a session under a role that doesn't match their caps.
+    // For EVERY tier (admin included) we only mint a session when enforcement
+    // actually took effect — `applied` (re-pointed) or `noop` (already at the
+    // correct role). Any other outcome means the role is in an elevated/unknown
     // state:
     //   - blocked_last_admin → the user is the sole admin and can't be demoted,
-    //   - unresolved         → the managed target role couldn't be secured,
+    //   - unresolved         → the target role (managed Member/Viewer, or the
+    //                          seeded Admin) couldn't be secured,
     //   - error              → the assignment failed.
-    // In all of those we FAIL CLOSED rather than issue a session while the user
-    // may still hold Admin. (An admin tier is legitimately entitled to Admin,
-    // so an unenforced admin sync only ever UNDER-grants — safe to proceed.)
+    // In all of those we FAIL CLOSED. An admin login is no exception: if the
+    // verified Admin role can't be resolved/assigned we cannot confirm the
+    // user's role, so we do not mint a session in an unknown state.
     const applied = await this.roleSyncService.applyCrmTier({
       userWorkspaceId: userWorkspace.id,
       workspaceId: workspace.id,
       tier,
     });
 
-    if (
-      tier !== 'admin' &&
-      applied.status !== 'applied' &&
-      applied.status !== 'noop'
-    ) {
+    if (applied.status !== 'applied' && applied.status !== 'noop') {
       this.logger.error(
         `Managed login denied for ${email} — ${tier} caps could not be enforced on workspace ${workspace.id} (status=${applied.status}); failing closed`,
       );
@@ -684,11 +682,17 @@ export class GoTrueAuthController {
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    // Bind the admin bypass to the tenant derived from the request origin
-    // (subdomain / custom domain), or the single default workspace in
-    // single-workspace deployments. Never select a global first/oldest
-    // workspace — that would route the admin into an arbitrary tenant.
-    const workspace = await this.resolveWorkspaceFromRequest(req);
+    // Bind the admin bypass to a workspace. In a MANAGED deployment
+    // (EXE_ORG_WORKSPACE_ID set) PIN it to the canonical workspace and IGNORE
+    // the client-controlled Host — otherwise a holder of the static admin token
+    // could set the Host header to any tenant's domain and mint a session as
+    // that tenant's owner (cross-tenant takeover). When unmanaged, fall back to
+    // the origin-derived tenant (single-workspace break-glass, unchanged).
+    const workspace = this.exeOrgWorkspaceId
+      ? await this.workspaceRepository.findOne({
+          where: { id: this.exeOrgWorkspaceId },
+        })
+      : await this.resolveWorkspaceFromRequest(req);
 
     if (!workspace) {
       return res.status(500).json({

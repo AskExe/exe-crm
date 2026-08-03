@@ -539,5 +539,39 @@ describe('GoTrueAuthController', () => {
       );
       expect(res.status).not.toHaveBeenCalled();
     });
+
+    it('pins the admin token to EXE_ORG_WORKSPACE_ID and IGNORES the client Host when managed', async () => {
+      // Managed deployment: the canonical workspace must win over any
+      // Host-derived tenant, closing the static-token cross-tenant takeover.
+      process.env.EXE_ORG_WORKSPACE_ID = 'ws-canonical';
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+
+      workspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_WORKSPACE,
+        id: 'ws-canonical',
+      });
+      userWorkspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_USER_WORKSPACE,
+        workspaceId: 'ws-canonical',
+      });
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      // The mutable, client-controlled Host path is NOT consulted.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+      expect(workspaceRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'ws-canonical' },
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ isAdminToken: true }),
+      );
+    });
   });
 });

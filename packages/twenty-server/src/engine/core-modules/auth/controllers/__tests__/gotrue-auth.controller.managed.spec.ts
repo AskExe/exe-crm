@@ -302,11 +302,26 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     });
   });
 
+  it('ALLOWS an admin-tier login when the verified Admin role was applied/noop', async () => {
+    const { controller, loginTokenService } = buildController(
+      { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+      { applyResult: { status: 'noop' } },
+    );
+    const res = makeRes();
+
+    await callManaged(controller, res, 'admin');
+
+    expect(loginTokenService.generateLoginToken).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringContaining('/verify'),
+    });
+  });
+
   it.each([
     { status: 'unresolved' },
     { status: 'error' },
   ])(
-    'ALLOWS an admin-tier login even when the sync did not apply (status=$status) — admin only ever under-grants',
+    'DENIES an admin-tier login when the verified Admin role could not be enforced (status=$status) — no fail-open',
     async (applyResult) => {
       const { controller, loginTokenService } = buildController(
         { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
@@ -316,10 +331,51 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
 
       await callManaged(controller, res, 'admin');
 
-      expect(loginTokenService.generateLoginToken).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
-        redirectUrl: expect.stringContaining('/verify'),
-      });
+      // Symmetric with non-admin: never mint a session in an unknown state.
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
     },
   );
+
+  it('admin-tier NON-member is seated on the VERIFIED Admin role, never defaultRoleId', async () => {
+    const { controller, signInUpService } = buildController(
+      { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+      { existingUserWorkspace: null, seatRoleId: 'role-verified-admin' },
+    );
+    const res = makeRes();
+
+    (controller as any).userWorkspaceRepository.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: USER_WORKSPACE_ID,
+        userId: USER_ID,
+        workspaceId: CANONICAL_WS_ID,
+      });
+
+    await callManaged(controller, res, 'admin', null);
+
+    expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({ roleId: 'role-verified-admin' }),
+    );
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalledWith(
+      expect.objectContaining({ roleId: DEFAULT_ROLE_ID }),
+    );
+  });
+
+  it('admin-tier NON-member FAILS CLOSED (no join) when the verified Admin role is unresolvable', async () => {
+    const { controller, signInUpService, loginTokenService } = buildController(
+      { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+      { existingUserWorkspace: null, seatRoleId: null },
+    );
+    const res = makeRes();
+
+    (controller as any).userWorkspaceRepository.findOne.mockResolvedValue(null);
+
+    await callManaged(controller, res, 'admin', null);
+
+    // Never fall back to defaultRoleId for an admin either.
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
 });
