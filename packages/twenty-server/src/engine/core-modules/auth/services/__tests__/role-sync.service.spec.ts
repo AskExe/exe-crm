@@ -1,4 +1,6 @@
 import {
+  EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
+  EXE_MANAGED_MEMBER_ROLE,
   EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
   EXE_MANAGED_VIEWER_ROLE,
 } from 'src/engine/core-modules/auth/constants/exe-managed-roles.constant';
@@ -14,6 +16,14 @@ const USER_WORKSPACE_ID = 'uw-1';
 const ADMIN_ROLE_ID = 'role-admin';
 const MEMBER_ROLE_ID = 'role-member';
 const VIEWER_ROLE_ID = 'role-viewer';
+
+// A managed role that is already fully secured (locked + canonical flags) so
+// the drift-repair path is a no-op unless a test deliberately drifts it.
+const securedManagedRole = (id: string, flags: Record<string, boolean>) => ({
+  id,
+  isEditable: false,
+  ...flags,
+});
 
 const createService = () => {
   const roleService = {
@@ -32,18 +42,14 @@ const createService = () => {
         workspaceCustomFlatApplication: { id: 'app-1', universalIdentifier: 'app-uid' },
       }),
   };
-  const workspaceRepository = {
-    findOne: jest.fn().mockResolvedValue({ defaultRoleId: MEMBER_ROLE_ID }),
-  };
 
   const service = new RoleSyncService(
     roleService as any,
     userRoleService as any,
     applicationService as any,
-    workspaceRepository as any,
   );
 
-  return { service, roleService, userRoleService, applicationService, workspaceRepository };
+  return { service, roleService, userRoleService, applicationService };
 };
 
 describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', () => {
@@ -69,8 +75,12 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
     });
   });
 
-  it('write tier → workspace defaultRoleId (Member)', async () => {
-    const { service, userRoleService, workspaceRepository } = createService();
+  it('write tier → verified managed Member role (NOT the mutable defaultRoleId)', async () => {
+    const { service, roleService, userRoleService } = createService();
+
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(
+      securedManagedRole(MEMBER_ROLE_ID, EXE_MANAGED_MEMBER_PERMISSION_FLAGS),
+    );
 
     await service.applyCrmTier({
       userWorkspaceId: USER_WORKSPACE_ID,
@@ -78,7 +88,11 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
       tier: 'write',
     });
 
-    expect(workspaceRepository.findOne).toHaveBeenCalled();
+    // Resolved by our OWN universalIdentifier — never workspace.defaultRoleId.
+    expect(roleService.getRoleByUniversalIdentifier).toHaveBeenCalledWith({
+      universalIdentifier: EXE_MANAGED_MEMBER_ROLE.universalIdentifier,
+      workspaceId: WORKSPACE_ID,
+    });
     expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
       workspaceId: WORKSPACE_ID,
       userWorkspaceIds: [USER_WORKSPACE_ID],
@@ -86,10 +100,32 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
     });
   });
 
-  it('read tier, viewer exists → reuse it', async () => {
+  it('write tier, Member missing → creates a NON-EDITABLE read-write role (no admin flags)', async () => {
+    const { service, roleService } = createService();
+
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(null);
+    roleService.createRole.mockResolvedValue({ id: MEMBER_ROLE_ID });
+
+    await service.applyCrmTier({
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: WORKSPACE_ID,
+      tier: 'write',
+    });
+
+    expect(roleService.createRole.mock.calls[0][0].input).toMatchObject({
+      universalIdentifier: EXE_MANAGED_MEMBER_ROLE.universalIdentifier,
+      isEditable: false,
+      ...EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
+      canUpdateAllSettings: false,
+    });
+  });
+
+  it('read tier, viewer exists + secured → reuse without repair', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({ id: VIEWER_ROLE_ID });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(
+      securedManagedRole(VIEWER_ROLE_ID, EXE_MANAGED_VIEWER_PERMISSION_FLAGS),
+    );
 
     await service.applyCrmTier({
       userWorkspaceId: USER_WORKSPACE_ID,
@@ -102,6 +138,7 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
       workspaceId: WORKSPACE_ID,
     });
     expect(roleService.createRole).not.toHaveBeenCalled();
+    expect(roleService.updateRole).not.toHaveBeenCalled();
     expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
       workspaceId: WORKSPACE_ID,
       userWorkspaceIds: [USER_WORKSPACE_ID],
@@ -173,11 +210,10 @@ describe('RoleSyncService.applyCrmTier — non-fatal failures Fail', () => {
   it('never throws on the last-admin guard, and signals blocked_last_admin', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    // Viewer already read-only so no repair path noise; assign hits guard.
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
-      id: VIEWER_ROLE_ID,
-      ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
-    });
+    // Viewer already secured so no repair path noise; assign hits guard.
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(
+      securedManagedRole(VIEWER_ROLE_ID, EXE_MANAGED_VIEWER_PERMISSION_FLAGS),
+    );
     userRoleService.assignRoleToManyUserWorkspace.mockRejectedValue(
       new PermissionsException(
         'last admin',
@@ -197,10 +233,9 @@ describe('RoleSyncService.applyCrmTier — non-fatal failures Fail', () => {
   it('never throws on an unexpected assign failure, and signals error', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
-      id: VIEWER_ROLE_ID,
-      ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
-    });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(
+      securedManagedRole(VIEWER_ROLE_ID, EXE_MANAGED_VIEWER_PERMISSION_FLAGS),
+    );
     userRoleService.assignRoleToManyUserWorkspace.mockRejectedValue(
       new Error('db down'),
     );
@@ -300,10 +335,10 @@ describe('RoleSyncService — managed Viewer is non-editable + self-heals on dri
     expect(roleService.updateRole).not.toHaveBeenCalled();
   });
 
-  it('repairs an existing Viewer whose flags drifted to write/settings', async () => {
+  it('repairs flags AND re-locks isEditable on a drifted legacy Viewer', async () => {
     const { service, roleService } = createService();
 
-    // A local admin elevated the (legacy, editable) Viewer role.
+    // A local admin elevated the (legacy, still-editable) Viewer role.
     roleService.getRoleByUniversalIdentifier.mockResolvedValue({
       id: VIEWER_ROLE_ID,
       isEditable: true,
@@ -321,22 +356,24 @@ describe('RoleSyncService — managed Viewer is non-editable + self-heals on dri
       tier: 'read',
     });
 
+    // Repair resets the flags AND flips isEditable → false (system-owned lock).
     expect(roleService.updateRole).toHaveBeenCalledWith({
-      input: { id: VIEWER_ROLE_ID, update: { ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS } },
+      input: {
+        id: VIEWER_ROLE_ID,
+        update: { ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS, isEditable: false },
+      },
       workspaceId: WORKSPACE_ID,
     });
   });
 
-  it('repair failure is non-fatal — the role is still assigned', async () => {
-    const { service, roleService, userRoleService } = createService();
+  it('re-locks a Viewer whose ONLY drift is isEditable:true (flags fine)', async () => {
+    const { service, roleService } = createService();
 
     roleService.getRoleByUniversalIdentifier.mockResolvedValue({
       id: VIEWER_ROLE_ID,
-      isEditable: false,
-      canReadAllObjectRecords: true,
-      canUpdateAllObjectRecords: true, // drifted
+      isEditable: true, // only drift: still mutable
+      ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
     });
-    roleService.updateRole.mockRejectedValue(new Error('locked'));
 
     await service.applyCrmTier({
       userWorkspaceId: USER_WORKSPACE_ID,
@@ -344,10 +381,35 @@ describe('RoleSyncService — managed Viewer is non-editable + self-heals on dri
       tier: 'read',
     });
 
-    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
+    expect(roleService.updateRole).toHaveBeenCalledWith({
+      input: {
+        id: VIEWER_ROLE_ID,
+        update: { ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS, isEditable: false },
+      },
       workspaceId: WORKSPACE_ID,
-      userWorkspaceIds: [USER_WORKSPACE_ID],
-      roleId: VIEWER_ROLE_ID,
     });
+  });
+
+  it('FAILS CLOSED when a drifted managed role cannot be secured', async () => {
+    const { service, roleService, userRoleService } = createService();
+
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      id: VIEWER_ROLE_ID,
+      isEditable: true,
+      canReadAllObjectRecords: true,
+      canUpdateAllObjectRecords: true, // drifted
+    });
+    roleService.updateRole.mockRejectedValue(new Error('locked'));
+
+    const result = await service.applyCrmTier({
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: WORKSPACE_ID,
+      tier: 'read',
+    });
+
+    // The role could not be secured → do NOT assign it; signal unresolved so
+    // the caller fails the login closed.
+    expect(result).toEqual({ status: 'unresolved' });
+    expect(userRoleService.assignRoleToManyUserWorkspace).not.toHaveBeenCalled();
   });
 });

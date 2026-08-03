@@ -237,20 +237,59 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
   });
 
-  it('ALLOWS an admin-tier login (admin is legitimately entitled to Admin)', async () => {
+  it.each([
+    { status: 'unresolved' },
+    { status: 'error' },
+  ])(
+    'DENIES a non-admin login when enforcement did not take effect (status=$status)',
+    async (applyResult) => {
+      const { controller, loginTokenService } = buildController(
+        { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+        { applyResult },
+      );
+      const res = makeRes();
+
+      await callManaged(controller, res, 'read');
+
+      // Never mint a session while the role is in an unknown/failed state.
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    },
+  );
+
+  it('ALLOWS a non-admin login when the tier was actually applied', async () => {
     const { controller, loginTokenService } = buildController(
       { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
-      // Assigning admin never triggers the last-admin guard, but even a noop
-      // result must still mint the session.
-      { applyResult: { status: 'noop' } },
+      { applyResult: { status: 'applied' } },
     );
     const res = makeRes();
 
-    await callManaged(controller, res, 'admin');
+    await callManaged(controller, res, 'read');
 
     expect(loginTokenService.generateLoginToken).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
       redirectUrl: expect.stringContaining('/verify'),
     });
   });
+
+  it.each([
+    { status: 'unresolved' },
+    { status: 'error' },
+  ])(
+    'ALLOWS an admin-tier login even when the sync did not apply (status=$status) — admin only ever under-grants',
+    async (applyResult) => {
+      const { controller, loginTokenService } = buildController(
+        { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+        { applyResult },
+      );
+      const res = makeRes();
+
+      await callManaged(controller, res, 'admin');
+
+      expect(loginTokenService.generateLoginToken).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        redirectUrl: expect.stringContaining('/verify'),
+      });
+    },
+  );
 });

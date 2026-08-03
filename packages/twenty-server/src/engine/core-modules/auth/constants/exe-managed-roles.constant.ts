@@ -34,3 +34,33 @@ export const EXE_MANAGED_VIEWER_PERMISSION_FLAGS = {
   canUpdateAllSettings: false,
   canAccessAllTools: false,
 } as const;
+
+/**
+ * Managed "Member" role — the write tier (crm:write) target.
+ *
+ * We do NOT map crm:write to the workspace's `defaultRoleId`: that pointer is
+ * MUTABLE (a local admin can repoint it at the Admin role), which would silently
+ * grant a crm:write user Admin. Instead we own a verified NON-admin role the
+ * same way we own the Viewer — created non-editable and self-healed every sync.
+ */
+export const EXE_MANAGED_MEMBER_ROLE = {
+  // Stable, Exe-owned universalIdentifier for the managed read-write role.
+  universalIdentifier: 'e0e00002-a1b2-4c3d-8e5f-6a7b8c9d0e2f',
+  label: 'Member',
+  description: 'Exe-managed read-write role (crm:write)',
+} as const;
+
+/**
+ * The ONLY permission shape the managed Member role may ever hold: read + write
+ * object records, but explicitly NO admin powers (no settings, no tools, no
+ * destroy). Same source-of-truth + drift-repair contract as the Viewer flags.
+ */
+export const EXE_MANAGED_MEMBER_PERMISSION_FLAGS = {
+  canReadAllObjectRecords: true,
+  canUpdateAllObjectRecords: true,
+  canSoftDeleteAllObjectRecords: true,
+  canDestroyAllObjectRecords: false,
+  // The security invariant: a write-tier user is NEVER an admin.
+  canUpdateAllSettings: false,
+  canAccessAllTools: false,
+} as const;

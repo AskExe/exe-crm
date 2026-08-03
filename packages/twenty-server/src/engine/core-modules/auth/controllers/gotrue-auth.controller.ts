@@ -569,24 +569,44 @@ export class GoTrueAuthController {
     }
 
     // (3) Enforce caps → role. GoTrue caps are authoritative: a non-admin user
-    // must NOT retain Admin. If the demotion is blocked because they are the
-    // sole admin, fail closed — never mint a session for a role the caps don't
-    // grant. (The org's canonical workspace is expected to have a proper admin
-    // or service admin, so a healthy deployment never hits this.)
+    // must NOT retain (or be issued a session under) a role above their caps.
+    // For a NON-admin tier we only mint a session when enforcement actually
+    // took effect — `applied` (re-pointed) or `noop` (already at the correct
+    // role). Any other outcome means the role may be in an elevated/unknown
+    // state:
+    //   - blocked_last_admin → the user is the sole admin and can't be demoted,
+    //   - unresolved         → the managed target role couldn't be secured,
+    //   - error              → the assignment failed.
+    // In all of those we FAIL CLOSED rather than issue a session while the user
+    // may still hold Admin. (An admin tier is legitimately entitled to Admin,
+    // so an unenforced admin sync only ever UNDER-grants — safe to proceed.)
     const applied = await this.roleSyncService.applyCrmTier({
       userWorkspaceId: userWorkspace.id,
       workspaceId: workspace.id,
       tier,
     });
 
-    if (tier !== 'admin' && applied.status === 'blocked_last_admin') {
+    if (
+      tier !== 'admin' &&
+      applied.status !== 'applied' &&
+      applied.status !== 'noop'
+    ) {
       this.logger.error(
-        `Managed login denied for ${email} — ${tier} caps cannot be enforced: user is the sole admin of ${workspace.id} and cannot be demoted`,
+        `Managed login denied for ${email} — ${tier} caps could not be enforced on workspace ${workspace.id} (status=${applied.status}); failing closed`,
       );
 
-      return res.status(403).json({
+      if (applied.status === 'blocked_last_admin') {
+        return res.status(403).json({
+          error:
+            'This workspace has no other authorized administrator, so your access cannot be granted. Contact your administrator.',
+        });
+      }
+
+      // unresolved / error — enforcement is in an unknown state; never mint a
+      // session that could leave the user above their caps.
+      return res.status(500).json({
         error:
-          'This workspace has no other authorized administrator, so your access cannot be granted. Contact your administrator.',
+          'Your access could not be applied right now. Please try again or contact your administrator.',
       });
     }
 

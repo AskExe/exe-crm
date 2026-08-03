@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-
-import { Repository } from 'typeorm';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import {
+  EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
+  EXE_MANAGED_MEMBER_ROLE,
   EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
   EXE_MANAGED_VIEWER_ROLE,
 } from 'src/engine/core-modules/auth/constants/exe-managed-roles.constant';
 import { type CrmRoleTier } from 'src/engine/core-modules/auth/services/exe-perms.util';
 import { type RoleDTO } from 'src/engine/metadata-modules/role/dtos/role.dto';
-import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
   PermissionsException,
   PermissionsExceptionCode,
@@ -18,6 +16,27 @@ import {
 import { RoleService } from 'src/engine/metadata-modules/role/role.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
+
+/** A managed role we OWN: fixed identity + the only permission flags it may hold. */
+type ManagedRoleSpec = {
+  universalIdentifier: string;
+  label: string;
+  description: string;
+  icon: string;
+  flags: Record<string, boolean>;
+};
+
+const VIEWER_SPEC: ManagedRoleSpec = {
+  ...EXE_MANAGED_VIEWER_ROLE,
+  icon: 'IconEye',
+  flags: EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
+};
+
+const MEMBER_SPEC: ManagedRoleSpec = {
+  ...EXE_MANAGED_MEMBER_ROLE,
+  icon: 'IconUser',
+  flags: EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
+};
 
 /**
  * Applies a canonical CRM capability tier to a Twenty user's workspace-scoped
@@ -61,8 +80,6 @@ export class RoleSyncService {
     private readonly roleService: RoleService,
     private readonly userRoleService: UserRoleService,
     private readonly applicationService: ApplicationService,
-    @InjectRepository(WorkspaceEntity)
-    private readonly workspaceRepository: Repository<WorkspaceEntity>,
   ) {}
 
   /**
@@ -163,16 +180,13 @@ export class RoleSyncService {
         return adminRole?.id ?? null;
       }
       case 'write': {
-        // The seeded "Member" role IS the workspace's defaultRoleId — resolve
-        // it structurally instead of hardcoding the "Member" label.
-        const workspace = await this.workspaceRepository.findOne({
-          where: { id: workspaceId },
-        });
-
-        return workspace?.defaultRoleId ?? null;
+        // NEVER the workspace's mutable `defaultRoleId` — a local admin can
+        // repoint it at the Admin role, silently escalating every crm:write
+        // user. Use a verified, Exe-owned NON-admin Member role instead.
+        return this.ensureManagedRoleId(MEMBER_SPEC, workspaceId);
       }
       case 'read': {
-        return this.ensureViewerRoleId(workspaceId);
+        return this.ensureManagedRoleId(VIEWER_SPEC, workspaceId);
       }
       default: {
         return null;
@@ -181,26 +195,35 @@ export class RoleSyncService {
   }
 
   /**
-   * Ensure a managed read-only ("Viewer") role exists for the workspace,
-   * keyed by our fixed universalIdentifier.
+   * Ensure a managed role (Viewer / Member) we OWN exists for the workspace,
+   * keyed by its fixed universalIdentifier, and return an id that is SAFE to
+   * assign.
    *
-   * Created lazily & idempotently on first crm:read login as a NON-EDITABLE
-   * (system-owned) role so a local admin cannot mutate it into a write/settings
-   * role. On reuse we do NOT trust the role by identifier alone: we verify its
-   * permission flags every sync and REPAIR them if they drifted (e.g. a legacy
-   * Viewer that predates the non-editable lock, or any out-of-band mutation),
-   * so future crm:read users can never inherit elevated access.
+   * Created lazily & idempotently as a NON-EDITABLE (system-owned) role so a
+   * local admin cannot mutate its flags. On reuse we do NOT trust the role by
+   * identifier alone: every sync we verify its permission flags AND its
+   * `isEditable` lock, repairing any drift (e.g. a legacy role that predates the
+   * lock, or an out-of-band mutation). If a drifted role CANNOT be secured, we
+   * return `null` so the caller FAILS CLOSED rather than assigning a role whose
+   * permissions we can no longer guarantee.
    */
-  private async ensureViewerRoleId(workspaceId: string): Promise<string | null> {
+  private async ensureManagedRoleId(
+    spec: ManagedRoleSpec,
+    workspaceId: string,
+  ): Promise<string | null> {
     const existing = await this.roleService.getRoleByUniversalIdentifier({
-      universalIdentifier: EXE_MANAGED_VIEWER_ROLE.universalIdentifier,
+      universalIdentifier: spec.universalIdentifier,
       workspaceId,
     });
 
     if (existing) {
-      await this.repairViewerRoleIfDrifted(existing, workspaceId);
+      const secured = await this.repairManagedRoleIfDrifted(
+        existing,
+        spec,
+        workspaceId,
+      );
 
-      return existing.id;
+      return secured ? existing.id : null;
     }
 
     const { workspaceCustomFlatApplication } =
@@ -210,14 +233,14 @@ export class RoleSyncService {
 
     const created = await this.roleService.createRole({
       input: {
-        universalIdentifier: EXE_MANAGED_VIEWER_ROLE.universalIdentifier,
-        label: EXE_MANAGED_VIEWER_ROLE.label,
-        description: EXE_MANAGED_VIEWER_ROLE.description,
-        icon: 'IconEye',
+        universalIdentifier: spec.universalIdentifier,
+        label: spec.label,
+        description: spec.description,
+        icon: spec.icon,
         // System-owned: cannot be edited or deleted via the normal migration
-        // path, so its read-only flags can't be elevated by a local admin.
+        // path, so its flags can't be elevated by a local admin.
         isEditable: false,
-        ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
+        ...spec.flags,
         canBeAssignedToUsers: true,
         canBeAssignedToAgents: false,
         canBeAssignedToApiKeys: false,
@@ -230,41 +253,57 @@ export class RoleSyncService {
   }
 
   /**
-   * Verify an existing managed Viewer role against the canonical read-only
-   * flag set and repair it if any flag drifted. Non-fatal: a repair failure
-   * (e.g. the role is locked non-editable but somehow drifted, or an infra
-   * error) never breaks login — worst case the caller assigns a role that is
-   * already read-only in the common path.
+   * Verify an existing managed role against its canonical flag set AND its
+   * `isEditable: false` lock, repairing any drift. Returns `true` when the role
+   * is secured (either already correct, or successfully repaired), `false` when
+   * a drifted role could NOT be secured — the caller then fails closed rather
+   * than assigning a role we can no longer guarantee.
    */
-  private async repairViewerRoleIfDrifted(
+  private async repairManagedRoleIfDrifted(
     role: RoleDTO,
+    spec: ManagedRoleSpec,
     workspaceId: string,
-  ): Promise<void> {
-    const expected = EXE_MANAGED_VIEWER_PERMISSION_FLAGS;
+  ): Promise<boolean> {
+    const roleFlags = role as unknown as Record<string, unknown>;
+    const flagsDrifted = Object.keys(spec.flags).some(
+      (flag) => roleFlags[flag] !== spec.flags[flag],
+    );
+    // A legacy managed role created before the lock stays user-editable and so
+    // remains mutable — repair it to system-owned too, not just its flags.
+    const editableDrifted = role.isEditable !== false;
 
-    const drifted = (
-      Object.keys(expected) as (keyof typeof expected)[]
-    ).some((flag) => role[flag] !== expected[flag]);
-
-    if (!drifted) return;
+    if (!flagsDrifted && !editableDrifted) return true;
 
     this.logger.warn(
-      `RoleSync: managed Viewer role ${role.id} drifted from read-only in workspace ${workspaceId}; repairing`,
+      `RoleSync: managed role "${spec.label}" ${role.id} drifted in workspace ${workspaceId} ` +
+        `(flags=${flagsDrifted}, editable=${editableDrifted}); repairing to system-owned`,
     );
 
     try {
       await this.roleService.updateRole({
-        input: { id: role.id, update: { ...expected } },
+        input: {
+          id: role.id,
+          // Reset flags to the canonical set AND re-lock isEditable. The
+          // migration validator checks the EXISTING role's editability, so a
+          // currently-editable legacy role can be locked in this single update.
+          update: { ...spec.flags, isEditable: false },
+        },
         workspaceId,
       });
 
       this.logger.log(
-        `RoleSync: repaired managed Viewer role ${role.id} back to read-only (workspace ${workspaceId})`,
+        `RoleSync: repaired + locked managed role "${spec.label}" ${role.id} (workspace ${workspaceId})`,
       );
+
+      return true;
     } catch (err) {
+      // Loudly: a managed role we could not secure is a security concern. Fail
+      // closed for this login rather than silently trusting a mutable role.
       this.logger.error(
-        `RoleSync: failed to repair managed Viewer role ${role.id} in workspace ${workspaceId}: ${err}`,
+        `RoleSync: FAILED to secure managed role "${spec.label}" ${role.id} in workspace ${workspaceId} — failing closed: ${err}`,
       );
+
+      return false;
     }
   }
 }
