@@ -16,6 +16,9 @@ import { GoTrueAuthController } from 'src/engine/core-modules/auth/controllers/g
 const ORG_ID = 'org-1';
 const CANONICAL_WS_ID = 'ws-canonical';
 const DEFAULT_ROLE_ID = 'role-member';
+// The verified managed role a new member is seated on — never the mutable
+// workspace.defaultRoleId.
+const MANAGED_ROLE_ID = 'role-managed-viewer';
 const USER_ID = 'user-1';
 const USER_WORKSPACE_ID = 'uw-1';
 const EMAIL = 'managed@example.com';
@@ -35,6 +38,7 @@ const buildController = (
     workspace?: unknown;
     existingUserWorkspace?: unknown;
     applyResult?: { status: string };
+    seatRoleId?: string | null;
   } = {},
 ) => {
   const prev = { ...process.env };
@@ -63,6 +67,11 @@ const buildController = (
     applyCrmTier: jest
       .fn()
       .mockResolvedValue(overrides.applyResult ?? { status: 'applied' }),
+    resolveAssignableRoleId: jest
+      .fn()
+      .mockResolvedValue(
+        'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
+      ),
   };
   const userRepository = {
     findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
@@ -131,7 +140,7 @@ describe('GoTrueAuthController.handleManagedLogin — canonical workspace bindin
     });
   });
 
-  it('provisions a NON-member into the canonical workspace with the default (non-admin) role — never a new workspace', async () => {
+  it('seats a NON-member on the VERIFIED managed role (never the mutable defaultRoleId) — and never a new workspace', async () => {
     const { controller, signInUpService } = buildController(
       { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
       { existingUserWorkspace: null },
@@ -149,16 +158,37 @@ describe('GoTrueAuthController.handleManagedLogin — canonical workspace bindin
 
     await callManaged(controller, res, 'read', null);
 
+    // Residue guard: joined on the resolved managed role, NOT defaultRoleId.
     expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
       expect.objectContaining({
         workspace: expect.objectContaining({ id: CANONICAL_WS_ID }),
-        roleId: DEFAULT_ROLE_ID,
+        roleId: MANAGED_ROLE_ID,
       }),
+    );
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalledWith(
+      expect.objectContaining({ roleId: DEFAULT_ROLE_ID }),
     );
     expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
       redirectUrl: expect.stringContaining('/verify'),
     });
+  });
+
+  it('does NOT create a membership (no defaultRoleId residue) when the managed non-admin role cannot be secured', async () => {
+    const { controller, signInUpService, loginTokenService } = buildController(
+      { EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID },
+      { existingUserWorkspace: null, seatRoleId: null },
+    );
+    const res = makeRes();
+
+    (controller as any).userWorkspaceRepository.findOne.mockResolvedValue(null);
+
+    await callManaged(controller, res, 'write', null);
+
+    // Fail closed BEFORE any join — no elevated defaultRoleId membership left.
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });
 

@@ -15,7 +15,10 @@
 export const EXE_MANAGED_VIEWER_ROLE = {
   // Stable, Exe-owned universalIdentifier for the managed read-only role.
   universalIdentifier: 'e0e00001-a1b2-4c3d-8e5f-6a7b8c9d0e1f',
-  label: 'Viewer',
+  // DISTINCT label: roles are UNIQUE on (label, workspaceId). A plain "Viewer"
+  // risks clashing with a workspace's own role, so we prefix ours — CREATE then
+  // never trips the label-uniqueness constraint. Lookup is by universalIdentifier.
+  label: 'Exe Managed Viewer',
   description: 'Exe-managed read-only role (crm:read)',
 } as const;
 
@@ -46,7 +49,10 @@ export const EXE_MANAGED_VIEWER_PERMISSION_FLAGS = {
 export const EXE_MANAGED_MEMBER_ROLE = {
   // Stable, Exe-owned universalIdentifier for the managed read-write role.
   universalIdentifier: 'e0e00002-a1b2-4c3d-8e5f-6a7b8c9d0e2f',
-  label: 'Member',
+  // DISTINCT label: Twenty seeds a standard "Member" role per workspace and
+  // roles are UNIQUE on (label, workspaceId). Using "Member" would make CREATE
+  // fail on the unique constraint in every normal workspace. Prefix ours.
+  label: 'Exe Managed Member',
   description: 'Exe-managed read-write role (crm:write)',
 } as const;
 

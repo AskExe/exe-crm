@@ -120,6 +120,29 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
     });
   });
 
+  it('managed Member CREATE uses a collision-proof label so it succeeds when a seeded "Member" already exists', async () => {
+    const { service, roleService } = createService();
+
+    // Simulate a normal workspace: the managed Member does not exist yet (looked
+    // up by our universalIdentifier), so we CREATE it. Twenty already seeds its
+    // own standard "Member" role — roles are unique on (label, workspaceId), so
+    // our create MUST use a distinct label.
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue(null);
+    roleService.createRole.mockResolvedValue({ id: MEMBER_ROLE_ID });
+
+    await service.applyCrmTier({
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: WORKSPACE_ID,
+      tier: 'write',
+    });
+
+    const createLabel = roleService.createRole.mock.calls[0][0].input.label;
+
+    expect(createLabel).toBe(EXE_MANAGED_MEMBER_ROLE.label);
+    // Would collide with Twenty's seeded standard roles — must NOT be used.
+    expect(['Member', 'Admin', 'Guest', 'Viewer']).not.toContain(createLabel);
+  });
+
   it('read tier, viewer exists + secured → reuse without repair', async () => {
     const { service, roleService, userRoleService } = createService();
 

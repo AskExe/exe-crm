@@ -163,6 +163,26 @@ export class RoleSyncService {
     }
   }
 
+  /**
+   * Resolve (and secure/create) the role id this tier WOULD be assigned, without
+   * touching any userWorkspace. The caller uses this to bind a brand-new
+   * membership to the correct managed role FROM THE START — so a managed user is
+   * never seated on the mutable `defaultRoleId` (which a local admin could point
+   * at Admin). Returns `null` when the managed role can't be secured (read/write)
+   * or the standard Admin role is missing (admin) → the caller fails closed.
+   */
+  async resolveAssignableRoleId({
+    tier,
+    workspaceId,
+  }: {
+    tier: CrmRoleTier;
+    workspaceId: string;
+  }): Promise<string | null> {
+    if (tier === 'none') return null;
+
+    return this.resolveTargetRoleId({ tier, workspaceId });
+  }
+
   private async resolveTargetRoleId({
     tier,
     workspaceId,

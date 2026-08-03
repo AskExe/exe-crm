@@ -500,7 +500,7 @@ export class GoTrueAuthController {
       });
     }
 
-    // (2) Ensure membership in the canonical workspace with a non-admin role.
+    // (2) Ensure membership in the canonical workspace with a VERIFIED role.
     let user = existingUser ?? (await this.findUser(email));
     let userWorkspace = user
       ? await this.userWorkspaceRepository.findOne({
@@ -509,12 +509,38 @@ export class GoTrueAuthController {
       : null;
 
     if (!userWorkspace) {
+      // Resolve (and secure) the role we intend to seat this new member on
+      // BEFORE creating the membership. We must NOT join on the mutable
+      // `workspace.defaultRoleId` — a local admin can repoint it at Admin, and
+      // if the subsequent role-sync then fails we'd have created an elevated
+      // membership as residue. Binding the managed role from the start means a
+      // failed sync can only ever leave a correctly-scoped (or no) membership.
+      const seatRoleId = await this.roleSyncService.resolveAssignableRoleId({
+        tier,
+        workspaceId: workspace.id,
+      });
+
+      // For a non-admin tier the managed role MUST be securable; if not, fail
+      // closed WITHOUT creating any membership (no residue at all).
+      if (tier !== 'admin' && !seatRoleId) {
+        this.logger.error(
+          `Managed login denied for ${email} — ${tier} role could not be secured for workspace ${workspace.id}; not creating a membership`,
+        );
+
+        return res.status(500).json({
+          error:
+            'Your access could not be applied right now. Please try again or contact your administrator.',
+        });
+      }
+
       try {
         await this.signInUpService.signInUpOnExistingWorkspace({
           workspace,
-          // Join with the workspace's own default (seeded Member) role — a
-          // non-admin baseline. The correct tier is applied in step (3).
-          roleId: workspace.defaultRoleId,
+          // Seat on the verified managed role (never the mutable defaultRoleId).
+          // For an admin tier where the standard Admin role is unexpectedly
+          // missing, seatRoleId may be null → signInUp falls back to the
+          // workspace default, which is acceptable: an admin is entitled to it.
+          roleId: seatRoleId ?? workspace.defaultRoleId,
           userData: user
             ? { type: 'existingUser', existingUser: user }
             : {
