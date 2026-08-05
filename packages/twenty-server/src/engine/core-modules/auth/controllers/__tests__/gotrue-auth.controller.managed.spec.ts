@@ -77,13 +77,15 @@ const buildController = (
     findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
   };
   const userWorkspaceRepository = {
-    findOne: jest
-      .fn()
-      .mockResolvedValue(
-        'existingUserWorkspace' in overrides
-          ? overrides.existingUserWorkspace
-          : { id: USER_WORKSPACE_ID, userId: USER_ID, workspaceId: CANONICAL_WS_ID },
-      ),
+    findOne: jest.fn().mockResolvedValue(
+      'existingUserWorkspace' in overrides
+        ? overrides.existingUserWorkspace
+        : {
+            id: USER_WORKSPACE_ID,
+            userId: USER_ID,
+            workspaceId: CANONICAL_WS_ID,
+          },
+    ),
   };
   const workspaceRepository = {
     findOne: jest.fn().mockResolvedValue(workspace),
@@ -119,13 +121,20 @@ const buildController = (
   };
 };
 
-const callManaged = (controller: GoTrueAuthController, res: any, tier: string, existingUser: unknown = { id: USER_ID, email: EMAIL }) =>
-  (controller as any).handleManagedLogin(res, EMAIL, existingUser, tier);
+const callManaged = (
+  controller: GoTrueAuthController,
+  res: any,
+  tier: string,
+  existingUser: unknown = { id: USER_ID, email: EMAIL },
+) => (controller as any).handleManagedLogin(res, EMAIL, existingUser, tier);
 
 describe('GoTrueAuthController.handleManagedLogin — canonical workspace binding (Fix #2)', () => {
   it('applies caps to the canonical workspace and mints a token for an existing member', async () => {
     const { controller, roleSyncService, loginTokenService, signInUpService } =
-      buildController({ EXE_ORG_ID: ORG_ID, EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID });
+      buildController({
+        EXE_ORG_ID: ORG_ID,
+        EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID,
+      });
     const res = makeRes();
 
     await callManaged(controller, res, 'write');
@@ -171,7 +180,9 @@ describe('GoTrueAuthController.handleManagedLogin — canonical workspace bindin
         roleId: MANAGED_ROLE_ID,
       }),
     );
-    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalledWith(
+    expect(
+      signInUpService.signInUpOnExistingWorkspace,
+    ).not.toHaveBeenCalledWith(
       expect.objectContaining({ roleId: DEFAULT_ROLE_ID }),
     );
     expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
@@ -273,10 +284,7 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { status: 'unresolved' },
-    { status: 'error' },
-  ])(
+  it.each([{ status: 'unresolved' }, { status: 'error' }])(
     'DENIES a non-admin login when enforcement did not take effect (status=$status)',
     async (applyResult) => {
       const { controller, loginTokenService } = buildController(
@@ -323,10 +331,7 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     });
   });
 
-  it.each([
-    { status: 'unresolved' },
-    { status: 'error' },
-  ])(
+  it.each([{ status: 'unresolved' }, { status: 'error' }])(
     'DENIES an admin-tier login when the verified Admin role could not be enforced (status=$status) — no fail-open',
     async (applyResult) => {
       const { controller, loginTokenService } = buildController(
@@ -363,7 +368,9 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
       expect.objectContaining({ roleId: 'role-verified-admin' }),
     );
-    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalledWith(
+    expect(
+      signInUpService.signInUpOnExistingWorkspace,
+    ).not.toHaveBeenCalledWith(
       expect.objectContaining({ roleId: DEFAULT_ROLE_ID }),
     );
   });

@@ -39,7 +39,10 @@ const createService = () => {
     findWorkspaceTwentyStandardAndCustomApplicationOrThrow: jest
       .fn()
       .mockResolvedValue({
-        workspaceCustomFlatApplication: { id: 'app-1', universalIdentifier: 'app-uid' },
+        workspaceCustomFlatApplication: {
+          id: 'app-1',
+          universalIdentifier: 'app-uid',
+        },
       }),
   };
 
@@ -56,7 +59,9 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
   it('admin tier → seeded Admin role (by universalIdentifier)', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({ id: ADMIN_ROLE_ID });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      id: ADMIN_ROLE_ID,
+    });
 
     await service.applyCrmTier({
       userWorkspaceId: USER_WORKSPACE_ID,
@@ -218,7 +223,9 @@ describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', 
     // deletes the prior Admin target and creates the Viewer one atomically, so
     // a single repoint fully removes Admin — there is no residual union role.
     expect(result).toEqual({ status: 'applied' });
-    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledTimes(1);
+    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledTimes(
+      1,
+    );
     expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
       workspaceId: WORKSPACE_ID,
       userWorkspaceIds: [USER_WORKSPACE_ID],
@@ -231,7 +238,9 @@ describe('RoleSyncService.applyCrmTier — idempotency + guards', () => {
   it('no-op when the user already holds the target role', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({ id: ADMIN_ROLE_ID });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      id: ADMIN_ROLE_ID,
+    });
     userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
       new Map([[USER_WORKSPACE_ID, [{ id: ADMIN_ROLE_ID }]]]),
     );
@@ -242,7 +251,9 @@ describe('RoleSyncService.applyCrmTier — idempotency + guards', () => {
       tier: 'admin',
     });
 
-    expect(userRoleService.assignRoleToManyUserWorkspace).not.toHaveBeenCalled();
+    expect(
+      userRoleService.assignRoleToManyUserWorkspace,
+    ).not.toHaveBeenCalled();
   });
 
   it('none tier is never assigned (handled as fail-closed deny by caller)', async () => {
@@ -255,7 +266,9 @@ describe('RoleSyncService.applyCrmTier — idempotency + guards', () => {
     });
 
     expect(roleService.getRoleByUniversalIdentifier).not.toHaveBeenCalled();
-    expect(userRoleService.assignRoleToManyUserWorkspace).not.toHaveBeenCalled();
+    expect(
+      userRoleService.assignRoleToManyUserWorkspace,
+    ).not.toHaveBeenCalled();
   });
 });
 
@@ -314,7 +327,9 @@ describe('RoleSyncService.applyCrmTier — non-fatal failures Fail', () => {
     });
 
     expect(result).toEqual({ status: 'unresolved' });
-    expect(userRoleService.assignRoleToManyUserWorkspace).not.toHaveBeenCalled();
+    expect(
+      userRoleService.assignRoleToManyUserWorkspace,
+    ).not.toHaveBeenCalled();
   });
 });
 
@@ -322,7 +337,9 @@ describe('RoleSyncService.applyCrmTier — structured result on success', () => 
   it('returns applied when the role is re-pointed', async () => {
     const { service, roleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({ id: ADMIN_ROLE_ID });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      id: ADMIN_ROLE_ID,
+    });
 
     await expect(
       service.applyCrmTier({
@@ -336,7 +353,9 @@ describe('RoleSyncService.applyCrmTier — structured result on success', () => 
   it('returns noop when the user already holds the target role', async () => {
     const { service, roleService, userRoleService } = createService();
 
-    roleService.getRoleByUniversalIdentifier.mockResolvedValue({ id: ADMIN_ROLE_ID });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      id: ADMIN_ROLE_ID,
+    });
     userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
       new Map([[USER_WORKSPACE_ID, [{ id: ADMIN_ROLE_ID }]]]),
     );
@@ -463,6 +482,8 @@ describe('RoleSyncService — managed Viewer is non-editable + self-heals on dri
     // The role could not be secured → do NOT assign it; signal unresolved so
     // the caller fails the login closed.
     expect(result).toEqual({ status: 'unresolved' });
-    expect(userRoleService.assignRoleToManyUserWorkspace).not.toHaveBeenCalled();
+    expect(
+      userRoleService.assignRoleToManyUserWorkspace,
+    ).not.toHaveBeenCalled();
   });
 });

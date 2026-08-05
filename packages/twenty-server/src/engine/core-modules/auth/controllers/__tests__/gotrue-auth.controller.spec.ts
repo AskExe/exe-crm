@@ -115,7 +115,9 @@ describe('GoTrueAuthController', () => {
           // Unmanaged path (EXE_ORG_ID unset) never invokes role sync, but the
           // controller declares it as a constructor dependency.
           provide: RoleSyncService,
-          useValue: { applyCrmTier: jest.fn().mockResolvedValue({ status: 'noop' }) },
+          useValue: {
+            applyCrmTier: jest.fn().mockResolvedValue({ status: 'noop' }),
+          },
         },
         {
           provide: DataSource,

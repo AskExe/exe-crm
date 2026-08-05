@@ -33,7 +33,11 @@ describe('mapCapsToCrmTier', () => {
 
   it.each<{ label: string; caps: string[]; role: string | null }>([
     { label: 'empty caps', caps: [], role: 'none' },
-    { label: 'only non-crm caps', caps: ['wiki:admin', 'erp:admin'], role: 'member' },
+    {
+      label: 'only non-crm caps',
+      caps: ['wiki:admin', 'erp:admin'],
+      role: 'member',
+    },
   ])('maps managed-but-no-crm ($label) → none', ({ caps, role }) => {
     expect(mapCapsToCrmTier(caps, role)).toBe('none');
   });

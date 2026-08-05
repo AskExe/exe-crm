@@ -927,7 +927,7 @@ export class ConfigVariables {
     group: ConfigVariablesGroup.LOGGING,
     isSensitive: true,
     description:
-      'Shared secret sent as the X-Monitor-Key header when forwarding errors to exe-monitor-hub. Must equal the hub\'s EXE_MONITOR_KEY.',
+      "Shared secret sent as the X-Monitor-Key header when forwarding errors to exe-monitor-hub. Must equal the hub's EXE_MONITOR_KEY.",
     type: ConfigVariableType.STRING,
   })
   @IsOptional()

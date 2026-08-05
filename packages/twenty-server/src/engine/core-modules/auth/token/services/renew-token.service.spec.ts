@@ -230,9 +230,7 @@ describe('RenewTokenService', () => {
         ).rejects.toThrow(AuthException);
 
         expect(accessTokenService.generateAccessToken).not.toHaveBeenCalled();
-        expect(
-          refreshTokenService.generateRefreshToken,
-        ).not.toHaveBeenCalled();
+        expect(refreshTokenService.generateRefreshToken).not.toHaveBeenCalled();
         // Fails closed before revoking the still-valid refresh token.
         expect(updateSpy).not.toHaveBeenCalled();
       } finally {

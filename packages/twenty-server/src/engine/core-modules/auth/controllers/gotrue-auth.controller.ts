@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { type Request, type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
@@ -20,6 +29,8 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { isAdminTokenLoginEnabled } from 'src/engine/core-modules/auth/utils/is-admin-token-login-enabled.util';
+import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
+import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 import { AppPath } from 'twenty-shared/types';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
@@ -406,7 +417,11 @@ export class GoTrueAuthController {
   // Wiki's role-assignment / workspace-linking / audit-logging logic, and risked
   // schema drift. Cross-service provisioning must go through the owning service.
 
+  // Public by design (sign-in entry point, same as sso-auth/google-auth):
+  // identity is proven in-handler by GoTrue's password grant before any
+  // token is issued, so PublicEndpointGuard + NoPermissionGuard is correct.
   @Post('gotrue-login')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueLogin(
     @Body() body: { email?: string; password?: string; workspaceName?: string },
     @Res() res: Response,
@@ -559,7 +574,12 @@ export class GoTrueAuthController {
     }
   }
 
+  // Public by design (SSO bridge callback, same pattern as the OAuth
+  // callbacks): the caller is not yet authenticated with the CRM — identity
+  // is proven in-handler by cryptographically verifying the GoTrue JWT from
+  // the exe_sess cookie; every failure path redirects to sign-in.
   @Get('gotrue-callback')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
     const signInRedirect = this.generateSignInRedirect();
     const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
@@ -890,7 +910,11 @@ export class GoTrueAuthController {
     }
   }
 
+  // Public by design (login entry point): authentication happens in-handler —
+  // fail-closed feature gate (isAdminTokenLoginEnabled) plus timing-safe
+  // comparison of the presented token against ADMIN_TOKEN's sha256 hash.
   @Post('admin-token')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async adminTokenLogin(
     @Body() body: { token?: string },
     @Res() res: Response,

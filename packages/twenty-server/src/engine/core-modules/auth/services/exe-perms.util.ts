@@ -76,7 +76,9 @@ export const decodeJwtAppMetadata = (
 };
 
 const toCapArray = (caps: unknown): string[] =>
-  Array.isArray(caps) ? caps.filter((c): c is string => typeof c === 'string') : [];
+  Array.isArray(caps)
+    ? caps.filter((c): c is string => typeof c === 'string')
+    : [];
 
 /**
  * Map a capability set (+ optional preset role name) to a CRM enforcement
@@ -123,7 +125,10 @@ export const resolveExePermsForOrg = (
   if (!orgId) return { managed: false };
 
   const exePerms = appMetadata?.exe_perms as
-    | { orgs?: Record<string, ExePermsOrgEntry>; org?: string } & ExePermsOrgEntry
+    | ({
+        orgs?: Record<string, ExePermsOrgEntry>;
+        org?: string;
+      } & ExePermsOrgEntry)
     | undefined;
 
   if (!exePerms || typeof exePerms !== 'object') return { managed: false };
