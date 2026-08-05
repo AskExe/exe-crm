@@ -2,6 +2,8 @@ import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
 import { exeFoundryBold } from 'twenty-ui/theme';
 
+import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
+
 type AuthTab = 'credentials' | 'admin-token';
 
 // Design tokens — Exe Foundry Bold
@@ -397,22 +399,30 @@ export const SignInUpWorkspaceScopeForm = () => {
 
   return (
     <StyledContentContainer>
-      <StyledTabContainer>
-        <StyledTab
-          type="button"
-          isActive={activeTab === 'credentials'}
-          onClick={() => setActiveTab('credentials')}
-        >
-          Login
-        </StyledTab>
-        <StyledTab
-          type="button"
-          isActive={activeTab === 'admin-token'}
-          onClick={() => setActiveTab('admin-token')}
-        >
-          Token
-        </StyledTab>
-      </StyledTabContainer>
+      {/*
+        bug a703f4e1 — the "Token" (Admin Token) tab is a static-secret
+        owner-impersonation break-glass. Hidden unless a deployment explicitly
+        opts in, so it is never demoed on the standard login page. When hidden,
+        `activeTab` can only ever be 'credentials'.
+      */}
+      {REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN && (
+        <StyledTabContainer>
+          <StyledTab
+            type="button"
+            isActive={activeTab === 'credentials'}
+            onClick={() => setActiveTab('credentials')}
+          >
+            Login
+          </StyledTab>
+          <StyledTab
+            type="button"
+            isActive={activeTab === 'admin-token'}
+            onClick={() => setActiveTab('admin-token')}
+          >
+            Token
+          </StyledTab>
+        </StyledTabContainer>
+      )}
 
       {activeTab === 'credentials' && (
         <StyledAdminTokenForm onSubmit={handleCredentialsSubmit}>
