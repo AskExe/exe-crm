@@ -136,8 +136,14 @@ jobs:
 
           echo "Brand drift check passed."
 
+  # MAIN LANE — full Linux server test coverage, unchanged, but now runs ONLY
+  # on push to main. PRs and the merge queue get the same suite on the mac
+  # runner via `server-tests-mac` below (the PR-lane primary gate). Linux test
+  # coverage is NOT lost — every merge to main still runs this full job on the
+  # existing [self-hosted, linux, x64] runners.
   server-tests:
     name: Server unit tests
+    if: github.event_name == 'push'
     runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
     timeout-minutes: 40
     steps:
@@ -172,6 +178,52 @@ jobs:
         # twenty-client-sdk) first so they resolve in the jest module context;
         # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
         run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
+
+  # PR LANE (primary test gate) — runs the SAME server unit test suite on the
+  # dedicated self-hosted macOS runner (mac-m4-exe-crm, M4 / 16 cores). Check
+  # context: "Server unit tests (mac)". Runs ONLY on pull_request + merge_group
+  # (merge queue requires protection-required contexts to report on merge_group
+  # or the queue stalls).
+  #
+  # Why: the Linux build-my runners share one overloaded host — the full yarn
+  # workspace install + jest run took 30+ min there and queued behind other
+  # jobs. The mac runner is a dedicated 16-core box.
+  #
+  # `--maxWorkers=6` overrides the `--configuration=ci` pin of maxWorkers=1
+  # (nx CLI args take precedence over configuration values). maxWorkers=1 on
+  # Linux exists to avoid core thrash on the SHARED build-my host; the mac
+  # runner runs only this job, so 6 workers on 16 cores is safe headroom while
+  # leaving cores for the dev box's own load.
+  #
+  # macOS notes: no Docker on this runner (docker-dependent jobs stay on
+  # Linux — see security-scan); setup-node cache keys include runner OS+arch,
+  # so the macOS-arm64 yarn cache never collides with the Linux-x64 one.
+  server-tests-mac:
+    name: Server unit tests (mac)
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build shared
+        run: npx nx build twenty-shared
+
+      - name: Run server tests
+        # Same fail-closed semantics as the main-lane `server-tests` job above
+        # (see its comment for the coverage-threshold / continue-on-error
+        # history). KEEP THE TWO COMMANDS IN SYNC apart from --maxWorkers.
+        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests
 
   security-scan:
     name: Security scan (secrets, deps, container config)
