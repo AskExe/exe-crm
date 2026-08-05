@@ -1,11 +1,10 @@
 import { Injectable, Logger, type NestMiddleware } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 
 import { createHash, timingSafeEqual } from 'crypto';
 import { type NextFunction, type Request, type Response } from 'express';
-import { Repository } from 'typeorm';
 
-import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { getRequestOrigin } from 'src/utils/get-request-origin';
 
 /** SHA-256 hash a string and return a Buffer for timingSafeEqual. */
 const sha256 = (value: string): Buffer =>
@@ -32,6 +31,18 @@ class AdminTokenRateLimiter {
     return recent.length >= this.maxAttempts;
   }
 
+  getRetryAfterSeconds(ip: string): number {
+    const now = Date.now();
+    const timestamps = this.attempts.get(ip) ?? [];
+    const oldest = timestamps[0];
+
+    if (oldest === undefined) {
+      return Math.ceil(this.windowMs / 1000);
+    }
+
+    return Math.max(1, Math.ceil((oldest + this.windowMs - now) / 1000));
+  }
+
   record(ip: string): void {
     const now = Date.now();
     const timestamps = this.attempts.get(ip) ?? [];
@@ -48,8 +59,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
   private readonly rateLimiter = new AdminTokenRateLimiter(10, 60_000);
 
   constructor(
-    @InjectRepository(WorkspaceEntity)
-    private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    private readonly workspaceDomainsService: WorkspaceDomainsService,
   ) {
     const raw = process.env.EXE_CRM_ADMIN_TOKEN;
 
@@ -58,7 +68,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
     }
   }
 
-  async use(req: Request, _res: Response, next: NextFunction) {
+  async use(req: Request, res: Response, next: NextFunction) {
     if (!this.adminTokenHash) {
       next();
 
@@ -79,18 +89,22 @@ export class AdminTokenMiddleware implements NestMiddleware {
       req.socket.remoteAddress ??
       'unknown';
 
-    // Rate-limit check before any comparison
+    // Check failed-attempt rate limit before any comparison
     if (this.rateLimiter.isRateLimited(clientIp)) {
-      this.logger.warn(
-        `Admin token rate limit exceeded for IP=${clientIp}`,
-      );
+      this.logger.warn(`Admin token rate limit exceeded for IP=${clientIp}`);
 
-      next();
+      res.setHeader(
+        'Retry-After',
+        this.rateLimiter.getRetryAfterSeconds(clientIp).toString(),
+      );
+      res.status(429).json({
+        error: 'rate_limit_exceeded',
+        error_description:
+          'Too many failed admin token attempts, please try again later',
+      });
 
       return;
     }
-
-    this.rateLimiter.record(clientIp);
 
     // Timing-safe comparison using SHA-256 hashes
     const incomingHash = sha256(token);
@@ -99,6 +113,8 @@ export class AdminTokenMiddleware implements NestMiddleware {
       incomingHash.length !== this.adminTokenHash.length ||
       !timingSafeEqual(incomingHash, this.adminTokenHash)
     ) {
+      this.rateLimiter.record(clientIp);
+
       this.logger.warn(
         `Admin token rejected — IP=${clientIp} path=${req.path}`,
       );
@@ -108,12 +124,22 @@ export class AdminTokenMiddleware implements NestMiddleware {
       return;
     }
 
-    const workspace = await this.workspaceRepository.findOne({
-      where: {},
-      order: { createdAt: 'ASC' },
-    });
+    // Bind the admin-token context to the tenant derived from the request
+    // origin (subdomain / custom domain), or the single default workspace in
+    // single-workspace deployments. Never select a global first/oldest
+    // workspace — that would attach admin context to an arbitrary tenant.
+    const origin = getRequestOrigin(req);
+    const workspace = origin
+      ? await this.workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+          origin,
+        )
+      : null;
 
     if (!workspace) {
+      this.logger.warn(
+        `Admin token accepted but no tenant resolved for origin=${origin ?? 'unknown'} path=${req.path} — passing through unauthenticated`,
+      );
+
       next();
 
       return;

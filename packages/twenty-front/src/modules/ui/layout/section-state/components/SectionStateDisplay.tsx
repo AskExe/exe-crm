@@ -1,11 +1,19 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
-import { IconAlertCircle, IconAlertTriangle, IconRefresh } from 'twenty-ui/display';
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconRefresh,
+} from 'twenty-ui/display';
 import { Button } from 'twenty-ui/input';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { useContext } from 'react';
 
-export type SectionStateVariant = 'loading' | 'error' | 'empty' | 'connectionError';
+export type SectionStateVariant =
+  | 'loading'
+  | 'error'
+  | 'empty'
+  | 'connectionError';
 
 type SectionStateDisplayProps = {
   variant: SectionStateVariant;
@@ -53,8 +61,13 @@ const StyledSkeletonBar = styled.div`
   height: 12px;
 
   @keyframes pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 `;
 
@@ -91,13 +104,19 @@ export const SectionStateDisplay = ({
     );
   }
 
-  const defaultTitles: Record<Exclude<SectionStateVariant, 'loading'>, string> = {
+  const defaultTitles: Record<
+    Exclude<SectionStateVariant, 'loading'>,
+    string
+  > = {
     error: t`Something went wrong`,
     empty: t`No data available`,
     connectionError: t`Unable to connect`,
   };
 
-  const defaultSubtitles: Record<Exclude<SectionStateVariant, 'loading'>, string> = {
+  const defaultSubtitles: Record<
+    Exclude<SectionStateVariant, 'loading'>,
+    string
+  > = {
     error: t`This section encountered an error. Try refreshing.`,
     empty: t`There's nothing to display here yet.`,
     connectionError: t`Could not reach the database. This section will reload when the connection is restored.`,
@@ -106,7 +125,8 @@ export const SectionStateDisplay = ({
   const displayTitle = title ?? defaultTitles[variant];
   const displaySubtitle = subtitle ?? defaultSubtitles[variant];
 
-  const Icon = variant === 'connectionError' ? IconAlertTriangle : IconAlertCircle;
+  const Icon =
+    variant === 'connectionError' ? IconAlertTriangle : IconAlertCircle;
   const iconColor =
     variant === 'empty'
       ? theme.font.color.light

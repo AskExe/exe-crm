@@ -28,23 +28,21 @@ const isNetworkError = (error: Error): boolean => {
     msg.includes('econnrefused') ||
     msg.includes('socket hang up') ||
     msg.includes('timeout') ||
-    error.name === 'TypeError' && msg.includes('fetch')
+    (error.name === 'TypeError' && msg.includes('fetch'))
   );
 };
 
 type SectionErrorFallbackProps = FallbackProps;
 
-const SectionErrorFallback = ({ error, resetErrorBoundary }: SectionErrorFallbackProps) => {
+const SectionErrorFallback = ({
+  error,
+  resetErrorBoundary,
+}: SectionErrorFallbackProps) => {
   const variant: SectionStateVariant = isNetworkError(error)
     ? 'connectionError'
     : 'error';
 
-  return (
-    <SectionStateDisplay
-      variant={variant}
-      onRetry={resetErrorBoundary}
-    />
-  );
+  return <SectionStateDisplay variant={variant} onRetry={resetErrorBoundary} />;
 };
 
 export const SectionErrorBoundary = ({

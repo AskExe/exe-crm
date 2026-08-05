@@ -4,8 +4,10 @@
   "repo": "AskExe/exe-crm",
   "service": "exe-crm",
   "packageName": "twenty",
-  "version": "0.9.48",
-  "image": "ghcr.io/askexe/exe-crm:v0.9.48",
+  "version": "0.9.54",
+  "image": "ghcr.io/askexe/exe-crm:v0.9.54",
+  "imageDigest": "sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
+  "imageRef": "ghcr.io/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {
     "required": true,
@@ -27,15 +29,15 @@
       }
     ],
     "migrations": {
-      "command": "yarn database:migrate:prod",
+      "command": "# no-op — the exe-crm image entrypoint runs setup + migrations automatically on server boot (packages/twenty-docker/twenty/entrypoint.sh). Do not run migrations from the stack-update host context; the yarn database:migrate:prod script lives under packages/twenty-server and is not runnable at repo root.",
       "rollback": "Restore previous CRM_IMAGE_TAG and database backup if migration is non-additive. CRM migrations must be reviewed before stack manifest publication."
     },
     "config": {
       "envExample": "packages/twenty-docker/.env.example",
       "requiredEnv": [
         "CRM_IMAGE_TAG",
-        "CRM_SERVER_URL",
-        "CRM_APP_SECRET",
+        "SERVER_URL",
+        "APP_SECRET",
         "PG_DATABASE_URL",
         "REDIS_URL"
       ]
@@ -44,5 +46,5 @@
     "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config.",
     "releaseLine": "v0.9 private/customer pilot; v1.0 is public-beta stable."
   },
-  "sourceVersion": "0.9.48"
+  "sourceVersion": "0.9.51"
 }

@@ -43,6 +43,9 @@ export class PersonWorkspaceEntity extends BaseWorkspaceEntity {
   phone: string | null;
   phones: PhonesMetadata;
   city: string | null;
+  whatsappId: string | null;
+  whatsappProfilePictureUrl: string | null;
+  whatsappLastMessageAt: string | null;
   /** @deprecated Use `avatarFile` field instead */
   avatarUrl: string | null;
   avatarFile: FileOutput[] | null;

@@ -7,10 +7,27 @@ image:
 nameOverride: ""
 fullnameOverride: ""
 
-# Global security context (uid/gid for all pods)
+# Global pod-level security context (uid/gid for server/worker pods).
+# Hardening (bug be6e91fe): non-root + RuntimeDefault seccomp.
 securityContext:
+  runAsNonRoot: true
   runAsUser: 1000
+  runAsGroup: 1000
   fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context applied to app and init containers.
+# readOnlyRootFilesystem is backed by emptyDir scratch mounts (/tmp etc.).
+containerSecurityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
 
 # Storage backend: local or s3
 storage:
@@ -125,6 +142,14 @@ db:
     image:
       repository: ghcr.io/askexe/exe-crm-postgres-spilo
       tag: 3.3-p2
+    # Spilo runs postgres as uid/gid 101/103.
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 101
+      runAsGroup: 103
+      fsGroup: 103
+      seccompProfile:
+        type: RuntimeDefault
     resources:
       requests:
         cpu: 250m
@@ -162,6 +187,14 @@ redisInternal:
     repository: redis/redis-stack-server
     tag: 7.2.0-v10
     pullPolicy: IfNotPresent
+  # redis-stack-server runs as uid/gid 999.
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     requests:
       cpu: 250m

@@ -3,7 +3,9 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { ErrorForwardingFilter } from '../error-forwarding.filter';
 import { ErrorForwardingService } from '../error-forwarding.service';
 
-const createMockHost = (overrides: Partial<{ url: string; method: string }> = {}) => {
+const createMockHost = (
+  overrides: Partial<{ url: string; method: string }> = {},
+) => {
   const mockRequest = {
     originalUrl: overrides.url ?? '/api/test',
     url: overrides.url ?? '/api/test',

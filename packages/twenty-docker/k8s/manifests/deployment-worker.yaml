@@ -21,10 +21,31 @@ spec:
       labels:
         app: twentycrm-worker
     spec:
+      # Hardening (bug be6e91fe): non-root, no privilege escalation, no caps,
+      # read-only root filesystem with explicit writable scratch mounts.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: twentycrm
-          image: ghcr.io/askexe/exe-crm:v0.9.3
+          image: ghcr.io/askexe/exe-crm:v0.9.51
           imagePullPolicy: Always
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: SERVER_URL
               value: 'https://crm.example.com:443'
@@ -44,6 +65,9 @@ spec:
           command:
             - yarn
             - worker:prod
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
           resources:
             requests:
               memory: '1024Mi'

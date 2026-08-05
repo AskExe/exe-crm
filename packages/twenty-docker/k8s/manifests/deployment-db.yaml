@@ -21,14 +21,42 @@ spec:
       labels:
         app: twentycrm-db
     spec:
+      # Hardening (bug be6e91fe): non-root (spilo postgres uid/gid 101/103),
+      # no privilege escalation, no caps, read-only root filesystem. Spilo
+      # writes runtime config/sockets/logs outside pgdata, so those paths get
+      # writable emptyDir mounts.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 103
+        fsGroup: 103
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: twentycrm-db-data
           persistentVolumeClaim:
             claimName: twentycrm-db-pvc
+        - name: postgres-home
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: var-log
+          emptyDir: {}
       containers:
         - name: twentycrm
           image: twentycrm/twenty-postgres-spilo:16
           imagePullPolicy: Always
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: PGUSER_SUPERUSER
               value: "postgres"
@@ -52,7 +80,15 @@ spec:
           stdin: true
           tty: true
           volumeMounts:
+            - mountPath: /home/postgres
+              name: postgres-home
             - mountPath: /home/postgres/pgdata
               name: twentycrm-db-data
+            - mountPath: /run
+              name: run
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /var/log
+              name: var-log
       dnsPolicy: ClusterFirst
       restartPolicy: Always

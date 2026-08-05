@@ -21,9 +21,9 @@ import { useMemo } from 'react';
 
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
 import { Loader } from 'twenty-ui/feedback';
+import { exeFoundryBold } from 'twenty-ui/theme';
 import { AnimatedEaseIn } from 'twenty-ui/utilities';
 
-// oxlint-disable-next-line exe-crm/no-hardcoded-colors
 const StyledPageContainer = styled.div`
   align-items: center;
   display: flex;
@@ -35,7 +35,7 @@ const StyledPageContainer = styled.div`
 `;
 
 const StyledSubtitle = styled.p`
-  color: #a09caf;
+  color: ${exeFoundryBold.dark.font.color.secondary};
   font-family: 'Manrope', sans-serif;
   font-size: 14px;
   font-weight: 400;

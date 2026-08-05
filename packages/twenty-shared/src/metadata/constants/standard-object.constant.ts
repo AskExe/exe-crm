@@ -2346,6 +2346,15 @@ export const STANDARD_OBJECTS = {
       jobTitle: { universalIdentifier: '20202020-b0d0-415a-bef9-640a26dacd9b' },
       phones: { universalIdentifier: '20202020-0638-448e-8825-439134618022' },
       city: { universalIdentifier: '20202020-5243-4ffb-afc5-2c675da41346' },
+      whatsappId: {
+        universalIdentifier: 'c010473e-eb77-4e5a-ba84-008be4cfcf77',
+      },
+      whatsappProfilePictureUrl: {
+        universalIdentifier: '2833c1ac-fc3b-427d-b02c-5521a2bf2f1f',
+      },
+      whatsappLastMessageAt: {
+        universalIdentifier: '0b69665f-fef1-4ac5-9862-ee74913afa18',
+      },
       avatarUrl: {
         universalIdentifier: '20202020-b8a6-40df-961c-373dc5d2ec21',
       },

@@ -21,6 +21,7 @@ import { MetadataGraphQLApiModule } from 'src/engine/api/graphql/metadata-graphq
 import { McpModule } from 'src/engine/api/mcp/mcp.module';
 import { RestApiModule } from 'src/engine/api/rest/rest-api.module';
 import { WorkspaceAuthContextMiddleware } from 'src/engine/core-modules/auth/middlewares/workspace-auth-context.middleware';
+import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { DataloaderModule } from 'src/engine/dataloaders/dataloader.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
@@ -72,7 +73,10 @@ const MIGRATED_REST_METHODS = [
     McpModule,
     DataSourceModule,
     MiddlewareModule,
-    // AdminTokenMiddleware needs WorkspaceEntity repo in AppModule scope
+    // Middleware applied via configure() below resolve their dependencies in
+    // AppModule scope: AdminTokenMiddleware needs WorkspaceDomainsService
+    // (bug 928a4140) and the WorkspaceEntity repo must stay available here.
+    WorkspaceDomainsModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
     WorkspaceMetadataVersionModule,
     // I18n module for translations
@@ -125,7 +129,11 @@ export class AppModule {
 
     for (const method of MIGRATED_REST_METHODS) {
       consumer
-        .apply(AdminTokenMiddleware, RestCoreMiddleware, WorkspaceAuthContextMiddleware)
+        .apply(
+          AdminTokenMiddleware,
+          RestCoreMiddleware,
+          WorkspaceAuthContextMiddleware,
+        )
         .forRoutes({ path: 'rest/*path', method });
     }
 

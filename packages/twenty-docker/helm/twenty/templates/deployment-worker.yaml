@@ -28,9 +28,17 @@ spec:
     spec:
       securityContext:
 {{- toYaml .Values.securityContext | nindent 8 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
       initContainers:
         - name: wait-for-db
           image: postgres:16-alpine
+          securityContext:
+{{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           command:
             - sh
             - -c
@@ -47,6 +55,11 @@ spec:
           {{- $img := include "twenty.worker.image" . }}
           image: {{ include "twenty.image.repository" $img }}:{{ include "twenty.image.tag" $img }}
           imagePullPolicy: {{ include "twenty.image.pullPolicy" $img }}
+          securityContext:
+{{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           command:
 {{- toYaml .Values.worker.command | nindent 12 }}
           env:

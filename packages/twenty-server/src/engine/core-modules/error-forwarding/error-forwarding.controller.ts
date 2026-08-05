@@ -1,5 +1,13 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 
+import { ErrorReportDto } from './dtos/error-report.dto';
 import { ErrorForwardingService } from './error-forwarding.service';
 
 // Receives frontend error reports and proxies them to exe-monitor-hub.
@@ -12,23 +20,17 @@ export class ErrorForwardingController {
 
   @Post()
   @HttpCode(202)
-  receiveError(
-    @Body()
-    body: {
-      service: string;
-      level: 'error' | 'fatal' | 'warn';
-      type: 'frontend' | 'backend';
-      message: string;
-      stack: string | null;
-      url: string;
-      method: string;
-      status_code: number;
-      user_id: string;
-      release: string;
-      timestamp: string;
-      metadata: Record<string, unknown>;
-    },
-  ): { accepted: boolean } {
+  // Validate shape/types but stay permissive: `whitelist: false` keeps any
+  // extra fields a future monitor client might add, so this only rejects
+  // genuinely malformed payloads without breaking the forwarding contract.
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: false,
+      forbidNonWhitelisted: false,
+    }),
+  )
+  receiveError(@Body() body: ErrorReportDto): { accepted: boolean } {
     this.errorForwardingService.forwardFrontendError(body);
 
     return { accepted: true };

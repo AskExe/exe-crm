@@ -23,7 +23,7 @@ variable "twentycrm_app_name" {
 
 variable "twentycrm_server_image" {
   type        = string
-  default     = "ghcr.io/askexe/exe-crm:v0.9.3"
+  default     = "ghcr.io/askexe/exe-crm:v0.9.51"
   description = "Exe CRM server image for the server deployment. Pin this to the stack.release.json image tag; this value is also used for workers."
 }
 

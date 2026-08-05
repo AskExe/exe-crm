@@ -23,7 +23,20 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: db
     spec:
+      # Hardening (bug be6e91fe): spilo runs postgres as uid/gid 101/103 and
+      # writes runtime config/sockets/logs outside pgdata — those paths get
+      # writable emptyDir mounts under readOnlyRootFilesystem.
+      securityContext:
+{{- toYaml .Values.db.internal.securityContext | nindent 8 }}
       volumes:
+        - name: postgres-home
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: var-log
+          emptyDir: {}
         {{- if .Values.db.internal.persistence.enabled }}
         - name: db-data
           persistentVolumeClaim:
@@ -33,6 +46,8 @@ spec:
         - name: db
           image: {{ .Values.db.internal.image.repository }}:{{ .Values.db.internal.image.tag }}
           imagePullPolicy: {{ .Values.db.internal.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+{{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:
             - name: PGUSER_SUPERUSER
               valueFrom:
@@ -54,9 +69,17 @@ spec:
               protocol: TCP
           resources:
             {{- toYaml .Values.db.internal.resources | nindent 12 }}
-          {{- if .Values.db.internal.persistence.enabled }}
           volumeMounts:
+            - name: postgres-home
+              mountPath: /home/postgres
+            {{- if .Values.db.internal.persistence.enabled }}
             - name: db-data
               mountPath: /home/postgres/pgdata
-          {{- end }}
+            {{- end }}
+            - name: run
+              mountPath: /run
+            - name: tmp
+              mountPath: /tmp
+            - name: var-log
+              mountPath: /var/log
 {{- end }}
