@@ -48,7 +48,14 @@ jobs:
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.load(r)
 
-          deadline = time.time() + 1800  # 30 min, then fail closed
+          # bug e3b77fc8: this job runs on the SAME self-hosted pool as CI.
+          # exe-crm has ONE runner, so a long poll here STARVES the very CI run
+          # we are waiting for — it can never start while we hold the runner.
+          # Keep the grace window short: it only helps when CI is already
+          # in-flight on other capacity. Otherwise release the runner fast so CI
+          # can run, then re-dispatch this workflow.
+          GRACE = int(os.environ.get('REQUIRE_GREEN_CI_GRACE_SECS', '300'))
+          deadline = time.time() + GRACE
           while True:
               runs = None
               try:
@@ -71,7 +78,13 @@ jobs:
                                 f"(not success). Refusing to release. Failing closed.")
                           sys.exit(1)
               if time.time() > deadline:
-                  print(f"::error::Timed out waiting for green CI on {sha}. Failing closed.")
+                  print(f"::error::CI for {sha} has not completed within the grace "
+                        f"window. Failing closed WITHOUT releasing the runner further.")
+                  print("::error::This is expected when CI has not run yet: this gate "
+                        "shares the single self-hosted runner with CI (bug e3b77fc8), so "
+                        "waiting here prevents CI from ever starting. Remedy: let CI "
+                        "complete on this commit, then re-dispatch this workflow "
+                        "(gh run rerun <id> --failed, or re-push the tag).")
                   sys.exit(1)
               time.sleep(30)
           PY
