@@ -88,8 +88,14 @@ const buildController = (
   const workspaceRepository = {
     findOne: jest.fn().mockResolvedValue(workspace),
   };
+  // Not used by handleManagedLogin, but required by the constructor signature
+  // (the SSO-bridge callback path uses it).
+  const accessTokenService = {
+    verifyGoTrueToken: jest.fn(),
+  };
 
   const controller = new GoTrueAuthController(
+    accessTokenService as any,
     loginTokenService as any,
     signInUpService as any,
     workspaceService as any,
