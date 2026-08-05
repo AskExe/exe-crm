@@ -142,6 +142,10 @@ describe('GoTrueAuthController', () => {
     process.env.GOTRUE_URL = 'http://gotrue:9999';
     process.env.EXE_CRM_ADMIN_TOKEN = 'admin-secret-123';
     process.env.SERVER_URL = 'http://localhost:3000';
+    // Enable the break-glass admin-token path for the default (enabled) suite;
+    // individual tests override this to exercise the disabled/managed gates.
+    process.env.ENABLE_ADMIN_TOKEN_LOGIN = 'true';
+    delete process.env.EXE_ORG_ID;
 
     userRepo = { findOne: jest.fn() };
     userWorkspaceRepo = { findOne: jest.fn() };
@@ -547,6 +551,37 @@ describe('GoTrueAuthController', () => {
   /* ================================================================ */
 
   describe('adminTokenLogin', () => {
+    it('returns 401 with the correct admin token when the feature is disabled', async () => {
+      delete process.env.ENABLE_ADMIN_TOKEN_LOGIN;
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      // Fails closed before touching tenant resolution.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('returns 401 with the correct admin token in a managed deployment', async () => {
+      process.env.EXE_ORG_ID = 'org-managed';
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
     it('returns 400 if token is missing', async () => {
       const res = mockResponse();
 

@@ -19,6 +19,7 @@ import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { isAdminTokenLoginEnabled } from 'src/engine/core-modules/auth/utils/is-admin-token-login-enabled.util';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 import { AppPath } from 'twenty-shared/types';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
@@ -895,6 +896,22 @@ export class GoTrueAuthController {
     @Res() res: Response,
     @Req() req?: Request,
   ) {
+    // ── FIX (admin-token backdoor) — fail closed ──────────────────────────────
+    // The React tab was hidden earlier, but this SERVER endpoint stayed
+    // reachable. Gate it: disabled for MANAGED deployments (`EXE_ORG_ID` set —
+    // no static-secret owner-impersonation backdoor is allowed) and OFF by
+    // default otherwise (opt-in via `ENABLE_ADMIN_TOKEN_LOGIN=true`). Reject
+    // with 401 before inspecting the token so a disabled deployment leaks
+    // nothing about configuration state.
+    if (!isAdminTokenLoginEnabled()) {
+      this.logger.warn(
+        'Admin-token login rejected — disabled (managed deployment or ' +
+          'ENABLE_ADMIN_TOKEN_LOGIN not set)',
+      );
+
+      return res.status(401).json({ error: 'Authentication failed' });
+    }
+
     const { token } = body ?? {};
 
     if (!token) {

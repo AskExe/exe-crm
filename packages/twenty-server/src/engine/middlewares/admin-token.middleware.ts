@@ -3,6 +3,7 @@ import { Injectable, Logger, type NestMiddleware } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'crypto';
 import { type NextFunction, type Request, type Response } from 'express';
 
+import { isAdminTokenLoginEnabled } from 'src/engine/core-modules/auth/utils/is-admin-token-login-enabled.util';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 
@@ -120,6 +121,22 @@ export class AdminTokenMiddleware implements NestMiddleware {
       );
 
       next();
+
+      return;
+    }
+
+    // ── FIX (admin-token backdoor) — fail closed ──────────────────────────────
+    // The token matched, but the static-secret admin path is disabled for this
+    // deployment: MANAGED (`EXE_ORG_ID` set) never permits a static-secret
+    // owner-impersonation backdoor, and unmanaged deployments must opt in with
+    // `ENABLE_ADMIN_TOKEN_LOGIN=true`. Refuse with 401 rather than granting an
+    // owner session.
+    if (!isAdminTokenLoginEnabled()) {
+      this.logger.warn(
+        `Admin token presented but disabled — IP=${clientIp} path=${req.path}`,
+      );
+
+      res.status(401).json({ error: 'Authentication failed' });
 
       return;
     }
