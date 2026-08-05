@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
+import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -109,6 +110,12 @@ describe('GoTrueAuthController', () => {
         {
           provide: WorkspaceDomainsService,
           useValue: workspaceDomainsService,
+        },
+        {
+          // Unmanaged path (EXE_ORG_ID unset) never invokes role sync, but the
+          // controller declares it as a constructor dependency.
+          provide: RoleSyncService,
+          useValue: { applyCrmTier: jest.fn().mockResolvedValue({ status: 'noop' }) },
         },
         {
           provide: DataSource,
@@ -631,6 +638,40 @@ describe('GoTrueAuthController', () => {
         }),
       );
       expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('pins the admin token to EXE_ORG_WORKSPACE_ID and IGNORES the client Host when managed', async () => {
+      // Managed deployment: the canonical workspace must win over any
+      // Host-derived tenant, closing the static-token cross-tenant takeover.
+      process.env.EXE_ORG_WORKSPACE_ID = 'ws-canonical';
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+
+      workspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_WORKSPACE,
+        id: 'ws-canonical',
+      });
+      userWorkspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_USER_WORKSPACE,
+        workspaceId: 'ws-canonical',
+      });
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      // The mutable, client-controlled Host path is NOT consulted.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+      expect(workspaceRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'ws-canonical' },
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ isAdminToken: true }),
+      );
     });
   });
 });

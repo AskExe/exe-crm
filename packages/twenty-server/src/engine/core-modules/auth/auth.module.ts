@@ -61,6 +61,8 @@ import { ConnectedAccountDataAccessModule } from 'src/engine/metadata-modules/co
 import { MessageChannelDataAccessModule } from 'src/engine/metadata-modules/message-channel/data-access/message-channel-data-access.module';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
+import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
+import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { CalendarChannelSyncStatusService } from 'src/modules/calendar/common/services/calendar-channel-sync-status.service';
 import { ConnectedAccountModule } from 'src/modules/connected-account/connected-account.module';
@@ -72,6 +74,7 @@ import { AuthResolver } from './auth.resolver';
 import { AuthOAuthAuthorizationService } from './services/auth-oauth-authorization.service';
 import { AuthSSOConnectedAccountService } from './services/auth-sso-connected-account.service';
 import { AuthService } from './services/auth.service';
+import { RoleSyncService } from './services/role-sync.service';
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
 @Module({
@@ -119,6 +122,8 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     CoreEntityCacheModule,
     SecureHttpClientModule,
     FileModule,
+    RoleModule,
+    UserRoleModule,
   ],
   controllers: [
     GoTrueAuthController,
@@ -155,6 +160,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     UpdateConnectedAccountOnReconnectService,
     TransientTokenService,
     AuthSsoService,
+    RoleSyncService,
   ],
   exports: [
     AccessTokenService,

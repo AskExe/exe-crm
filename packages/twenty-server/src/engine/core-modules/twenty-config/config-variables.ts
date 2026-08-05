@@ -924,6 +924,16 @@ export class ConfigVariables {
   ERROR_REPORTING_ENABLED = true;
 
   @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LOGGING,
+    isSensitive: true,
+    description:
+      'Shared secret sent as the X-Monitor-Key header when forwarding errors to exe-monitor-hub. Must equal the hub\'s EXE_MONITOR_KEY.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  MONITOR_API_KEY: string;
+
+  @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SUPPORT_CHAT_CONFIG,
     description: 'Driver used for support chat integration',
     type: ConfigVariableType.ENUM,
