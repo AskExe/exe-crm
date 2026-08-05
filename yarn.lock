@@ -45721,8 +45721,8 @@ __metadata:
   linkType: hard
 
 "react-grid-layout@npm:^1.5.2":
-  version: 1.5.2
-  resolution: "react-grid-layout@npm:1.5.2"
+  version: 1.5.4
+  resolution: "react-grid-layout@npm:1.5.4"
   dependencies:
     clsx: "npm:^2.1.1"
     fast-equals: "npm:^4.0.3"
@@ -45733,7 +45733,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.3.0"
     react-dom: ">= 16.3.0"
-  checksum: 10c0/b6605d1435fe116c3720d168100a5a08da924c6905686fe8a486c33b82abbde8ccacbb59e5c6243fa52f5e808ad393a7bdf0c09a3446ebf76efe43f29d9f13ee
+  checksum: 10c0/f99791c8cdb1dae3c192789e83607207d271d390321d8cccca08739ab0f44cc78a873caf5f6b8961b673ddf2f52c0c2d50de1974a9a2b9c4843a75a9761663f6
   languageName: node
   linkType: hard
 
