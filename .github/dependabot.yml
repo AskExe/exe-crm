@@ -9,7 +9,7 @@ updates:
     open-pull-requests-limit: 3
     versioning-strategy: "lockfile-only"
     assignees:
-      - "mabdullahabaid"
+      - "henrylove0"
     ignore:
       - dependency-name: "@graphql-yoga/nestjs"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
@@ -26,7 +26,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 2
     assignees:
-      - "mabdullahabaid"
+      - "henrylove0"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -34,4 +34,4 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 2
     assignees:
-      - "mabdullahabaid"
+      - "henrylove0"
