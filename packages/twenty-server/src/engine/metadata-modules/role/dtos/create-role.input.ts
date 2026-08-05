@@ -12,6 +12,15 @@ export class CreateRoleInput {
   @HideField()
   universalIdentifier?: string;
 
+  /**
+   * System-owned roles are created with `isEditable: false` so they cannot be
+   * mutated or deleted through the normal (non-system) migration path. Hidden
+   * from the GraphQL API — only trusted server-side callers may set it.
+   * Defaults to `true` (an ordinary, user-editable custom role).
+   */
+  @HideField()
+  isEditable?: boolean;
+
   @IsString()
   @Field({ nullable: false })
   label: string;

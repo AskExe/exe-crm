@@ -21,3 +21,14 @@ export const REACT_APP_SERVER_BASE_URL =
   window._env_?.REACT_APP_SERVER_BASE_URL ||
   process.env.REACT_APP_SERVER_BASE_URL ||
   getDefaultUrl();
+
+/**
+ * bug a703f4e1 — the static "Admin Token" login is an owner-impersonation
+ * break-glass (a single shared secret mints a session as the workspace owner).
+ * It MUST NOT be visible/demoed by default. Show the tab ONLY when a deployment
+ * explicitly opts in (`REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN=true`); otherwise the
+ * login page never surfaces it.
+ */
+export const REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN =
+  (window._env_?.REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN ||
+    process.env.REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN) === 'true';
