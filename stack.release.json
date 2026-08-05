@@ -4,10 +4,10 @@
   "repo": "AskExe/exe-crm",
   "service": "exe-crm",
   "packageName": "twenty",
-  "version": "0.9.51",
-  "image": "ghcr.io/askexe/exe-crm:v0.9.51",
+  "version": "0.9.54",
+  "image": "ghcr.io/askexe/exe-crm:v0.9.54",
   "imageDigest": "sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
-  "imageRef": "ghcr.io/askexe/exe-crm:v0.9.51@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
+  "imageRef": "ghcr.io/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {
     "required": true,

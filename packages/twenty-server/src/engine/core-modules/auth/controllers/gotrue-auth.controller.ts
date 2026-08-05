@@ -1,9 +1,10 @@
-import { Body, Controller, Logger, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
 import { type Request, type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
@@ -13,7 +14,19 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
+import { AppPath } from 'twenty-shared/types';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+
+type GoTrueLoginContext = {
+  user: UserEntity;
+  workspace: WorkspaceEntity;
+  userWorkspace: UserWorkspaceEntity | null;
+};
+
+type ResolveGoTrueLoginContextResult =
+  | { type: 'success'; ctx: GoTrueLoginContext }
+  | { type: 'needsSetup' }
+  | { type: 'error'; statusCode: number; error: string };
 
 /**
  * /api/auth/gotrue-login  — email+password via GoTrue → redirect to /verify
@@ -35,6 +48,7 @@ export class GoTrueAuthController {
   private readonly serverBaseUrl: string | undefined;
 
   constructor(
+    private readonly accessTokenService: AccessTokenService,
     private readonly loginTokenService: LoginTokenService,
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
@@ -158,66 +172,57 @@ export class GoTrueAuthController {
     return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
 
-  // NOTE: CRM does NOT provision Wiki accounts. The Wiki owns its own data
-  // (public.workspaces / public.users / public.workspace_users) and provisions
-  // its user lazily on first Wiki login via the shared GoTrue identity
-  // (exe-wiki POST /api/request-token → resolveGoTrueUser). CRM writing those
-  // tables directly violated the Wiki data-ownership boundary, duplicated the
-  // Wiki's role-assignment / workspace-linking / audit-logging logic, and risked
-  // schema drift. Cross-service provisioning must go through the owning service.
-
-  @Post('gotrue-login')
-  async gotrueLogin(
-    @Body() body: { email?: string; password?: string; workspaceName?: string },
-    @Res() res: Response,
-    @Req() req?: Request,
-  ) {
-    const { email, password, workspaceName } = body ?? {};
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+  private generateSignInRedirect(): string {
+    if (!this.serverBaseUrl) {
+      return AppPath.SignInUp;
     }
 
-    if (!this.gotrueUrl) {
-      return res.status(500).json({ error: 'GoTrue is not configured' });
+    return `${this.serverBaseUrl.replace(/\/$/, '')}${AppPath.SignInUp}`;
+  }
+
+  private getRequestCookie(req: Request | undefined, key: string) {
+    const cookieHeader = req?.headers.cookie;
+    const cookies = Array.isArray(cookieHeader)
+      ? cookieHeader.join(';')
+      : cookieHeader;
+
+    if (!cookies) {
+      return undefined;
     }
 
-    // Step 1: Authenticate with GoTrue
-    try {
-      const gotrueRes = await fetch(
-        `${this.gotrueUrl}/token?grant_type=password`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          signal: AbortSignal.timeout(10_000),
-        },
-      );
+    for (const cookie of cookies.split(';')) {
+      const trimmedCookie = cookie.trim();
+      const separatorIndex = trimmedCookie.indexOf('=');
 
-      if (!gotrueRes.ok) {
-        const errBody = await gotrueRes.json().catch(() => ({}));
-
-        this.logger.warn(
-          `GoTrue auth failed for ${email}: status=${gotrueRes.status} ` +
-            `error=${errBody?.error_description || errBody?.msg || 'unknown'}`,
-        );
-
-        return res.status(401).json({
-          error: 'Authentication failed',
-        });
+      if (separatorIndex === -1) {
+        continue;
       }
 
-      // Identity is proven by gotrueRes.ok; drain the body so the socket is
-      // released. CRM no longer needs any GoTrue claims here.
-      await gotrueRes.json().catch(() => undefined);
-    } catch (err) {
-      this.logger.error(`GoTrue request failed: ${err}`);
+      if (trimmedCookie.slice(0, separatorIndex) !== key) {
+        continue;
+      }
 
-      return res
-        .status(502)
-        .json({ error: 'Authentication service unavailable' });
+      const value = trimmedCookie.slice(separatorIndex + 1);
+
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value;
+      }
     }
 
+    return undefined;
+  }
+
+  private async resolveGoTrueLoginContext({
+    email,
+    req,
+    workspaceName,
+  }: {
+    email: string;
+    req?: Request;
+    workspaceName?: string;
+  }): Promise<ResolveGoTrueLoginContextResult> {
     // Step 2: Resolve identity and tenant.
     // A brand-new user (no Twenty account yet) goes through first-login
     // provisioning. An existing user is bound to the workspace derived from the
@@ -226,18 +231,11 @@ export class GoTrueAuthController {
     const existingUser = await this.findUser(email);
     const isFirstLogin = !existingUser;
 
-    let ctx: {
-      user: UserEntity;
-      workspace: WorkspaceEntity;
-      userWorkspace: UserWorkspaceEntity | null;
-    } | null = null;
+    let ctx: GoTrueLoginContext | null = null;
 
     // First login — need workspace name. If not provided, signal frontend to ask.
     if (isFirstLogin && !workspaceName) {
-      return res.status(200).json({
-        needsSetup: true,
-        message: 'First login — please provide a workspace name.',
-      });
+      return { type: 'needsSetup' };
     }
 
     // First login — provision everything, then bind to the user's OWN new
@@ -301,9 +299,11 @@ export class GoTrueAuthController {
       } catch (provisionErr) {
         this.logger.error(`Provisioning failed for ${email}: ${provisionErr}`);
 
-        return res.status(500).json({
+        return {
+          type: 'error',
+          statusCode: 500,
           error: 'Failed to set up your workspace. Please try again.',
-        });
+        };
       }
     } else {
       // Existing user — bind to the tenant derived from the request origin and
@@ -316,9 +316,11 @@ export class GoTrueAuthController {
           `GoTrue login for ${email} — could not resolve a tenant for this request`,
         );
 
-        return res
-          .status(400)
-          .json({ error: 'Unable to determine workspace for this request' });
+        return {
+          type: 'error',
+          statusCode: 400,
+          error: 'Unable to determine workspace for this request',
+        };
       }
 
       if (!ctx.userWorkspace) {
@@ -326,9 +328,11 @@ export class GoTrueAuthController {
           `GoTrue login denied for ${email} — not a member of workspace ${ctx.workspace.id}`,
         );
 
-        return res
-          .status(403)
-          .json({ error: 'You do not have access to this workspace' });
+        return {
+          type: 'error',
+          statusCode: 403,
+          error: 'You do not have access to this workspace',
+        };
       }
     }
 
@@ -358,6 +362,90 @@ export class GoTrueAuthController {
       }
     }
 
+    return { type: 'success', ctx };
+  }
+
+  // NOTE: CRM does NOT provision Wiki accounts. The Wiki owns its own data
+  // (public.workspaces / public.users / public.workspace_users) and provisions
+  // its user lazily on first Wiki login via the shared GoTrue identity
+  // (exe-wiki POST /api/request-token → resolveGoTrueUser). CRM writing those
+  // tables directly violated the Wiki data-ownership boundary, duplicated the
+  // Wiki's role-assignment / workspace-linking / audit-logging logic, and risked
+  // schema drift. Cross-service provisioning must go through the owning service.
+
+  @Post('gotrue-login')
+  async gotrueLogin(
+    @Body() body: { email?: string; password?: string; workspaceName?: string },
+    @Res() res: Response,
+    @Req() req?: Request,
+  ) {
+    const { email, password, workspaceName } = body ?? {};
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!this.gotrueUrl) {
+      return res.status(500).json({ error: 'GoTrue is not configured' });
+    }
+
+    // Step 1: Authenticate with GoTrue
+    try {
+      const gotrueRes = await fetch(
+        `${this.gotrueUrl}/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+
+      if (!gotrueRes.ok) {
+        const errBody = await gotrueRes.json().catch(() => ({}));
+
+        this.logger.warn(
+          `GoTrue auth failed for ${email}: status=${gotrueRes.status} ` +
+            `error=${errBody?.error_description || errBody?.msg || 'unknown'}`,
+        );
+
+        return res.status(401).json({
+          error: 'Authentication failed',
+        });
+      }
+
+      // Identity is proven by gotrueRes.ok; drain the body so the socket is
+      // released. CRM no longer needs any GoTrue claims here.
+      await gotrueRes.json().catch(() => undefined);
+    } catch (err) {
+      this.logger.error(`GoTrue request failed: ${err}`);
+
+      return res
+        .status(502)
+        .json({ error: 'Authentication service unavailable' });
+    }
+
+    const contextResult = await this.resolveGoTrueLoginContext({
+      email,
+      req,
+      workspaceName,
+    });
+
+    if (contextResult.type === 'needsSetup') {
+      return res.status(200).json({
+        needsSetup: true,
+        message: 'First login — please provide a workspace name.',
+      });
+    }
+
+    if (contextResult.type === 'error') {
+      return res
+        .status(contextResult.statusCode)
+        .json({ error: contextResult.error });
+    }
+
+    const { ctx } = contextResult;
+
     // Step 3: Generate Twenty-native login token and redirect
     try {
       const redirectUrl = await this.generateLoginTokenRedirect(
@@ -376,6 +464,55 @@ export class GoTrueAuthController {
       return res
         .status(500)
         .json({ error: 'Failed to generate session token' });
+    }
+  }
+
+  @Get('gotrue-callback')
+  async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
+    const signInRedirect = this.generateSignInRedirect();
+    const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
+
+    if (!goTrueSessionToken || !this.gotrueUrl) {
+      return res.redirect(signInRedirect);
+    }
+
+    try {
+      // bug 74588d76: exe-auth stores the real GoTrue JWT in an HttpOnly
+      // domain cookie; CRM must verify it cryptographically before bridging.
+      const claims = await this.accessTokenService.verifyGoTrueToken(
+        goTrueSessionToken,
+        this.gotrueUrl,
+      );
+      const email = claims?.email;
+      const subject = claims?.sub;
+
+      if (!email || !subject) {
+        this.logger.warn('GoTrue callback rejected: invalid token claims');
+
+        return res.redirect(signInRedirect);
+      }
+
+      const contextResult = await this.resolveGoTrueLoginContext({
+        email,
+        req,
+      });
+
+      if (contextResult.type !== 'success') {
+        return res.redirect(signInRedirect);
+      }
+
+      const redirectUrl = await this.generateLoginTokenRedirect(
+        contextResult.ctx.user.email,
+        contextResult.ctx.workspace.id,
+      );
+
+      this.logger.log(`GoTrue callback success for ${email}`);
+
+      return res.redirect(redirectUrl);
+    } catch (err) {
+      this.logger.warn(`GoTrue callback rejected: ${err}`);
+
+      return res.redirect(signInRedirect);
     }
   }
 
