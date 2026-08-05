@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { type Request, type Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
@@ -6,6 +15,12 @@ import { Repository } from 'typeorm';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
+import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
+import {
+  type CrmRoleTier,
+  decodeJwtAppMetadata,
+  resolveExePermsForOrg,
+} from 'src/engine/core-modules/auth/services/exe-perms.util';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -13,6 +28,9 @@ import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
+import { isAdminTokenLoginEnabled } from 'src/engine/core-modules/auth/utils/is-admin-token-login-enabled.util';
+import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
+import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { getRequestOrigin } from 'src/utils/get-request-origin';
 import { AppPath } from 'twenty-shared/types';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
@@ -27,6 +45,15 @@ type ResolveGoTrueLoginContextResult =
   | { type: 'success'; ctx: GoTrueLoginContext }
   | { type: 'needsSetup' }
   | { type: 'error'; statusCode: number; error: string };
+
+/**
+ * Outcome of the MANAGED-login enforcement core. Kept response-agnostic so it
+ * can drive either a JSON body (POST /gotrue-login) or an HTTP redirect
+ * (GET /gotrue-callback) without duplicating enforcement.
+ */
+type ManagedLoginOutcome =
+  | { type: 'redirect'; url: string }
+  | { type: 'deny'; statusCode: number; error: string };
 
 /**
  * /api/auth/gotrue-login  — email+password via GoTrue → redirect to /verify
@@ -46,6 +73,20 @@ export class GoTrueAuthController {
   private readonly gotrueUrl: string | undefined;
   private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
+  /**
+   * This deployment's canonical Exe org id (unified-permissions §2). When
+   * unset, CRM RBAC enforcement is OFF and native behavior is preserved for
+   * every login (backward compatible).
+   */
+  private readonly exeOrgId: string | undefined;
+  /**
+   * Canonical Twenty workspace bound to this deployment's Exe org
+   * (unified-permissions §2, org ↔ workspace 1:1). REQUIRED whenever
+   * `EXE_ORG_ID` is set: a MANAGED login resolves THIS workspace and applies
+   * caps there — it never creates or owns an arbitrary new workspace. If it is
+   * unset while enforcement is on, managed logins fail closed.
+   */
+  private readonly exeOrgWorkspaceId: string | undefined;
 
   constructor(
     private readonly accessTokenService: AccessTokenService,
@@ -53,6 +94,7 @@ export class GoTrueAuthController {
     private readonly signInUpService: SignInUpService,
     private readonly workspaceService: WorkspaceService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
+    private readonly roleSyncService: RoleSyncService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -61,6 +103,8 @@ export class GoTrueAuthController {
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
   ) {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
+    this.exeOrgId = process.env.EXE_ORG_ID;
+    this.exeOrgWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
     const rawToken = process.env.EXE_CRM_ADMIN_TOKEN;
 
     this.adminTokenHash = rawToken
@@ -373,7 +417,11 @@ export class GoTrueAuthController {
   // Wiki's role-assignment / workspace-linking / audit-logging logic, and risked
   // schema drift. Cross-service provisioning must go through the owning service.
 
+  // Public by design (sign-in entry point, same as sso-auth/google-auth):
+  // identity is proven in-handler by GoTrue's password grant before any
+  // token is issued, so PublicEndpointGuard + NoPermissionGuard is correct.
   @Post('gotrue-login')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueLogin(
     @Body() body: { email?: string; password?: string; workspaceName?: string },
     @Res() res: Response,
@@ -388,6 +436,10 @@ export class GoTrueAuthController {
     if (!this.gotrueUrl) {
       return res.status(500).json({ error: 'GoTrue is not configured' });
     }
+
+    // app_metadata carried by the GoTrue-issued access token. Captured below
+    // (we STOP discarding the response) so we can enforce Exe unified perms.
+    let gotrueAppMetadata: Record<string, unknown> | undefined;
 
     // Step 1: Authenticate with GoTrue
     try {
@@ -414,15 +466,64 @@ export class GoTrueAuthController {
         });
       }
 
-      // Identity is proven by gotrueRes.ok; drain the body so the socket is
-      // released. CRM no longer needs any GoTrue claims here.
-      await gotrueRes.json().catch(() => undefined);
+      // Identity is proven by gotrueRes.ok. Instead of discarding the body,
+      // read the access_token and decode its `app_metadata` (which GoTrue
+      // authenticated moments ago) so we can apply the mapped CRM role. This
+      // is the "stop discarding claims" point (unified-permissions §3.2C).
+      const tokenBody = (await gotrueRes.json().catch(() => undefined)) as
+        | { access_token?: string }
+        | undefined;
+
+      gotrueAppMetadata = decodeJwtAppMetadata(tokenBody?.access_token);
     } catch (err) {
       this.logger.error(`GoTrue request failed: ${err}`);
 
       return res
         .status(502)
         .json({ error: 'Authentication service unavailable' });
+    }
+
+    // Resolve this org's canonical CRM permission tier from the verified
+    // claim. `managed: false` (no exe_perms for this org, or EXE_ORG_ID unset)
+    // → existing native behavior is preserved end-to-end (backward compatible).
+    const permsResolution = resolveExePermsForOrg(
+      gotrueAppMetadata,
+      this.exeOrgId,
+    );
+
+    // Managed-DENY: a managed user with no CRM capability (role `none` / empty
+    // crm caps) must FAIL CLOSED — never provision, never mint a token, never
+    // leave usable default access.
+    if (permsResolution.managed && permsResolution.tier === 'none') {
+      this.logger.warn(
+        `GoTrue login denied for ${email} — managed org ${this.exeOrgId} grants no CRM access`,
+      );
+
+      return res
+        .status(403)
+        .json({ error: 'You do not have access to this workspace' });
+    }
+
+    // MANAGED login — the org ↔ workspace binding is authoritative. Resolve the
+    // canonical workspace for this org and apply caps THERE (never new-workspace
+    // provisioning, never request-origin binding).
+    if (permsResolution.managed) {
+      const existingUser = await this.findUser(email);
+      const outcome = await this.resolveManagedLoginOutcome(
+        email,
+        existingUser,
+        permsResolution.tier,
+      );
+
+      if (outcome.type === 'deny') {
+        return res.status(outcome.statusCode).json({ error: outcome.error });
+      }
+
+      this.logger.log(
+        `GoTrue managed login success for ${email} → /verify (tier ${permsResolution.tier})`,
+      );
+
+      return res.json({ redirectUrl: outcome.url });
     }
 
     const contextResult = await this.resolveGoTrueLoginContext({
@@ -446,6 +547,12 @@ export class GoTrueAuthController {
 
     const { ctx } = contextResult;
 
+    // NOTE: Exe unified-permissions enforcement is NOT applied on this
+    // unmanaged path — `permsResolution.managed === false` means no exe_perms
+    // entry applies to this org (or EXE_ORG_ID is unset), so native behavior is
+    // preserved end-to-end. Managed logins are fully handled above and never
+    // reach here.
+
     // Step 3: Generate Twenty-native login token and redirect
     try {
       const redirectUrl = await this.generateLoginTokenRedirect(
@@ -467,7 +574,12 @@ export class GoTrueAuthController {
     }
   }
 
+  // Public by design (SSO bridge callback, same pattern as the OAuth
+  // callbacks): the caller is not yet authenticated with the CRM — identity
+  // is proven in-handler by cryptographically verifying the GoTrue JWT from
+  // the exe_sess cookie; every failure path redirects to sign-in.
   @Get('gotrue-callback')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
     const signInRedirect = this.generateSignInRedirect();
     const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
@@ -490,6 +602,46 @@ export class GoTrueAuthController {
         this.logger.warn('GoTrue callback rejected: invalid token claims');
 
         return res.redirect(signInRedirect);
+      }
+
+      // Enforce Exe unified perms on the SSO-bridge path too — this endpoint
+      // also mints a Twenty-native session, so it must fail closed for managed
+      // orgs exactly like the password path. app_metadata is read from the
+      // (already cryptographically verified) session JWT.
+      const permsResolution = resolveExePermsForOrg(
+        decodeJwtAppMetadata(goTrueSessionToken),
+        this.exeOrgId,
+      );
+
+      if (permsResolution.managed) {
+        if (permsResolution.tier === 'none') {
+          this.logger.warn(
+            `GoTrue callback denied for ${email} — managed org ${this.exeOrgId} grants no CRM access`,
+          );
+
+          return res.redirect(signInRedirect);
+        }
+
+        const existingUser = await this.findUser(email);
+        const outcome = await this.resolveManagedLoginOutcome(
+          email,
+          existingUser,
+          permsResolution.tier,
+        );
+
+        if (outcome.type === 'deny') {
+          this.logger.warn(
+            `GoTrue callback denied for ${email} — managed enforcement failed (${outcome.statusCode})`,
+          );
+
+          return res.redirect(signInRedirect);
+        }
+
+        this.logger.log(
+          `GoTrue callback managed success for ${email} (tier ${permsResolution.tier})`,
+        );
+
+        return res.redirect(outcome.url);
       }
 
       const contextResult = await this.resolveGoTrueLoginContext({
@@ -516,12 +668,274 @@ export class GoTrueAuthController {
     }
   }
 
+  /**
+   * Handle a MANAGED GoTrue login (this org has an `exe_perms` entry).
+   *
+   * Thin response-writing wrapper over {@link resolveManagedLoginOutcome} that
+   * emits a JSON body (the POST /gotrue-login contract). The core enforcement
+   * lives in resolveManagedLoginOutcome so the redirect-based /gotrue-callback
+   * path can reuse it without duplicating any fail-closed logic.
+   */
+  private async handleManagedLogin(
+    res: Response,
+    email: string,
+    existingUser: UserEntity | null,
+    tier: CrmRoleTier,
+  ): Promise<Response> {
+    const outcome = await this.resolveManagedLoginOutcome(
+      email,
+      existingUser,
+      tier,
+    );
+
+    if (outcome.type === 'deny') {
+      return res.status(outcome.statusCode).json({ error: outcome.error });
+    }
+
+    this.logger.log(
+      `GoTrue managed login success for ${email} → /verify (tier ${tier})`,
+    );
+
+    return res.json({ redirectUrl: outcome.url });
+  }
+
+  /**
+   * Core MANAGED-login enforcement (unified-permissions §2), response-agnostic.
+   *
+   * Enforces the org ↔ workspace 1:1 binding:
+   *   1. Resolve the canonical workspace from `EXE_ORG_WORKSPACE_ID`. If unset
+   *      or missing → FAIL CLOSED (never mint a new workspace).
+   *   2. Ensure the user is a member of that workspace, seated on a VERIFIED
+   *      managed role (never the mutable `defaultRoleId`). If they can't be a
+   *      member → FAIL CLOSED.
+   *   3. Apply the caps → role mapping THERE. Any outcome other than
+   *      applied/noop → FAIL CLOSED (never mint a session above the caps).
+   */
+  private async resolveManagedLoginOutcome(
+    email: string,
+    existingUser: UserEntity | null,
+    tier: CrmRoleTier,
+  ): Promise<ManagedLoginOutcome> {
+    // (1) Canonical workspace binding is mandatory under managed enforcement.
+    if (!this.exeOrgWorkspaceId) {
+      this.logger.error(
+        `Managed login for ${email} but EXE_ORG_WORKSPACE_ID is unset for org ${this.exeOrgId} — cannot bind to a canonical workspace`,
+      );
+
+      return {
+        type: 'deny',
+        statusCode: 500,
+        error:
+          'Your organization is not linked to a workspace. Contact your administrator.',
+      };
+    }
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: this.exeOrgWorkspaceId },
+    });
+
+    if (!workspace) {
+      this.logger.error(
+        `Managed login for ${email}: canonical workspace ${this.exeOrgWorkspaceId} (org ${this.exeOrgId}) not found`,
+      );
+
+      return {
+        type: 'deny',
+        statusCode: 500,
+        error:
+          'Your organization workspace is unavailable. Contact your administrator.',
+      };
+    }
+
+    // (2) Ensure membership in the canonical workspace with a VERIFIED role.
+    let user = existingUser ?? (await this.findUser(email));
+    let userWorkspace = user
+      ? await this.userWorkspaceRepository.findOne({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+      : null;
+
+    if (!userWorkspace) {
+      // Resolve (and secure) the role we intend to seat this new member on
+      // BEFORE creating the membership. We must NOT join on the mutable
+      // `workspace.defaultRoleId` — a local admin can repoint it at Admin, and
+      // if the subsequent role-sync then fails we'd have created an elevated
+      // membership as residue. Binding the managed role from the start means a
+      // failed sync can only ever leave a correctly-scoped (or no) membership.
+      const seatRoleId = await this.roleSyncService.resolveAssignableRoleId({
+        tier,
+        workspaceId: workspace.id,
+      });
+
+      // The target role MUST be a VERIFIED role for EVERY tier — including
+      // admin (the seeded Admin role, resolved by universalIdentifier). We
+      // NEVER fall back to the mutable `workspace.defaultRoleId`: a local admin
+      // could repoint it at a powerful custom role, so seating any managed user
+      // (admin included) on it is the exact banned pattern. If the verified
+      // role can't be secured, fail closed WITHOUT creating any membership.
+      if (!seatRoleId) {
+        this.logger.error(
+          `Managed login denied for ${email} — ${tier} role could not be secured for workspace ${workspace.id}; not creating a membership`,
+        );
+
+        return {
+          type: 'deny',
+          statusCode: 500,
+          error:
+            'Your access could not be applied right now. Please try again or contact your administrator.',
+        };
+      }
+
+      try {
+        await this.signInUpService.signInUpOnExistingWorkspace({
+          workspace,
+          // Seat on the verified role only (never the mutable defaultRoleId).
+          roleId: seatRoleId,
+          userData: user
+            ? { type: 'existingUser', existingUser: user }
+            : {
+                type: 'newUserWithPicture',
+                newUserWithPicture: {
+                  email,
+                  firstName: email.split('@')[0] ?? 'User',
+                  lastName: '',
+                  picture: undefined,
+                },
+              },
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Managed login denied for ${email} — cannot join canonical workspace ${workspace.id}: ${err}`,
+        );
+
+        return {
+          type: 'deny',
+          statusCode: 403,
+          error: 'You do not have access to this workspace',
+        };
+      }
+
+      user = await this.findUser(email);
+      userWorkspace = user
+        ? await this.userWorkspaceRepository.findOne({
+            where: { userId: user.id, workspaceId: workspace.id },
+          })
+        : null;
+
+      if (!user || !userWorkspace) {
+        this.logger.error(
+          `Managed login for ${email}: membership missing after provisioning into ${workspace.id}`,
+        );
+
+        return {
+          type: 'deny',
+          statusCode: 403,
+          error: 'You do not have access to this workspace',
+        };
+      }
+    }
+
+    // Invariant: reaching here means the user is a member of the canonical
+    // workspace. (When `userWorkspace` was already present, `user` is the member
+    // it belongs to; the provisioning branch above re-fetches and guards both.)
+    if (!user) {
+      this.logger.error(
+        `Managed login for ${email}: user missing for membership ${userWorkspace.id}`,
+      );
+
+      return {
+        type: 'deny',
+        statusCode: 403,
+        error: 'You do not have access to this workspace',
+      };
+    }
+
+    // (3) Enforce caps → role. GoTrue caps are authoritative: a managed user
+    // must NOT be issued a session under a role that doesn't match their caps.
+    // For EVERY tier (admin included) we only mint a session when enforcement
+    // actually took effect — `applied` (re-pointed) or `noop` (already at the
+    // correct role). Any other outcome means the role is in an elevated/unknown
+    // state:
+    //   - blocked_last_admin → the user is the sole admin and can't be demoted,
+    //   - unresolved         → the target role (managed Member/Viewer, or the
+    //                          seeded Admin) couldn't be secured,
+    //   - error              → the assignment failed.
+    // In all of those we FAIL CLOSED.
+    const applied = await this.roleSyncService.applyCrmTier({
+      userWorkspaceId: userWorkspace.id,
+      workspaceId: workspace.id,
+      tier,
+    });
+
+    if (applied.status !== 'applied' && applied.status !== 'noop') {
+      this.logger.error(
+        `Managed login denied for ${email} — ${tier} caps could not be enforced on workspace ${workspace.id} (status=${applied.status}); failing closed`,
+      );
+
+      if (applied.status === 'blocked_last_admin') {
+        return {
+          type: 'deny',
+          statusCode: 403,
+          error:
+            'This workspace has no other authorized administrator, so your access cannot be granted. Contact your administrator.',
+        };
+      }
+
+      // unresolved / error — enforcement is in an unknown state; never mint a
+      // session that could leave the user above their caps.
+      return {
+        type: 'deny',
+        statusCode: 500,
+        error:
+          'Your access could not be applied right now. Please try again or contact your administrator.',
+      };
+    }
+
+    // Mint the Twenty-native login token bound to the canonical workspace.
+    try {
+      const url = await this.generateLoginTokenRedirect(
+        user.email,
+        workspace.id,
+      );
+
+      return { type: 'redirect', url };
+    } catch (err) {
+      this.logger.error(`Login token generation failed for ${email}: ${err}`);
+
+      return {
+        type: 'deny',
+        statusCode: 500,
+        error: 'Failed to generate session token',
+      };
+    }
+  }
+
+  // Public by design (login entry point): authentication happens in-handler —
+  // fail-closed feature gate (isAdminTokenLoginEnabled) plus timing-safe
+  // comparison of the presented token against ADMIN_TOKEN's sha256 hash.
   @Post('admin-token')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async adminTokenLogin(
     @Body() body: { token?: string },
     @Res() res: Response,
     @Req() req?: Request,
   ) {
+    // ── FIX (admin-token backdoor) — fail closed ──────────────────────────────
+    // The React tab was hidden earlier, but this SERVER endpoint stayed
+    // reachable. Gate it: disabled for MANAGED deployments (`EXE_ORG_ID` set —
+    // no static-secret owner-impersonation backdoor is allowed) and OFF by
+    // default otherwise (opt-in via `ENABLE_ADMIN_TOKEN_LOGIN=true`). Reject
+    // with 401 before inspecting the token so a disabled deployment leaks
+    // nothing about configuration state.
+    if (!isAdminTokenLoginEnabled()) {
+      this.logger.warn(
+        'Admin-token login rejected — disabled (managed deployment or ' +
+          'ENABLE_ADMIN_TOKEN_LOGIN not set)',
+      );
+
+      return res.status(401).json({ error: 'Authentication failed' });
+    }
+
     const { token } = body ?? {};
 
     if (!token) {
@@ -543,11 +957,17 @@ export class GoTrueAuthController {
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    // Bind the admin bypass to the tenant derived from the request origin
-    // (subdomain / custom domain), or the single default workspace in
-    // single-workspace deployments. Never select a global first/oldest
-    // workspace — that would route the admin into an arbitrary tenant.
-    const workspace = await this.resolveWorkspaceFromRequest(req);
+    // Bind the admin bypass to a workspace. In a MANAGED deployment
+    // (EXE_ORG_WORKSPACE_ID set) PIN it to the canonical workspace and IGNORE
+    // the client-controlled Host — otherwise a holder of the static admin token
+    // could set the Host header to any tenant's domain and mint a session as
+    // that tenant's owner (cross-tenant takeover). When unmanaged, fall back to
+    // the origin-derived tenant (single-workspace break-glass, unchanged).
+    const workspace = this.exeOrgWorkspaceId
+      ? await this.workspaceRepository.findOne({
+          where: { id: this.exeOrgWorkspaceId },
+        })
+      : await this.resolveWorkspaceFromRequest(req);
 
     if (!workspace) {
       return res.status(500).json({

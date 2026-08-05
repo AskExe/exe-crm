@@ -1,4 +1,4 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, HideField, InputType } from '@nestjs/graphql';
 
 import {
   IsBoolean,
@@ -12,6 +12,16 @@ import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/
 
 @InputType()
 export class UpdateRolePayload {
+  /**
+   * Whether the role remains user-editable. Hidden from the GraphQL API —
+   * only trusted server-side callers may set it (e.g. to lock a system-owned
+   * managed role to `false`). Editability of the EXISTING role is what the
+   * migration validator checks, so a currently-editable role can be locked in
+   * a single update.
+   */
+  @HideField()
+  isEditable?: boolean;
+
   @IsString()
   @IsOptional()
   @Field({ nullable: true })

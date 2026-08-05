@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
+import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -111,6 +112,14 @@ describe('GoTrueAuthController', () => {
           useValue: workspaceDomainsService,
         },
         {
+          // Unmanaged path (EXE_ORG_ID unset) never invokes role sync, but the
+          // controller declares it as a constructor dependency.
+          provide: RoleSyncService,
+          useValue: {
+            applyCrmTier: jest.fn().mockResolvedValue({ status: 'noop' }),
+          },
+        },
+        {
           provide: DataSource,
           useValue: dataSource,
         },
@@ -135,6 +144,10 @@ describe('GoTrueAuthController', () => {
     process.env.GOTRUE_URL = 'http://gotrue:9999';
     process.env.EXE_CRM_ADMIN_TOKEN = 'admin-secret-123';
     process.env.SERVER_URL = 'http://localhost:3000';
+    // Enable the break-glass admin-token path for the default (enabled) suite;
+    // individual tests override this to exercise the disabled/managed gates.
+    process.env.ENABLE_ADMIN_TOKEN_LOGIN = 'true';
+    delete process.env.EXE_ORG_ID;
 
     userRepo = { findOne: jest.fn() };
     userWorkspaceRepo = { findOne: jest.fn() };
@@ -540,6 +553,37 @@ describe('GoTrueAuthController', () => {
   /* ================================================================ */
 
   describe('adminTokenLogin', () => {
+    it('returns 401 with the correct admin token when the feature is disabled', async () => {
+      delete process.env.ENABLE_ADMIN_TOKEN_LOGIN;
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      // Fails closed before touching tenant resolution.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('returns 401 with the correct admin token in a managed deployment', async () => {
+      process.env.EXE_ORG_ID = 'org-managed';
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
     it('returns 400 if token is missing', async () => {
       const res = mockResponse();
 
@@ -631,6 +675,40 @@ describe('GoTrueAuthController', () => {
         }),
       );
       expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('pins the admin token to EXE_ORG_WORKSPACE_ID and IGNORES the client Host when managed', async () => {
+      // Managed deployment: the canonical workspace must win over any
+      // Host-derived tenant, closing the static-token cross-tenant takeover.
+      process.env.EXE_ORG_WORKSPACE_ID = 'ws-canonical';
+
+      const module: TestingModule = await buildTestModule();
+      const ctrl = module.get(GoTrueAuthController);
+
+      workspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_WORKSPACE,
+        id: 'ws-canonical',
+      });
+      userWorkspaceRepo.findOne.mockResolvedValue({
+        ...MOCK_USER_WORKSPACE,
+        workspaceId: 'ws-canonical',
+      });
+      userRepo.findOne.mockResolvedValue(MOCK_USER);
+
+      const res = mockResponse();
+
+      await ctrl.adminTokenLogin({ token: 'admin-secret-123' }, res);
+
+      // The mutable, client-controlled Host path is NOT consulted.
+      expect(
+        workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+      ).not.toHaveBeenCalled();
+      expect(workspaceRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'ws-canonical' },
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ isAdminToken: true }),
+      );
     });
   });
 });

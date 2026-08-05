@@ -23,3 +23,37 @@ README.md
 # AGPL §5 attribution — list of modifications and upstream source URL.
 NOTICE
 packages/twenty-server/src/engine/guards/jwt-auth.guard.ts
+
+# --- Unified-permissions auth enforcement (PR #77) — approved 2026-08-05 ---
+# Framework-internal refs only in the fork's server tree: twenty-shared /
+# twenty-config / twenty-orm import paths, TwentyConfigService identifiers,
+# and developer comments explaining upstream Twenty's role/workspace model.
+# Verified: no user-facing branding (no UI text, emails, titles, or
+# user-visible logs) in any of these files.
+
+# Comments documenting Twenty's one-role-per-userWorkspace constraint.
+packages/twenty-server/src/engine/core-modules/auth/constants/exe-managed-roles.constant.ts
+
+# twenty-shared imports + comments on Twenty-native login-token handoff flow.
+packages/twenty-server/src/engine/core-modules/auth/controllers/gotrue-auth.controller.ts
+
+# Import from twenty-standard-application module + comments on seeded roles.
+packages/twenty-server/src/engine/core-modules/auth/services/__tests__/role-sync.service.spec.ts
+
+# Comments mapping crm/org caps to Twenty role names.
+packages/twenty-server/src/engine/core-modules/auth/services/exe-perms.util.ts
+
+# twenty-standard-application import + comments on workspace-scoped roles.
+packages/twenty-server/src/engine/core-modules/auth/services/role-sync.service.ts
+
+# twenty-shared/twenty-config/twenty-orm imports + TwentyConfigService usage.
+packages/twenty-server/src/engine/core-modules/auth/token/services/access-token.service.ts
+
+# twenty-shared/twenty-config imports + TwentyConfigService usage.
+packages/twenty-server/src/engine/core-modules/auth/token/services/renew-token.service.ts
+
+# TwentyConfigService mock in unit test — module name only.
+packages/twenty-server/src/engine/core-modules/error-forwarding/__tests__/error-forwarding.service.spec.ts
+
+# TwentyConfigService injection for monitor env config — module name only.
+packages/twenty-server/src/engine/core-modules/error-forwarding/error-forwarding.service.ts

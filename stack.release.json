@@ -29,7 +29,7 @@
       }
     ],
     "migrations": {
-      "command": "# no-op — the exe-crm image entrypoint runs setup + migrations automatically on server boot (packages/twenty-docker/twenty/entrypoint.sh). Do not run migrations from the stack-update host context; the yarn database:migrate:prod script lives under packages/twenty-server and is not runnable at repo root.",
+      "note": "Handled by the image entrypoint — no external command needed.",
       "rollback": "Restore previous CRM_IMAGE_TAG and database backup if migration is non-additive. CRM migrations must be reviewed before stack manifest publication."
     },
     "config": {
