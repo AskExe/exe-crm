@@ -50,6 +50,37 @@ export class RenewTokenService {
       impersonatedUserWorkspaceId,
     } = await this.refreshTokenService.verifyRefreshToken(token);
 
+    // ── FIX (managed CRM RBAC) — Exe unified-permissions enforcement (FAIL CLOSED) ──
+    // A native renewal renews a Twenty-native refresh token WITHOUT re-reading
+    // GoTrue or re-applying exe_perms. A managed user who logged in as
+    // `crm:write` and was later CENTRALLY DOWNGRADED to `crm:read`/`none` in
+    // GoTrue could otherwise keep their prior WRITE/ADMIN tier indefinitely by
+    // renewing the old refresh token — the downgrade/deny would never take
+    // effect locally.
+    //
+    // exe_perms can only be re-seated/verified through the login-time
+    // RoleSyncService flow (GoTrueAuthController.resolveManagedLoginOutcome),
+    // which is NOT reachable from this per-request token path without pulling a
+    // metadata-module service into the @Global TokenModule (a DI cycle:
+    // AuthModule already imports TokenModule). Since we cannot re-resolve the
+    // GoTrue caps here (we only hold a Twenty-native refresh token, not the
+    // GoTrue JWT) nor re-apply the tier, we FAIL CLOSED: when this deployment
+    // enforces CRM RBAC (`EXE_ORG_ID` set) AND the session originated from
+    // GoTrue SSO (`authProvider === SSO` — the only SSO IdP under managed
+    // enforcement, minted by /gotrue-login → /gotrue-callback), native renewal
+    // is refused. The caller must sign in again through GoTrue, which
+    // re-resolves exe_perms and re-applies the current tier. Mirrors the
+    // bearer-path decision (bug 46a09952).
+    //
+    // Non-managed deployments (`EXE_ORG_ID` unset) keep native renewal — fully
+    // backward compatible.
+    if (process.env.EXE_ORG_ID && authProvider === AuthProviderEnum.SSO) {
+      throw new AuthException(
+        'Session renewal is disabled under CRM permission enforcement; please sign in again.',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
     // Revoke old refresh token only if not already revoked.
     // If it was already revoked (concurrent race condition within grace
     // period), we preserve the original revokedAt timestamp so the grace

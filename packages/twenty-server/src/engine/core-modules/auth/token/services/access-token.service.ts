@@ -1,5 +1,5 @@
 import { createPublicKey, type JsonWebKey as CryptoJsonWebKey } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { msg } from '@lingui/core/macro';
@@ -17,6 +17,10 @@ import {
   AuthException,
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import {
+  decodeJwtAppMetadata,
+  resolveExePermsForOrg,
+} from 'src/engine/core-modules/auth/services/exe-perms.util';
 import { type AuthToken } from 'src/engine/core-modules/auth/dto/auth-token.dto';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import {
@@ -68,6 +72,7 @@ type GoTrueJwk = {
 
 @Injectable()
 export class AccessTokenService {
+  private readonly logger = new Logger(AccessTokenService.name);
   private static readonly GOTRUE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
 
   private gotrueJwksCache: {
@@ -249,6 +254,43 @@ export class AccessTokenService {
     const gotrueUrl = this.twentyConfigService.get('GOTRUE_URL');
 
     if (!gotrueUrl) {
+      return null;
+    }
+
+    // ── P0 46a09952 — Exe unified-permissions enforcement (FAIL CLOSED) ──────
+    // The bearer-GoTrue fallback exchanges a raw GoTrue JWT for CRM access by
+    // auto-provisioning a workspace membership with NO roleId — which
+    // ultimately seats the user on the mutable workspace.defaultRoleId (WRITE).
+    // That bypasses exe_perms entirely: a centrally-DENIED (tier `none`) user is
+    // admitted, and a `crm:read` user is granted WRITE.
+    //
+    // The caps→role mapping can only be seated/verified through the login-time
+    // RoleSyncService flow (GoTrueAuthController.resolveManagedLoginOutcome),
+    // which is NOT reachable from this per-request token path without pulling a
+    // metadata-module service into the @Global TokenModule (a DI cycle:
+    // AuthModule already imports TokenModule). Since we cannot apply the tier
+    // here, we FAIL CLOSED whenever this deployment enforces CRM RBAC
+    // (`EXE_ORG_ID` set): the bearer-GoTrue exchange is disabled and the caller
+    // must instead use the enforced browser login, which mints a Twenty-native
+    // token that validates on the PRIMARY `validateToken` path (unaffected).
+    //
+    // Non-managed deployments (`EXE_ORG_ID` unset) keep the native fallback —
+    // fully backward compatible.
+    const exeOrgId = process.env.EXE_ORG_ID;
+
+    if (exeOrgId) {
+      const perms = resolveExePermsForOrg(
+        decodeJwtAppMetadata(token),
+        exeOrgId,
+      );
+      const tier = perms.managed ? perms.tier : 'unmanaged/no-grant';
+
+      this.logger.warn(
+        `bearer-GoTrue exchange disabled under CRM RBAC enforcement ` +
+          `(org ${exeOrgId}, tier ${tier}); requiring enforced browser login. ` +
+          `Failing closed (bug 46a09952).`,
+      );
+
       return null;
     }
 
@@ -516,6 +558,25 @@ export class AccessTokenService {
   private async resolveWorkspaceForGoTrueRequest(
     request: Request,
   ): Promise<WorkspaceEntity | null> {
+    // ── P1 40c819df — canonical org↔workspace binding wins over client input ──
+    // In multiworkspace mode the tenant was derived purely from the
+    // client-controlled Origin / X-Forwarded-Host, with no membership or
+    // exe_perms guard — so a GoTrue holder could steer provisioning into an
+    // arbitrary workspace by forging those headers. When this deployment pins a
+    // canonical workspace (`EXE_ORG_WORKSPACE_ID`, org↔workspace 1:1), resolve
+    // THAT workspace and IGNORE the request headers entirely. (Under managed
+    // enforcement the bearer path is already failed-closed above; this keeps the
+    // binding correct as defense-in-depth for any non-enforced caller.)
+    const exeOrgWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+
+    if (exeOrgWorkspaceId) {
+      return (
+        (await this.workspaceRepository.findOne({
+          where: { id: exeOrgWorkspaceId },
+        })) ?? null
+      );
+    }
+
     const requestOrigin = this.getRequestOrigin(request);
 
     if (!requestOrigin) {

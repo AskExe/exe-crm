@@ -63,7 +63,10 @@ describe('AdminTokenMiddleware', () => {
     process.env = {
       ...originalEnv,
       EXE_CRM_ADMIN_TOKEN: ADMIN_TOKEN,
+      // Enable the break-glass admin-token path for the default (enabled) suite.
+      ENABLE_ADMIN_TOKEN_LOGIN: 'true',
     };
+    delete process.env.EXE_ORG_ID;
 
     jest.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -137,6 +140,48 @@ describe('AdminTokenMiddleware', () => {
       error_description:
         'Too many failed admin token attempts, please try again later',
     });
+    expect(
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should reject a matching admin token with 401 when the feature is disabled', async () => {
+    delete process.env.ENABLE_ADMIN_TOKEN_LOGIN;
+
+    middleware = new AdminTokenMiddleware(
+      workspaceDomainsService as unknown as WorkspaceDomainsService,
+    );
+
+    const req = buildRequest({ authorization: `Bearer ${ADMIN_TOKEN}` });
+    const res = buildResponse();
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(req.adminTokenAuthenticated).toBeUndefined();
+    expect(
+      workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should reject a matching admin token with 401 in a managed deployment', async () => {
+    process.env.EXE_ORG_ID = 'org-managed';
+
+    middleware = new AdminTokenMiddleware(
+      workspaceDomainsService as unknown as WorkspaceDomainsService,
+    );
+
+    const req = buildRequest({ authorization: `Bearer ${ADMIN_TOKEN}` });
+    const res = buildResponse();
+    const next = jest.fn() as NextFunction;
+
+    await middleware.use(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(req.adminTokenAuthenticated).toBeUndefined();
     expect(
       workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
     ).not.toHaveBeenCalled();

@@ -201,6 +201,101 @@ describe('RenewTokenService', () => {
       );
     });
 
+    it('fails closed for GoTrue SSO refresh tokens under CRM RBAC enforcement', async () => {
+      const previousExeOrgId = process.env.EXE_ORG_ID;
+
+      process.env.EXE_ORG_ID = 'org-managed';
+
+      try {
+        jest
+          .spyOn(refreshTokenService, 'verifyRefreshToken')
+          .mockResolvedValue({
+            user: { id: 'user-id' } as UserEntity,
+            token: {
+              id: 'token-id',
+              workspaceId: 'workspace-id',
+            } as AppTokenEntity,
+            authProvider: AuthProviderEnum.SSO,
+            targetedTokenType: JwtTokenTypeEnum.ACCESS,
+            isImpersonating: false,
+            impersonatorUserWorkspaceId: undefined,
+            impersonatedUserWorkspaceId: undefined,
+          });
+        const updateSpy = jest
+          .spyOn(appTokenRepository, 'update')
+          .mockResolvedValue({} as any);
+
+        await expect(
+          service.generateTokensFromRefreshToken('sso-refresh-token'),
+        ).rejects.toThrow(AuthException);
+
+        expect(accessTokenService.generateAccessToken).not.toHaveBeenCalled();
+        expect(refreshTokenService.generateRefreshToken).not.toHaveBeenCalled();
+        // Fails closed before revoking the still-valid refresh token.
+        expect(updateSpy).not.toHaveBeenCalled();
+      } finally {
+        if (previousExeOrgId === undefined) {
+          delete process.env.EXE_ORG_ID;
+        } else {
+          process.env.EXE_ORG_ID = previousExeOrgId;
+        }
+      }
+    });
+
+    it('renews GoTrue SSO refresh tokens when CRM RBAC enforcement is off', async () => {
+      const previousExeOrgId = process.env.EXE_ORG_ID;
+
+      delete process.env.EXE_ORG_ID;
+
+      try {
+        const mockAccessToken = {
+          token: 'new-access-token',
+          expiresAt: new Date(),
+        };
+        const mockNewRefreshToken = {
+          token: 'new-refresh-token',
+          expiresAt: new Date(),
+          targetedTokenType: JwtTokenTypeEnum.ACCESS,
+        };
+
+        jest
+          .spyOn(refreshTokenService, 'verifyRefreshToken')
+          .mockResolvedValue({
+            user: { id: 'user-id' } as UserEntity,
+            token: {
+              id: 'token-id',
+              workspaceId: 'workspace-id',
+            } as AppTokenEntity,
+            authProvider: AuthProviderEnum.SSO,
+            targetedTokenType: JwtTokenTypeEnum.ACCESS,
+            isImpersonating: false,
+            impersonatorUserWorkspaceId: undefined,
+            impersonatedUserWorkspaceId: undefined,
+          });
+        jest.spyOn(appTokenRepository, 'update').mockResolvedValue({} as any);
+        jest
+          .spyOn(accessTokenService, 'generateAccessToken')
+          .mockResolvedValue(mockAccessToken);
+        jest
+          .spyOn(refreshTokenService, 'generateRefreshToken')
+          .mockResolvedValue(mockNewRefreshToken);
+
+        const result =
+          await service.generateTokensFromRefreshToken('sso-refresh-token');
+
+        expect(result).toEqual({
+          accessOrWorkspaceAgnosticToken: mockAccessToken,
+          refreshToken: mockNewRefreshToken,
+        });
+      } finally {
+        if (previousExeOrgId === undefined) {
+          delete process.env.EXE_ORG_ID;
+        } else {
+          process.env.EXE_ORG_ID = previousExeOrgId;
+        }
+      }
+    });
+
     it('rejects password refresh tokens when GOTRUE_URL is configured', async () => {
       (twentyConfigService.get as jest.Mock).mockImplementation(
         (key: string) =>
