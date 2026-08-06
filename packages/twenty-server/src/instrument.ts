@@ -10,7 +10,6 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
 
@@ -23,6 +22,28 @@ const meterDrivers = parseArrayEnvVar(
   Object.values(MeterDriver),
   [],
 );
+
+// Loaded lazily and fault-tolerantly: @sentry/profiling-node requires a
+// platform-specific native prebuilt (e.g. sentry_cpu_profiler-linux-x64-musl-<ABI>.node).
+// A missing prebuilt for the running Node ABI must degrade to "no profiling",
+// never crash the server/worker at boot. (This file compiles to CommonJS.)
+const loadProfilingIntegration = (): Sentry.Integration[] => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { nodeProfilingIntegration } =
+      require('@sentry/profiling-node') as typeof import('@sentry/profiling-node');
+
+    return [nodeProfilingIntegration()];
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[instrument] @sentry/profiling-node unavailable, continuing without CPU profiling:',
+      error instanceof Error ? error.message : error,
+    );
+
+    return [];
+  }
+};
 
 if (process.env.EXCEPTION_HANDLER_DRIVER === ExceptionHandlerDriver.SENTRY) {
   Sentry.init({
@@ -39,7 +60,7 @@ if (process.env.EXCEPTION_HANDLER_DRIVER === ExceptionHandlerDriver.SENTRY) {
         recordInputs: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
         recordOutputs: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,
       }),
-      nodeProfilingIntegration(),
+      ...loadProfilingIntegration(),
     ],
     tracesSampleRate: 0.1,
     profilesSampleRate: 0.3,
