@@ -27,7 +27,11 @@ const meterDrivers = parseArrayEnvVar(
 // platform-specific native prebuilt (e.g. sentry_cpu_profiler-linux-x64-musl-<ABI>.node).
 // A missing prebuilt for the running Node ABI must degrade to "no profiling",
 // never crash the server/worker at boot. (This file compiles to CommonJS.)
-const loadProfilingIntegration = (): Sentry.Integration[] => {
+type ProfilingIntegration = ReturnType<
+  (typeof import('@sentry/profiling-node'))['nodeProfilingIntegration']
+>;
+
+const loadProfilingIntegration = (): ProfilingIntegration[] => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { nodeProfilingIntegration } =
