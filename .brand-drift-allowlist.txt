@@ -57,3 +57,7 @@ packages/twenty-server/src/engine/core-modules/error-forwarding/__tests__/error-
 
 # TwentyConfigService injection for monitor env config — module name only.
 packages/twenty-server/src/engine/core-modules/error-forwarding/error-forwarding.service.ts
+# 2026-08-06 (exe/COO): internal Docker build-stage names (AS twenty-app-dev / AS twenty)
+# — any FROM-line change (e.g. dependabot base-image bumps) re-adds them in the diff.
+# Framework-internal, not user-facing branding.
+packages/twenty-docker/twenty/Dockerfile
