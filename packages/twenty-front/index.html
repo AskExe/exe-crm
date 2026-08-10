@@ -128,14 +128,14 @@
          limit returned HTTP 429.
 
          Correct contract:
-           - CRM's own session cookie is `tokenPair` (twenty-front
+           - CRM's own session cookie is `tokenPair` (the frontend's
              tokenPairState `cookieKey`) — that, not a made-up name, is what
              "already signed in to CRM" means.
            - The real SSO handoff is the server-side bridge
              GET /api/auth/gotrue-callback. Only the server can read the
              HttpOnly `exe_sess` GoTrue cookie, so the browser can never decide
              this on its own. The bridge verifies `exe_sess` against GoTrue and
-             either mints a Twenty login token (302 -> /verify?loginToken=...)
+             either mints a CRM login token (302 -> /verify?loginToken=...)
              or lands the visitor on the stable sign-in page (302 -> /welcome).
              Both terminate — neither can bounce back here.
 
