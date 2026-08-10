@@ -134,6 +134,16 @@ jobs:
       # is MEASURED, not asserted — a hardcoded "true" would make the label
       # worthless. Mirrors exe-os scripts/bake-version.sh semantics so the
       # exe-os G2/G4/G6 gates read identical values across repos.
+      #
+      # DETERMINISM (bug f78db968): every fact stamped into the image CONFIG must
+      # be a pure function of the git_sha, or the config digest — and thus the
+      # manifest digest the fail-closed digest-verify gate compares — changes on
+      # every build and the pin can never converge. A `date -u` build_time is the
+      # one non-deterministic fact, so it is deliberately NOT stamped into the
+      # config. It is unused: the exe-os provenance verifier reads only
+      # org.exe.git_sha / org.exe.repo / org.exe.tree_clean, and build time is
+      # recoverable from the git_sha's commit date. git_sha/repo/git_ref/tree_clean
+      # are all deterministic for a fixed tagged commit and stay in the config.
       - name: Stamp facts (chain-of-custody G1)
         id: stamp
         shell: bash
@@ -145,7 +155,6 @@ jobs:
             tree_clean="true"
           fi
           echo "tree_clean=$tree_clean" >> "$GITHUB_OUTPUT"
-          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "Stamping tree_clean=$tree_clean"
 
       - name: Build image
@@ -171,7 +180,6 @@ jobs:
             org.exe.git_sha=${{ github.sha }}
             org.exe.repo=${{ github.repository }}
             org.exe.git_ref=${{ github.ref_name }}
-            org.exe.build_time=${{ steps.stamp.outputs.build_time }}
             org.exe.tree_clean=${{ steps.stamp.outputs.tree_clean }}
 
       # Fail-closed digest verification: the image actually published must match
