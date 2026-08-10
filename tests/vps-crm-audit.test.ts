@@ -177,12 +177,47 @@ describe('exe-crm VPS regression audit', () => {
       'type GoTrueJwtPayload = jwt.JwtPayload & {',
     );
     expect(accessTokenService).toContain('type GoTrueJwk = {');
-    expect(accessTokenService).toContain('private async verifyGoTrueToken(');
+    expect(accessTokenService).toContain('async verifyGoTrueToken(');
     expect(accessTokenService).toContain('private async fetchGoTrueJwks(');
     expect(accessTokenService).toContain('private getGoTrueVerificationKey(');
     expect(accessTokenService).toContain('return createPublicKey({');
     expect(accessTokenService).toContain(
-      'const verified = jwt.verify(token, this.getGoTrueVerificationKey(jwk), {',
+      'const verified = jwt.verify(token, verificationKey, {',
     );
+  });
+
+  // bug 550d6ab7 — GoTrue omits HMAC keys from JWKS by design, so the JWKS-only
+  // key lookup made GET /api/auth/gotrue-callback unsatisfiable against a
+  // symmetric GoTrue. The shared-secret fallback must stay HS256-gated and must
+  // never loosen the issuer/audience/expiry assertions.
+  it('GoTrue HS256 shared-secret fallback stays narrowly gated', () => {
+    expect(accessTokenService).toContain(
+      'private getGoTrueSymmetricVerificationKey(',
+    );
+    // Fallback is reached only when JWKS yields no key, and only for HS256.
+    expect(accessTokenService).toContain(
+      ': this.getGoTrueSymmetricVerificationKey(algorithm);',
+    );
+    expect(accessTokenService).toContain("if (algorithm !== 'HS256') {");
+    // Refuses to downgrade an asymmetric deployment (algorithm confusion).
+    expect(accessTokenService).toContain('advertisesAsymmetricKey');
+    expect(accessTokenService).toContain("(key) => key.kty !== 'oct'");
+    // Fails closed when the secret is absent.
+    expect(accessTokenService).toContain(
+      "this.twentyConfigService.get('GOTRUE_JWT_SECRET')",
+    );
+    expect(accessTokenService).toMatch(
+      /if \(typeof sharedSecret !== 'string' \|\| sharedSecret\.length === 0\) \{[\s\S]*?return null;/,
+    );
+    // Every original assertion survives.
+    expect(accessTokenService).toContain('algorithms: [algorithm],');
+    expect(accessTokenService).toContain('audience: this.getGoTrueAudience(),');
+    expect(accessTokenService).toContain(
+      'issuer: this.getGoTrueIssuers(gotrueUrl),',
+    );
+    expect(accessTokenService).toContain('ignoreExpiration: false,');
+    expect(accessTokenService).toContain('ignoreNotBefore: false,');
+    // The secret is never logged.
+    expect(accessTokenService).not.toMatch(/log\w*\([^)]*sharedSecret/);
   });
 });

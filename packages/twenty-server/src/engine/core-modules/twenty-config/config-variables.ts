@@ -804,6 +804,17 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
+    isSensitive: true,
+    isHiddenInAdminPanel: true,
+    description:
+      'Shared HMAC secret used to verify GoTrue-issued HS256 JWTs. Required when GoTrue is configured with a symmetric signing key (GOTRUE_JWT_SECRET), because GoTrue deliberately omits HMAC keys from its JWKS endpoint. Must match the GoTrue service GOTRUE_JWT_SECRET exactly. Leave unset for asymmetric (RS*/ES*) GoTrue deployments.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  GOTRUE_JWT_SECRET?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
     description:
       'Default subdomain for the frontend when multi-workspace is enabled',
     type: ConfigVariableType.STRING,
