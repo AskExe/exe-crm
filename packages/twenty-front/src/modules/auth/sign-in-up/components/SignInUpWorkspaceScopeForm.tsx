@@ -233,6 +233,25 @@ const StyledSpinner = styled.div`
   }
 `;
 
+/**
+ * URL for the "Sign in via Exe SSO" hand-off (bug 9f60e8e6).
+ *
+ * The gateway must be sent back to `/api/auth/gotrue-callback`, NOT to
+ * `/verify`. `/verify` needs a `loginToken` query param, and the gateway has no
+ * way to produce one — only the CRM server can, and only after it has read and
+ * verified the HttpOnly `exe_sess` GoTrue cookie that the browser cannot see.
+ * The bridge does exactly that and then issues its own redirect to
+ * `/verify?loginToken=...`.
+ */
+const buildExeSsoUrl = () => {
+  // Registrable domain of the current host, so self-hosted installs reach their
+  // own auth gateway instead of a hardcoded askexe.com.
+  const authHost = `auth.${window.location.hostname.split('.').slice(-2).join('.')}`;
+  const redirect = `${window.location.origin}/api/auth/gotrue-callback`;
+
+  return `https://${authHost}/login?product=CRM&redirect=${encodeURIComponent(redirect)}`;
+};
+
 export const SignInUpWorkspaceScopeForm = () => {
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
   const [email, setEmail] = useState('');
@@ -506,13 +525,15 @@ export const SignInUpWorkspaceScopeForm = () => {
         <StyledDividerText>or</StyledDividerText>
         <StyledDividerLine />
       </StyledSsoDivider>
-      <StyledSsoLink
-        href={`https://auth.askexe.com/login?product=CRM&redirect=${encodeURIComponent(
-          window.location.origin + '/verify',
-        )}`}
-      >
-        Sign in via Exe SSO
-      </StyledSsoLink>
+      {/* Bug 9f60e8e6: this used to send the auth gateway back to `/verify`
+          with NO loginToken, which /verify cannot do anything with. The SSO
+          hand-off has to land on the server-side bridge — only the server can
+          read the HttpOnly `exe_sess` GoTrue cookie — which verifies the
+          session and then redirects to `/verify?loginToken=...` itself. Also
+          note the auth host is derived from the current hostname rather than
+          hardcoded to askexe.com, so self-hosted deployments reach their own
+          gateway. */}
+      <StyledSsoLink href={buildExeSsoUrl()}>Sign in via Exe SSO</StyledSsoLink>
     </StyledContentContainer>
   );
 };

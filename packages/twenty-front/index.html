@@ -120,15 +120,55 @@
         border-color: rgba(240, 237, 232, 0.1) !important;
       }
     </style>
-    <!-- SSO redirect: unauthenticated users go to auth.<domain> -->
+    <!-- Exe SSO bridge (bug 9f60e8e6).
+         Previously this gated on a cookie named `exe_sso_token` that NOTHING in
+         the stack ever sets, and bounced to auth.<domain> on every page load.
+         auth.<domain> auto-redirects an already-signed-in user straight back,
+         so a logged-in visitor ping-ponged ~30x/sec until CRM's 300/60s rate
+         limit returned HTTP 429.
+
+         Correct contract:
+           - CRM's own session cookie is `tokenPair` (the frontend's
+             tokenPairState `cookieKey`) — that, not a made-up name, is what
+             "already signed in to CRM" means.
+           - The real SSO handoff is the server-side bridge
+             GET /api/auth/gotrue-callback. Only the server can read the
+             HttpOnly `exe_sess` GoTrue cookie, so the browser can never decide
+             this on its own. The bridge verifies `exe_sess` against GoTrue and
+             either mints a CRM login token (302 -> /verify?loginToken=...)
+             or lands the visitor on the stable sign-in page (302 -> /welcome).
+             Both terminate — neither can bounce back here.
+
+         Three independent loop guards, because a redirect loop here is a P0:
+           1. auth-flow paths are never gated (they are what establishes the
+              session, so gating them would loop by construction),
+           2. a `tokenPair` cookie short-circuits the whole thing,
+           3. at most one bridge attempt per tab per 30s. -->
     <script>
-    (function(){
-      var token = document.cookie.match(/exe_sso_token=([^;]+)/);
-      if (!token) {
-        var domain = window.location.hostname.split('.').slice(-2).join('.');
-        window.location.href = 'https://auth.' + domain + '?redirect=' + encodeURIComponent(window.location.href) + '&product=CRM';
-      }
-    })();
+      (function () {
+        try {
+          var loc = window.location;
+          // 1. Never gate the pages that establish a session.
+          if (
+            /^\/(welcome|verify|verify-email|invite|reset-password|create|plan-required|api)(\/|$)/.test(
+              loc.pathname,
+            )
+          ) {
+            return;
+          }
+          if (/[?&]loginToken=/.test(loc.search)) return;
+          // 2. Already signed in to CRM.
+          if (/(?:^|;\s*)tokenPair=/.test(document.cookie)) return;
+          // 3. One bridge attempt per tab per 30s.
+          var key = 'exe_sso_bridge_at';
+          var last = Number(window.sessionStorage.getItem(key)) || 0;
+          if (Date.now() - last < 30000) return;
+          window.sessionStorage.setItem(key, String(Date.now()));
+          loc.replace('/api/auth/gotrue-callback');
+        } catch (e) {
+          /* Never let the bridge block the app from rendering. */
+        }
+      })();
     </script>
   </head>
   <body style="background-color: #0F0E1A;">
