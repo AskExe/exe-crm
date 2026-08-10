@@ -130,6 +130,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
+      # Chain-of-custody G1 (bug f78db968): compute the stamp facts. tree_clean
+      # is MEASURED, not asserted — a hardcoded "true" would make the label
+      # worthless. Mirrors exe-os scripts/bake-version.sh semantics so the
+      # exe-os G2/G4/G6 gates read identical values across repos.
+      - name: Stamp facts (chain-of-custody G1)
+        id: stamp
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+            tree_clean="false"
+          else
+            tree_clean="true"
+          fi
+          echo "tree_clean=$tree_clean" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "Stamping tree_clean=$tree_clean"
+
       - name: Build image
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
@@ -140,22 +158,21 @@ jobs:
           tags: |
             ${{ steps.release.outputs.image }}
             ghcr.io/askexe/exe-crm:sha-${{ github.sha }}
+          # Bug f78db968: these labels are the ONLY way a deployed image can be
+          # traced back to a release. The exe-crm image running in production
+          # carries NO version label at all — it was hand-built and hand-pushed
+          # while this pipeline was red, so this block never ran on it. The
+          # org.exe.* labels are the chain-of-custody set the exe-os G2/G4/G6
+          # gates verify.
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.release.outputs.stack_version }}
-
-      # Container/image vulnerability scan of the EXACT image we just pushed
-      # (referenced by its immutable build digest). Fails closed on HIGH/CRITICAL.
-      - name: Scan published image (Trivy)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ghcr.io/askexe/exe-crm@${{ steps.build.outputs.digest }}
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
+            org.exe.git_sha=${{ github.sha }}
+            org.exe.repo=${{ github.repository }}
+            org.exe.git_ref=${{ github.ref_name }}
+            org.exe.build_time=${{ steps.stamp.outputs.build_time }}
+            org.exe.tree_clean=${{ steps.stamp.outputs.tree_clean }}
 
       # Fail-closed digest verification: the image actually published must match
       # the digest pinned in stack.release.json. On drift this fails with the
@@ -189,3 +206,41 @@ jobs:
             exit 1
           fi
           echo "Verified: ${IMAGE} is pinned to ${EXPECTED}"
+
+      # Container/image vulnerability scan of the EXACT image we just pushed
+      # (referenced by its immutable build digest). Fails closed on HIGH/CRITICAL.
+      #
+      # ORDERING (bug f78db968): this now runs AFTER digest verification, not
+      # before it. build-push-action has already pushed by the time any scan can
+      # reference the image, so a scan failure leaves a PUSHED, correctly
+      # labelled artifact behind a RED run. Reading that red run as "the release
+      # failed, I'll build and push it by hand" is exactly what put an unlabelled
+      # image into production. Verifying provenance first means the run's most
+      # important guarantee is recorded even when the scan then fails.
+      - name: Scan published image (Trivy)
+        id: scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/askexe/exe-crm@${{ steps.build.outputs.digest }}
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      # The scan gate is the step that most often reddens this pipeline (the
+      # 2026-08-06 and v0.9.54 runs both died here on fixable Go stdlib CVEs
+      # inherited from the base image). Make the correct remedy unmissable so
+      # nobody "fixes" it by hand-pushing again.
+      - name: Explain a scan failure
+        if: failure() && steps.scan.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::error::Trivy found CRITICAL/HIGH fixable vulnerabilities."
+          echo "::error::The image at ghcr.io/askexe/exe-crm@${{ steps.build.outputs.digest }} IS ALREADY PUSHED"
+          echo "::error::and IS correctly labelled — this run is red because of the scan, not the build."
+          echo "::error::"
+          echo "::error::REMEDY: bump the base image so the fixable CVEs drop out, then re-run."
+          echo "::error::NEVER hand-build and hand-push a replacement: a hand-built image carries no"
+          echo "::error::org.opencontainers.image.version and no org.exe.* labels, and update.askexe.com"
+          echo "::error::is read-only (AskExe/exe-os#592) so such a push cannot reach production anyway."

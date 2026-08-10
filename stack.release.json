@@ -8,6 +8,8 @@
   "image": "ghcr.io/askexe/exe-crm:v0.9.54",
   "imageDigest": "sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
   "imageRef": "ghcr.io/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
+  "distributionImage": "update.askexe.com/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
+  "registryNote": "REGISTRY SOURCE OF TRUTH (bug f78db968). 'image'/'imageRef' (ghcr.io) is the canonical PUBLISH ref that CI pushes to. 'distributionImage' (update.askexe.com) is the customer-facing PULL-THROUGH mirror of the same GHCR repository — same bytes, same digest — and is read-only (AskExe/exe-os#592), so it can never be pushed to by hand. These are one artifact under two names, not two registries. Consumers MUST deploy by digest (immutable), never by the mutable tag.",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {
     "required": true,
