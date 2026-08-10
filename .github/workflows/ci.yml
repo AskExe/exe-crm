@@ -214,6 +214,17 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
+        # @recallai/desktop-sdk (a twenty-companion desktop-only dep) runs a
+        # darwin-only postinstall that downloads a ~48MB native SDK tar from
+        # us-east-1 S3 with no retry. From this runner that download flakes with
+        # ECONNRESET and fails `yarn install --immutable`, breaking this required
+        # "Server unit tests (mac)" gate — even though the server suite never
+        # uses the desktop SDK. On Linux the same postinstall is a no-op (it only
+        # downloads on darwin/win32), which is why the Linux lane is unaffected.
+        # RECALL_LOCAL_BUILD makes setup.js skip the native download entirely.
+        # (bug 19fcc1f0)
+        env:
+          RECALL_LOCAL_BUILD: '1'
         run: yarn install --immutable
 
       - name: Build shared
