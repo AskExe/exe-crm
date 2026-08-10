@@ -652,4 +652,273 @@ describe('AccessTokenService', () => {
       ).not.toHaveBeenCalled();
     });
   });
+
+  // ── bug 550d6ab7 ────────────────────────────────────────────────────────────
+  // GoTrue deliberately filters HMAC keys out of /.well-known/jwks.json
+  // (internal/api/jwks.go skips jwa.OctetSeq — publishing `k` would leak
+  // GOTRUE_JWT_SECRET). A symmetric GoTrue therefore serves `{"keys":[]}`, and
+  // the JWKS-only key lookup made GET /api/auth/gotrue-callback unsatisfiable:
+  // no correctly-signed token could ever be accepted. These tests pin the
+  // HS256 shared-secret fallback and, critically, that it cannot be abused to
+  // downgrade an asymmetric deployment.
+  describe('verifyGoTrueToken with a symmetric (HS256) GoTrue', () => {
+    const GOTRUE_URL = 'http://gotrue:9999';
+    const GOTRUE_ISSUER = 'http://gotrue:9999/auth/v1';
+    const SHARED_SECRET = 'gotrue-shared-secret-value-do-not-log';
+    const EMAIL = 'symmetric@example.com';
+
+    const mockJwks = (keys: unknown[]) => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys }),
+      } as Response) as typeof fetch;
+    };
+
+    const signHs256 = (
+      secret: string | Buffer,
+      overrides: jwt.SignOptions = {},
+    ) =>
+      jwt.sign({ sub: randomUUID(), email: EMAIL }, secret, {
+        algorithm: 'HS256',
+        audience: 'authenticated',
+        expiresIn: '1h',
+        issuer: GOTRUE_ISSUER,
+        ...overrides,
+      });
+
+    // Both callers of verifyGoTrueToken (tryValidateGoTrueToken and the
+    // gotrue-callback controller) treat a throw and a null identically as
+    // "rejected", so rejection is asserted uniformly as "yields no claims".
+    const verifyOrNull = async (token: string) => {
+      try {
+        return await service.verifyGoTrueToken(token, GOTRUE_URL);
+      } catch {
+        return null;
+      }
+    };
+
+    beforeEach(() => {
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+      mockJwks([]);
+    });
+
+    it('accepts a valid HS256 token signed with the configured shared secret', async () => {
+      const claims = await service.verifyGoTrueToken(
+        signHs256(SHARED_SECRET),
+        GOTRUE_URL,
+      );
+
+      expect(claims).toEqual(expect.objectContaining({ email: EMAIL }));
+    });
+
+    it('rejects an HS256 token signed with the wrong secret', async () => {
+      expect(await verifyOrNull(signHs256('a-different-secret'))).toBeNull();
+    });
+
+    it('rejects an expired HS256 token', async () => {
+      expect(
+        await verifyOrNull(signHs256(SHARED_SECRET, { expiresIn: '-1h' })),
+      ).toBeNull();
+    });
+
+    it('rejects an HS256 token from an unexpected issuer', async () => {
+      expect(
+        await verifyOrNull(
+          signHs256(SHARED_SECRET, { issuer: 'https://attacker.example.com' }),
+        ),
+      ).toBeNull();
+    });
+
+    it('rejects an HS256 token with an unexpected audience', async () => {
+      expect(
+        await verifyOrNull(
+          signHs256(SHARED_SECRET, { audience: 'wrong-audience' }),
+        ),
+      ).toBeNull();
+    });
+
+    it('rejects an HS256 token when GOTRUE_JWT_SECRET is not configured', async () => {
+      mockConfig({ FRONTEND_URL: 'https://crm.example.com', GOTRUE_URL });
+
+      expect(await verifyOrNull(signHs256(SHARED_SECRET))).toBeNull();
+    });
+
+    it('rejects an HS256 token when GOTRUE_JWT_SECRET is an empty string', async () => {
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: '',
+      });
+
+      expect(await verifyOrNull(signHs256(SHARED_SECRET))).toBeNull();
+    });
+  });
+
+  describe('verifyGoTrueToken algorithm-confusion defence', () => {
+    const GOTRUE_URL = 'http://gotrue:9999';
+    const GOTRUE_ISSUER = 'http://gotrue:9999/auth/v1';
+    const SHARED_SECRET = 'gotrue-shared-secret-value-do-not-log';
+    const EMAIL = 'attacker@example.com';
+
+    const verifyOrNull = async (token: string) => {
+      try {
+        return await service.verifyGoTrueToken(token, GOTRUE_URL);
+      } catch {
+        return null;
+      }
+    };
+
+    // Classic downgrade: the deployment signs with RSA and publishes the public
+    // key; the attacker re-signs as HS256 using the *public key bytes* as the
+    // HMAC secret. Must be rejected — the public key is never an HMAC secret.
+    // NOTE: the `kid` matches, so the JWKS lookup succeeds and this is caught by
+    // jsonwebtoken's own key-type guard ("secretOrPublicKey must be a symmetric
+    // key when using HS256") rather than by the new fallback. The test below,
+    // with an unknown `kid`, is the one that exercises the fallback's own guard.
+    it('rejects an HS256 token forged with the advertised RSA public key as the HMAC secret', async () => {
+      const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      const publicJwk = publicKey.export({ format: 'jwk' }) as JsonWebKey;
+      const publicPem = publicKey.export({
+        type: 'spki',
+        format: 'pem',
+      }) as string;
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          keys: [{ ...publicJwk, alg: 'RS256', kid: 'gtr-key-1', use: 'sig' }],
+        }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+
+      const forged = jwt.sign({ sub: randomUUID(), email: EMAIL }, publicPem, {
+        algorithm: 'HS256',
+        audience: 'authenticated',
+        expiresIn: '1h',
+        issuer: GOTRUE_ISSUER,
+        keyid: 'gtr-key-1',
+      });
+
+      expect(await verifyOrNull(forged)).toBeNull();
+    });
+
+    // Second downgrade shape: an unknown `kid` makes the JWKS lookup miss, so
+    // the attacker tries to steer an asymmetric deployment onto the symmetric
+    // fallback. The fallback inspects the advertised key SET, not just the
+    // lookup result, so it refuses to fire.
+    it('rejects an HS256 token with an unknown kid while JWKS advertises asymmetric keys', async () => {
+      const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      const publicJwk = publicKey.export({ format: 'jwk' }) as JsonWebKey;
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          keys: [{ ...publicJwk, alg: 'RS256', kid: 'gtr-key-1', use: 'sig' }],
+        }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+
+      // Correctly signed with the real shared secret — rejected purely because
+      // this deployment is asymmetric.
+      const token = jwt.sign(
+        { sub: randomUUID(), email: EMAIL },
+        SHARED_SECRET,
+        {
+          algorithm: 'HS256',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: GOTRUE_ISSUER,
+          keyid: 'unknown-kid',
+        },
+      );
+
+      expect(await verifyOrNull(token)).toBeNull();
+    });
+
+    it('rejects an unsigned alg:none token even when the shared secret is configured', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [] }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+
+      const unsigned = jwt.sign({ sub: randomUUID(), email: EMAIL }, '', {
+        algorithm: 'none',
+        audience: 'authenticated',
+        expiresIn: '1h',
+        issuer: GOTRUE_ISSUER,
+      });
+
+      expect(await verifyOrNull(unsigned)).toBeNull();
+    });
+
+    // A malformed JWKS must not be read as "no keys advertised" — that would
+    // let a broken/hijacked JWKS response masquerade as a symmetric deployment
+    // and steer verification onto the shared-secret fallback.
+    it('rejects an HS256 token when the JWKS response is malformed', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: 'not-an-array' }),
+      } as unknown as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+
+      const token = jwt.sign(
+        { sub: randomUUID(), email: EMAIL },
+        SHARED_SECRET,
+        {
+          algorithm: 'HS256',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: GOTRUE_ISSUER,
+        },
+      );
+
+      expect(await verifyOrNull(token)).toBeNull();
+    });
+
+    it('rejects an HS512 token signed with the shared secret (fallback is HS256-only)', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [] }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+
+      const token = jwt.sign(
+        { sub: randomUUID(), email: EMAIL },
+        SHARED_SECRET,
+        {
+          algorithm: 'HS512',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: GOTRUE_ISSUER,
+        },
+      );
+
+      expect(await verifyOrNull(token)).toBeNull();
+    });
+  });
 });

@@ -404,11 +404,22 @@ export class AccessTokenService {
 
     const jwk = await this.getGoTrueJwk(gotrueUrl, decoded.header.kid);
 
-    if (!jwk) {
+    // bug 550d6ab7: GoTrue deliberately omits HMAC keys from its JWKS endpoint
+    // (internal/api/jwks.go skips `jwa.OctetSeq` keys — publishing the `k`
+    // member would leak GOTRUE_JWT_SECRET to the internet). A symmetric GoTrue
+    // therefore always serves `{"keys":[]}`, so requiring a JWK made this whole
+    // path unsatisfiable: no correctly-signed token could ever be accepted.
+    // Fall back to the configured shared secret for HS256 only — see
+    // getGoTrueSymmetricVerificationKey for the algorithm-confusion analysis.
+    const verificationKey = jwk
+      ? this.getGoTrueVerificationKey(jwk)
+      : this.getGoTrueSymmetricVerificationKey(algorithm);
+
+    if (!verificationKey) {
       return null;
     }
 
-    const verified = jwt.verify(token, this.getGoTrueVerificationKey(jwk), {
+    const verified = jwt.verify(token, verificationKey, {
       algorithms: [algorithm],
       audience: this.getGoTrueAudience(),
       issuer: this.getGoTrueIssuers(gotrueUrl),
@@ -474,10 +485,22 @@ export class AccessTokenService {
 
     const payload = (await response.json()) as { keys?: GoTrueJwk[] };
 
+    // A malformed JWKS must NOT be coerced to an empty key set: an empty set is
+    // meaningful evidence that the deployment signs symmetrically, and that
+    // evidence gates the HS256 shared-secret fallback below. Garbage in must
+    // fail, not silently look like a symmetric GoTrue. An explicitly empty
+    // `keys: []` is legitimate — that is exactly what a symmetric GoTrue serves.
+    if (!Array.isArray(payload.keys)) {
+      throw new AuthException(
+        'Malformed GoTrue JWKS response',
+        AuthExceptionCode.UNAUTHENTICATED,
+      );
+    }
+
     return {
       url: gotrueUrl,
       fetchedAt: Date.now(),
-      keys: Array.isArray(payload.keys) ? payload.keys : [],
+      keys: payload.keys,
     };
   }
 
@@ -500,6 +523,73 @@ export class AccessTokenService {
       key: jwk as CryptoJsonWebKey,
       format: 'jwk',
     });
+  }
+
+  /**
+   * Resolves the verification key for a symmetric GoTrue deployment, where the
+   * JWKS endpoint legitimately advertises no usable key.
+   *
+   * ALGORITHM-CONFUSION ANALYSIS (bug 550d6ab7)
+   *
+   * The classic downgrade attack is: the server publishes an RSA public key,
+   * the attacker re-signs a token as `alg: HS256` using the *public key bytes*
+   * as the HMAC secret, and a naive verifier — which picks its key from the
+   * JWKS but its algorithm from the token header — accepts it.
+   *
+   * This fallback is not vulnerable to that, on four independent grounds:
+   *
+   *  1. The key material here is `GOTRUE_JWT_SECRET`, a server-side secret that
+   *     is never published anywhere. A JWKS public key is NEVER used as an HMAC
+   *     secret on any code path. Forging an HS256 token therefore requires the
+   *     secret itself, which is the same bar GoTrue sets.
+   *  2. The fallback refuses to fire when the JWKS advertises ANY asymmetric
+   *     key. An attacker cannot force an asymmetric deployment down this path
+   *     by inventing a `kid` that misses the key set, because the key set is
+   *     inspected, not just the lookup result.
+   *  3. It is gated on HS256 specifically, not on "JWKS lookup failed". A
+   *     genuine key-id mismatch on an asymmetric deployment still fails hard
+   *     rather than being papered over.
+   *  4. `jwt.verify` is still pinned to `algorithms: [algorithm]`, so `none`
+   *     and every algorithm outside the supported list remain rejected, and the
+   *     issuer / audience / expiry / nbf assertions are unchanged — this method
+   *     only decides WHERE the key comes from, never WHAT is asserted.
+   *
+   * Fails closed: returns null (→ token rejected) when the algorithm is not
+   * HS256, when the deployment looks asymmetric, or when no secret is set.
+   */
+  private getGoTrueSymmetricVerificationKey(
+    algorithm: jwt.Algorithm,
+  ): jwt.Secret | null {
+    if (algorithm !== 'HS256') {
+      return null;
+    }
+
+    const advertisedKeys = this.gotrueJwksCache?.keys ?? [];
+    const advertisesAsymmetricKey = advertisedKeys.some(
+      (key) => key.kty !== 'oct',
+    );
+
+    if (advertisesAsymmetricKey) {
+      this.logger.warn(
+        'Refusing HS256 GoTrue token: JWKS advertises asymmetric keys, so the ' +
+          'shared-secret fallback does not apply (possible algorithm-confusion attempt).',
+      );
+
+      return null;
+    }
+
+    const sharedSecret = this.twentyConfigService.get('GOTRUE_JWT_SECRET');
+
+    if (typeof sharedSecret !== 'string' || sharedSecret.length === 0) {
+      this.logger.warn(
+        'Refusing HS256 GoTrue token: GoTrue publishes no verification key ' +
+          '(symmetric signing) and GOTRUE_JWT_SECRET is not configured.',
+      );
+
+      return null;
+    }
+
+    return sharedSecret;
   }
 
   private isSupportedGoTrueAlgorithm(
