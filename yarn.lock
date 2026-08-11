@@ -102,14 +102,14 @@ __metadata:
   linkType: hard
 
 "@ai-sdk/openai@npm:^3.0.30":
-  version: 3.0.34
-  resolution: "@ai-sdk/openai@npm:3.0.34"
+  version: 3.0.93
+  resolution: "@ai-sdk/openai@npm:3.0.93"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.8"
-    "@ai-sdk/provider-utils": "npm:4.0.15"
+    "@ai-sdk/provider": "npm:3.0.15"
+    "@ai-sdk/provider-utils": "npm:4.0.44"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/c490681ac4552b53ba51efcbfd0cf2f867ad215b85e3bb2818a3133fdf89ebb27f9d336115887bf9747e0bffe27d8563589920771e839aa46b49abf8a3c85d5b
+  checksum: 10c0/6032160023df23b990f73e1922a50f40ca40099d8171d553111743e07b5ca6bc7ad33569e83298a929ad331623878426e185cc4e7ba3e397f83dc2f5f7d2b44e
   languageName: node
   linkType: hard
 
@@ -165,12 +165,35 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/provider-utils@npm:4.0.44":
+  version: 4.0.44
+  resolution: "@ai-sdk/provider-utils@npm:4.0.44"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.15"
+    "@standard-schema/spec": "npm:^1.1.0"
+    eventsource-parser: "npm:^3.0.8"
+    undici: "npm:^5.29.0"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/e531fe5cf51709c61f8c709917fe48237d82efff7cf10583b33b6b204a6f59a59aa5e80b73caab222aced3fac938d9ee3f77cf82158097d51acf907588f4296f
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/provider@npm:2.0.1":
   version: 2.0.1
   resolution: "@ai-sdk/provider@npm:2.0.1"
   dependencies:
     json-schema: "npm:^0.4.0"
   checksum: 10c0/3ec560c5b03401a1e3b8c73875f4258cb815668367157a3caa4d30f580ff5adffbba54ee52f875161c986c5225a88cb3829f050437e0a2d7e5820b72cf08238b
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider@npm:3.0.15":
+  version: 3.0.15
+  resolution: "@ai-sdk/provider@npm:3.0.15"
+  dependencies:
+    json-schema: "npm:^0.4.0"
+  checksum: 10c0/0a17eca818c6d821e9488188cf02789502e426eff125d9c9572c2308baead3ed2e93ad53856887b207f287e6907441da81860e31350b12a11c91a6dfd1c6f344
   languageName: node
   linkType: hard
 
@@ -31701,6 +31724,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventsource-parser@npm:^3.0.8":
+  version: 3.1.1
+  resolution: "eventsource-parser@npm:3.1.1"
+  checksum: 10c0/dd3236c61140587253dcaaf947de528ac0e7371caffdc53c77afaeee36a17661f00e251a6ea16af56c99be5ac138303e67b5d750630e7c41b02e3564e8ad8c44
+  languageName: node
+  linkType: hard
+
 "evp_bytestokey@npm:^1.0.0, evp_bytestokey@npm:^1.0.3":
   version: 1.0.3
   resolution: "evp_bytestokey@npm:1.0.3"
@@ -51986,7 +52016,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^5.18.0":
+"undici@npm:^5.18.0, undici@npm:^5.29.0":
   version: 5.29.0
   resolution: "undici@npm:5.29.0"
   dependencies:
