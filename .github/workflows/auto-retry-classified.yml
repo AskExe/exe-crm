@@ -10,7 +10,10 @@
 #   1. NO failed job has a genuinely failed STEP (a real code failure has a
 #      named failed step that is NOT a setup/checkout/cache/post step). If any
 #      such step exists -> REAL failure -> do nothing.
-#   2. At least one failed job's annotation matches an infra SIGNATURE below.
+#   2. At least one failed job has a FAILURE-level annotation matching an infra
+#      SIGNATURE below. (warning/notice-level annotations are ignored — GitHub
+#      emits a benign Node-20-deprecation warning naming actions/checkout and
+#      setup-node on every job, which would otherwise match every run.)
 #
 # Retry is capped at 1: only run_attempt < 2 is ever retried, so this can
 # never loop. Additive-only: does not touch the CI workflow itself.
@@ -38,7 +41,8 @@ jobs:
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           # Infra failure signatures (case-insensitive substring match against
-          # each failed job's annotation message / title / raw_details).
+          # each failed job's FAILURE-level annotation message / title /
+          # raw_details).
           SIGNATURES: >-
             ["lost communication with the server",
              "the runner has received a shutdown signal",
@@ -66,9 +70,13 @@ jobs:
             exit 0
           fi
 
-          jobs_json="$(gh api --paginate --slurp \
+          # NOTE: `gh api --slurp` is REJECTED when combined with `--jq`
+          # ("the `--slurp` option is not supported with `--jq` or `--template`"),
+          # which made every run of this workflow die here. Paginate with gh and
+          # slurp the page stream with jq -s instead.
+          jobs_json="$(gh api --paginate \
             "/repos/$REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
-            --jq '{ jobs: [.[].jobs[]] }')"
+            | jq -s '{ jobs: [.[].jobs[]] }')"
 
           failed_count="$(jq '[.jobs[] | select(.conclusion == "failure")] | length' <<<"$jobs_json")"
           if [ "$failed_count" -eq 0 ]; then
@@ -106,9 +114,19 @@ jobs:
               continue
             fi
             check_run_path="${check_run_url#https://api.github.com}"
-            annotations_json="$(gh api --paginate --slurp "$check_run_path/annotations?per_page=100")"
+            # Same --slurp/--jq constraint as above: paginate, then flatten the
+            # page array-of-arrays into one flat annotation array with jq.
+            annotations_json="$(gh api --paginate "$check_run_path/annotations?per_page=100" \
+              | jq -s 'add // []')"
+            # Only annotation_level == "failure" counts. Verified against real
+            # data (exe-os run 31569100576): the benign warning-level "Node.js 20
+            # is deprecated ... actions/checkout ... actions/setup-node"
+            # annotation that GitHub now emits on EVERY job matches the
+            # "actions/checkout" and "setup-node" signatures, so an unfiltered
+            # guard 2 was satisfied by every run and classified nothing.
             matched="$(jq --argjson sigs "$SIGNATURES" -r '
-              [ .[][] as $a
+              [ .[] | select((.annotation_level // "") == "failure") ] as $failures
+              | [ $failures[] as $a
                 | $sigs[] as $s
                 | select(
                     (($a.message     // "") | ascii_downcase | contains($s))
