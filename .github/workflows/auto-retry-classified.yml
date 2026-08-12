@@ -27,7 +27,15 @@ on:
     workflows: ["CI"]
     types: [completed]
 
-permissions: { actions: write, contents: read }
+# `checks: read` is REQUIRED, not optional: guard 2 reads
+# /repos/:owner/:repo/check-runs/:id/annotations, which is gated on the Checks
+# scope, and an explicit `permissions:` block sets every UNLISTED scope to
+# `none`. With only actions: write + contents: read that call 403s "Resource not
+# accessible by integration" under GITHUB_TOKEN — the failure mode observed in
+# exe-build (runs 31584636703, 31445094197), where actions: write was already
+# present. A personal token cannot reproduce it; it carries full scopes.
+# `actions: write` is for `gh run rerun`.
+permissions: { actions: write, checks: read, contents: read }
 
 jobs:
   classified-auto-retry:
