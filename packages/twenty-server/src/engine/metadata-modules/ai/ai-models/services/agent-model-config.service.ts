@@ -84,7 +84,8 @@ export class AgentModelConfigService {
             : undefined;
 
           if (openaiProvider) {
-            tools.web_search = openaiProvider.tools.webSearch();
+            tools.web_search =
+              openaiProvider.tools.webSearch() as ToolSet[string];
           }
         }
         break;

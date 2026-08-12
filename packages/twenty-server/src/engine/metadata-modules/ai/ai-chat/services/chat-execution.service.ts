@@ -387,7 +387,7 @@ export class ChatExecutionService {
         }
 
         return {
-          tools: { web_search: provider.tools.webSearch() },
+          tools: { web_search: provider.tools.webSearch() as ToolSet[string] },
           callableToolNames: ['web_search'],
         };
       }
