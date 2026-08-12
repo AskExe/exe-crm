@@ -179,7 +179,9 @@ jobs:
         # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
         run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
 
-  # PR LANE (primary test gate) — runs the SAME server unit test suite on the
+  # PR LANE (primary test gate) — runs the server unit test suite, scoped to the
+  # tests affected by the PR's diff (see "Select test scope" below; a change
+  # outside jest's module graph still runs everything), on the
   # dedicated self-hosted macOS runner (mac-m4-exe-crm, M4 / 16 cores). Check
   # context: "Server unit tests (mac)". Runs ONLY on pull_request + merge_group
   # (merge queue requires protection-required contexts to report on merge_group
@@ -206,6 +208,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Affected-only test selection (see "Select test scope" below) needs
+          # real history to compute a merge base with main. The default shallow
+          # clone has none.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -230,10 +237,77 @@ jobs:
       - name: Build shared
         run: npx nx build twenty-shared
 
-      - name: Run server tests
-        # Same fail-closed semantics as the main-lane `server-tests` job above
-        # (see its comment for the coverage-threshold / continue-on-error
-        # history). KEEP THE TWO COMMANDS IN SYNC apart from --maxWorkers.
+      # AFFECTED-ONLY SELECTION — PR LANE ONLY.
+      #
+      # Decides between the full suite and jest's `--changedSince` for THIS job.
+      # The main-push lane (`server-tests` above) always runs the full suite and
+      # is deliberately untouched: affected-only is a PR-feedback optimisation,
+      # never the record of what main has been proven against.
+      #
+      # NOTE: the CI audit described a `test:changed` / `test:coverage:changed`
+      # pair of `vitest --changed origin/main` scripts already sitting unused in
+      # package.json. They do not exist in this repo — no package.json in the
+      # workspace defines them, `git log -S"test:changed" --all` finds nothing,
+      # and twenty-server's suite is jest (packages/twenty-server/jest.config.mjs),
+      # not vitest. `--changedSince` below is jest's equivalent of that flag.
+      #
+      # FAIL-SAFE: anything whose blast radius jest CANNOT see through its module
+      # graph forces the FULL suite. jest resolves related tests by import graph,
+      # and these are exactly the changes that do not show up there:
+      #   - yarn.lock / any package.json — dependency version changes
+      #   - any tsconfig*.json, nx.json, .nvmrc — compiler/runner config
+      #   - jest.config.mjs / setupTests.ts / twenty-server project.json — the
+      #     harness itself
+      #   - packages/twenty-shared|twenty-emails|twenty-client-sdk — workspace
+      #     deps the server imports as BUILT packages via node_modules, so a
+      #     source change there is invisible to jest's graph
+      #   - this workflow file
+      # Everything else (server src/ and test/) is genuinely covered by jest's
+      # own dependency resolution.
+      - name: Select test scope
+        id: scope
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
+        run: |
+          set -euo pipefail
+
+          # fetch-depth: 0 gives full history but not necessarily a
+          # remote-tracking ref for the base branch. Create it explicitly.
+          git fetch --no-tags --force origin "${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+          MERGE_BASE=$(git merge-base "refs/remotes/origin/${BASE_REF}" HEAD)
+          echo "merge base with ${BASE_REF}: ${MERGE_BASE}"
+
+          CHANGED=$(git diff --name-only "${MERGE_BASE}" HEAD)
+          echo "changed files:"
+          echo "${CHANGED}" | awk '{ print "    " $0 }'
+
+          FULL_RE='^(yarn\.lock|nx\.json|\.nvmrc|\.github/workflows/ci\.yml)$'
+          FULL_RE="${FULL_RE}"'|(^|/)package\.json$|(^|/)tsconfig[^/]*\.json$'
+          FULL_RE="${FULL_RE}"'|^packages/twenty-server/(jest\.config\.mjs|setupTests\.ts|project\.json)$'
+          FULL_RE="${FULL_RE}"'|^packages/(twenty-shared|twenty-emails|twenty-client-sdk)/'
+
+          if [ -z "${CHANGED}" ] || echo "${CHANGED}" | grep -qE "${FULL_RE}"; then
+            echo "scope=full" >> "$GITHUB_OUTPUT"
+            echo "::notice::Running the FULL server suite (a change outside jest's module graph was detected, or no diff was resolvable)."
+          else
+            echo "scope=changed" >> "$GITHUB_OUTPUT"
+            echo "merge_base=${MERGE_BASE}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Running only tests related to files changed since ${MERGE_BASE}."
+          fi
+
+      - name: Run server tests (affected only)
+        if: steps.scope.outputs.scope == 'changed'
+        # Same fail-closed semantics as the main-lane `server-tests` job (see its
+        # comment for the coverage-threshold / continue-on-error history) — the
+        # ONLY difference from the full command below is `--changedSince`, which
+        # narrows jest to the specs that transitively import a changed file.
+        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }}
+
+      - name: Run server tests (full suite)
+        if: steps.scope.outputs.scope == 'full'
+        # KEEP IN SYNC with the main-lane `server-tests` command apart from
+        # --maxWorkers.
         run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests
 
   security-scan:
