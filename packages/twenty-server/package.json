@@ -47,7 +47,6 @@
     "@lingui/core": "^5.1.2",
     "@lingui/format-po": "5.1.2",
     "@lingui/react": "5.1.2",
-    "@lingui/vite-plugin": "5.1.2",
     "@microsoft/microsoft-graph-client": "3.0.7",
     "@microsoft/microsoft-graph-types": "^2.40.0",
     "@nestjs/axios": "3.1.2",
@@ -104,6 +103,7 @@
     "deep-equal": "2.2.3",
     "dompurify": "3.3.3",
     "dotenv": "16.4.5",
+    "esbuild": "0.28.2",
     "express": "4.22.1",
     "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.2",
@@ -189,6 +189,7 @@
   "devDependencies": {
     "@faker-js/faker": "^9.8.0",
     "@lingui/cli": "^5.1.2",
+    "@lingui/vite-plugin": "5.1.2",
     "@nestjs/cli": "^11.0.16",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "11.1.16",

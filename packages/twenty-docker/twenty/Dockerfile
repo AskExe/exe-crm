@@ -189,6 +189,24 @@ FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432
 
 RUN apk add --no-cache curl jq postgresql-client
 
+# Drop npm from the RUNTIME image. Every CRITICAL/HIGH finding Trivy reports
+# against the base image lives in npm's own bundled dependencies under
+# usr/local/lib/node_modules/npm/node_modules/ (tar CVE-2026-59873 CRITICAL,
+# brace-expansion, ip-address, undici, picomatch, sigstore). Those are NOT
+# reachable from our lockfile, so `resolutions` provably cannot fix them and a
+# base-image digest bump only helps when npm itself is republished.
+#
+# npm is not used at runtime: entrypoint.sh shells out to `yarn` only (Yarn 1.x
+# at /usr/local/bin/yarn delegates to .yarn/releases via yarnPath and does not
+# depend on npm), and CMD is `node dist/main`. Deleting it removes the
+# vulnerable bytes from the artifact rather than suppressing the finding.
+#
+# Build stages are unaffected — they run `npx nx` in twenty-server-build /
+# twenty-front-build, which are separate stages that keep their npm.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx
+
 COPY ./packages/twenty-docker/twenty/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 WORKDIR /app/packages/twenty-server
