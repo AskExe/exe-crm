@@ -6,9 +6,10 @@
   "packageName": "twenty",
   "version": "0.9.54",
   "image": "ghcr.io/askexe/exe-crm:v0.9.54",
-  "imageDigest": "sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
-  "imageRef": "ghcr.io/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
-  "distributionImage": "update.askexe.com/askexe/exe-crm:v0.9.54@sha256:73864ce14aaac06b73d67100bbf88e669fd13c7da39edd9644107037211559b7",
+  "imageDigest": "sha256:ea67b5ee3d35cd5c4cc252cf17454c14e983f6b8f6894e518447f056f3888764",
+  "imageRef": "ghcr.io/askexe/exe-crm:v0.9.54@sha256:ea67b5ee3d35cd5c4cc252cf17454c14e983f6b8f6894e518447f056f3888764",
+  "distributionImage": "update.askexe.com/askexe/exe-crm:v0.9.54@sha256:ea67b5ee3d35cd5c4cc252cf17454c14e983f6b8f6894e518447f056f3888764",
+  "imageDigestNote": "CORRECTED (bug a49f6f1d). These fields previously read sha256:73864ce1…, which is the digest of v0.9.51 — NOT v0.9.54. The declared tag and digest named different artifacts, so a digest-pinned consumer silently deployed three releases older than the version string claimed. Verified against GHCR: v0.9.51 -> sha256:73864ce1…, v0.9.54 -> sha256:ea67b5ee… (the value now recorded). SCOPE: this is a HISTORICAL RECORD of the last published release, not a release input. Per bug cc8feeee the release workflow no longer gates on this field — a digest cannot be an input to the build that produces it — so it is verified by nobody and must be treated as documentation. The authoritative pin for deployment is the exe-os stack manifest, which records the digest each release EMITS.",
   "registryNote": "REGISTRY SOURCE OF TRUTH (bug f78db968). 'image'/'imageRef' (ghcr.io) is the canonical PUBLISH ref that CI pushes to. 'distributionImage' (update.askexe.com) is the customer-facing PULL-THROUGH mirror of the same GHCR repository — same bytes, same digest — and is read-only (AskExe/exe-os#592), so it can never be pushed to by hand. These are one artifact under two names, not two registries. Consumers MUST deploy by digest (immutable), never by the mutable tag.",
   "imageEnv": "CRM_IMAGE_TAG",
   "stackParticipation": {

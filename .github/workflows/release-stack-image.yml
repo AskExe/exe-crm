@@ -108,16 +108,17 @@ jobs:
           assert rel.get('schemaVersion') == 1, 'schemaVersion must be 1'
           assert rel.get('version'), 'version required'
           assert rel.get('image', '').endswith(':v' + rel['version']), 'image must use stack release tag'
-          # Fail-closed: a release must pin a real, resolvable image digest.
-          # A missing/placeholder (e.g. "TODO") imageDigest blocks the release.
-          digest = rel.get('imageDigest', '')
-          assert re.match(r'^sha256:[0-9a-f]{64}$', digest), \
-              'imageDigest must be a resolvable sha256 digest (tag-only releases are not allowed)'
+          # Bug cc8feeee: imageDigest is NO LONGER a release INPUT. A new build's
+          # digest cannot be known before the build, and recording it changes the
+          # commit sha that gets stamped into the image config — which changes the
+          # digest. Demanding it up front was unsatisfiable by construction. The
+          # digest is now an OUTPUT of this workflow, consumed by the exe-os stack
+          # manifest (stack-release.ts already pins from it). Any value here is a
+          # historical record only and is deliberately NOT gated on.
           assert rel.get('stackParticipation', {}).get('health'), 'health checks required'
           assert rel.get('stackParticipation', {}).get('smokeTests'), 'smoke tests required'
           print('stack_version=' + rel['version'])
           print('image=' + rel['image'])
-          print('image_digest=' + digest)
           PY2
 
       - name: Login to GHCR
@@ -164,8 +165,15 @@ jobs:
           context: .
           file: packages/twenty-docker/twenty/Dockerfile
           push: true
+          # PUSH-BEFORE-VERIFY ORDERING (bug cc8feeee). build-push must push to
+          # produce a digest, so *something* becomes resolvable before any gate
+          # runs. We therefore publish ONLY the immutable, self-describing
+          # sha-<commit> tag here. The human-facing RELEASE tag is created later,
+          # after provenance verification AND the vulnerability scan both pass, so
+          # a red run can never leave a release tag pointing at an unverified or
+          # vulnerable artifact. That is what previously made a failed run look
+          # like "the release failed, I'll push it by hand".
           tags: |
-            ${{ steps.release.outputs.image }}
             ghcr.io/askexe/exe-crm:sha-${{ github.sha }}
           # Bug f78db968: these labels are the ONLY way a deployed image can be
           # traced back to a release. The exe-crm image running in production
@@ -186,45 +194,61 @@ jobs:
       # the digest pinned in stack.release.json. On drift this fails with the
       # built digest so the maintainer can update stack.release.json and re-tag.
       #
-      # Release procedure for a NEW version (digest can't be known before build):
-      #   1) cut the tag — this run builds, pushes, then fails here printing the
-      #      built digest;
-      #   2) set stack.release.json imageDigest/imageRef to that digest, commit;
-      #   3) move the tag to the new commit (or re-dispatch) — verification passes.
-      - name: Verify published digest matches stack.release.json
+      # REPLACED (bug cc8feeee). The old gate compared the built digest against a
+      # digest pre-committed in stack.release.json, with this documented remedy:
+      #   1) cut the tag — the run builds, pushes, then fails printing the digest;
+      #   2) commit that digest to stack.release.json;
+      #   3) move the tag to the new commit — "verification passes".
+      # Step 3 cannot pass. Since #89 the build stamps the commit sha into the
+      # image CONFIG (org.exe.git_sha, org.opencontainers.image.revision), so the
+      # re-pin commit changes github.sha -> changes the labels -> changes the
+      # config -> changes the digest. The remedy produces a DIFFERENT digest and
+      # drift-fails again, forever. A digest is an OUTPUT of a build; it cannot be
+      # an INPUT to the build that produces it.
+      #
+      # What we verify instead (exe-os chain-of-custody G2, ported): the image we
+      # actually pushed provably came from this commit. That is the real invariant
+      # — "an image whose contents do not originate from the tag it wears must
+      # never be published" — and it is satisfiable in ONE pass.
+      #
+      # Labels are read off the IMMUTABLE DIGEST, never the mutable tag, so a
+      # concurrent push cannot swap the artifact under the gate. A multi-arch
+      # manifest INDEX is resolved to its linux/amd64 child before reading
+      # .Config.Labels; reading labels off an index yields none and would
+      # false-negative (exe-os bug e98a77d8).
+      #
+      # FAIL-CLOSED on: missing/mismatched org.exe.git_sha, missing/mismatched
+      # org.exe.repo, tree_clean != true, or the release tag resolving to a digest
+      # other than the one built. Negative tests: `verify-image-provenance.py
+      # --self-test` (10 cases, run in CI below).
+      - name: Chain-of-custody self-tests (negative cases)
         shell: bash
-        env:
-          EXPECTED: ${{ steps.release.outputs.image_digest }}
-          BUILT: ${{ steps.build.outputs.digest }}
-          IMAGE: ${{ steps.release.outputs.image }}
+        run: python3 .github/scripts/verify-image-provenance.py --self-test
+          --image-tag x --built-digest x --expected-sha x --expected-repo x
+
+      - name: Verify build provenance of the pushed image (G2, fail-closed)
+        shell: bash
         run: |
           set -euo pipefail
-          echo "Declared (stack.release.json): ${EXPECTED}"
-          echo "Built/pushed (build-push):     ${BUILT}"
-          if [ "${BUILT}" != "${EXPECTED}" ]; then
-            echo "::error::Image digest drift: the built image (${BUILT}) does not match the"
-            echo "::error::pinned stack.release.json imageDigest (${EXPECTED}). Update imageDigest"
-            echo "::error::and imageRef to ${BUILT}, commit, and re-tag. Failing closed."
-            exit 1
-          fi
-          RESOLVED=$(docker buildx imagetools inspect "${IMAGE}" --raw | sha256sum | awk '{print "sha256:"$1}')
-          echo "Registry tag resolves to:      ${RESOLVED}"
-          if [ "${RESOLVED}" != "${EXPECTED}" ]; then
-            echo "::error::Registry tag ${IMAGE} resolves to ${RESOLVED}, expected ${EXPECTED}. Failing closed."
-            exit 1
-          fi
-          echo "Verified: ${IMAGE} is pinned to ${EXPECTED}"
+          python3 .github/scripts/verify-image-provenance.py \
+            --image-tag "ghcr.io/askexe/exe-crm:sha-${{ github.sha }}" \
+            --built-digest "${{ steps.build.outputs.digest }}" \
+            --expected-sha "${{ github.sha }}" \
+            --expected-repo "${{ github.repository }}"
 
       # Container/image vulnerability scan of the EXACT image we just pushed
       # (referenced by its immutable build digest). Fails closed on HIGH/CRITICAL.
       #
-      # ORDERING (bug f78db968): this now runs AFTER digest verification, not
-      # before it. build-push-action has already pushed by the time any scan can
-      # reference the image, so a scan failure leaves a PUSHED, correctly
-      # labelled artifact behind a RED run. Reading that red run as "the release
-      # failed, I'll build and push it by hand" is exactly what put an unlabelled
-      # image into production. Verifying provenance first means the run's most
-      # important guarantee is recorded even when the scan then fails.
+      # ORDERING (bug f78db968, refined by cc8feeee): this runs AFTER provenance
+      # verification and BEFORE the release tag is published. build-push-action
+      # has already pushed by the time any scan can reference the image, so a scan
+      # failure still leaves a PUSHED, correctly labelled artifact behind a RED
+      # run — but it is now reachable only as sha-<commit>, never as the release
+      # tag. Reading a red run as "the release failed, I'll build and push it by
+      # hand" is exactly what put an unlabelled image into production; verifying
+      # provenance first records the run's most important guarantee even when the
+      # scan then fails, and withholding the release tag means the unscanned
+      # artifact cannot be mistaken for a release.
       - name: Scan published image (Trivy)
         id: scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -252,3 +276,64 @@ jobs:
           echo "::error::NEVER hand-build and hand-push a replacement: a hand-built image carries no"
           echo "::error::org.opencontainers.image.version and no org.exe.* labels, and update.askexe.com"
           echo "::error::is read-only (AskExe/exe-os#592) so such a push cannot reach production anyway."
+          echo "::error::"
+          echo "::error::NOTE (bug cc8feeee): no RELEASE tag was created by this run. Only the"
+          echo "::error::immutable ghcr.io/askexe/exe-crm:sha-${{ github.sha }} tag exists, so nothing"
+          echo "::error::downstream can resolve this unverified artifact as a release."
+
+      # Publish the human-facing RELEASE tag ONLY once provenance AND the scan
+      # have both passed (bug cc8feeee). Until this step runs, the artifact is
+      # reachable only by its sha-<commit> tag / digest, so a red run cannot leave
+      # a release tag pointing at an unverified or vulnerable image.
+      #
+      # imagetools create re-points a tag at an EXISTING manifest — it does not
+      # rebuild, so the digest cannot change here.
+      - name: Publish release tag (verified artifacts only)
+        shell: bash
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          BUILT: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          # TAG-REUSE GUARD (bug 2fe79166). Never move an existing release tag onto
+          # different bytes: exe-erp's v0.2.0-final8 was overwritten across three
+          # distinct builds, which makes tag references irreproducible and rollback
+          # targets meaningless. If this tag already exists and points somewhere
+          # else, fail closed — cut a new version instead.
+          if EXISTING=$(docker buildx imagetools inspect "${IMAGE}" 2>/dev/null \
+                        | awk '/^Digest:/{print $2; exit}'); then
+            if [ -n "${EXISTING:-}" ] && [ "${EXISTING}" != "${BUILT}" ]; then
+              echo "::error::Release tag ${IMAGE} already exists and resolves to ${EXISTING},"
+              echo "::error::but this run built ${BUILT}. Refusing to overwrite a published"
+              echo "::error::release tag with different bytes (bug 2fe79166) — bump the version."
+              exit 1
+            fi
+            echo "Release tag already resolves to ${BUILT} — idempotent re-run, nothing to move."
+          fi
+          docker buildx imagetools create \
+            --tag "${IMAGE}" \
+            "ghcr.io/askexe/exe-crm@${BUILT}"
+          # Re-assert after publishing: the release tag must resolve to exactly the
+          # digest we verified. Catches a concurrent push racing this step.
+          python3 .github/scripts/verify-image-provenance.py \
+            --image-tag "${IMAGE}" \
+            --built-digest "${BUILT}" \
+            --expected-sha "${{ github.sha }}" \
+            --expected-repo "${{ github.repository }}"
+
+      - name: Report published digest (stack manifest input)
+        shell: bash
+        run: |
+          {
+            echo "## Stack image published"
+            echo ""
+            echo "| field | value |"
+            echo "|-------|-------|"
+            echo "| release tag | \`${{ steps.release.outputs.image }}\` |"
+            echo "| digest | \`${{ steps.build.outputs.digest }}\` |"
+            echo "| pinned ref | \`ghcr.io/askexe/exe-crm@${{ steps.build.outputs.digest }}\` |"
+            echo "| commit | \`${{ github.sha }}\` |"
+            echo ""
+            echo "Pin the **digest** above in the exe-os stack manifest. The digest is an"
+            echo "OUTPUT of this release (bug cc8feeee) — do not pre-commit it here."
+          } >> "$GITHUB_STEP_SUMMARY"
