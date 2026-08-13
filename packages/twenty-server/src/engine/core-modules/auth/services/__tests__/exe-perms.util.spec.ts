@@ -1,7 +1,9 @@
 import {
   type CrmRoleTier,
   decodeJwtAppMetadata,
+  isManagedPermsRequired,
   mapCapsToCrmTier,
+  parseEnvBoolean,
   resolveExePermsForOrg,
 } from 'src/engine/core-modules/auth/services/exe-perms.util';
 
@@ -176,4 +178,70 @@ describe('decodeJwtAppMetadata Fail', () => {
   ])('returns undefined for $label', ({ token }) => {
     expect(decodeJwtAppMetadata(token)).toBeUndefined();
   });
+});
+
+describe('parseEnvBoolean — env vars are strings, defaults must survive them', () => {
+  it.each<{
+    raw: string | undefined | null;
+    fallback: boolean;
+    expected: boolean;
+  }>([
+    { raw: undefined, fallback: true, expected: true },
+    { raw: undefined, fallback: false, expected: false },
+    { raw: null, fallback: true, expected: true },
+    { raw: '', fallback: true, expected: true },
+    { raw: '   ', fallback: false, expected: false },
+    { raw: 'true', fallback: false, expected: true },
+    { raw: 'TrUe', fallback: false, expected: true },
+    { raw: ' 1 ', fallback: false, expected: true },
+    { raw: 'yes', fallback: false, expected: true },
+    { raw: 'on', fallback: false, expected: true },
+    { raw: 'false', fallback: true, expected: false },
+    { raw: 'FALSE', fallback: true, expected: false },
+    { raw: '0', fallback: true, expected: false },
+    { raw: 'no', fallback: true, expected: false },
+    { raw: 'off', fallback: true, expected: false },
+    { raw: ' false ', fallback: true, expected: false },
+    // A typo must never silently disable a default-on gate.
+    { raw: 'maybe', fallback: true, expected: true },
+    { raw: 'maybe', fallback: false, expected: false },
+  ])(
+    'parseEnvBoolean($raw, $fallback) === $expected',
+    ({ raw, fallback, expected }) => {
+      expect(parseEnvBoolean(raw, fallback)).toBe(expected);
+    },
+  );
+});
+
+describe('isManagedPermsRequired — default ON', () => {
+  const original = process.env.CRM_REQUIRE_MANAGED_PERMS;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.CRM_REQUIRE_MANAGED_PERMS;
+    else process.env.CRM_REQUIRE_MANAGED_PERMS = original;
+  });
+
+  it('is required when the variable is unset', () => {
+    delete process.env.CRM_REQUIRE_MANAGED_PERMS;
+
+    expect(isManagedPermsRequired()).toBe(true);
+  });
+
+  it.each(['', '   ', 'true', '1', 'yes', 'on', 'typo'])(
+    'stays required for %j',
+    (raw) => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = raw;
+
+      expect(isManagedPermsRequired()).toBe(true);
+    },
+  );
+
+  it.each(['false', 'FALSE', '0', 'no', 'off', ' false '])(
+    'opts out only for the explicit %j Fail',
+    (raw) => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = raw;
+
+      expect(isManagedPermsRequired()).toBe(false);
+    },
+  );
 });

@@ -165,3 +165,50 @@ export const resolveExePermsForOrg = (
 
   return { managed: false };
 };
+
+/**
+ * Parse a boolean-ish env var with an EXPLICIT default.
+ *
+ * Env vars are strings, so `Boolean(process.env.X)` treats "false" and "0" as
+ * true, while `X === 'true'` silently turns a security default OFF for every
+ * operator who wrote "1" or "yes". Both are how a default-on guard gets lost.
+ *   - unset / null / whitespace-only -> defaultValue
+ *   - '1' 'true' 'yes' 'on'          -> true  (case/space insensitive)
+ *   - '0' 'false' 'no' 'off'         -> false
+ *   - anything else (typo)           -> defaultValue, so a typo can never
+ *                                      accidentally disable a default-on gate
+ */
+export const parseEnvBoolean = (
+  raw: string | undefined | null,
+  defaultValue: boolean,
+): boolean => {
+  if (raw === undefined || raw === null) return defaultValue;
+
+  const value = String(raw).trim().toLowerCase();
+
+  if (value === '') return defaultValue;
+  if (value === '1' || value === 'true' || value === 'yes' || value === 'on')
+    return true;
+  if (value === '0' || value === 'false' || value === 'no' || value === 'off')
+    return false;
+
+  return defaultValue;
+};
+
+/**
+ * Whether managed (control-plane) permissions are REQUIRED before CRM will
+ * create a workspace and hand its Admin role to whoever logged in first.
+ *
+ * DEFAULT ON (e51ca54c §10.6b): an unmanaged first login must not mint its own
+ * Admin — that falsifies the promise that the dashboard is the one place roles
+ * are set. Genuine self-hosted bootstrap opts out with
+ * `CRM_REQUIRE_MANAGED_PERMS=false`, which is logged as a security downgrade at
+ * startup.
+ *
+ * Read at decision time (not cached) so an operator flipping the variable and
+ * restarting always gets the value they set, and so the behavior is unit
+ * testable without rebuilding the Nest module.
+ */
+export const isManagedPermsRequired = (
+  raw: string | undefined = process.env.CRM_REQUIRE_MANAGED_PERMS,
+): boolean => parseEnvBoolean(raw, true);
