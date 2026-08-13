@@ -1,5 +1,9 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckError,
+  HealthCheckService,
+} from '@nestjs/terminus';
 import { InjectDataSource } from '@nestjs/typeorm';
 
 import { DataSource } from 'typeorm';
@@ -7,6 +11,7 @@ import { DataSource } from 'typeorm';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
+import { WorkspaceBootstrapService } from 'src/engine/core-modules/workspace/services/workspace-bootstrap.service';
 
 @Controller('healthz')
 export class HealthController {
@@ -15,6 +20,7 @@ export class HealthController {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly redisClientService: RedisClientService,
+    private readonly workspaceBootstrapService: WorkspaceBootstrapService,
   ) {}
 
   @Get()
@@ -41,6 +47,24 @@ export class HealthController {
         );
 
         return { redis: { status: 'up' } };
+      },
+      // A CRM that never seeded its first workspace and admin user cannot be
+      // signed into by anyone. Database and Redis are both "up" in that state,
+      // so without this indicator the probe reports healthy on an install that
+      // is completely unusable.
+      async () => {
+        const { ready, reason } = await this.withTimeout(
+          this.workspaceBootstrapService.checkReadiness(),
+          'workspace bootstrap readiness check timed out',
+        );
+
+        if (!ready) {
+          throw new HealthCheckError('workspaceBootstrap is not ready', {
+            workspaceBootstrap: { status: 'down', message: reason },
+          });
+        }
+
+        return { workspaceBootstrap: { status: 'up' } };
       },
     ]);
   }
