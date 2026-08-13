@@ -272,6 +272,12 @@ jobs:
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL,HIGH
+          # Time-boxed exceptions ONLY, each with an `expired_at` (see the file).
+          # Passed explicitly rather than relying on auto-discovery so that a
+          # rename or a move makes this step fail loudly instead of silently
+          # scanning with no allowlist — or, worse, silently honouring one
+          # nobody declared.
+          trivyignores: .trivyignore.yaml
 
       # The scan gate is the step that most often reddens this pipeline (the
       # 2026-08-06 and v0.9.54 runs both died here on fixable Go stdlib CVEs

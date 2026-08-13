@@ -1,0 +1,66 @@
+# Trivy ignore file — TIME-BOXED EXCEPTIONS ONLY.
+#
+# Every entry here MUST carry an `expired_at`. Once that date passes Trivy stops
+# honouring the entry and the release gate goes red again, by design: an
+# exception that cannot expire is a permanent downgrade wearing a different hat.
+#
+# RULES (founder decision, 2026-08-13):
+#   - Specific CVE/GHSA ids only. Never a whole package, never a severity.
+#   - No crypto findings may ever be excepted here. Anything touching
+#     crypto/tls, certificate validation, signing or key handling is
+#     categorically non-exceptable and must be fixed.
+#   - Each entry states WHY it cannot be fixed today and what unblocks it.
+#
+# Everything else from the 2026-08 remediation was fixed properly, not excepted:
+#   - npm removed from the runtime stage (7 findings, incl. CRITICAL tar)
+#   - @lingui/vite-plugin moved to devDependencies, dropping @lingui/cli and its
+#     esbuild 0.21.5 / Go 1.20.12 copy from the production closure (18 findings)
+#   - esbuild pinned to 0.28.2, which carries a patched Go toolchain (15 -> 0)
+#   - brace-expansion / @xmldom/xmldom / postcss / nanoid / ip-address /
+#     fast-xml-* / js-yaml / form-data / multer / tmp / @babel/* bumped
+#
+# The two below are the ONLY findings not fixed in that pass. Both are major
+# version bumps on live auth/mail-adjacent paths that need a dedicated test
+# cycle rather than a release-blocking rush. Neither is a crypto finding.
+
+vulnerabilities:
+  # ---------------------------------------------------------------------------
+  # nodemailer 8.0.4 -> 9.0.1 (MAJOR). nodemailer is pinned deliberately at
+  # 8.0.4 by a root `resolutions` entry; overriding a deliberate pin on the
+  # outbound mail path without a mail-flow test cycle risks silently breaking
+  # transactional email (invites, password reset, verification).
+  # Unblocked by: dedicated follow-up with mail-flow testing.
+  # ---------------------------------------------------------------------------
+  - id: GHSA-p6gq-j5cr-w38f
+    statement: >-
+      nodemailer 8->9 is a major bump on the live outbound mail path and
+      overrides a deliberate root resolutions pin. Requires a dedicated test
+      cycle covering invite, password-reset and verification mail before the
+      bump lands. Tracked follow-up.
+    expired_at: 2026-09-15
+
+  # ---------------------------------------------------------------------------
+  # undici 5.29.0 -> 6.x (MAJOR). Transitive HTTP client on auth-adjacent
+  # request paths. The 5->6 bump changes stream/dispatcher behaviour and needs
+  # an integration pass rather than a release-blocking swap.
+  # All three are DoS/resource-exhaustion, NOT crypto/tls findings.
+  # Unblocked by: dedicated follow-up with HTTP integration testing.
+  # ---------------------------------------------------------------------------
+  - id: CVE-2026-12151
+    statement: >-
+      undici 5->6 major bump on auth-adjacent HTTP paths. DoS via unbounded
+      memory growth over WebSocket; not crypto. Requires HTTP integration test
+      cycle. Tracked follow-up.
+    expired_at: 2026-09-15
+
+  - id: CVE-2026-1526
+    statement: >-
+      undici 5->6 major bump on auth-adjacent HTTP paths; not crypto. Requires
+      HTTP integration test cycle. Tracked follow-up.
+    expired_at: 2026-09-15
+
+  - id: CVE-2026-2229
+    statement: >-
+      undici 5->6 major bump on auth-adjacent HTTP paths; not crypto. Requires
+      HTTP integration test cycle. Tracked follow-up.
+    expired_at: 2026-09-15
