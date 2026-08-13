@@ -60,7 +60,16 @@ jobs:
   brand-drift:
     name: Brand drift check
     runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
-    timeout-minutes: 5
+    # The scan itself takes ~2s, but `timeout-minutes` covers the WHOLE job —
+    # including the self-hosted runner's `ci-slot-acquire.sh` job-started hook,
+    # which blocks in "Set up runner" until a slot frees on the shared x64 box.
+    # At 5 minutes that budget was smaller than the queue wait, so under load
+    # the job burned its entire allowance waiting and GitHub cancelled it with
+    # Checkout and the detect step still SKIPPED — a required check reporting
+    # failure without ever having run (observed: 6m32s in slot-acquire on PR
+    # #100, both real steps skipped). 20 matches the security-scan budget and
+    # leaves the slot wait room; the step itself cannot get slower.
+    timeout-minutes: 20
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
