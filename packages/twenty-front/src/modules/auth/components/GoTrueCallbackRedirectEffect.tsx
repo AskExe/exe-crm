@@ -54,7 +54,7 @@ export const GoTrueCallbackRedirectEffect = () => {
     //                       only TRIGGERS the bridge; it never authenticates.
     //   exe_sess=<GoTrue JWT>  HttpOnly; carries the real access_token, read
     //                          ONLY server-side by GET /api/auth/gotrue-callback,
-    //                          which verifies it and mints a Twenty loginToken.
+    //                          which verifies it and mints a CRM loginToken.
     // The names/value here MUST match what auth.<domain> sets.
     sessionStorage.setItem(
       GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY,
