@@ -2,6 +2,8 @@ import { styled } from '@linaria/react';
 import { useCallback, useState } from 'react';
 import { exeFoundryBold } from 'twenty-ui/theme';
 
+import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
+
 import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
 
 type AuthTab = 'credentials' | 'admin-token';
@@ -245,8 +247,10 @@ const StyledSpinner = styled.div`
  */
 const buildExeSsoUrl = () => {
   // Registrable domain of the current host, so self-hosted installs reach their
-  // own auth gateway instead of a hardcoded askexe.com.
-  const authHost = `auth.${window.location.hostname.split('.').slice(-2).join('.')}`;
+  // own auth gateway instead of a hardcoded askexe.com. Must be public-suffix
+  // aware: a naive slice(-2) turns crm.company.co.uk into auth.co.uk and breaks
+  // login for every customer on a multi-part TLD (bug ee7b8871).
+  const authHost = `auth.${getRegistrableDomain(window.location.hostname)}`;
   const redirect = `${window.location.origin}/api/auth/gotrue-callback`;
 
   return `https://${authHost}/login?product=CRM&redirect=${encodeURIComponent(redirect)}`;
