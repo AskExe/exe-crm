@@ -33,11 +33,14 @@ describe('getRegistrableDomain', () => {
     ['localhost', 'localhost'],
     ['askexe.com', 'askexe.com'],
     ['co.uk', 'co.uk'],
-  ])('hosts with two or fewer labels are returned unchanged', (hostname, expected) => {
-    it(`resolves ${hostname} to ${expected}`, () => {
-      expect(getRegistrableDomain(hostname)).toBe(expected);
-    });
-  });
+  ])(
+    'hosts with two or fewer labels are returned unchanged',
+    (hostname, expected) => {
+      it(`resolves ${hostname} to ${expected}`, () => {
+        expect(getRegistrableDomain(hostname)).toBe(expected);
+      });
+    },
+  );
 
   it('lowercases mixed-case hostnames', () => {
     expect(getRegistrableDomain('CRM.Company.CO.UK')).toBe('company.co.uk');
