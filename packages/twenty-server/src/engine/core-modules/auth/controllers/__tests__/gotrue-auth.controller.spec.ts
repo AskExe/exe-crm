@@ -148,6 +148,9 @@ describe('GoTrueAuthController', () => {
     // individual tests override this to exercise the disabled/managed gates.
     process.env.ENABLE_ADMIN_TOKEN_LOGIN = 'true';
     delete process.env.EXE_ORG_ID;
+    // Managed-required is the DEFAULT (e51ca54c §10.6b). Tests that exercise the
+    // self-hosted bootstrap path opt out explicitly.
+    delete process.env.CRM_REQUIRE_MANAGED_PERMS;
 
     userRepo = { findOne: jest.fn() };
     userWorkspaceRepo = { findOne: jest.fn() };
@@ -342,7 +345,10 @@ describe('GoTrueAuthController', () => {
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
     });
 
-    it('auto-provisions workspace+user when user does not exist', async () => {
+    it('auto-provisions workspace+user when user does not exist (bootstrap opt-out)', async () => {
+      // Self-hosted bootstrap: the operator explicitly disabled the
+      // managed-required gate, so first-login provisioning is allowed.
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -396,7 +402,77 @@ describe('GoTrueAuthController', () => {
       expect(wikiWrites).toHaveLength(0);
     });
 
-    it('returns needsSetup when first login without workspaceName', async () => {
+    // ── E18 (e51ca54c §12) — the acceptance criterion for §10.6b ────────────
+    it.each([
+      { label: 'without a workspace name', workspaceName: undefined },
+      {
+        label: 'even when a workspace name is supplied',
+        workspaceName: 'Mine',
+      },
+    ])(
+      'denies an unmanaged first login by default $label — no workspace, no AdminFail',
+      async ({ workspaceName }) => {
+        // EXE_ORG_ID unset (deleted in beforeEach) + no exe_perms in the token
+        // + no local user = the escalation shape. Nothing may be created.
+        global.fetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              access_token: 'gotrue-at',
+              user: { id: 'gotrue-uid', email: 'new@exe.ai' },
+            }),
+        });
+
+        userRepo.findOne.mockResolvedValue(null);
+
+        const res = mockResponse();
+
+        await controller.gotrueLogin(
+          { email: 'new@exe.ai', password: 'pass', workspaceName },
+          res,
+        );
+
+        // No workspace created, no membership, no Admin role, no session.
+        expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+        expect(workspaceService.activateWorkspace).not.toHaveBeenCalled();
+        expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+        // ...and the user is told what to do rather than being left guessing.
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            error: expect.stringMatching(/administrator/i),
+          }),
+        );
+        expect(res.json).not.toHaveBeenCalledWith(
+          expect.objectContaining({ needsSetup: true }),
+        );
+      },
+    );
+
+    it('denies an unmanaged first login on the SSO-callback lane too (no workspace created)', async () => {
+      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
+        sub: 'gotrue-user-id',
+        email: 'new@exe.ai',
+      });
+      userRepo.findOne.mockResolvedValue(null);
+
+      const res = mockResponse();
+
+      await controller.gotrueCallback(res, {
+        headers: { cookie: 'exe_sess=verified.jwt' },
+      } as unknown as Request);
+
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+      expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://localhost:3000/welcome',
+      );
+    });
+
+    it('returns needsSetup when first login without workspaceName (bootstrap opt-out)', async () => {
+      // Only reachable when the managed-required gate is opted out; with the
+      // default gate on we refuse before prompting for a workspace name.
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: () =>

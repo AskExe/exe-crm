@@ -19,6 +19,7 @@ import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync
 import {
   type CrmRoleTier,
   decodeJwtAppMetadata,
+  isManagedPermsRequired,
   resolveExePermsForOrg,
 } from 'src/engine/core-modules/auth/services/exe-perms.util';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
@@ -112,6 +113,34 @@ export class GoTrueAuthController {
       : undefined;
     this.serverBaseUrl =
       process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
+
+    this.logManagedPermsMode();
+  }
+
+  /**
+   * Announce the managed-permissions mode once, when the controller is
+   * instantiated at boot. Disabling the gate re-enables an unmanaged first
+   * login creating its own workspace and taking its Admin role, so it is a
+   * security-relevant downgrade and must be visible in the logs of anyone who
+   * enables it — not buried in an env file (A6.4).
+   */
+  private logManagedPermsMode(): void {
+    if (isManagedPermsRequired()) {
+      this.logger.log(
+        'Managed permissions REQUIRED (default): an unmanaged first login ' +
+          'creates no workspace and is granted no Admin role.',
+      );
+
+      return;
+    }
+
+    this.logger.warn(
+      'SECURITY DOWNGRADE: CRM_REQUIRE_MANAGED_PERMS is disabled ' +
+        `(value=${JSON.stringify(process.env.CRM_REQUIRE_MANAGED_PERMS)}). ` +
+        'An unmanaged first login will CREATE A NEW WORKSPACE and be granted ' +
+        'its Admin role. This is intended only for self-hosted installs with ' +
+        'no control plane. Unset the variable to restore the secure default.',
+    );
   }
 
   /**
@@ -276,6 +305,41 @@ export class GoTrueAuthController {
     const isFirstLogin = !existingUser;
 
     let ctx: GoTrueLoginContext | null = null;
+
+    // ── Unmanaged self-minted admin, closed (e51ca54c §10.6b) ───────────────
+    // Reaching here means the login is UNMANAGED (no exe_perms entry applies to
+    // this org, or EXE_ORG_ID is unset). For an EXISTING user that is harmless:
+    // they are bound to the origin-resolved tenant they already belong to. But
+    // for a FIRST login the native path calls signUpOnNewWorkspace, and
+    // WorkspaceManagerService.setupDefaultRoles (workspace-manager.service.ts:
+    // 119-135) hands that brand-new workspace's Admin role to this user. That
+    // is an app minting its own admin — exactly what centralized role
+    // administration must not allow.
+    //
+    // So it is refused BY DEFAULT, before the workspace-name prompt (asking for
+    // a workspace name we will never create would be a worse experience than a
+    // clear refusal). The error text is surfaced verbatim by the sign-in form
+    // (twenty-front SignInUpWorkspaceScopeForm.tsx `credError`), so the user
+    // gets an "ask your administrator" message — not a blank page and not a
+    // bare 403.
+    //
+    // Genuine self-hosted bootstrap opts out with
+    // CRM_REQUIRE_MANAGED_PERMS=false (logged loudly at startup).
+    if (isFirstLogin && isManagedPermsRequired()) {
+      this.logger.warn(
+        `GoTrue login denied for ${email} — first login with no managed ` +
+          'permissions; refusing to create a workspace or grant Admin. ' +
+          '(CRM_REQUIRE_MANAGED_PERMS is on by default.)',
+      );
+
+      return {
+        type: 'error',
+        statusCode: 403,
+        error:
+          'Your account has no access to this CRM yet. Ask your administrator ' +
+          'to invite you from the Exe dashboard.',
+      };
+    }
 
     // First login — need workspace name. If not provided, signal frontend to ask.
     if (isFirstLogin && !workspaceName) {
