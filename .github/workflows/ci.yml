@@ -67,8 +67,8 @@ jobs:
     # the job burned its entire allowance waiting and GitHub cancelled it with
     # Checkout and the detect step still SKIPPED — a required check reporting
     # failure without ever having run (observed: 6m32s in slot-acquire on PR
-    # #100, both real steps skipped). 20 matches the security-scan budget and
-    # leaves the slot wait room; the step itself cannot get slower.
+    # #100, both real steps skipped). 20 leaves the slot wait ample room; the
+    # step itself is ~2s of git diff and cannot get slower.
     timeout-minutes: 20
     if: github.event_name == 'pull_request'
     steps:
@@ -322,7 +322,13 @@ jobs:
   security-scan:
     name: Security scan (secrets, deps, container config)
     runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
-    timeout-minutes: 20
+    # Same slot-wait-inside-the-budget problem as brand-drift above, just less
+    # obvious because this job does real work. Measured on PR #99: 8m20s in
+    # ci-slot-acquire ("Set up runner") + 8m34s in `yarn install --immutable`
+    # = 16m54s of a 20m budget consumed BEFORE the first scanner starts, so
+    # gitleaks was cancelled mid-run and every later scan step was skipped.
+    # The scanners need ~5m; the fixed overhead is what grew.
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
