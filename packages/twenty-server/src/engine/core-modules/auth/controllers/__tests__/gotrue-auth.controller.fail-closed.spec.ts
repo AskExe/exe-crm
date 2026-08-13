@@ -9,7 +9,7 @@ import { EXE_PERMS_ENFORCEMENT_DISABLED_WARNING } from 'src/engine/core-modules/
  *
  * REGRESSION: a PRESENT `exe_perms` claim that cannot be bound to the
  * configured `EXE_ORG_ID` previously resolved to `{ managed: false }`, which
- * routed the caller into NATIVE Twenty provisioning with full default access.
+ * routed the caller into NATIVE upstream provisioning with full default access.
  * It must now hit the managed-deny 403, matching exe-wiki and exe-erp.
  *
  * These tests deliberately exercise a NON-privileged outcome: proving an admin

@@ -132,7 +132,7 @@ describe('resolveExePermsForOrg — unmanaged (preserve native behavior)', () =>
 
 /**
  * REGRESSION (fail-open authz hole). Every case below previously returned
- * `{ managed: false }`, which dropped the caller into NATIVE Twenty
+ * `{ managed: false }`, which dropped the caller into NATIVE upstream
  * provisioning with full default access. A PRESENT `exe_perms` claim marks a
  * MANAGED identity, so when it cannot be bound to the configured org it must
  * resolve to a managed-DENY (`tier: 'none'`) — matching exe-wiki
