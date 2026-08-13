@@ -48,8 +48,14 @@ export const GoTrueCallbackRedirectEffect = () => {
       return;
     }
 
-    // bug 74588d76: the sentinel only triggers the bridge; auth happens
-    // server-side by verifying the HttpOnly exe_sess GoTrue JWT.
+    // SSO bridge contract — the companion exe-os PR sets these two cookies on
+    // the shared apex domain after login at auth.<domain>:
+    //   exe_access_token=1  non-HttpOnly sentinel (readable by JS here) that
+    //                       only TRIGGERS the bridge; it never authenticates.
+    //   exe_sess=<GoTrue JWT>  HttpOnly; carries the real access_token, read
+    //                          ONLY server-side by GET /api/auth/gotrue-callback,
+    //                          which verifies it and mints a CRM loginToken.
+    // The names/value here MUST match what auth.<domain> sets.
     sessionStorage.setItem(
       GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY,
       Date.now().toString(),

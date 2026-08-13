@@ -642,6 +642,11 @@ export class GoTrueAuthController {
   // callbacks): the caller is not yet authenticated with the CRM — identity
   // is proven in-handler by cryptographically verifying the GoTrue JWT from
   // the exe_sess cookie; every failure path redirects to sign-in.
+  //
+  // Bridge contract: GoTrueCallbackRedirectEffect sends the browser here once
+  // it sees the JS-readable exe_access_token=1 sentinel set alongside this
+  // HttpOnly exe_sess cookie on the shared apex domain (companion exe-os PR).
+  // The sentinel only triggers the bridge; exe_sess is the only auth proof.
   @Get('gotrue-callback')
   @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
