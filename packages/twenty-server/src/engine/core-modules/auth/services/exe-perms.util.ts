@@ -32,9 +32,11 @@ export type CrmRoleTier =
 /**
  * Result of reading `exe_perms` for THIS deployment's org.
  *
- * - `managed: false` → no `exe_perms` entry applies to this org. The caller
- *   MUST preserve existing native behavior (backward compatible).
- * - `managed: true`  → this org is managed; `tier` dictates enforcement.
+ * - `managed: false` → the identity carries NO `exe_perms` claim at all, or this
+ *   deployment has enforcement off (`EXE_ORG_ID` unset). The caller MUST
+ *   preserve existing native behavior (backward compatible).
+ * - `managed: true`  → this identity is Exe-managed; `tier` dictates
+ *   enforcement, and `tier: 'none'` is a managed-DENY (fail closed).
  */
 export type ExePermsResolution =
   | { managed: false }
@@ -105,23 +107,75 @@ export const mapCapsToCrmTier = (
 };
 
 /**
+ * Loud warning emitted once at startup when `EXE_ORG_ID` is unset. Enforcement
+ * being off is a supported (back-compatible) configuration, but it must never
+ * be a SILENT one — a silently-unenforced deployment is exactly how
+ * "we thought authz was on" happens.
+ */
+export const EXE_PERMS_ENFORCEMENT_DISABLED_WARNING =
+  'EXE_ORG_ID is not set — Exe unified-permissions (exe_perms) enforcement is ' +
+  'DISABLED. Every GoTrue login falls through to native Twenty provisioning ' +
+  'with default access, even when the identity carries an exe_perms claim. Set ' +
+  'EXE_ORG_ID (and EXE_ORG_WORKSPACE_ID) to enable CRM RBAC enforcement.';
+
+/**
+ * A managed identity we cannot bind to a capability for THIS org. Tier `none`
+ * drives the caller's existing managed-deny (403) path.
+ */
+const managedDeny = (): ExePermsResolution => ({
+  managed: true,
+  role: null,
+  caps: [],
+  tier: 'none',
+});
+
+/**
+ * KEY presence, not truthiness. The distinction between "no exe_perms claim at
+ * all" (unmanaged, legacy) and "an exe_perms claim whose value is malformed"
+ * (managed, must fail closed) is the whole point — testing truthiness would let
+ * `exe_perms: null` or `exe_perms: 0` fail OPEN.
+ */
+const hasExePermsClaim = (
+  appMetadata: Record<string, unknown> | undefined,
+): boolean =>
+  !!appMetadata &&
+  typeof appMetadata === 'object' &&
+  Object.prototype.hasOwnProperty.call(appMetadata, 'exe_perms');
+
+/**
  * Extract the CRM-relevant permission resolution for `orgId` from a decoded
  * `app_metadata` object.
  *
- * Returns `{ managed: false }` (→ preserve native behavior) when:
- *   - there is no `exe_perms`, or
- *   - `orgId` is not configured (deployment opted out of enforcement), or
- *   - per-org shape has no entry for this org, or
- *   - legacy flat shape is scoped to a DIFFERENT org, OR is UNSCOPED (no `org`
- *     field). An unscoped flat claim is NEVER applied to an arbitrary org — the
- *     access-token is decoded without signature verification, so honoring an
- *     org-less `exe_perms` would be a forgeable cross-org escalation path. A
- *     flat claim must explicitly name THIS org to take effect.
+ * Three-case model, matching exe-wiki (`mapCaps.resolveOrgPerms`) and exe-erp
+ * (`exe_perms.compute_decision`):
+ *
+ * 1. `exe_perms` KEY entirely ABSENT → `{ managed: false }`. The identity is
+ *    not Exe-managed, so native Twenty behavior is preserved (back-compat).
+ * 2. `orgId` NOT configured (`EXE_ORG_ID` unset) → `{ managed: false }`.
+ *    Enforcement is opted out deployment-wide; tightening this would break
+ *    every existing unmanaged CRM deployment. `EXE_PERMS_ENFORCEMENT_DISABLED_WARNING`
+ *    is logged at startup so this is never silent.
+ * 3. `exe_perms` PRESENT and `orgId` configured, but the claim cannot be bound
+ *    to that org → MANAGED-DENY (`tier: 'none'`), i.e. FAIL CLOSED. This covers:
+ *      - a malformed/scalar/null claim value,
+ *      - per-org shape carrying no entry for this org,
+ *      - legacy flat shape scoped to a DIFFERENT org,
+ *      - legacy flat shape that is UNSCOPED (no `org` field). The access token
+ *        is decoded WITHOUT signature verification, so honoring an org-less
+ *        claim would be a forgeable cross-org escalation path. A flat claim
+ *        must explicitly name THIS org to take effect.
+ *    Previously all of case (3) returned `{ managed: false }`, which dropped the
+ *    caller into native provisioning with full default access — a fail-OPEN hole
+ *    that neither wiki nor ERP had.
  */
 export const resolveExePermsForOrg = (
   appMetadata: Record<string, unknown> | undefined,
   orgId: string | undefined | null,
 ): ExePermsResolution => {
+  // (1) Genuinely no claim → unmanaged, native behavior.
+  if (!hasExePermsClaim(appMetadata)) return { managed: false };
+
+  // (2) Enforcement disabled deployment-wide → unmanaged, native behavior.
   if (!orgId) return { managed: false };
 
   const exePerms = appMetadata?.exe_perms as
@@ -131,13 +185,16 @@ export const resolveExePermsForOrg = (
       } & ExePermsOrgEntry)
     | undefined;
 
-  if (!exePerms || typeof exePerms !== 'object') return { managed: false };
+  // (3a) Claim present but not a usable object (scalar, null, …) → fail closed.
+  if (!exePerms || typeof exePerms !== 'object') return managedDeny();
 
   // Canonical per-org shape.
   if (exePerms.orgs && typeof exePerms.orgs === 'object') {
     const entry = exePerms.orgs[orgId];
 
-    if (!entry || typeof entry !== 'object') return { managed: false };
+    // (3b) Managed identity with no entry for THIS org → fail closed. Removing
+    // a user's org claim must be a DOWNGRADE, never a bypass to native access.
+    if (!entry || typeof entry !== 'object') return managedDeny();
 
     const caps = toCapArray(entry.caps);
 
@@ -149,9 +206,7 @@ export const resolveExePermsForOrg = (
     };
   }
 
-  // Legacy flat shape — applies ONLY if it EXPLICITLY targets THIS org. An
-  // unscoped flat claim (no `org` field) is rejected: with an unverified token,
-  // honoring it would let a forged org-less claim grant access to any org.
+  // Legacy flat shape — applies ONLY if it EXPLICITLY targets THIS org.
   if (typeof exePerms.org === 'string' && exePerms.org === orgId) {
     const caps = toCapArray(exePerms.caps);
 
@@ -163,7 +218,8 @@ export const resolveExePermsForOrg = (
     };
   }
 
-  return { managed: false };
+  // (3c) Flat claim naming a different org, or unscoped → fail closed.
+  return managedDeny();
 };
 
 /**

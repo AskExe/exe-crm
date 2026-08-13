@@ -113,40 +113,80 @@ describe('resolveExePermsForOrg — managed (legacy flat shape)', () => {
   });
 });
 
-describe('resolveExePermsForOrg — unmanaged (preserve native behavior) Fail', () => {
+describe('resolveExePermsForOrg — unmanaged (preserve native behavior)', () => {
   it.each<{ label: string; appMetadata: Record<string, unknown> | undefined }>([
     { label: 'no app_metadata', appMetadata: undefined },
-    { label: 'no exe_perms', appMetadata: { provider: 'email' } },
-    {
-      label: 'per-org shape without this org',
-      appMetadata: { exe_perms: { orgs: { other: { caps: ['crm:admin'] } } } },
-    },
-    {
-      label: 'flat shape scoped to a different org',
-      appMetadata: { exe_perms: { org: 'other', caps: ['crm:admin'] } },
-    },
-    {
-      // SECURITY: an unscoped flat claim (no `org`) must NEVER apply to an
-      // arbitrary org — the token is decoded without signature verification, so
-      // honoring it would be a forgeable cross-org escalation.
-      label: 'UNSCOPED flat shape (no org field) — must not apply to any org',
-      appMetadata: { exe_perms: { role: 'admin', caps: ['crm:admin'] } },
-    },
-    {
-      label: 'flat shape with a non-string org field',
-      appMetadata: { exe_perms: { org: 123, caps: ['crm:admin'] } },
-    },
+    { label: 'no exe_perms key', appMetadata: { provider: 'email' } },
   ])('returns managed:false for $label', ({ appMetadata }) => {
     expect(resolveExePermsForOrg(appMetadata, ORG)).toEqual({ managed: false });
   });
 
-  it('returns managed:false when org id is not configured', () => {
+  it('returns managed:false when EXE_ORG_ID is not configured', () => {
     const appMetadata = {
       exe_perms: { orgs: { [ORG]: { caps: ['crm:admin'] } } },
     };
 
     expect(resolveExePermsForOrg(appMetadata, undefined)).toEqual({
       managed: false,
+    });
+  });
+});
+
+/**
+ * REGRESSION (fail-open authz hole). Every case below previously returned
+ * `{ managed: false }`, which dropped the caller into NATIVE upstream
+ * provisioning with full default access. A PRESENT `exe_perms` claim marks a
+ * MANAGED identity, so when it cannot be bound to the configured org it must
+ * resolve to a managed-DENY (`tier: 'none'`) — matching exe-wiki
+ * (`{ managed: true, denied: true }`) and exe-erp (`ORG_DENY_NO_CLAIM`).
+ */
+describe('resolveExePermsForOrg — claim present but unresolvable for this org Fail', () => {
+  it.each<{ label: string; appMetadata: Record<string, unknown> }>([
+    {
+      label: 'per-org shape naming a DIFFERENT org',
+      appMetadata: { exe_perms: { orgs: { other: { caps: ['crm:admin'] } } } },
+    },
+    {
+      label: 'per-org shape with an empty orgs map',
+      appMetadata: { exe_perms: { orgs: {} } },
+    },
+    {
+      label: 'per-org entry for this org that is a scalar, not an object',
+      appMetadata: { exe_perms: { orgs: { [ORG]: 'admin' } } },
+    },
+    {
+      label: 'flat shape scoped to a DIFFERENT org',
+      appMetadata: { exe_perms: { org: 'other', caps: ['crm:admin'] } },
+    },
+    {
+      // SECURITY: an unscoped flat claim (no `org`) must NEVER apply to an
+      // arbitrary org — the token is decoded without signature verification, so
+      // honoring it would be a forgeable cross-org escalation.
+      label: 'UNSCOPED flat shape (no org field) naming no org',
+      appMetadata: { exe_perms: { role: 'admin', caps: ['crm:admin'] } },
+    },
+    {
+      label: 'flat shape with a non-string org field',
+      appMetadata: { exe_perms: { org: 123, caps: ['crm:admin'] } },
+    },
+    {
+      label: 'malformed scalar claim (string)',
+      appMetadata: { exe_perms: 'admin' },
+    },
+    { label: 'malformed scalar claim (number)', appMetadata: { exe_perms: 7 } },
+    {
+      label: 'malformed scalar claim (false)',
+      appMetadata: { exe_perms: false },
+    },
+    { label: 'null claim value', appMetadata: { exe_perms: null } },
+    { label: 'empty object claim', appMetadata: { exe_perms: {} } },
+    { label: 'array claim', appMetadata: { exe_perms: ['crm:admin'] } },
+  ])('denies (managed, tier none) for $label', ({ appMetadata }) => {
+    expect(resolveExePermsForOrg(appMetadata, ORG)).toEqual({
+      managed: true,
+      role: null,
+      caps: [],
+      tier: 'none',
     });
   });
 });

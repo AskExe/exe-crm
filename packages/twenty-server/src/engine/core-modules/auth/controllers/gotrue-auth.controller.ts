@@ -19,6 +19,7 @@ import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync
 import {
   type CrmRoleTier,
   decodeJwtAppMetadata,
+  EXE_PERMS_ENFORCEMENT_DISABLED_WARNING,
   isManagedPermsRequired,
   resolveExePermsForOrg,
 } from 'src/engine/core-modules/auth/services/exe-perms.util';
@@ -113,6 +114,13 @@ export class GoTrueAuthController {
       : undefined;
     this.serverBaseUrl =
       process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
+
+    // Enforcement-off is supported, but never SILENT. Without this, a
+    // deployment that believes RBAC is on has no signal that every exe_perms
+    // claim is being ignored.
+    if (!this.exeOrgId) {
+      this.logger.warn(EXE_PERMS_ENFORCEMENT_DISABLED_WARNING);
+    }
 
     this.logManagedPermsMode();
   }
