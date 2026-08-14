@@ -1,0 +1,30 @@
+{
+  "_README": [
+    "Committed advisory baseline for the blocking dependency audit gate (bug 4395cda9).",
+    "",
+    "The blocking gate used to run a LIVE registry audit fail-closed, which coupled",
+    "merge eligibility to an external feed: a green PR could go red hours later with",
+    "zero code change because someone published a CVE in a transitive dependency.",
+    "This file is what makes the gate deterministic for a given commit instead.",
+    "",
+    "HOW THE GATE USES THIS FILE (.github/scripts/audit-gate.py):",
+    "  - A live CRITICAL advisory listed here with a future 'expires' is ACKNOWLEDGED",
+    "    and does not block.",
+    "  - A live CRITICAL advisory listed here whose 'expires' has PASSED BLOCKS the",
+    "    build. Acknowledgements are deadlines, not amnesties.",
+    "  - A live CRITICAL advisory NOT listed here does NOT block: the commit predates",
+    "    the advisory, so blocking it would punish whoever opens the next unrelated",
+    "    PR. It is reported as a ::warning:: on every run, and the non-blocking live",
+    "    audit step is what surfaces it for triage.",
+    "  - An entry here matching no live advisory is reported as STALE and should be",
+    "    pruned.",
+    "",
+    "TO ACKNOWLEDGE AN ADVISORY: add an object to 'acknowledged' with 'id' (the",
+    "numeric advisory id as a string), 'package', 'reason' (why it is not being fixed",
+    "right now) and 'expires' (YYYY-MM-DD). 'reason' and 'expires' are BOTH mandatory",
+    "and the gate refuses to load a file where either is missing.",
+    "",
+    "Same convention as .trivyignore.yaml, which already time-boxes its entries."
+  ],
+  "acknowledged": []
+}
