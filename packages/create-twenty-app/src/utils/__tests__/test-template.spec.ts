@@ -130,15 +130,76 @@ describe('scaffoldIntegrationTest', () => {
       const content = await fs.readFile(workflowPath, 'utf8');
 
       expect(content).toContain('name: CI');
-      expect(content).toContain('TWENTY_VERSION: latest');
-      expect(content).toContain('twenty-version: ${{ env.TWENTY_VERSION }}');
-      expect(content).toContain('actions/checkout@v4');
-      expect(content).toContain('spawn-twenty-docker-image@main');
-      expect(content).toContain('actions/setup-node@v4');
+      expect(content).toContain('actions/checkout@');
+      expect(content).toContain('actions/setup-node@');
       expect(content).toContain('yarn install --immutable');
+      expect(content).toContain('yarn twenty server start --port 2020');
       expect(content).toContain('yarn test');
-      expect(content).toContain('TWENTY_API_URL');
-      expect(content).toContain('TWENTY_API_KEY');
+      expect(content).toContain('TWENTY_API_URL: http://localhost:2020');
+    });
+  });
+
+  // Security regression guard — bug 112eb501.
+  //
+  // The generated workflow runs inside the CUSTOMER's repository, on the
+  // customer's runner, with the customer's secrets. It previously executed
+  // `twentyhq/twenty/.github/actions/spawn-twenty-docker-image@main` — an
+  // action owned by a third party, at a mutable branch ref — and passed it
+  // `secrets.GITHUB_TOKEN`. These assertions exist so that reintroducing any
+  // part of that shape turns this suite red before it can ship again.
+  describe('generated workflow supply chain', () => {
+    const readWorkflow = async () => {
+      await scaffoldIntegrationTest({
+        appDirectory: testAppDirectory,
+        sourceFolderPath,
+      });
+
+      return fs.readFile(
+        join(testAppDirectory, '.github', 'workflows', 'ci.yml'),
+        'utf8',
+      );
+    };
+
+    it('should not reference any upstream Twenty organisation artifact', async () => {
+      const content = await readWorkflow();
+
+      expect(content).not.toMatch(/twentyhq\//);
+      expect(content).not.toMatch(/twentycrm\//);
+    });
+
+    it('should not reference any mutable branch or floating tag', async () => {
+      const content = await readWorkflow();
+
+      expect(content).not.toMatch(/@main\b/);
+      expect(content).not.toMatch(/:latest\b/);
+    });
+
+    it('should not pass any secret to any step', async () => {
+      const content = await readWorkflow();
+
+      expect(content).not.toMatch(/secrets\./);
+    });
+
+    it('should restrict the workflow token to read-only', async () => {
+      const content = await readWorkflow();
+
+      expect(content).toContain('permissions:');
+      expect(content).toContain('contents: read');
+    });
+
+    it('should pin every third-party action to a 40-hex commit SHA', async () => {
+      const content = await readWorkflow();
+
+      const uses = content
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('uses:'));
+
+      expect(uses.length).toBeGreaterThan(0);
+
+      for (const use of uses) {
+        expect(use).toMatch(/^uses: [^@\s]+@[0-9a-f]{40}\b/);
+      }
     });
   });
 
