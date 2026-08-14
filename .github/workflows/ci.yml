@@ -67,9 +67,16 @@ jobs:
     # the job burned its entire allowance waiting and GitHub cancelled it with
     # Checkout and the detect step still SKIPPED — a required check reporting
     # failure without ever having run (observed: 6m32s in slot-acquire on PR
-    # #100, both real steps skipped). 20 leaves the slot wait ample room; the
-    # step itself is ~2s of git diff and cannot get slower.
-    timeout-minutes: 20
+    # #100, both real steps skipped).
+    #
+    # 20 was still too low. The hook's own ceiling is BUILD_MY_CI_MAXWAIT=1500s
+    # = 25 minutes, so a job may legitimately sit there for 25 minutes before
+    # its first step runs. Any budget at or below 25 is unsatisfiable under the
+    # limiter -- it just makes the same all-steps-SKIPPED failure rarer instead
+    # of impossible. 30 clears the ceiling with headroom; the step itself is ~2s
+    # of git diff and cannot get slower. Enforced by the slot-budget check
+    # below so this cannot silently regress (bug 9e92b1c7).
+    timeout-minutes: 30
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
@@ -77,6 +84,15 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+
+      # Fails closed if any self-hosted job's timeout-minutes drops to or below
+      # the limiter's BUILD_MY_CI_MAXWAIT ceiling, which would let that job be
+      # cancelled while still queued with every step SKIPPED (bug 9e92b1c7).
+      # Pure stdlib, ~10ms, no install step needed.
+      - name: Verify CI slot budgets
+        run: |
+          python3 .github/scripts/verify-ci-slot-budgets.py --self-test
+          python3 .github/scripts/verify-ci-slot-budgets.py .github/workflows/ci.yml
 
       - name: Detect "twenty" in PR-added lines
         env:
