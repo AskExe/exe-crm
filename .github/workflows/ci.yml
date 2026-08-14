@@ -357,8 +357,38 @@ jobs:
       # Production dependency vulnerability scan. The required gate audits only
       # production dependencies at CRITICAL severity; dev-dependency and HIGH
       # advisory signals are surfaced by the non-blocking informational step below.
-      - name: Dependency scan (yarn npm audit, production, critical gate)
-        run: yarn npm audit --recursive --environment production --severity critical
+      #
+      # The gate's VERDICT comes from the committed .audit-baseline.json, not
+      # straight from the live feed (bug 4395cda9). Running the live audit
+      # fail-closed coupled merge eligibility to an external feed that changes
+      # continuously: a green PR went red hours later, with zero code change,
+      # because a CVE was published in a transitive dependency. Worse, it was
+      # self-trapping -- the PR that would clear the audit needed its own green
+      # audit to merge (bug eb6697d9, two-week stall).
+      #
+      # The severity bar and production-only scope are UNCHANGED. What changed
+      # is who gets interrupted: an advisory absent from the baseline does not
+      # block a commit that predates it, while an acknowledgement whose deadline
+      # has lapsed does block. New CRITICALs still print on every run.
+      - name: Dependency scan (deterministic gate vs committed baseline)
+        run: |
+          set -uo pipefail
+
+          # `yarn npm audit` exits non-zero WHENEVER it finds advisories, so its
+          # status cannot be the verdict -- capture it and let the gate decide.
+          # It is passed through to the gate so that "exited 0 and printed
+          # nothing" (a genuinely clean tree) is distinguishable from "crashed
+          # and printed nothing", which must still fail closed.
+          yarn npm audit --recursive --environment production \
+            --severity critical --json > audit-critical.json
+          audit_rc=$?
+          echo "yarn npm audit exited ${audit_rc}"
+
+          python3 .github/scripts/audit-gate.py --self-test
+          python3 .github/scripts/audit-gate.py \
+            --audit-json audit-critical.json \
+            --baseline .audit-baseline.json \
+            --audit-exit-code "${audit_rc}"
 
       - name: Dependency scan (yarn npm audit, production, latest high advisory signal)
         run: yarn npm audit --all --recursive --environment production --severity high
