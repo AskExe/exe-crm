@@ -1,0 +1,114 @@
+# Release run health (bug 615c14d9).
+#
+# The "Release stack image" workflow runs on a self-hosted runner. Between
+# 2026-06-11 and 2026-06-22, five consecutive release runs (v0.9.48 ..
+# v0.9.51) were never assigned a runner because no self-hosted runner
+# existed for the repo. Each sat QUEUED for exactly 24 hours and then
+# GitHub expired it with conclusion `cancelled`. A cancelled queued job
+# produces no failure notification, so nobody noticed for six weeks while
+# the release pipeline was silently dead. This workflow pages someone
+# instead: immediately when a release run completes as `cancelled`
+# (workflow_run trigger), and within ~15 minutes when one is stuck queued
+# waiting for a runner (schedule trigger).
+#
+# auto-retry-classified.yml does NOT cover this case, for two reasons:
+#   1. It triggers on workflow_run: workflows: ["CI"] — it does not listen
+#      to "Release stack image" at all.
+#   2. It exits early when the conclusion is not "failure" — a run whose
+#      conclusion is `cancelled` is skipped entirely.
+
+name: Release run health
+
+on:
+  workflow_run:
+    workflows: ["Release stack image"]
+    types: [completed]
+  schedule:
+    # Every 15 minutes: catch a run STUCK QUEUED early, not 24h later.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: read # list workflow runs
+  issues: write # open/update the tracking alert issue
+
+jobs:
+  release-run-health:
+    runs-on: ubuntu-latest
+    # CRITICAL: must NOT run on the self-hosted runner. The very failure
+    # this detects is "no self-hosted runner is available" — an alerter
+    # queued behind the same broken resource cannot report on it.
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Fetch recent Release stack image runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/actions/workflows/release-stack-image.yml/runs?per_page=50" > runs.json
+          jq '.workflow_runs | length' runs.json
+
+      - name: Check release run health
+        id: check
+        # continue-on-error: a detected alert exits 1 by design; it must
+        # not abort the job before the tracking issue is filed below.
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/check-release-run-health.py --self-test
+          python3 .github/scripts/check-release-run-health.py \
+            --input runs.json \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Open or update tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ALERT_BODY: ${{ steps.check.outputs.alert_body }}
+          ISSUE_TITLE: Release pipeline health alert
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # Read the output directly rather than via an env alias: this must be
+        # unambiguous, because the step is the whole point of the bug fix.
+        if: steps.check.outputs.alert_count != '' && steps.check.outputs.alert_count != '0'
+        run: |
+          set -euo pipefail
+
+          # Exact title match. `gh issue list --search` is a fuzzy full-text
+          # search and will happily return an unrelated issue, which would
+          # send this alert as a comment on someone else's thread.
+          existing="$(gh issue list --repo "${{ github.repository }}" \
+            --state open --limit 100 --json number,title \
+            --jq "[.[] | select(.title == \"${ISSUE_TITLE}\")][0].number // empty")"
+
+          # Built with printf, NOT an indented shell string: leading spaces of
+          # four or more turn every line into a Markdown code block, which
+          # would render the alert as an unreadable blob.
+          body="$(printf '%s\n\n%s\n\n%s\n' \
+            "Bug 615c14d9: a release run expired \`cancelled\` or has been stuck queued (no self-hosted runner). Detected at $(date -u +%Y-%m-%dT%H:%M:%SZ)." \
+            "${ALERT_BODY}" \
+            "See the failing **Release run health** run for details: ${RUN_URL}")"
+
+          if [ -n "$existing" ]; then
+            echo "Open tracking issue #$existing found — commenting instead of duplicating."
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            # The `release` label may not exist in this repo. `gh issue create`
+            # FAILS HARD on an unknown label, which would break the alerter at
+            # exactly the moment it is needed — so fall back to no label rather
+            # than lose the page.
+            if ! gh issue create --repo "${{ github.repository }}" \
+                --title "${ISSUE_TITLE}" --label "release" --body "$body"; then
+              echo "::warning::Could not apply the 'release' label; filing without it."
+              gh issue create --repo "${{ github.repository }}" \
+                --title "${ISSUE_TITLE}" --body "$body"
+            fi
+          fi
+
+      - name: Fail the job when alerts were detected
+        # Makes the workflow itself show red, not just the check step.
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "Release run health: alerts detected (alert_count=${{ steps.check.outputs.alert_count }}). Failing the job."
+          exit 1
