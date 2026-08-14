@@ -225,7 +225,28 @@ describe('App installation', () => {
   await fs.writeFile(join(appDirectory, fileFolder ?? '', fileName), content);
 };
 
-const DEFAULT_TWENTY_VERSION = 'latest';
+/**
+ * Port the generated CI serves the local Twenty instance on. Kept equal to the
+ * SDK's DEFAULT_PORT so `src/__tests__/setup-test.ts`, which falls back to
+ * http://localhost:2020, behaves identically on a laptop and in CI.
+ */
+const CI_SERVER_PORT = 2020;
+
+/**
+ * Third-party GitHub Actions used by the generated workflow, pinned to immutable
+ * 40-hex commit SHAs.
+ *
+ * SECURITY — bug 112eb501. `uses: some/action@v4` and `uses: some/action@main`
+ * are mutable: the owning organisation can repoint the tag or push to the branch
+ * at any time, and the customer's next CI run silently executes different code
+ * with the customer's runner, workspace and token. A commit SHA cannot be
+ * repointed. The trailing comment records which release the SHA corresponds to
+ * so the pin stays readable and reviewable when it is bumped.
+ */
+const ACTION_CHECKOUT =
+  'actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0';
+const ACTION_SETUP_NODE =
+  'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0';
 
 const createGithubWorkflow = async (appDirectory: string) => {
   const content = `name: CI
@@ -236,28 +257,25 @@ on:
       - main
   pull_request: {}
 
-env:
-  TWENTY_VERSION: ${DEFAULT_TWENTY_VERSION}
+# Least privilege. Nothing in this workflow needs to write to your repository,
+# so the automatic GITHUB_TOKEN is downgraded to read-only. No step below is
+# handed a secret, and no step below runs code from an organisation other than
+# the ones pinned by commit SHA.
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Spawn Twenty instance
-        id: twenty
-        uses: twentyhq/twenty/.github/actions/spawn-twenty-docker-image@main
-        with:
-          twenty-version: \${{ env.TWENTY_VERSION }}
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+        uses: ${ACTION_CHECKOUT}
 
       - name: Enable Corepack
         run: corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: ${ACTION_SETUP_NODE}
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -265,11 +283,20 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      # Starts the same local Twenty server the SDK starts on your machine
+      # (\`yarn twenty server start\`), so CI and local development cannot drift.
+      # The container image is pinned to an immutable digest inside twenty-sdk.
+      - name: Start Twenty server
+        run: yarn twenty server start --port ${CI_SERVER_PORT}
+
       - name: Run integration tests
         run: yarn test
         env:
-          TWENTY_API_URL: \${{ steps.twenty.outputs.server-url }}
-          TWENTY_API_KEY: \${{ steps.twenty.outputs.access-token }}
+          TWENTY_API_URL: http://localhost:${CI_SERVER_PORT}
+
+      - name: Stop Twenty server
+        if: always()
+        run: yarn twenty server stop
 `;
 
   const workflowDir = join(appDirectory, '.github', 'workflows');

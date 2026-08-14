@@ -61,3 +61,26 @@ packages/twenty-server/src/engine/core-modules/error-forwarding/error-forwarding
 # — any FROM-line change (e.g. dependabot base-image bumps) re-adds them in the diff.
 # Framework-internal, not user-facing branding.
 packages/twenty-docker/twenty/Dockerfile
+
+# --- Supply-chain pin hardening (PR #108) — bug 112eb501 ---
+# These four files live in package trees whose UPSTREAM NAMES contain "twenty"
+# (create-twenty-app, twenty-apps, twenty-sdk); the literal is unavoidable in
+# their paths and in the identifiers they already export. The PR-added lines are
+# not new branding — they are supply-chain HARDENING that references upstream in
+# order to pin or forbid it. Each entry is narrowly justified below.
+
+# Replaces the mutable tag 'twentycrm/twenty-app-dev:latest' (already present
+# before this PR) with an immutable @sha256 digest pin. The upstream namespace
+# string is pre-existing and is REDUCED in risk, not introduced.
+packages/twenty-sdk/src/cli/utilities/server/docker-container.ts
+
+# Generates the customer's dev-server CI. Names the local `yarn twenty server`
+# commands the SDK itself exposes — the fork's own CLI verb, not upstream infra.
+packages/twenty-apps/hello-world/.github/workflows/ci.yml
+
+# Scaffolding template + its spec. The spec's added lines are NEGATIVE
+# assertions (`expect(content).not.toMatch(/twentyhq\//)`) proving generated
+# projects carry no upstream org/registry refs — the guard was matching the very
+# strings that prove the fix works.
+packages/create-twenty-app/src/utils/test-template.ts
+packages/create-twenty-app/src/utils/__tests__/test-template.spec.ts
