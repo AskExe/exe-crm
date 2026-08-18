@@ -18,14 +18,26 @@ someone instead of expiring silently 24 hours later. It alerts on exactly
 two SILENT failure modes:
 
   REASON_CANCELLED     — a run with status `completed` and conclusion
-                         `cancelled`. This is the 24-hour silent-expiry
-                         mode from the bug.
+                         `cancelled` that is NEWER than an age bound
+                         (default 7 days). This is the 24-hour
+                         silent-expiry mode from the bug.
   REASON_STUCK_QUEUED  — a run still in a non-terminal state (`queued`,
                          `waiting`, `requested`) whose created_at is more
                          than N minutes old (default 30). This catches the
                          failure EARLY — within ~15 minutes via the
                          scheduled `release-run-health.yml` sweep — rather
                          than 24 hours later.
+
+BOTH reasons are age-bounded, and for the same reason. An alerter that
+re-reports the same historical incident on every 15-minute sweep is not a
+monitor, it is noise: between 2026-06-22 and 2026-08-18 this check posted
+199 comments on one issue, all re-reporting the same seven runs from
+May/June, and a permanently-red alerter cannot signal a NEW cancellation.
+The stuck-queued branch was already bounded (`--queued-alert-minutes`);
+the cancelled branch was not, so seven runs that GitHub expired weeks ago
+alerted forever because only ~20 release runs have ever existed and they
+never fell out of the 50-run API window. `--cancelled-alert-minutes`
+closes that: a cancelled run pages while it is actionable, then rolls off.
 
 `failure` is deliberately NOT an alert reason: a failed release is already
 loud (red X, author email, chat notifications). This bug is specifically
@@ -52,6 +64,21 @@ QUEUED_STATUSES = ("queued", "waiting", "requested")
 
 DEFAULT_QUEUED_ALERT_MINUTES = 30
 
+# How recent a `cancelled` run must be to still page someone, in minutes —
+# same unit (minutes derived from `created_at`) and the same strict
+# boundary handling as the queued bound above, so the two branches stay
+# one mechanism rather than two.
+#
+# 7 days. Measured from `created_at` (the field the queued branch already
+# uses, and the only one guaranteed present on every run), and GitHub
+# expires a stuck-queued run 24 hours AFTER creation, so the effective
+# window after the cancellation itself is ~6 days. That is comfortably
+# more than the 24h expiry it must catch plus a weekend, while
+# guaranteeing any single incident rolls off within a week instead of
+# never. The sweep runs every 15 minutes: anything still unfixed after
+# ~670 sweeps is not going to be fixed by paging a 671st time.
+DEFAULT_CANCELLED_ALERT_MINUTES = 7 * 24 * 60  # 10080
+
 
 def parse_created_at(value):
     # GitHub returns e.g. "2026-06-22T06:59:57Z". Do NOT use fromisoformat
@@ -61,7 +88,12 @@ def parse_created_at(value):
     return parsed.replace(tzinfo=timezone.utc)
 
 
-def classify_runs(runs, now, queued_alert_minutes=DEFAULT_QUEUED_ALERT_MINUTES):
+def classify_runs(
+    runs,
+    now,
+    queued_alert_minutes=DEFAULT_QUEUED_ALERT_MINUTES,
+    cancelled_alert_minutes=DEFAULT_CANCELLED_ALERT_MINUTES,
+):
     """Return a list of alert dicts for runs that need to page someone."""
     alerts = []
     for run in runs:
@@ -72,19 +104,28 @@ def classify_runs(runs, now, queued_alert_minutes=DEFAULT_QUEUED_ALERT_MINUTES):
         html_url = run.get("html_url") or ""
 
         if status == "completed" and conclusion == "cancelled":
-            alerts.append(
-                {
-                    "run_id": run_id,
-                    "reason": REASON_CANCELLED,
-                    "detail": (
-                        f"run {run_id} ('{display_title}') completed as "
-                        "cancelled — this is how a release that never got a "
-                        "self-hosted runner expires silently after 24h"
-                    ),
-                    "html_url": html_url,
-                    "display_title": display_title,
-                }
-            )
+            created_at = parse_created_at(run.get("created_at"))
+            age_minutes = (now - created_at).total_seconds() / 60.0
+            # Age bound, mirroring the stuck-queued branch below: same unit
+            # (minutes since created_at) and the same strict boundary — the
+            # queued branch does not alert AT its threshold, so a cancelled
+            # run exactly AT the bound does not alert either.
+            if age_minutes < cancelled_alert_minutes:
+                alerts.append(
+                    {
+                        "run_id": run_id,
+                        "reason": REASON_CANCELLED,
+                        "detail": (
+                            f"run {run_id} ('{display_title}') completed as "
+                            "cancelled — this is how a release that never got "
+                            "a self-hosted runner expires silently after 24h "
+                            f"(age: {age_minutes:.0f} min, bound: "
+                            f"{cancelled_alert_minutes})"
+                        ),
+                        "html_url": html_url,
+                        "display_title": display_title,
+                    }
+                )
             continue
 
         if status in QUEUED_STATUSES:
@@ -148,12 +189,32 @@ def self_test():
             "head_sha": "0" * 40,
         }
 
-    def assert_no_alert(runs, minutes=30, label=""):
-        result = classify_runs(runs, now, queued_alert_minutes=minutes)
+    def assert_no_alert(runs, minutes=30, cancelled_minutes=None, label=""):
+        result = classify_runs(
+            runs,
+            now,
+            queued_alert_minutes=minutes,
+            cancelled_alert_minutes=(
+                DEFAULT_CANCELLED_ALERT_MINUTES
+                if cancelled_minutes is None
+                else cancelled_minutes
+            ),
+        )
         assert result == [], f"{label}: expected no alerts, got {result}"
 
-    def assert_alerts(runs, expected_reasons, minutes=30, label=""):
-        result = classify_runs(runs, now, queued_alert_minutes=minutes)
+    def assert_alerts(
+        runs, expected_reasons, minutes=30, cancelled_minutes=None, label=""
+    ):
+        result = classify_runs(
+            runs,
+            now,
+            queued_alert_minutes=minutes,
+            cancelled_alert_minutes=(
+                DEFAULT_CANCELLED_ALERT_MINUTES
+                if cancelled_minutes is None
+                else cancelled_minutes
+            ),
+        )
         reasons = [alert["reason"] for alert in result]
         assert reasons == expected_reasons, (
             f"{label}: expected reasons {expected_reasons}, got {reasons}"
@@ -233,6 +294,68 @@ def self_test():
         label="threshold override",
     )
 
+    # --- cancelled-run age bound (the 199-comment bug) ---------------------
+    # A cancelled run OLDER than the bound does not alert. This is the whole
+    # fix: the seven runs of 2026-05-11..2026-06-22 stopped paging.
+    assert_no_alert(
+        [make_run(16, "completed", conclusion="cancelled", minutes_before=8 * 24 * 60)],
+        label="cancelled 8 days old",
+    )
+    # A cancelled run INSIDE the bound still alerts — the alerter must stay
+    # able to fire, not merely go quiet.
+    assert_alerts(
+        [make_run(17, "completed", conclusion="cancelled", minutes_before=60)],
+        [REASON_CANCELLED],
+        label="cancelled 1 hour old",
+    )
+    # 24 hours old — the exact shape of the bug (queued 24h, then expired).
+    assert_alerts(
+        [make_run(18, "completed", conclusion="cancelled", minutes_before=24 * 60)],
+        [REASON_CANCELLED],
+        label="cancelled 24 hours old",
+    )
+    # Just inside the bound alerts; exactly AT the bound does not, matching
+    # the queued branch's strict boundary.
+    assert_alerts(
+        [
+            make_run(
+                19,
+                "completed",
+                conclusion="cancelled",
+                minutes_before=DEFAULT_CANCELLED_ALERT_MINUTES - 1,
+            )
+        ],
+        [REASON_CANCELLED],
+        label="cancelled 1 min inside bound",
+    )
+    assert_no_alert(
+        [
+            make_run(
+                20,
+                "completed",
+                conclusion="cancelled",
+                minutes_before=DEFAULT_CANCELLED_ALERT_MINUTES,
+            )
+        ],
+        label="cancelled exactly at bound",
+    )
+    # The bound is overridable, like the queued threshold.
+    assert_no_alert(
+        [make_run(21, "completed", conclusion="cancelled", minutes_before=120)],
+        cancelled_minutes=60,
+        label="cancelled bound override",
+    )
+    # An ancient cancelled run must not mask a fresh one in the same page of
+    # results — the real failure mode, where old noise buries a new alert.
+    assert_alerts(
+        [
+            make_run(22, "completed", conclusion="cancelled", minutes_before=60 * 24 * 60),
+            make_run(23, "completed", conclusion="cancelled", minutes_before=10),
+        ],
+        [REASON_CANCELLED],
+        label="ancient cancelled does not mask fresh cancelled",
+    )
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
@@ -244,6 +367,16 @@ def main(argv=None):
         "--queued-alert-minutes",
         type=int,
         default=DEFAULT_QUEUED_ALERT_MINUTES,
+    )
+    parser.add_argument(
+        "--cancelled-alert-minutes",
+        type=int,
+        default=DEFAULT_CANCELLED_ALERT_MINUTES,
+        help=(
+            "Ignore `cancelled` runs older than this many minutes "
+            f"(default {DEFAULT_CANCELLED_ALERT_MINUTES} = 7 days). Without "
+            "a bound, a single historical incident alerts forever."
+        ),
     )
     parser.add_argument("--github-output", dest="github_output")
     args = parser.parse_args(argv)
@@ -270,7 +403,12 @@ def main(argv=None):
         runs = payload
 
     now = datetime.now(timezone.utc)
-    alerts = classify_runs(runs, now, queued_alert_minutes=args.queued_alert_minutes)
+    alerts = classify_runs(
+        runs,
+        now,
+        queued_alert_minutes=args.queued_alert_minutes,
+        cancelled_alert_minutes=args.cancelled_alert_minutes,
+    )
 
     if args.github_output:
         write_github_output(args.github_output, alerts)
@@ -284,7 +422,8 @@ def main(argv=None):
 
     print(
         f"OK: {len(runs)} release run(s) checked, no silent failures "
-        f"(threshold: {args.queued_alert_minutes} min queued)."
+        f"(thresholds: {args.queued_alert_minutes} min queued, "
+        f"{args.cancelled_alert_minutes} min cancelled-run age bound)."
     )
     return 0
 
