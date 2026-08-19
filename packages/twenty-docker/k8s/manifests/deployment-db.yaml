@@ -46,7 +46,17 @@ spec:
           emptyDir: {}
       containers:
         - name: twentycrm
-          image: twentycrm/twenty-postgres-spilo:16
+          # Pinned by digest (bug a842d0b3). The previous value was the tag
+          # `:16`, which HAS NEVER EXISTED in this repository -- the registry
+          # returns 404 for it, and with imagePullPolicy: Always that made this
+          # deployment unable to start at all. The repository publishes
+          # `latest` and vX.Y.Z only; there is no bare-major scheme.
+          # v0.43.5 is the newest published release and is byte-identical to
+          # `latest` (same index digest). The digest suffix is what makes this
+          # immutable: the tag is retained only so a human can read which
+          # release it is. NOTE: this image ships PostgreSQL 15, not 16 -- the
+          # old tag name was aspirational, never real.
+          image: twentycrm/twenty-postgres-spilo:v0.43.5@sha256:2f78405a78beaa4fa6eb9a9ec53c37e67ea66eaacc48da1a782759d0585362bf
           imagePullPolicy: Always
           securityContext:
             runAsNonRoot: true
