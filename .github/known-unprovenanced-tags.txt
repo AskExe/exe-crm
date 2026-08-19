@@ -1,0 +1,16 @@
+# Historical exe-crm image tags published BEFORE the chain-of-custody
+# pipeline (release-stack-image.yml + verify-image-provenance.py) existed.
+# Their provenance is documented in
+# docs/provenance/exe-crm-historical-images-615c14d9.md (bug 615c14d9).
+#
+# They are immutable history and are expected to lack org.exe.* labels, so
+# the registry provenance audit (.github/workflows/registry-provenance-audit.yml)
+# treats them as KNOWN-LEGACY rather than alerting forever.
+#
+# Any tag NOT listed here that lacks provenance is a NEW hand-built image
+# and MUST alert.
+v0.9.48
+v0.9.49
+v0.9.51
+v0.9.52
+v0.9.53
