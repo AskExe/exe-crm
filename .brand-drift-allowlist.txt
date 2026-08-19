@@ -84,3 +84,14 @@ packages/twenty-apps/hello-world/.github/workflows/ci.yml
 # strings that prove the fix works.
 packages/create-twenty-app/src/utils/test-template.ts
 packages/create-twenty-app/src/utils/__tests__/test-template.spec.ts
+
+# --- Non-existent Postgres tag fix (bug a842d0b3) ---
+# These three files pin the DB image for the k8s path. The PR-added lines
+# REPLACE the tag `:16` -- which the registry 404s, so this deployment could
+# never start -- with an immutable @sha256 digest. The `twentycrm/` namespace
+# is pre-existing and its risk is REDUCED, not introduced: a digest cannot be
+# repointed by a third party the way a tag can. Same justification as the
+# twenty-sdk entry above.
+packages/twenty-docker/k8s/manifests/deployment-db.yaml
+packages/twenty-docker/k8s/terraform/variables.tf
+packages/twenty-docker/k8s/terraform/README.md

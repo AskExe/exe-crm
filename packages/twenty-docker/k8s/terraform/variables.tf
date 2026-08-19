@@ -29,8 +29,8 @@ variable "twentycrm_server_image" {
 
 variable "twentycrm_db_image" {
   type        = string
-  default     = "twentycrm/twenty-postgres-spilo:16"
-  description = "Postgres image for database deployment. Keep pinned; do not use latest."
+  default     = "twentycrm/twenty-postgres-spilo:v0.43.5@sha256:2f78405a78beaa4fa6eb9a9ec53c37e67ea66eaacc48da1a782759d0585362bf"
+  description = "Postgres image for database deployment. Pin by @sha256 digest; the tag is human-readable sugar only. Do not use latest, and do not use a bare major (there is no such tag -- see bug a842d0b3)."
 }
 
 variable "twentycrm_server_replicas" {
