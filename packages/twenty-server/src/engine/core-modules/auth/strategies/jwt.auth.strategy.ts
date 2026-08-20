@@ -32,6 +32,10 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { isNativePasswordAuthDisabled } from 'src/engine/core-modules/auth/utils/is-native-password-auth-disabled.util';
+import {
+  isManagedSsoAccessTokenStale,
+  parseManagedSsoAccessTokenMaxAgeSeconds,
+} from 'src/engine/core-modules/auth/utils/managed-sso-session.util';
 import { PermissionsService } from 'src/engine/metadata-modules/permissions/permissions.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
@@ -135,6 +139,35 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new AuthException(
         'Native password authentication is disabled when GOTRUE_URL is configured',
         AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
+    // ── Managed-SSO central-disable propagation (bug cdb4a918) ──
+    // A CRM-native access token is otherwise trusted for its full lifetime, so a
+    // centrally disabled/revoked user keeps access until it expires. For MANAGED
+    // deployments (EXE_ORG_ID set) whose session came from GoTrue SSO, reject a
+    // token older than MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS with an
+    // UNAUTHENTICATED error. The frontend renews, the managed renewal fails
+    // closed (renew-token.service.ts), and the user re-authenticates through
+    // GoTrue — which re-resolves exe_perms and honors the central disable. This
+    // is OPT-IN (unset => 0 => disabled) and only affects managed SSO sessions,
+    // so unmanaged / native-password deployments are entirely unchanged.
+    const managedSsoMaxAgeSeconds = parseManagedSsoAccessTokenMaxAgeSeconds(
+      process.env.MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS,
+    );
+
+    if (
+      isManagedSsoAccessTokenStale({
+        authProvider: payload.authProvider,
+        iat: (payload as { iat?: number }).iat,
+        nowSeconds: Math.floor(Date.now() / 1000),
+        exeOrgId: process.env.EXE_ORG_ID,
+        maxAgeSeconds: managedSsoMaxAgeSeconds,
+      })
+    ) {
+      throw new AuthException(
+        'Managed SSO session must be re-validated centrally',
+        AuthExceptionCode.UNAUTHENTICATED,
       );
     }
 
