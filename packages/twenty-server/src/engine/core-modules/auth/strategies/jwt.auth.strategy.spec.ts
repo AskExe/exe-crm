@@ -10,6 +10,7 @@ import {
   type JwtPayload,
   JwtTokenTypeEnum,
 } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import { JwtAuthStrategy } from './jwt.auth.strategy';
@@ -941,6 +942,121 @@ describe('JwtAuthStrategy', () => {
       expect(result.impersonationContext?.impersonatedUserWorkspaceId).toBe(
         validUserWorkspaceId,
       );
+    });
+  });
+
+  describe('Managed SSO central-disable propagation (bug cdb4a918)', () => {
+    const OLD_ENV = process.env;
+
+    // A managed-SSO access token issued 1h ago. Its natural JWT exp is NOT
+    // consulted here (passport verifies exp; validate() trusts the decoded
+    // payload), so `iat` in the past with the guard configured to 5m is exactly
+    // the "still within the 30m access-token life, but past the managed re-check
+    // window" case the fix targets.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+
+    const buildManagedSsoAccessPayload = (iat: number) => ({
+      sub: 'valid-user-id',
+      userId: 'valid-user-id',
+      type: JwtTokenTypeEnum.ACCESS,
+      userWorkspaceId: 'valid-user-workspace-id',
+      workspaceId: 'valid-workspace-id',
+      authProvider: AuthProviderEnum.SSO,
+      iat,
+    });
+
+    const wireSuccessfulUserWorkspaceLookup = () => {
+      const mockWorkspace = new WorkspaceEntity();
+
+      mockWorkspace.id = 'valid-workspace-id';
+      workspaceStore['valid-workspace-id'] = mockWorkspace;
+      userStore['valid-user-id'] = { id: 'valid-user-id', lastName: 'Doe' };
+
+      coreEntityCacheService.get.mockImplementation(
+        async (keyName: string, entityId: string) => {
+          if (keyName === 'workspaceEntity') {
+            return workspaceStore[entityId] ?? null;
+          }
+
+          if (keyName === 'user') {
+            return userStore[entityId] ?? null;
+          }
+
+          if (keyName === 'userWorkspaceEntity') {
+            return {
+              id: 'valid-user-workspace-id',
+              user: { id: 'valid-user-id', lastName: 'Doe' },
+              workspace: { id: 'valid-workspace-id' },
+            };
+          }
+
+          return null;
+        },
+      );
+    };
+
+    beforeEach(() => {
+      process.env = { ...OLD_ENV };
+      wireSuccessfulUserWorkspaceLookup();
+    });
+
+    afterEach(() => {
+      process.env = OLD_ENV;
+    });
+
+    it('should reject a managed SSO access token older than the configured max age before its natural expiry', async () => {
+      process.env.EXE_ORG_ID = 'exe-org';
+      process.env.MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS = '300';
+
+      const payload = buildManagedSsoAccessPayload(nowSeconds - 3600);
+
+      strategy = createStrategy();
+
+      await expect(strategy.validate(payload as JwtPayload)).rejects.toThrow(
+        new AuthException(
+          'Managed SSO session must be re-validated centrally',
+          AuthExceptionCode.UNAUTHENTICATED,
+        ),
+      );
+    });
+
+    it('should accept the same stale managed SSO token when the guard is disabled (default, backward compatible)', async () => {
+      process.env.EXE_ORG_ID = 'exe-org';
+      delete process.env.MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS;
+
+      const payload = buildManagedSsoAccessPayload(nowSeconds - 3600);
+
+      strategy = createStrategy();
+
+      const result = await strategy.validate(payload as JwtPayload);
+
+      expect(result.user?.id).toBe('valid-user-id');
+    });
+
+    it('should accept a fresh managed SSO token even when the guard is enabled', async () => {
+      process.env.EXE_ORG_ID = 'exe-org';
+      process.env.MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS = '300';
+
+      const payload = buildManagedSsoAccessPayload(nowSeconds - 60);
+
+      strategy = createStrategy();
+
+      const result = await strategy.validate(payload as JwtPayload);
+
+      expect(result.user?.id).toBe('valid-user-id');
+    });
+
+    it('should accept a stale SSO token when enforcement is off for the deployment (EXE_ORG_ID unset)', async () => {
+      delete process.env.EXE_ORG_ID;
+      process.env.MANAGED_SSO_ACCESS_TOKEN_MAX_AGE_SECONDS = '300';
+
+      const payload = buildManagedSsoAccessPayload(nowSeconds - 3600);
+
+      strategy = createStrategy();
+
+      const result = await strategy.validate(payload as JwtPayload);
+
+      expect(result.user?.id).toBe('valid-user-id');
     });
   });
 });
