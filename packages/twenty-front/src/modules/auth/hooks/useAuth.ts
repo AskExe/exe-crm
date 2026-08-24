@@ -25,6 +25,7 @@ import {
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStorageKeys';
 import { broadcastSignOutToOtherTabs } from '@/auth/utils/crossTabSignOut';
+import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
@@ -68,6 +69,24 @@ import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { isDefined } from 'twenty-shared/utils';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
 import { useStore } from 'jotai';
+
+// Bug cdb4a918: local-only sign-out never revoked the session at the central IdP,
+// so a centrally-disabled user with a still-valid GoTrue refresh token could keep refreshing.
+// exe-auth's /auth/logout always clears its own cookies even on degraded paths, so local
+// logout must proceed regardless of whether this call succeeds — hence never throwing.
+const revokeCentralGoTrueSession = async () => {
+  const authHost = `auth.${getRegistrableDomain(window.location.hostname)}`;
+  try {
+    await fetch(`https://${authHost}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (error) {
+    // oxlint-disable-next-line no-console
+    console.warn('Failed to revoke central GoTrue session on sign-out', error);
+  }
+};
 
 export const useAuth = () => {
   const store = useStore();
@@ -482,6 +501,7 @@ export const useAuth = () => {
 
   const handleSignOut = useCallback(async () => {
     broadcastSignOutToOtherTabs();
+    await revokeCentralGoTrueSession();
     await clearSession();
     if (isCaptchaScriptLoaded) await requestFreshCaptchaToken();
   }, [clearSession, isCaptchaScriptLoaded, requestFreshCaptchaToken]);

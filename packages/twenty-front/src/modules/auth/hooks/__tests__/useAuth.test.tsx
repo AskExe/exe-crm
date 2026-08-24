@@ -95,6 +95,12 @@ describe('useAuth', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+    // 'fetch' is absent from the jsdom global; delete the stub spies replaced
+    delete (global as { fetch?: unknown }).fetch;
+  });
+
   it('should return login token object', async () => {
     const { result } = renderHooks();
 
@@ -180,9 +186,26 @@ describe('useAuth', () => {
 
     const { signOut, client } = result.current;
 
+    // jsdom does not provide fetch, so install a stub before spying on it
+    if (typeof global.fetch !== 'function') {
+      global.fetch = () => Promise.reject(new Error('fetch not available'));
+    }
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue({ status: 204 } as Response);
+
     await act(async () => {
       await signOut();
     });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/auth\..*\/auth\/logout$/),
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      }),
+    );
 
     expect(sessionStorage.length).toBe(0);
     expect(client.cache.extract()).toEqual({});
