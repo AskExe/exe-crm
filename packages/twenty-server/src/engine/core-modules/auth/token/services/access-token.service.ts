@@ -74,12 +74,32 @@ type GoTrueJwk = {
 export class AccessTokenService {
   private readonly logger = new Logger(AccessTokenService.name);
   private static readonly GOTRUE_JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
+  /**
+   * Cache for user's central banned/disable status from GoTrue. Short TTL (60s)
+   * ensures a centrally-disabled user is denied within a bounded window while
+   * avoiding per-request overhead. Keyed by GoTrue user ID (`sub` claim).
+   */
+  private static readonly CENTRAL_STATUS_CACHE_TTL_MS = 60 * 1000;
 
   private gotrueJwksCache: {
     url: string;
     fetchedAt: number;
     keys: GoTrueJwk[];
   } | null = null;
+
+  /**
+   * Cache of banned user IDs from GoTrue. Checked during verifyGoTrueToken to
+   * enforce central disable within a bounded window (bug cdb4a918). A disabled
+   * user's tokens remain technically valid (signature passes) but are rejected
+   * here once the cache populates with their banned status.
+   */
+  private centralBannedCache: Map<
+    string,
+    {
+      banned: boolean;
+      checkedAt: number;
+    }
+  > = new Map();
 
   constructor(
     private readonly jwtWrapperService: JwtWrapperService,
@@ -437,8 +457,34 @@ export class AccessTokenService {
       return null;
     }
 
+    // ── P2 cdb4a918 — Central disable enforcement (bounded window) ───────────
+    // A centrally-disabled/banned user's tokens remain technically valid
+    // (signature passes, expiry unexpired) but should be rejected within a
+    // bounded window. Check GoTrue's /auth/v1/user for the `banned` flag
+    // using a short-lived cache (60s). Degraded gracefully when GoTrue is
+    // unreachable — logs and allows the token to pass based on its own validity
+    // (matching the logout fix's posture).
+    const payload = verified as GoTrueJwtPayload;
+
+    if (payload.sub) {
+      const isBanned = await this.isUserBannedAtGoTrue(
+        payload.sub,
+        gotrueUrl,
+        token,
+      );
+
+      if (isBanned === true) {
+        this.logger.warn(
+          `Rejecting centrally-disabled user (sub=${payload.sub}, email=${email}); ` +
+            `token window bounded to ${AccessTokenService.CENTRAL_STATUS_CACHE_TTL_MS}ms`,
+        );
+        return null;
+      }
+      // isBanned === undefined means GoTrue check failed/degraded — fail open
+    }
+
     return {
-      ...(verified as GoTrueJwtPayload),
+      ...payload,
       email,
     };
   }
@@ -502,6 +548,88 @@ export class AccessTokenService {
       fetchedAt: Date.now(),
       keys: payload.keys,
     };
+  }
+
+  /**
+   * Checks if a user is centrally disabled/banned at GoTrue. Uses a short
+   * cache (60s) to bound the enforcement window while avoiding per-request
+   * overhead. Gracefully degrades when GoTrue is unreachable — logs and
+   * allows the token to pass based on its own validity (fail-open posture,
+   * matching the logout fix's error handling).
+   *
+   * Returns true if the user is banned, false/undefined on error or allowed.
+   *
+   * @param sub - GoTrue user ID from JWT `sub` claim
+   * @param gotrueUrl - GoTrue instance URL
+   * @param accessToken - Valid GoTrue access token to authorize the check
+   */
+  private async isUserBannedAtGoTrue(
+    sub: string,
+    gotrueUrl: string,
+    accessToken: string,
+  ): Promise<boolean | undefined> {
+    const now = Date.now();
+    const cached = this.centralBannedCache.get(sub);
+
+    if (
+      cached &&
+      now - cached.checkedAt < AccessTokenService.CENTRAL_STATUS_CACHE_TTL_MS
+    ) {
+      return cached.banned;
+    }
+
+    try {
+      const userUrl = new URL('/auth/v1/user', gotrueUrl);
+      const response = await fetch(userUrl.toString(), {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: AbortSignal.timeout(5000), // 5s timeout to avoid hanging requests
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          // Token expired or invalid — clear cache and let the token's own expiry handle it
+          this.centralBannedCache.delete(sub);
+          this.logger.warn(
+            `GoTrue user check returned ${response.status} for sub=${sub}; ` +
+              `assuming token validity (degraded)`,
+          );
+          return undefined;
+        }
+        // Other errors (500, 503, etc.) — fail open, log degradation
+        this.logger.warn(
+          `GoTrue user check failed with status ${response.status} for sub=${sub}; ` +
+            `assuming allowed (degraded)`,
+        );
+        return undefined;
+      }
+
+      const payload = (await response.json()) as { banned?: boolean } | null;
+
+      if (!payload) {
+        this.logger.warn(
+          `GoTrue user check returned null payload for sub=${sub}`,
+        );
+        return undefined;
+      }
+
+      const banned = !!payload.banned;
+
+      this.centralBannedCache.set(sub, {
+        banned,
+        checkedAt: now,
+      });
+
+      return banned;
+    } catch (error) {
+      // Network errors, timeouts, JSON parse errors — fail open, log degradation
+      this.logger.warn(
+        `GoTrue user check failed for sub=${sub}: ${error instanceof Error ? error.message : String(error)}; ` +
+          `assuming allowed (degraded)`,
+      );
+      return undefined;
+    }
   }
 
   private selectGoTrueJwk(keys: GoTrueJwk[], kid?: string): GoTrueJwk | null {

@@ -921,4 +921,143 @@ describe('AccessTokenService', () => {
       expect(await verifyOrNull(token)).toBeNull();
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // P2 cdb4a918 — Central disable enforcement tests
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('verifyGoTrueToken central disable enforcement (bug cdb4a918)', () => {
+    const GOTRUE_URL = 'https://auth.example.com';
+    const SHARED_SECRET = 'test-secret-for-hs256-only';
+    const EMAIL = 'user@example.com';
+    const USER_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+    const createValidToken = (userId = USER_ID) => {
+      return jwt.sign(
+        { sub: userId, email: EMAIL },
+        SHARED_SECRET,
+        {
+          algorithm: 'HS256',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: 'https://auth.example.com',
+        },
+      );
+    };
+
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [] }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('rejects a token when the user is banned at GoTrue', async () => {
+      // Mock GoTrue /auth/v1/user to return banned=true
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url && url.includes('/auth/v1/user')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ banned: true }),
+          } as Response);
+        }
+        // Default JWKS response
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      expect(result).toBeNull();
+    });
+
+    it('accepts a token when the user is not banned at GoTrue', async () => {
+      // Mock GoTrue /auth/v1/user to return banned=false
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url && url.includes('/auth/v1/user')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ banned: false }),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      expect(result).not.toBeNull();
+      expect(result?.email).toBe(EMAIL);
+      expect(result?.sub).toBe(USER_ID);
+    });
+
+    it('accepts a token when GoTrue user check fails (degraded/fail-open)', async () => {
+      // Mock GoTrue /auth/v1/user to return 500 error
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url && url.includes('/auth/v1/user')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      // Should accept based on token validity (fail-open posture)
+      expect(result).not.toBeNull();
+      expect(result?.email).toBe(EMAIL);
+    });
+
+    it('caches the banned status for 60 seconds', async () => {
+      let fetchCallCount = 0;
+
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        if (url && url.includes('/auth/v1/user')) {
+          fetchCallCount++;
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ banned: true }),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+
+      // First call should fetch user status
+      await service.verifyGoTrueToken(token, GOTRUE_URL);
+      expect(fetchCallCount).toBe(1);
+
+      // Second call within cache window should use cache
+      await service.verifyGoTrueToken(token, GOTRUE_URL);
+      expect(fetchCallCount).toBe(1); // No additional fetch
+    });
+  });
 });
