@@ -222,9 +222,14 @@ jobs:
   # runner runs only this job, so 6 workers on 16 cores is safe headroom while
   # leaving cores for the dev box's own load.
   #
-  # macOS notes: no Docker on this runner (docker-dependent jobs stay on
-  # Linux — see security-scan); setup-node cache keys include runner OS+arch,
-  # so the macOS-arm64 yarn cache never collides with the Linux-x64 one.
+  # macOS notes: this runner DOES have Docker available to the account the
+  # runner service executes as, and the CLI is on the runner's PATH. An
+  # earlier version of this note claimed otherwise and pinned security-scan to
+  # Linux because of it; that claim was verified wrong — the pinned gitleaks
+  # image was pulled and run to completion on this runner. That digest is a
+  # multi-arch manifest including arm64, so no emulation is involved.
+  # setup-node cache keys include runner OS+arch, so the macOS-arm64 yarn cache
+  # never collides with the Linux-x64 one.
   server-tests-mac:
     name: Server unit tests (mac)
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
@@ -335,15 +340,52 @@ jobs:
         # --maxWorkers.
         run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests
 
+  # Runs on the repo's dedicated macOS runner (mac-m4-exe-crm), NOT on the
+  # shared Linux build-my host.
+  #
+  # WHY MOVED (bug: PR #120 could not merge).
+  # This job kept being CANCELLED at its own 40m cap. The scanners did not get
+  # slower — the fixed overhead ahead of them did. Measured on PR #99:
+  # 8m20s in ci-slot-acquire ("Set up runner") + 8m34s in
+  # `yarn install --immutable` = 16m54s consumed before the first scanner
+  # starts. The shared Linux host is heavily oversubscribed — it carries more
+  # concurrent CI workers than it has cores, so every job on it runs several
+  # times slower than it should. In the SAME run
+  # that cancelled this job, "Lint & Typecheck" and "Server unit tests (mac)"
+  # both finished on the mac runner in ~10-11 minutes. Only the Linux-pinned
+  # jobs died.
+  #
+  # WHY THIS IS SAFE — every step of this gate was verified to run on darwin
+  # /arm64 before the move. NOTHING about the gate itself changed: same
+  # scanners, same severities, same fail-closed behaviour.
+  #   - gitleaks: the runner service executes as the host user that owns the
+  #     Docker socket (see the macOS notes on server-tests-mac above), and the
+  #     pinned digest ghcr.io/gitleaks/gitleaks@sha256:0e99e882... is a
+  #     multi-arch manifest that includes linux/arm64. The exact `docker run`
+  #     below was executed on this host, against a working tree including a
+  #     3.6 GB node_modules over the virtiofs bind mount, and completed in
+  #     2m05s.
+  #   - trivy: aquasecurity/trivy-action@v0.36.0 is a COMPOSITE action. It
+  #     shells out to aquasecurity/setup-trivy, which runs trivy's own
+  #     contrib/install.sh to fetch a NATIVE binary — no container involved.
+  #     install.sh maps darwin+arm64 to the macOS-ARM64 asset, and
+  #     trivy_0.70.0_macOS-ARM64.tar.gz (the action's default version) exists
+  #     on the release. `scan-type: config` is static file analysis.
+  #   - everything else (yarn, npx vitest, npx nx, python3) is already proven
+  #     on this runner by lint-typecheck and server-tests-mac.
+  #
+  # There is no ci-slot-acquire hook on this runner, so the 8m20s of that
+  # overhead disappears outright rather than being papered over with a bigger
+  # timeout.
+  #
+  # TRADE-OFF, stated plainly: the gitleaks step now depends on Docker Desktop
+  # being up on the mac host. The preflight step below turns that into an
+  # explicit, readable failure instead of a confusing scanner error. It is a
+  # liveness check on the tooling, never a bypass — it can only fail the job,
+  # never skip a scanner.
   security-scan:
     name: Security scan (secrets, deps, container config)
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
-    # Same slot-wait-inside-the-budget problem as brand-drift above, just less
-    # obvious because this job does real work. Measured on PR #99: 8m20s in
-    # ci-slot-acquire ("Set up runner") + 8m34s in `yarn install --immutable`
-    # = 16m54s of a 20m budget consumed BEFORE the first scanner starts, so
-    # gitleaks was cancelled mid-run and every later scan step was skipped.
-    # The scanners need ~5m; the fixed overhead is what grew.
+    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -357,8 +399,33 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'yarn'
 
+      # RECALL_LOCAL_BUILD: identical reason to server-tests-mac above —
+      # @recallai/desktop-sdk has a darwin-only postinstall that downloads a
+      # ~48MB native SDK from S3 with no retry and flakes with ECONNRESET.
+      # On Linux that postinstall was a no-op, so this env was not needed while
+      # this job lived there. It is needed now. (bug 19fcc1f0)
       - name: Install dependencies
+        env:
+          RECALL_LOCAL_BUILD: '1'
         run: yarn install --immutable
+
+      # Fail fast and legibly if the Docker daemon is not reachable, rather
+      # than letting the gitleaks step below fail with a daemon-connection
+      # error 3 steps later. This can only FAIL the job — it never skips,
+      # softens or bypasses a scanner.
+      - name: Preflight — Docker daemon reachable (required by gitleaks)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          if ! docker info >/dev/null 2>&1; then
+            echo "::error::Docker daemon is not reachable on this runner. The"
+            echo "::error::gitleaks secret scan runs from a pinned container and"
+            echo "::error::cannot run without it. Start Docker Desktop on"
+            echo "::error::mac-m4-exe-crm and re-run this job. This gate fails"
+            echo "::error::closed by design and will not be skipped."
+            exit 1
+          fi
+          docker version --format 'docker client {{.Client.Version}} / server {{.Server.Version}} ({{.Server.Arch}})'
 
       # Supply-chain pin gate (bug 112eb501). Fails closed if a customer-facing
       # artifact we generate or ship reacquires a mutable third-party reference
