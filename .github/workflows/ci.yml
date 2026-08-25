@@ -29,7 +29,10 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
+
+      # Self-hosted runners retain Yarn's global cache locally. setup-node's
+      # remote archive is larger and slower than a normal install here; under
+      # load it can spend most of the job timeout restoring before CI begins.
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -179,7 +182,9 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
+
+      # Keep the physical Linux runner on its persistent local Yarn cache. A
+      # remote setup-node archive adds a long pre-install stall on this fleet.
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -248,7 +253,10 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
+
+      # Keep the dedicated Mac on its persistent local Yarn cache. Restoring
+      # the remote archive has repeatedly stalled this required gate in Setup
+      # Node before dependency installation or tests can start.
 
       - name: Install dependencies
         # @recallai/desktop-sdk (a twenty-companion desktop-only dep) runs a
