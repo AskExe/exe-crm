@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { generateKeyPairSync, randomUUID } from 'crypto';
 
-import { type Request } from 'express';
+import { type Request as ExpressRequest } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
@@ -39,6 +39,12 @@ describe('AccessTokenService', () => {
   let coreEntityCacheService: CoreEntityCacheService;
   let workspaceCacheService: WorkspaceCacheService;
   const originalFetch = global.fetch;
+  const fetchRequestUrl = (input: RequestInfo | URL): string =>
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
   const mockConfig = (overrides: Record<string, unknown> = {}) => {
     (twentyConfigService.get as jest.Mock).mockImplementation((key: string) => {
       const values: Record<string, unknown> = {
@@ -319,7 +325,7 @@ describe('AccessTokenService', () => {
         headers: {
           authorization: `Bearer ${mockToken}`,
         },
-      } as Request;
+      } as ExpressRequest;
       const mockDecodedToken = { sub: 'user-id', workspaceId: 'workspace-id' };
       const mockAuthContext = {
         user: { id: 'user-id' },
@@ -354,7 +360,7 @@ describe('AccessTokenService', () => {
     it('should throw an error if token is missing', async () => {
       const mockRequest = {
         headers: {},
-      } as Request;
+      } as ExpressRequest;
 
       jest
         .spyOn(jwtWrapperService, 'extractJwtFromRequest')
@@ -396,7 +402,7 @@ describe('AccessTokenService', () => {
           origin: 'https://crm.example.com',
         },
         protocol: 'https',
-      } as Request;
+      } as ExpressRequest;
       const workspace = { id: workspaceId } as WorkspaceEntity;
       let storedUser: UserEntity | null = null;
       let hasMembership = false;
@@ -592,7 +598,7 @@ describe('AccessTokenService', () => {
             origin: 'https://crm.example.com',
           },
           protocol: 'https',
-        } as Request),
+        } as ExpressRequest),
       ).rejects.toThrow('Token invalid');
 
       expect(
@@ -644,7 +650,7 @@ describe('AccessTokenService', () => {
             origin: 'https://crm.example.com',
           },
           protocol: 'https',
-        } as Request),
+        } as ExpressRequest),
       ).rejects.toThrow('Token invalid');
 
       expect(
@@ -919,6 +925,180 @@ describe('AccessTokenService', () => {
       );
 
       expect(await verifyOrNull(token)).toBeNull();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // P2 cdb4a918 — Central disable enforcement tests
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('verifyGoTrueToken central disable enforcement (bug cdb4a918)', () => {
+    const GOTRUE_URL = 'https://auth.example.com';
+    const SHARED_SECRET = 'test-secret-for-hs256-only';
+    const EMAIL = 'user@example.com';
+    const USER_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+    const createValidToken = (
+      userId = USER_ID,
+      issuer = 'https://auth.example.com',
+    ) => {
+      return jwt.sign({ sub: userId, email: EMAIL }, SHARED_SECRET, {
+        algorithm: 'HS256',
+        audience: 'authenticated',
+        expiresIn: '1h',
+        issuer,
+      });
+    };
+
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [] }),
+      } as Response) as typeof fetch;
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('rejects a token when the user is banned at GoTrue', async () => {
+      // GoTrue rejects banned users at the authenticated /user boundary.
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = fetchRequestUrl(input);
+        if (url && url.endsWith('/user')) {
+          return Promise.resolve({
+            ok: false,
+            status: 403,
+          } as Response);
+        }
+        // Default JWKS response
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      expect(result).toBeNull();
+    });
+
+    it('accepts a token when the user is not banned at GoTrue', async () => {
+      // Mock GoTrue /auth/v1/user to return banned=false
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = fetchRequestUrl(input);
+        if (url && url.endsWith('/user')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ banned: false }),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      expect(result).not.toBeNull();
+      expect(result?.email).toBe(EMAIL);
+      expect(result?.sub).toBe(USER_ID);
+    });
+
+    it.each([
+      ['https://auth.example.com', 'https://auth.example.com/user'],
+      [
+        'https://auth.example.com/auth/v1',
+        'https://auth.example.com/auth/v1/user',
+      ],
+    ])(
+      'preserves the configured GoTrue base path for %s',
+      async (base, expected) => {
+        const userRequests: string[] = [];
+
+        (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+          const url = fetchRequestUrl(input);
+
+          if (url.endsWith('/user')) {
+            userRequests.push(url);
+
+            return Promise.resolve({
+              ok: true,
+              json: async () => ({ banned: false }),
+            } as Response);
+          }
+
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ keys: [] }),
+          } as Response);
+        });
+
+        const token = createValidToken(USER_ID, base);
+
+        expect(await service.verifyGoTrueToken(token, base)).not.toBeNull();
+        expect(userRequests).toEqual([expected]);
+      },
+    );
+
+    it('accepts a token when GoTrue user check fails (degraded/fail-open)', async () => {
+      // Mock GoTrue /auth/v1/user to return 500 error
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = fetchRequestUrl(input);
+        if (url && url.endsWith('/user')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+      const result = await service.verifyGoTrueToken(token, GOTRUE_URL);
+
+      // Should accept based on token validity (fail-open posture)
+      expect(result).not.toBeNull();
+      expect(result?.email).toBe(EMAIL);
+    });
+
+    it('caches the banned status for 60 seconds', async () => {
+      let fetchCallCount = 0;
+
+      (global.fetch as jest.Mock).mockImplementation((input: RequestInfo) => {
+        const url = fetchRequestUrl(input);
+        if (url && url.endsWith('/user')) {
+          fetchCallCount++;
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ banned: true }),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ keys: [] }),
+        } as Response);
+      });
+
+      const token = createValidToken();
+
+      // First call should fetch user status
+      await service.verifyGoTrueToken(token, GOTRUE_URL);
+      expect(fetchCallCount).toBe(1);
+
+      // Second call within cache window should use cache
+      await service.verifyGoTrueToken(token, GOTRUE_URL);
+      expect(fetchCallCount).toBe(1); // No additional fetch
     });
   });
 });
