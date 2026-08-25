@@ -397,7 +397,11 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
-          cache: 'yarn'
+
+      # The dedicated self-hosted Mac keeps Yarn's global cache locally.
+      # setup-node's remote cache upload/download can exceed this job's entire
+      # timeout for the multi-gigabyte workspace, before any scanner executes.
+      # `yarn install --immutable` still verifies the exact committed lockfile.
 
       # RECALL_LOCAL_BUILD: identical reason to server-tests-mac above —
       # @recallai/desktop-sdk has a darwin-only postinstall that downloads a
