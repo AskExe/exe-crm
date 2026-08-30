@@ -276,6 +276,31 @@ describe('AdminTokenMiddleware', () => {
       expect(res.setHeader).not.toHaveBeenCalled();
     });
 
+    it('should still authenticate a JWT-shaped admin token', async () => {
+      // The fast-path assumes an admin secret is never shaped like a JWT,
+      // which holds for the documented `openssl rand -hex 32`. If an operator
+      // configures a dotted secret anyway, skipping the comparison would
+      // silently stop authenticating the gateway — so the assumption is
+      // checked against the real secret, not trusted.
+      const dottedToken = buildUserJwt('looks-like-a-jwt-but-is-the-secret');
+
+      process.env.EXE_CRM_ADMIN_TOKEN = dottedToken;
+
+      middleware = new AdminTokenMiddleware(
+        workspaceDomainsService as unknown as WorkspaceDomainsService,
+      );
+
+      const req = buildRequest({ authorization: `Bearer ${dottedToken}` });
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(req.adminTokenAuthenticated).toBe(true);
+      expect(req.workspaceId).toBe(MOCK_WORKSPACE?.id);
+    });
+
     it('should still 429 genuine admin-token guessing on the same key', async () => {
       for (let index = 0; index < 10; index++) {
         await middleware.use(

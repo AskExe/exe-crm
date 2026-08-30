@@ -99,6 +99,16 @@ export class AdminTokenMiddleware implements NestMiddleware {
   private readonly logger = new Logger(AdminTokenMiddleware.name);
   private readonly adminTokenHash: Buffer | undefined;
   private readonly rateLimiter = new AdminTokenRateLimiter(10, 60_000);
+  /**
+   * Whether the JWT fast-path below is safe for THIS deployment's secret.
+   *
+   * The fast-path assumes an admin token is never shaped like a JWT, which
+   * holds for the documented `openssl rand -hex 32`. If an operator configured
+   * a dotted, JWT-shaped secret anyway, skipping the comparison would silently
+   * stop authenticating the gateway. So the assumption is checked against the
+   * actual secret rather than trusted.
+   */
+  private readonly canSkipJwtShapedTokens: boolean = true;
 
   constructor(
     private readonly workspaceDomainsService: WorkspaceDomainsService,
@@ -107,6 +117,16 @@ export class AdminTokenMiddleware implements NestMiddleware {
 
     if (raw) {
       this.adminTokenHash = sha256(raw);
+      this.canSkipJwtShapedTokens = !looksLikeJwt(raw);
+
+      if (!this.canSkipJwtShapedTokens) {
+        this.logger.warn(
+          'EXE_CRM_ADMIN_TOKEN is shaped like a JWT. Every ordinary user token ' +
+            'must therefore still be compared against it, which reinstates the ' +
+            'admin-attempt accounting on normal traffic (bug 29837293). Rotate ' +
+            'it to an opaque secret: openssl rand -hex 32.',
+        );
+      }
     }
   }
 
@@ -140,7 +160,7 @@ export class AdminTokenMiddleware implements NestMiddleware {
     // A JWT is never an admin-token attempt. Let it past untouched: no
     // comparison, no bookkeeping, and above all no 429 for a caller that was
     // not trying to authenticate as admin in the first place.
-    if (looksLikeJwt(token)) {
+    if (this.canSkipJwtShapedTokens && looksLikeJwt(token)) {
       next();
 
       return;
