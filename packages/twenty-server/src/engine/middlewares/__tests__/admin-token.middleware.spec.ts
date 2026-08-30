@@ -29,22 +29,41 @@ describe('AdminTokenMiddleware', () => {
   const buildRequest = ({
     authorization,
     forwardedFor = '203.0.113.10',
+    cfConnectingIp,
+    remoteAddress = '198.51.100.10',
   }: {
     authorization?: string;
     forwardedFor?: string;
+    cfConnectingIp?: string;
+    remoteAddress?: string;
   } = {}): Request =>
     ({
       headers: {
         ...(authorization ? { authorization } : {}),
+        ...(cfConnectingIp ? { 'cf-connecting-ip': cfConnectingIp } : {}),
         origin: 'https://workspace.example.com',
         'x-forwarded-for': forwardedFor,
       },
       path: '/graphql',
       protocol: 'https',
       socket: {
-        remoteAddress: '198.51.100.10',
+        remoteAddress,
       },
     }) as unknown as Request;
+
+  /**
+   * A three-segment JWS, shaped exactly like the token the CRM SPA sends on
+   * every authenticated request. Content is irrelevant — the middleware must
+   * never even look at it.
+   */
+  const buildUserJwt = (subject: string) =>
+    [
+      Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString(
+        'base64url',
+      ),
+      Buffer.from(JSON.stringify({ sub: subject })).toString('base64url'),
+      'c2lnbmF0dXJl',
+    ].join('.');
 
   const buildResponse = (): MockResponse => {
     const response = {
@@ -209,5 +228,173 @@ describe('AdminTokenMiddleware', () => {
       workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace,
     ).not.toHaveBeenCalled();
     expect(req.adminTokenAuthenticated).toBeUndefined();
+  });
+
+  // ── bug 29837293 ─────────────────────────────────────────────────────────
+  // The middleware is mounted on /graphql, /metadata, /rest/* and /mcp, so it
+  // sees every ordinary authenticated request. It used to count each one as a
+  // failed admin-token attempt and 429 the caller after ten, which took the
+  // whole SPA down within one page load.
+  describe('ordinary user tokens (bug 29837293)', () => {
+    it('should not count JWT bearer tokens as failed admin attempts', async () => {
+      // Far more Bearer requests than one page load makes, all with the same
+      // key. None of them is an admin-token attempt, so none may be counted.
+      for (let index = 0; index < 50; index++) {
+        const req = buildRequest({
+          authorization: `Bearer ${buildUserJwt(`user-${index}`)}`,
+        });
+        const res = buildResponse();
+        const next = jest.fn() as NextFunction;
+
+        await middleware.use(req, res, next);
+
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(res.status).not.toHaveBeenCalled();
+        expect(req.adminTokenAuthenticated).toBeUndefined();
+      }
+    });
+
+    it('should serve a user JWT even while the admin-token bucket is full', async () => {
+      for (let index = 0; index < 20; index++) {
+        await middleware.use(
+          buildRequest({ authorization: 'Bearer opaque-guess' }),
+          buildResponse(),
+          jest.fn() as NextFunction,
+        );
+      }
+
+      const req = buildRequest({
+        authorization: `Bearer ${buildUserJwt('real-user')}`,
+      });
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.setHeader).not.toHaveBeenCalled();
+    });
+
+    it('should still 429 genuine admin-token guessing on the same key', async () => {
+      for (let index = 0; index < 10; index++) {
+        await middleware.use(
+          buildRequest({ authorization: 'Bearer opaque-guess' }),
+          buildResponse(),
+          jest.fn() as NextFunction,
+        );
+      }
+
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(
+        buildRequest({ authorization: 'Bearer opaque-guess' }),
+        res,
+        next,
+      );
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+  });
+
+  // ── bug 29837293, second defect ──────────────────────────────────────────
+  // The limiter keyed on the raw first X-Forwarded-For entry, which the caller
+  // writes. Rotating it per request kept the window empty forever, so the
+  // limiter never fired on the one thing it existed to stop.
+  describe('rate-limit keying (bug 29837293)', () => {
+    it('should not let a rotated X-Forwarded-For escape the window', async () => {
+      for (let index = 0; index < 10; index++) {
+        await middleware.use(
+          buildRequest({
+            authorization: 'Bearer opaque-guess',
+            forwardedFor: `198.18.0.${index}`,
+          }),
+          buildResponse(),
+          jest.fn() as NextFunction,
+        );
+      }
+
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(
+        buildRequest({
+          authorization: 'Bearer opaque-guess',
+          forwardedFor: '198.18.0.250',
+        }),
+        res,
+        next,
+      );
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('should key on the trusted hop, not a client-prepended entry', async () => {
+      // Two of our own proxies (cloudflared -> exe-sso-edge) append to the
+      // header, so the last believable entry is two from the end. Everything
+      // to its left was written by the caller.
+      process.env.EXE_TRUSTED_PROXY_HOPS = '2';
+
+      for (let index = 0; index < 10; index++) {
+        await middleware.use(
+          buildRequest({
+            authorization: 'Bearer opaque-guess',
+            forwardedFor: `10.0.0.${index}, 203.0.113.7, 172.16.0.1`,
+          }),
+          buildResponse(),
+          jest.fn() as NextFunction,
+        );
+      }
+
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(
+        buildRequest({
+          authorization: 'Bearer opaque-guess',
+          forwardedFor: '10.0.0.99, 203.0.113.7, 172.16.0.1',
+        }),
+        res,
+        next,
+      );
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('should separate distinct callers reported by the trusted hop', async () => {
+      process.env.EXE_TRUSTED_PROXY_HOPS = '2';
+
+      for (let index = 0; index < 10; index++) {
+        await middleware.use(
+          buildRequest({
+            authorization: 'Bearer opaque-guess',
+            forwardedFor: '10.0.0.1, 203.0.113.7, 172.16.0.1',
+          }),
+          buildResponse(),
+          jest.fn() as NextFunction,
+        );
+      }
+
+      const res = buildResponse();
+      const next = jest.fn() as NextFunction;
+
+      await middleware.use(
+        buildRequest({
+          authorization: 'Bearer opaque-guess',
+          // A genuinely different caller: the trusted hop reported a different
+          // peer, so this is a different bucket and must not be locked out.
+          forwardedFor: '10.0.0.1, 203.0.113.250, 172.16.0.1',
+        }),
+        res,
+        next,
+      );
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+    });
   });
 });
