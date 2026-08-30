@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Request } from 'express';
@@ -465,7 +466,7 @@ describe('GoTrueAuthController', () => {
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome',
+        'http://localhost:3000/welcome?ssoError=not_provisioned',
       );
     });
 
@@ -548,7 +549,7 @@ describe('GoTrueAuthController', () => {
       } as unknown as Request);
 
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome',
+        'http://localhost:3000/welcome?ssoError=no_session',
       );
       expect(accessTokenService.verifyGoTrueToken).not.toHaveBeenCalled();
     });
@@ -569,7 +570,7 @@ describe('GoTrueAuthController', () => {
         'http://gotrue:9999',
       );
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome',
+        'http://localhost:3000/welcome?ssoError=token_unverifiable',
       );
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
     });
@@ -619,8 +620,94 @@ describe('GoTrueAuthController', () => {
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome',
+        'http://localhost:3000/welcome?ssoError=not_provisioned',
       );
+    });
+
+    /* -------------------------------------------------------------- */
+    /*  Why the bridge gave up (bugs 2e2b5225 / 90bcd5ef)             */
+    /*                                                                */
+    /*  Every arm below used to emit the SAME bare redirect to        */
+    /*  sign-in, so a server with no verification key, an identity    */
+    /*  with no permissions, and a plain logged-out visitor were      */
+    /*  indistinguishable from outside. That is what made the broken  */
+    /*  demo login unexplainable without a five-fault investigation.  */
+    /* -------------------------------------------------------------- */
+    describe('failure reason', () => {
+      it('reports token_unverifiable when verification yields no claims', async () => {
+        // This is the shape of a missing GOTRUE_JWT_SECRET: GoTrue signs
+        // HS256 and publishes no HMAC key, so verifyGoTrueToken RESOLVES
+        // null — it does not throw. That must not be reported as a bad token.
+        jest
+          .mocked(accessTokenService.verifyGoTrueToken)
+          .mockResolvedValue(null);
+
+        const res = mockResponse();
+
+        await controller.gotrueCallback(res, {
+          headers: { cookie: 'exe_sess=well.formed.jwt' },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=token_unverifiable',
+        );
+        expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+      });
+
+      it('reports invalid_claims when the session verifies but carries no identity', async () => {
+        jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
+          sub: 'gotrue-user-id',
+        } as never);
+
+        const res = mockResponse();
+
+        await controller.gotrueCallback(res, {
+          headers: { cookie: 'exe_sess=verified.jwt' },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=invalid_claims',
+        );
+      });
+
+      it('reports no_crm_access when a managed org grants the identity no tier', async () => {
+        process.env.EXE_ORG_ID = 'org-1';
+
+        const module = await buildTestModule();
+        const scopedController = module.get(GoTrueAuthController);
+        const scopedAccessTokenService = module.get(AccessTokenService);
+
+        // A real GoTrue JWT whose app_metadata carries an exe_perms entry for
+        // this org with no CRM grant — exactly e2e@askexe.com's shape.
+        const payload = Buffer.from(
+          JSON.stringify({
+            sub: 'gotrue-user-id',
+            email: 'e2e@askexe.com',
+            app_metadata: { exe_perms: { 'org-1': {} } },
+          }),
+        ).toString('base64url');
+        const token = `${Buffer.from(
+          JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
+        ).toString('base64url')}.${payload}.sig`;
+
+        jest
+          .mocked(scopedAccessTokenService.verifyGoTrueToken)
+          .mockResolvedValue({
+            sub: 'gotrue-user-id',
+            email: 'e2e@askexe.com',
+          });
+
+        const res = mockResponse();
+
+        await scopedController.gotrueCallback(res, {
+          headers: { cookie: `exe_sess=${token}` },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=no_crm_access',
+        );
+        expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -784,6 +871,63 @@ describe('GoTrueAuthController', () => {
       });
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ isAdminToken: true }),
+      );
+    });
+  });
+
+  /* ================================================================ */
+  /*  Boot-time SSO bridge readiness (bug 2e2b5225)                   */
+  /*                                                                  */
+  /*  A CRM that knows GOTRUE_URL but not GOTRUE_JWT_SECRET rejects   */
+  /*  every genuine apex session and looks, from outside, exactly     */
+  /*  like a logged-out user. A misconfiguration that fails closed    */
+  /*  still has to be loud.                                           */
+  /* ================================================================ */
+  describe('GoTrue bridge readiness announcement', () => {
+    it('logs an error at boot when GOTRUE_URL is set without GOTRUE_JWT_SECRET', async () => {
+      delete process.env.GOTRUE_JWT_SECRET;
+
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      await buildTestModule();
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('GOTRUE_JWT_SECRET'),
+      );
+    });
+
+    it('does not log an error at boot once GOTRUE_JWT_SECRET is configured', async () => {
+      process.env.GOTRUE_JWT_SECRET = 'shared-secret';
+
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      await buildTestModule();
+
+      expect(errorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('GOTRUE_JWT_SECRET'),
+      );
+    });
+
+    it('says nothing when this deployment has no GoTrue at all', async () => {
+      delete process.env.GOTRUE_URL;
+      delete process.env.GOTRUE_JWT_SECRET;
+
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+      await buildTestModule();
+
+      expect(errorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('GOTRUE_JWT_SECRET'),
+      );
+      expect(logSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('GOTRUE_JWT_SECRET'),
       );
     });
   });

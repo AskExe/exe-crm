@@ -58,6 +58,32 @@ type ManagedLoginOutcome =
   | { type: 'deny'; statusCode: number; error: string };
 
 /**
+ * Why the SSO bridge sent the browser back to sign-in.
+ *
+ * Coarse and non-secret by construction — see
+ * {@link GoTrueAuthController.generateSignInRedirectWithReason}.
+ */
+export const GO_TRUE_BRIDGE_FAILURES = {
+  /** No apex `exe_sess` cookie, or this CRM has no GoTrue configured at all. */
+  NoSession: 'no_session',
+  /**
+   * An `exe_sess` cookie was present but could not be verified. In practice
+   * this is almost always a SERVER misconfiguration — most often a missing
+   * `GOTRUE_JWT_SECRET` (bug 2e2b5225) — not a bad token.
+   */
+  TokenUnverifiable: 'token_unverifiable',
+  /** Verified, but the JWT carries no usable identity (`email` / `sub`). */
+  InvalidClaims: 'invalid_claims',
+  /** Managed org, and the identity's `exe_perms` grant no CRM tier. */
+  NoCrmAccess: 'no_crm_access',
+  /** Managed org and a tier was granted, but no CRM account could be bound. */
+  NotProvisioned: 'not_provisioned',
+} as const;
+
+type GoTrueBridgeFailure =
+  (typeof GO_TRUE_BRIDGE_FAILURES)[keyof typeof GO_TRUE_BRIDGE_FAILURES];
+
+/**
  * /api/auth/gotrue-login  — email+password via GoTrue → redirect to /verify
  * /api/auth/admin-token   — admin token bypass → redirect to /verify
  *
@@ -123,6 +149,43 @@ export class GoTrueAuthController {
     }
 
     this.logManagedPermsMode();
+    this.logGoTrueBridgeReadiness();
+  }
+
+  /**
+   * Announce, at boot, whether the SSO bridge can actually verify a session.
+   *
+   * WHY (bug 2e2b5225). GoTrue signs its JWTs with a SYMMETRIC key and
+   * deliberately omits HMAC keys from its JWKS endpoint, so a CRM that knows
+   * `GOTRUE_URL` but not `GOTRUE_JWT_SECRET` has no key material and rejects
+   * every genuine apex session. Nothing about that is visible from outside:
+   * `GET /api/auth/gotrue-callback` fails closed and redirects to sign-in,
+   * which is indistinguishable from "the user is not logged in". A deployment
+   * shipped for weeks in exactly that state and cost a five-fault diagnosis.
+   *
+   * A misconfiguration that fails closed still has to be LOUD.
+   */
+  private logGoTrueBridgeReadiness(): void {
+    if (!this.gotrueUrl) {
+      return;
+    }
+
+    if (process.env.GOTRUE_JWT_SECRET) {
+      this.logger.log(
+        'GoTrue SSO bridge ready: GOTRUE_URL and GOTRUE_JWT_SECRET are both set.',
+      );
+
+      return;
+    }
+
+    this.logger.error(
+      `GoTrue SSO bridge MISCONFIGURED: GOTRUE_URL is set (${this.gotrueUrl}) ` +
+        'but GOTRUE_JWT_SECRET is not. GoTrue signs HS256 and publishes no ' +
+        'HMAC key in its JWKS, so this server cannot verify ANY apex session ' +
+        'and every SSO login will bounce back to sign-in. Set ' +
+        'GOTRUE_JWT_SECRET on this container to the exact value the GoTrue ' +
+        'service uses. (Asymmetric RS*/ES* GoTrue deployments can ignore this.)',
+    );
   }
 
   /**
@@ -259,6 +322,30 @@ export class GoTrueAuthController {
     }
 
     return `${this.serverBaseUrl.replace(/\/$/, '')}${AppPath.SignInUp}`;
+  }
+
+  /**
+   * Sign-in redirect that says WHY the bridge gave up.
+   *
+   * Every failure arm of `GET /api/auth/gotrue-callback` used to emit the same
+   * bare redirect to sign-in. From the outside, "your apex session cannot be
+   * verified because the server has no key material", "your account carries no
+   * permissions for this org" and "you are simply not logged in" were the same
+   * observable event: a bounce. That is the single biggest reason the broken
+   * demo login took a five-fault investigation to explain.
+   *
+   * The reason is a coarse, non-secret enum — it names the class of failure,
+   * never the token, the claim contents or the org. It is safe in a URL and in
+   * a browser history, unlike the `?access_token=` handoff that was removed
+   * from this flow for exactly that reason (bug 83ba9546).
+   */
+  private generateSignInRedirectWithReason(
+    reason: GoTrueBridgeFailure,
+  ): string {
+    const base = this.generateSignInRedirect();
+    const separator = base.includes('?') ? '&' : '?';
+
+    return `${base}${separator}ssoError=${reason}`;
   }
 
   private getRequestCookie(req: Request | undefined, key: string) {
@@ -658,11 +745,20 @@ export class GoTrueAuthController {
   @Get('gotrue-callback')
   @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
-    const signInRedirect = this.generateSignInRedirect();
     const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
 
     if (!goTrueSessionToken || !this.gotrueUrl) {
-      return res.redirect(signInRedirect);
+      this.logger.log(
+        `GoTrue callback: nothing to exchange (exe_sess ${
+          goTrueSessionToken ? 'present' : 'absent'
+        }, GOTRUE_URL ${this.gotrueUrl ? 'set' : 'unset'})`,
+      );
+
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.NoSession,
+        ),
+      );
     }
 
     try {
@@ -672,13 +768,35 @@ export class GoTrueAuthController {
         goTrueSessionToken,
         this.gotrueUrl,
       );
+      // Distinguish "could not verify" from "verified but useless". They used
+      // to collapse into one arm, which is why a missing GOTRUE_JWT_SECRET
+      // (verifyGoTrueToken returns null, it does not throw — bug 2e2b5225)
+      // looked exactly like a malformed user token.
+      if (claims === null) {
+        this.logger.error(
+          'GoTrue callback could not verify the apex session: no usable ' +
+            'verification key. If GoTrue signs HS256, GOTRUE_JWT_SECRET must ' +
+            'be set on this container.',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.TokenUnverifiable,
+          ),
+        );
+      }
+
       const email = claims?.email;
       const subject = claims?.sub;
 
       if (!email || !subject) {
         this.logger.warn('GoTrue callback rejected: invalid token claims');
 
-        return res.redirect(signInRedirect);
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.InvalidClaims,
+          ),
+        );
       }
 
       // Enforce Exe unified perms on the SSO-bridge path too — this endpoint
@@ -696,7 +814,11 @@ export class GoTrueAuthController {
             `GoTrue callback denied for ${email} — managed org ${this.exeOrgId} grants no CRM access`,
           );
 
-          return res.redirect(signInRedirect);
+          return res.redirect(
+            this.generateSignInRedirectWithReason(
+              GO_TRUE_BRIDGE_FAILURES.NoCrmAccess,
+            ),
+          );
         }
 
         const existingUser = await this.findUser(email);
@@ -708,10 +830,14 @@ export class GoTrueAuthController {
 
         if (outcome.type === 'deny') {
           this.logger.warn(
-            `GoTrue callback denied for ${email} — managed enforcement failed (${outcome.statusCode})`,
+            `GoTrue callback denied for ${email} — managed enforcement failed (${outcome.statusCode}): ${outcome.error}`,
           );
 
-          return res.redirect(signInRedirect);
+          return res.redirect(
+            this.generateSignInRedirectWithReason(
+              GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
+            ),
+          );
         }
 
         this.logger.log(
@@ -727,7 +853,19 @@ export class GoTrueAuthController {
       });
 
       if (contextResult.type !== 'success') {
-        return res.redirect(signInRedirect);
+        this.logger.warn(
+          `GoTrue callback denied for ${email} — no CRM account could be bound (${
+            contextResult.type === 'error'
+              ? `${contextResult.statusCode}: ${contextResult.error}`
+              : contextResult.type
+          })`,
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
+          ),
+        );
       }
 
       const redirectUrl = await this.generateLoginTokenRedirect(
@@ -739,9 +877,21 @@ export class GoTrueAuthController {
 
       return res.redirect(redirectUrl);
     } catch (err) {
-      this.logger.warn(`GoTrue callback rejected: ${err}`);
+      // A verification failure here is far more often OUR misconfiguration
+      // than a bad token — a missing GOTRUE_JWT_SECRET produces exactly this
+      // (bug 2e2b5225). Log it at ERROR, with the reason, so it shows up as a
+      // server fault instead of hiding among ordinary auth noise.
+      this.logger.error(
+        `GoTrue callback could not verify the apex session: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
 
-      return res.redirect(signInRedirect);
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.TokenUnverifiable,
+        ),
+      );
     }
   }
 
