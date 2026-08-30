@@ -46,6 +46,37 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
+/**
+ * Why a GoTrue session token was not usable.
+ *
+ * These are NOT interchangeable, and collapsing them is what bug 2e2b5225 was
+ * about: "we hold no key that can check this signature" is a SERVER fault the
+ * operator must fix, while "the signature checked out but the identity is
+ * unusable" is a property of the token. Reporting the first as the second sent
+ * a five-fault diagnosis down the wrong path for weeks.
+ */
+export type GoTrueVerificationFailure =
+  /** No usable verification key, unsupported alg, or the signature failed. */
+  | 'unverifiable'
+  /** Signature verified, but the payload carries no usable identity. */
+  | 'invalid_claims'
+  /** Signature verified, but the user is centrally disabled at GoTrue. */
+  | 'centrally_disabled';
+
+/** Discriminated outcome of {@link AccessTokenService.verifyGoTrueTokenDetailed}. */
+export type GoTrueVerificationResult =
+  | { ok: true; claims: GoTrueJwtPayload }
+  | { ok: false; failure: GoTrueVerificationFailure };
+
+/** How the configured GoTrue signs its tokens, as observed from its JWKS. */
+export type GoTrueSigningMode =
+  /** JWKS published at least one key (RS or ES); no shared secret needed. */
+  | 'asymmetric'
+  /** JWKS served an empty key set, which is what a symmetric GoTrue does. */
+  | 'symmetric'
+  /** JWKS could not be reached or parsed — we genuinely do not know. */
+  | 'unknown';
+
 export type GoTrueJwtPayload = jwt.JwtPayload & {
   sub?: string;
   email?: string;
@@ -400,10 +431,34 @@ export class AccessTokenService {
     };
   }
 
+  /**
+   * Backwards-compatible wrapper: collapses every failure to `null`.
+   *
+   * Callers that need to tell a SERVER key problem apart from an unusable
+   * identity must use {@link verifyGoTrueTokenDetailed} instead — see
+   * {@link GoTrueVerificationFailure} for why the distinction matters.
+   */
   async verifyGoTrueToken(
     token: string,
     gotrueUrl: string,
   ): Promise<GoTrueJwtPayload | null> {
+    const result = await this.verifyGoTrueTokenDetailed(token, gotrueUrl);
+
+    return result.ok ? result.claims : null;
+  }
+
+  /**
+   * Verify an apex GoTrue session token, reporting WHY it was rejected.
+   *
+   * bug 2e2b5225: the collapsed `null` return made a missing GOTRUE_JWT_SECRET
+   * (a server misconfiguration) indistinguishable from a token with no email
+   * (a property of the token), so the `invalid_claims` arm in the SSO callback
+   * was unreachable and every such login was reported as `token_unverifiable`.
+   */
+  async verifyGoTrueTokenDetailed(
+    token: string,
+    gotrueUrl: string,
+  ): Promise<GoTrueVerificationResult> {
     const decoded = jwt.decode(token, {
       complete: true,
       json: true,
@@ -413,13 +468,13 @@ export class AccessTokenService {
     } | null;
 
     if (!decoded?.header?.alg || !decoded.payload) {
-      return null;
+      return { ok: false, failure: 'unverifiable' };
     }
 
     const algorithm = decoded.header.alg as jwt.Algorithm;
 
     if (!this.isSupportedGoTrueAlgorithm(algorithm)) {
-      return null;
+      return { ok: false, failure: 'unverifiable' };
     }
 
     const jwk = await this.getGoTrueJwk(gotrueUrl, decoded.header.kid);
@@ -436,7 +491,7 @@ export class AccessTokenService {
       : this.getGoTrueSymmetricVerificationKey(algorithm);
 
     if (!verificationKey) {
-      return null;
+      return { ok: false, failure: 'unverifiable' };
     }
 
     const verified = jwt.verify(token, verificationKey, {
@@ -447,14 +502,18 @@ export class AccessTokenService {
       ignoreNotBefore: false,
     });
 
+    // Signature already checked out at this point, so a non-object payload is
+    // a claims problem, not a verification problem.
     if (typeof verified === 'string') {
-      return null;
+      return { ok: false, failure: 'invalid_claims' };
     }
 
     const email = this.getGoTrueEmail(verified as GoTrueJwtPayload);
 
+    // Verified, but carries no usable identity. This is the case the SSO
+    // callback's `invalid_claims` arm exists for (bug 2e2b5225).
     if (!email) {
-      return null;
+      return { ok: false, failure: 'invalid_claims' };
     }
 
     // ── P2 cdb4a918 — Central disable enforcement (bounded window) ───────────
@@ -478,15 +537,45 @@ export class AccessTokenService {
           `Rejecting centrally-disabled user; ` +
             `token window bounded to ${AccessTokenService.CENTRAL_STATUS_CACHE_TTL_MS}ms`,
         );
-        return null;
+        return { ok: false, failure: 'centrally_disabled' };
       }
       // isDenied === undefined means GoTrue check failed/degraded — fail open
     }
 
     return {
-      ...payload,
-      email,
+      ok: true,
+      claims: {
+        ...payload,
+        email,
+      },
     };
+  }
+
+  /**
+   * Ask the configured GoTrue how it signs, by reading its JWKS.
+   *
+   * GoTrue deliberately omits HMAC keys from JWKS (internal/api/jwks.go skips
+   * `jwa.OctetSeq`, because publishing the `k` member would leak the shared
+   * secret), so an EMPTY key set is positive evidence of symmetric signing and
+   * a non-empty one is positive evidence of asymmetric signing.
+   *
+   * This exists so the boot-time readiness check can stop guessing. Claiming a
+   * deployment is MISCONFIGURED because GOTRUE_JWT_SECRET is unset is wrong
+   * when GoTrue signs RS256 or ES256 — that configuration is supported and
+   * documented, and the false alarm trains operators to ignore a message that
+   * is genuinely urgent in the symmetric case.
+   *
+   * Best-effort and never throws: an unreachable GoTrue yields 'unknown', so a
+   * transient network fault at boot cannot be mistaken for a verdict.
+   */
+  async describeGoTrueSigning(gotrueUrl: string): Promise<GoTrueSigningMode> {
+    try {
+      const jwks = await this.fetchGoTrueJwks(gotrueUrl);
+
+      return jwks.keys.length > 0 ? 'asymmetric' : 'symmetric';
+    } catch {
+      return 'unknown';
+    }
   }
 
   private async getGoTrueJwk(

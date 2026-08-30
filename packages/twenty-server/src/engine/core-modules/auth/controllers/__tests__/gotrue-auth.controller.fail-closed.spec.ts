@@ -52,7 +52,11 @@ const deps = () => {
   };
 
   return {
-    accessTokenService: { verifyGoTrueToken: jest.fn() },
+    accessTokenService: {
+      verifyGoTrueToken: jest.fn(),
+      verifyGoTrueTokenDetailed: jest.fn(),
+      describeGoTrueSigning: jest.fn().mockResolvedValue('symmetric'),
+    },
     loginTokenService,
     signInUpService,
     workspaceService: { activateWorkspace: jest.fn() },

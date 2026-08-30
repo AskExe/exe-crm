@@ -88,6 +88,8 @@ describe('GoTrueAuthController', () => {
           provide: AccessTokenService,
           useValue: {
             verifyGoTrueToken: jest.fn(),
+            verifyGoTrueTokenDetailed: jest.fn(),
+            describeGoTrueSigning: jest.fn().mockResolvedValue('symmetric'),
           },
         },
         {
@@ -451,10 +453,15 @@ describe('GoTrueAuthController', () => {
     );
 
     it('denies an unmanaged first login on the SSO-callback lane too (no workspace created)', async () => {
-      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
-        sub: 'gotrue-user-id',
-        email: 'new@exe.ai',
-      });
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: {
+            sub: 'gotrue-user-id',
+            email: 'new@exe.ai',
+          },
+        });
       userRepo.findOne.mockResolvedValue(null);
 
       const res = mockResponse();
@@ -551,12 +558,14 @@ describe('GoTrueAuthController', () => {
       expect(res.redirect).toHaveBeenCalledWith(
         'http://localhost:3000/welcome?ssoError=no_session',
       );
-      expect(accessTokenService.verifyGoTrueToken).not.toHaveBeenCalled();
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
     });
 
     it('redirects to normal login when the GoTrue cookie cannot be verified', async () => {
       jest
-        .mocked(accessTokenService.verifyGoTrueToken)
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
         .mockRejectedValue(new Error('invalid token'));
 
       const res = mockResponse();
@@ -565,7 +574,7 @@ describe('GoTrueAuthController', () => {
         headers: { cookie: 'exe_sess=bad.jwt' },
       } as unknown as Request);
 
-      expect(accessTokenService.verifyGoTrueToken).toHaveBeenCalledWith(
+      expect(accessTokenService.verifyGoTrueTokenDetailed).toHaveBeenCalledWith(
         'bad.jwt',
         'http://gotrue:9999',
       );
@@ -576,10 +585,15 @@ describe('GoTrueAuthController', () => {
     });
 
     it('verifies exe_sess, binds an existing user to the resolved tenant, and redirects to /verify', async () => {
-      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
-        sub: 'gotrue-user-id',
-        email: MOCK_USER.email,
-      });
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: {
+            sub: 'gotrue-user-id',
+            email: MOCK_USER.email,
+          },
+        });
       userRepo.findOne.mockResolvedValue(MOCK_USER);
       userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
 
@@ -592,7 +606,7 @@ describe('GoTrueAuthController', () => {
         },
       } as unknown as Request);
 
-      expect(accessTokenService.verifyGoTrueToken).toHaveBeenCalledWith(
+      expect(accessTokenService.verifyGoTrueTokenDetailed).toHaveBeenCalledWith(
         'verified.jwt',
         'http://gotrue:9999',
       );
@@ -605,10 +619,15 @@ describe('GoTrueAuthController', () => {
     });
 
     it('does not provision a first-login callback without workspace setup', async () => {
-      jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
-        sub: 'gotrue-user-id',
-        email: 'new@exe.ai',
-      });
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: {
+            sub: 'gotrue-user-id',
+            email: 'new@exe.ai',
+          },
+        });
       userRepo.findOne.mockResolvedValue(null);
 
       const res = mockResponse();
@@ -636,11 +655,11 @@ describe('GoTrueAuthController', () => {
     describe('failure reason', () => {
       it('reports token_unverifiable when verification yields no claims', async () => {
         // This is the shape of a missing GOTRUE_JWT_SECRET: GoTrue signs
-        // HS256 and publishes no HMAC key, so verifyGoTrueToken RESOLVES
-        // null — it does not throw. That must not be reported as a bad token.
+        // HS256 and publishes no HMAC key, so verification RESOLVES a failure
+        // — it does not throw. That must not be reported as a bad token.
         jest
-          .mocked(accessTokenService.verifyGoTrueToken)
-          .mockResolvedValue(null);
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({ ok: false, failure: 'unverifiable' });
 
         const res = mockResponse();
 
@@ -655,9 +674,15 @@ describe('GoTrueAuthController', () => {
       });
 
       it('reports invalid_claims when the session verifies but carries no identity', async () => {
-        jest.mocked(accessTokenService.verifyGoTrueToken).mockResolvedValue({
-          sub: 'gotrue-user-id',
-        } as never);
+        // Before bug 2e2b5225 this case was mocked as a RESOLVED claims object
+        // with no email — a state verifyGoTrueToken could never actually
+        // produce, because it returned a bare null for a missing email. The
+        // test passed against an impossible input while the real invalid_claims
+        // arm was unreachable in production. The service now reports the reason,
+        // so the mock can be the shape the service really returns.
+        jest
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({ ok: false, failure: 'invalid_claims' });
 
         const res = mockResponse();
 
@@ -667,6 +692,37 @@ describe('GoTrueAuthController', () => {
 
         expect(res.redirect).toHaveBeenCalledWith(
           'http://localhost:3000/welcome?ssoError=invalid_claims',
+        );
+      });
+
+      // The catch around verification used to also wrap the repository lookups,
+      // managed provisioning and login-token generation, so a database outage
+      // surfaced as ssoError=token_unverifiable — telling the operator to go
+      // and check a GOTRUE_JWT_SECRET that was perfectly correct. On a bridge
+      // whose entire job is reporting WHY it gave up, that is the worst
+      // possible answer: confidently wrong.
+      it('reports server_error, not token_unverifiable, when the DB fails after a good session', async () => {
+        jest
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({
+            ok: true,
+            claims: { sub: 'gotrue-user-id', email: MOCK_USER.email },
+          });
+        userRepo.findOne.mockRejectedValue(
+          new Error('remaining connection slots are reserved'),
+        );
+
+        const res = mockResponse();
+
+        await controller.gotrueCallback(res, {
+          headers: { cookie: 'exe_sess=verified.jwt' },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=server_error',
+        );
+        expect(res.redirect).not.toHaveBeenCalledWith(
+          expect.stringContaining('token_unverifiable'),
         );
       });
 
@@ -691,10 +747,13 @@ describe('GoTrueAuthController', () => {
         ).toString('base64url')}.${payload}.sig`;
 
         jest
-          .mocked(scopedAccessTokenService.verifyGoTrueToken)
+          .mocked(scopedAccessTokenService.verifyGoTrueTokenDetailed)
           .mockResolvedValue({
-            sub: 'gotrue-user-id',
-            email: 'e2e@askexe.com',
+            ok: true,
+            claims: {
+              sub: 'gotrue-user-id',
+              email: 'e2e@askexe.com',
+            },
           });
 
         const res = mockResponse();
@@ -884,7 +943,18 @@ describe('GoTrueAuthController', () => {
   /*  still has to be loud.                                           */
   /* ================================================================ */
   describe('GoTrue bridge readiness announcement', () => {
-    it('logs an error at boot when GOTRUE_URL is set without GOTRUE_JWT_SECRET', async () => {
+    // The readiness verdict is settled by an async JWKS probe fired from the
+    // constructor, so the assertions have to let those microtasks land.
+    // Microtasks, not setImmediate: this project enables fake timers globally
+    // (jest.config.mjs `fakeTimers.enableGlobally`), so a macrotask hop would
+    // simply never fire and every test here would hit the 5s timeout.
+    const flush = async () => {
+      for (let tick = 0; tick < 8; tick++) {
+        await Promise.resolve();
+      }
+    };
+
+    it('logs an error at boot when a SYMMETRIC GoTrue has no GOTRUE_JWT_SECRET', async () => {
       delete process.env.GOTRUE_JWT_SECRET;
 
       const errorSpy = jest
@@ -892,6 +962,7 @@ describe('GoTrueAuthController', () => {
         .mockImplementation();
 
       await buildTestModule();
+      await flush();
 
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('GOTRUE_JWT_SECRET'),
@@ -906,6 +977,7 @@ describe('GoTrueAuthController', () => {
         .mockImplementation();
 
       await buildTestModule();
+      await flush();
 
       expect(errorSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('GOTRUE_JWT_SECRET'),
@@ -922,12 +994,75 @@ describe('GoTrueAuthController', () => {
       const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 
       await buildTestModule();
+      await flush();
 
       expect(errorSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('GOTRUE_JWT_SECRET'),
       );
       expect(logSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('GOTRUE_JWT_SECRET'),
+      );
+    });
+
+    // An RS256/ES256 GoTrue intentionally leaves GOTRUE_JWT_SECRET unset and
+    // verifies from JWKS. Calling that MISCONFIGURED is a false production
+    // alert, and a readiness check that cries wolf is one operators learn to
+    // ignore in exactly the symmetric case where it is right.
+    it('does not cry misconfigured at a valid ASYMMETRIC deployment', async () => {
+      delete process.env.GOTRUE_JWT_SECRET;
+
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+      await buildTestModule([
+        {
+          provide: AccessTokenService,
+          useValue: {
+            verifyGoTrueToken: jest.fn(),
+            verifyGoTrueTokenDetailed: jest.fn(),
+            describeGoTrueSigning: jest.fn().mockResolvedValue('asymmetric'),
+          },
+        },
+      ]);
+      await flush();
+
+      expect(errorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('MISCONFIGURED'),
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('verified asymmetrically'),
+      );
+    });
+
+    // An unreachable GoTrue is not evidence of anything. It must not be
+    // reported as a verdict in either direction.
+    it('reports UNKNOWN rather than guessing when JWKS cannot be read', async () => {
+      delete process.env.GOTRUE_JWT_SECRET;
+
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+      await buildTestModule([
+        {
+          provide: AccessTokenService,
+          useValue: {
+            verifyGoTrueToken: jest.fn(),
+            verifyGoTrueTokenDetailed: jest.fn(),
+            describeGoTrueSigning: jest.fn().mockResolvedValue('unknown'),
+          },
+        },
+      ]);
+      await flush();
+
+      expect(errorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('MISCONFIGURED'),
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('readiness UNKNOWN'),
       );
     });
   });
