@@ -47,7 +47,7 @@ The `docker-compose.yml` includes a `db-backup` sidecar that runs `pg_dump` ever
 > `pg_restore --clean --if-exists` drops and recreates objects. If the backup
 > cron fires its scheduled `pg_dump` during that window it will capture a
 > half-restored database as a "valid" dump and, because retention keeps only
-> the last 7 dumps, prune an older *good* backup to make room. Always suspend
+> the last 7 dumps, prune an older _good_ backup to make room. Always suspend
 > the sidecar first, verify the restore, and resume backups only once the stack
 > is consistent.
 
@@ -153,37 +153,48 @@ GoTrue SSO bridge ready: GOTRUE_URL and GOTRUE_JWT_SECRET are both set.
 An `ERROR` naming `GOTRUE_JWT_SECRET` instead means SSO cannot work, whatever
 the reverse proxy does.
 
-### 2. The reverse proxy must not gate on `tokenPair`, and must exempt the bridge
+### 2. The reverse proxy must authenticate a first visit from `exe_sess`
 
-`tokenPair` is Twenty's **native** session cookie. It is minted only *after* the
-bridge completes, so it is never present on a first document request. A proxy
-that gates the CRM on `$cookie_tokenPair` creates a livelock: the gate bounces
-to auth, auth sees a live apex session and bounces straight back, forever
-(bug 24bd2802 — the fifth recurrence of this cookie-name class).
+A reverse proxy in front of the CRM must be able to admit a browser that holds a
+valid **apex** session but does not yet hold a CRM session. That is every first
+visit, by construction: the CRM's own `tokenPair` cookie is minted only _after_
+the bridge completes.
 
-Gate on the apex sentinel that actually exists at gate time — the same cookie
-the wiki and dashboard blocks use — and **exempt the bridge endpoint**, which
-is the one route capable of producing the session the gate wants
-(bug 311badfe):
+A gate that can only recognise `tokenPair` deadlocks — it bounces to auth, auth
+sees a live apex session and bounces straight back, forever (bug 24bd2802). The
+`exe-sso-edge` snippet solves this correctly, and it is worth stating exactly
+how, because the obvious shortcut is a security hole:
 
-```nginx
-server {
-    server_name crm.<domain>;
+1. **Fast path.** If the app's own session cookie is present (`$sso_session_cookie`,
+   `tokenPair` for CRM) the request passes; the app validates its own session.
+2. **First visit.** Otherwise the gate reads the apex `exe_sess` cookie. It is
+   `HttpOnly`, which restricts page JavaScript — never the proxy — so nginx
+   reads it as `$cookie_exe_sess`.
+3. **Validation.** That token is validated against GoTrue (`GET /user`) before
+   anything passes. Failure, or an unreachable GoTrue, fails closed.
 
-    set $sso_session_cookie $cookie_exe_access_token;   # NOT $cookie_tokenPair
-    include /etc/nginx/snippets/sso-redirect.conf;
+> **Never gate on `exe_access_token`.** It is a _presence sentinel_ whose value
+> is the literal `1`, deliberately JS-readable and therefore forgeable by any
+> visitor. Gating on its presence lets anyone walk through the edge and defeats
+> cross-app logout (bug 4a6650f5). It is a logout signal, never an
+> authentication signal. `exe_sess` — validated, not merely present — is the
+> credential.
 
-    location = /health   { auth_request off; proxy_pass http://sso_crm/healthz; }
-    location = /healthz  { auth_request off; proxy_pass http://sso_crm/healthz; }
-    location = /auth/logout { auth_request off; proxy_pass http://sso_crm/auth/logout; }
+Given step 2, the bridge endpoint needs **no exemption**: it is admitted like
+any other first visit, and it re-verifies `exe_sess` itself. Do not add
+`auth_request off` for it — that would remove a layer for no benefit.
 
-    # The SSO bridge MUST be reachable without a CRM session — it is what
-    # creates one. Gating it is a closed loop.
-    location = /api/auth/gotrue-callback { auth_request off; proxy_pass http://sso_crm; }
+Verify the gate on a live deployment (read-only; substitute a valid apex token):
 
-    location / { proxy_pass http://sso_crm; }
-}
+```bash
+curl -sS -o /dev/null -D - https://crm.<domain>/                      # expect 302 → auth
+curl -sS -o /dev/null -D - -H "Cookie: exe_sess=$JWT" https://crm.<domain>/   # expect 200
+curl -sS -o /dev/null -D - -H "Cookie: exe_sess=$JWT" \
+  https://crm.<domain>/api/auth/gotrue-callback                       # expect 302 → /verify?loginToken=…
 ```
+
+If the third command redirects to `/welcome` instead of `/verify`, the edge is
+fine and the fault is inside the CRM — read the `?ssoError=` value (below).
 
 ### 3. The identity must actually be entitled
 
@@ -197,17 +208,22 @@ Provision entitlements from the Exe dashboard rather than relaxing the gate.
 Since bug 2e2b5225 the bridge says **why** it gave up, as a coarse non-secret
 `?ssoError=` on the sign-in redirect:
 
-| `ssoError`           | Meaning                                                       | Fix |
-| -------------------- | ------------------------------------------------------------- | --- |
-| `no_session`         | No apex `exe_sess` cookie, or no `GOTRUE_URL` configured       | Log in at `auth.<domain>`; check cookie domain is the apex |
-| `token_unverifiable` | A session was present but could not be verified                | Almost always a missing `GOTRUE_JWT_SECRET` — see §1 |
-| `invalid_claims`     | Verified, but the JWT carries no `email`/`sub`                 | Check the GoTrue user record |
-| `no_crm_access`      | Managed org grants this identity no CRM tier                   | Grant `exe_perms` for the org — see §3 |
-| `not_provisioned`    | Entitled, but no CRM account could be bound                    | Check `EXE_ORG_WORKSPACE_ID` and workspace membership |
+| `ssoError`           | Meaning                                                  | Fix                                                        |
+| -------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| `no_session`         | No apex `exe_sess` cookie, or no `GOTRUE_URL` configured | Log in at `auth.<domain>`; check cookie domain is the apex |
+| `token_unverifiable` | A session was present but could not be verified          | Almost always a missing `GOTRUE_JWT_SECRET` — see §1       |
+| `invalid_claims`     | Verified, but the JWT carries no `email`/`sub`           | Check the GoTrue user record                               |
+| `no_crm_access`      | Managed org grants this identity no CRM tier             | Grant `exe_perms` for the org — see §3                     |
+| `not_provisioned`    | Entitled, but no CRM account could be bound              | Check `EXE_ORG_WORKSPACE_ID` and workspace membership      |
 
 Reaching the CRM sign-in page with **no** `ssoError` means the bridge was never
 invoked at all — suspect the proxy gate (§2) or a frontend bundle that predates
 `GoTrueCallbackRedirectEffect` (see "Deployed image provenance" below).
+
+Note the asymmetry that makes this table worth having: `no_session` is a user
+state, `no_crm_access` and `not_provisioned` are entitlement states, and
+`token_unverifiable` is a **server** fault. Only the last one is an outage, and
+before this table existed all four looked identical from a browser.
 
 ### Deployed image provenance
 
