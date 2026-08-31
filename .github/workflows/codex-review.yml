@@ -255,6 +255,17 @@ jobs:
           #    enforces this independently -- this copy is for the PR comment.
           elif printf '%s\n' "$CHANGED" | grep -qE '^\.github/'; then
             eligible=false; why="PR modifies .github/ (CI/review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
+          # 2b. Agent-instruction carve-out. Same reasoning as 2, different
+          #     location: `codex exec` runs with the PR checkout as its working
+          #     directory and the Codex CLI merges AGENTS.md / AGENTS.override.md
+          #     / .codex/ found there into its instructions -- separately from the
+          #     review prompt, which is pinned to the base ref. A PR that edits
+          #     those can therefore steer the review of itself. Matched at any
+          #     depth and case-insensitively (macOS runners are case-insensitive).
+          #     `codex-approve.yml` enforces this independently; this copy exists
+          #     so the PR comment tells the truth about eligibility.
+          elif printf '%s\n' "$CHANGED" | grep -qiE '(^|/)AGENTS(\.override)?\.md$|(^|/)\.codex/'; then
+            eligible=false; why="PR modifies agent-instruction files (AGENTS.md, AGENTS.override.md or .codex/), which Codex auto-merges into the reviewer's own instructions from the PR checkout. Automated approval is withheld so a PR cannot steer the review of itself. A human must approve."
           # 3. Never approve a PR opened by the same identity that would approve it.
           elif [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
             eligible=false; why="PR was opened by github-actions[bot]; the approving identity must not approve its own PR."

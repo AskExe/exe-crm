@@ -23,12 +23,15 @@ name: Codex Approve
 #     differ by base, so a verdict for one of them says nothing about the others.
 #     The reviewer also stamps the PR number into its verdict marker, and the
 #     approver requires that number to match.
-#   * Whether the PR is eligible: whether it touches `.github/` is recomputed
-#     HERE, from the API's own file list. This is the load-bearing control. A PR
-#     that tampers with `codex-review.yml` to fake a clean verdict must touch
-#     `.github/` to do it, and this workflow — which that PR cannot modify — sees
-#     that and refuses. Tampering therefore buys nothing: the human approval
-#     requirement stays exactly where it was.
+#   * Whether the PR is eligible: whether it touches `.github/` — or any
+#     agent-instruction file (`AGENTS.md` / `AGENTS.override.md` at any depth,
+#     or `.codex/`) — is recomputed HERE, from the API's own file list. This is
+#     the load-bearing control. A PR that tampers with `codex-review.yml` to fake
+#     a clean verdict must touch `.github/` to do it; a PR that instead steers the
+#     reviewer by rewriting the AGENTS.md that Codex auto-merges from the PR
+#     checkout must touch one of the others. Either way this workflow — which
+#     that PR cannot modify — sees it and refuses. Tampering therefore buys
+#     nothing: the human approval requirement stays exactly where it was.
 #   * A failed or stale review: `workflow_run.conclusion` must be `success` and
 #     the reviewed SHA must still be the PR's head.
 #
@@ -198,6 +201,25 @@ jobs:
               deny "the API returned no changed files for this PR, which cannot be true; refusing to approve on an unverifiable file list."
             elif printf '%s\n' "$files" | grep -qE '^\.github/'; then
               deny "the PR modifies .github/ (CI / review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
+            # AGENT-INSTRUCTION FILES ARE REVIEW CONFIGURATION TOO, and they do
+            # not live under .github/. The reviewer runs `codex exec` with the PR
+            # CHECKOUT as its working directory, and the Codex CLI silently
+            # merges AGENTS.md / AGENTS.override.md / .codex/ from that working
+            # tree into the agent's instructions. The review PROMPT is pinned to
+            # the base ref, but these files are not part of the prompt -- they
+            # are picked up by the CLI itself, and they arrive from the PR. So a
+            # PR that edits AGENTS.md (routine-looking housekeeping in a repo
+            # that already has one) can instruct the reviewer to report CLEAN
+            # regardless of what the rest of the diff does, and the marker it
+            # emits would be a genuine github-actions[bot] marker for this SHA.
+            # Every other control in this file would pass it.
+            # Matched at ANY depth -- Codex resolves AGENTS.md from the working
+            # directory and merges nested ones, so a root-only check misses
+            # `sub/AGENTS.md` -- and case-insensitively, because the macOS
+            # runners are on a case-insensitive filesystem where `agents.md`
+            # resolves to the same file.
+            elif printf '%s\n' "$files" | grep -qiE '(^|/)AGENTS(\.override)?\.md$|(^|/)\.codex/'; then
+              deny "the PR modifies agent-instruction files (AGENTS.md, AGENTS.override.md or .codex/). Codex auto-merges those from the PR checkout into the reviewer's own instructions, so such a PR can steer the verdict on itself. Automated approval is withheld. A human must approve."
             fi
           fi
 
