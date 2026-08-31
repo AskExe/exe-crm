@@ -109,7 +109,9 @@ export const hasRecentGoTrueCallbackAttempt = (
 ): boolean => {
   const attemptedAt = readGoTrueCallbackAttemptedAt();
 
-  return attemptedAt !== null && now - attemptedAt < GO_TRUE_CALLBACK_ATTEMPT_TTL_MS;
+  return (
+    attemptedAt !== null && now - attemptedAt < GO_TRUE_CALLBACK_ATTEMPT_TTL_MS
+  );
 };
 
 /**

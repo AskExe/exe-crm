@@ -112,9 +112,9 @@ describe('goTrueBridge', () => {
       giveApexSessionWithoutCrmSession();
       markGoTrueCallbackAttempt(NOW);
 
-      expect(isGoTrueBridgeInFlight(NOW + GO_TRUE_BRIDGE_IN_FLIGHT_MS - 1)).toBe(
-        true,
-      );
+      expect(
+        isGoTrueBridgeInFlight(NOW + GO_TRUE_BRIDGE_IN_FLIGHT_MS - 1),
+      ).toBe(true);
     });
 
     // Bounded, so a wedged bridge degrades to a usable login form rather than
