@@ -449,7 +449,8 @@ jobs:
             -e 's/AKIA[0-9A-Z]{16}/[redacted-token]/g' \
             -e 's/sk-[A-Za-z0-9]{20,}/[redacted-token]/g' \
             -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[redacted-jwt]/g' \
-            -e 's/(Authorization|Bearer|api[_-]?key|secret|password)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1\2[redacted]/Ig' \
+            -e 's/[Bb]earer[[:space:]]+[A-Za-z0-9._~+/=-]{8,}/Bearer [redacted]/g' \
+            -e 's/(Authorization|api[_-]?key|secret|password)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1\2[redacted]/Ig' \
             -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----/[redacted-private-key]/g' \
             "$POST" > "$POST.red" && mv "$POST.red" "$POST"
           if ! cmp -s "$BODY" "$POST"; then
