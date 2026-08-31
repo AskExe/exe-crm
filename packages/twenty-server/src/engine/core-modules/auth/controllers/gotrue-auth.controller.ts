@@ -76,6 +76,20 @@ export const GO_TRUE_BRIDGE_FAILURES = {
    * `GOTRUE_JWT_SECRET` (bug 2e2b5225) — not a bad token.
    */
   TokenUnverifiable: 'token_unverifiable',
+  /**
+   * The apex session had expired. Routine — every logged-in user's token dies
+   * hourly — and explicitly NOT a server fault: it used to surface as
+   * `token_unverifiable` at ERROR because `jwt.verify` throws on expiry, which
+   * pointed operators at a `GOTRUE_JWT_SECRET` that was never the problem.
+   */
+  SessionExpired: 'session_expired',
+  /**
+   * The `exe_sess` cookie was not a session this deployment could ever accept
+   * — not a JWT, unsupported `alg`, bad signature, or wrong issuer/audience.
+   * Attributable to the caller, so any unauthenticated visitor can produce it
+   * on demand and it must never be logged at a severity that pages anyone.
+   */
+  InvalidSession: 'invalid_session',
   /** Verified, but the JWT carries no usable identity (`email` / `sub`). */
   InvalidClaims: 'invalid_claims',
   /** Managed org, and the identity's `exe_perms` grant no CRM tier. */
@@ -836,9 +850,10 @@ export class GoTrueAuthController {
         this.gotrueUrl,
       );
     } catch (err) {
-      // A throw from verification itself IS a verification failure — most
-      // often OUR misconfiguration rather than a bad token (bug 2e2b5225), so
-      // log at ERROR to surface it as a server fault.
+      // Verification now discriminates everything it can attribute to the
+      // token — expiry, bad signature, junk cookie — and returns it, so a
+      // throw that reaches here is genuinely unexpected and OURS: log at ERROR
+      // to surface it as a server fault (bug 2e2b5225).
       this.logger.error(
         `GoTrue callback could not verify the apex session: ${
           err instanceof Error ? err.message : String(err)
@@ -857,6 +872,39 @@ export class GoTrueAuthController {
     // verifyGoTrueToken returned a bare null for both (bug 2e2b5225), which
     // made the invalid_claims arm below unreachable for a missing email.
     if (!verification.ok) {
+      if (verification.failure === 'expired') {
+        // Routine, expected, and hourly. Logged at debug so that a genuine
+        // GOTRUE_JWT_SECRET misconfiguration stays visible instead of being
+        // buried under ordinary session churn.
+        this.logger.debug(
+          'GoTrue callback: the apex session has expired; sending the ' +
+            'visitor back to sign in.',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.SessionExpired,
+          ),
+        );
+      }
+
+      if (verification.failure === 'malformed') {
+        // An unauthenticated visitor — bot, scanner, stale tab — can send any
+        // cookie it likes. Logging that at ERROR would let anyone on the
+        // internet drown the one message in this handler that means an outage.
+        this.logger.debug(
+          'GoTrue callback: the exe_sess cookie is not a session this ' +
+            'deployment can accept (not a JWT, unsupported alg, bad ' +
+            'signature, or wrong issuer/audience).',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.InvalidSession,
+          ),
+        );
+      }
+
       if (verification.failure === 'unverifiable') {
         this.logger.error(
           'GoTrue callback could not verify the apex session: no usable ' +

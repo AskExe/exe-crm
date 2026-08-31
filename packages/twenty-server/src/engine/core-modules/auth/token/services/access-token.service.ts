@@ -56,8 +56,28 @@ import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/sta
  * a five-fault diagnosis down the wrong path for weeks.
  */
 export type GoTrueVerificationFailure =
-  /** No usable verification key, unsupported alg, or the signature failed. */
+  /**
+   * No usable verification key, or verification failed in a way that points at
+   * OUR key material rather than at the token. This is the server-fault arm —
+   * the one worth waking someone for.
+   */
   | 'unverifiable'
+  /**
+   * The token itself is not something we could ever accept: not a JWT, an
+   * unsupported `alg`, a bad signature, or the wrong issuer/audience. Entirely
+   * attributable to the caller, so an unauthenticated visitor with a junk
+   * `exe_sess` cookie lands here and must not be able to page an operator.
+   */
+  | 'malformed'
+  /**
+   * The signature checked out but the session is past `exp`. Routine and
+   * expected — every logged-in user does this hourly — and specifically NOT a
+   * key problem, which is what it used to be reported as: `jwt.verify` throws
+   * `TokenExpiredError`, the throw escaped this method, and the callback's
+   * catch-all reported `token_unverifiable` at ERROR, sending the operator to
+   * inspect a GOTRUE_JWT_SECRET that was fine.
+   */
+  | 'expired'
   /** Signature verified, but the payload carries no usable identity. */
   | 'invalid_claims'
   /** Signature verified, but the user is centrally disabled at GoTrue. */
@@ -467,14 +487,16 @@ export class AccessTokenService {
       payload?: string | jwt.JwtPayload | null;
     } | null;
 
+    // Not a JWT at all. Bots, scanners and stale browser tabs produce this
+    // constantly; it says nothing about our configuration.
     if (!decoded?.header?.alg || !decoded.payload) {
-      return { ok: false, failure: 'unverifiable' };
+      return { ok: false, failure: 'malformed' };
     }
 
     const algorithm = decoded.header.alg as jwt.Algorithm;
 
     if (!this.isSupportedGoTrueAlgorithm(algorithm)) {
-      return { ok: false, failure: 'unverifiable' };
+      return { ok: false, failure: 'malformed' };
     }
 
     const jwk = await this.getGoTrueJwk(gotrueUrl, decoded.header.kid);
@@ -494,13 +516,45 @@ export class AccessTokenService {
       return { ok: false, failure: 'unverifiable' };
     }
 
-    const verified = jwt.verify(token, verificationKey, {
-      algorithms: [algorithm],
-      audience: this.getGoTrueAudience(),
-      issuer: this.getGoTrueIssuers(gotrueUrl),
-      ignoreExpiration: false,
-      ignoreNotBefore: false,
-    });
+    // `jwt.verify` THROWS on rejection, and the throw used to escape this
+    // method entirely — bypassing every discriminated return above and landing
+    // in the callback's catch-all as `token_unverifiable` at ERROR. An expired
+    // session is the single most common reason it throws, and expiry is
+    // routine: it is not a key problem and must not be reported as one.
+    let verified: string | jwt.JwtPayload;
+
+    try {
+      verified = jwt.verify(token, verificationKey, {
+        algorithms: [algorithm],
+        audience: this.getGoTrueAudience(),
+        issuer: this.getGoTrueIssuers(gotrueUrl),
+        ignoreExpiration: false,
+        ignoreNotBefore: false,
+      });
+    } catch (err) {
+      if (err instanceof jwt.TokenExpiredError) {
+        return { ok: false, failure: 'expired' };
+      }
+
+      if (err instanceof jwt.JsonWebTokenError) {
+        // `NotBeforeError` also extends `JsonWebTokenError`, as do the bad
+        // signature / wrong issuer / wrong audience rejections — all of them
+        // properties of the token. The one exception is jsonwebtoken's own
+        // complaint about the key we handed it ("secretOrPublicKey must have a
+        // value" / "…is not valid key material"), which is OUR fault and keeps
+        // the server-fault arm so a wrong GOTRUE_JWT_SECRET still shouts.
+        return {
+          ok: false,
+          failure: err.message.startsWith('secretOrPublicKey')
+            ? 'unverifiable'
+            : 'malformed',
+        };
+      }
+
+      // Genuinely unexpected: not something jsonwebtoken classifies. Let it
+      // propagate to the caller's server-fault handling rather than guessing.
+      throw err;
+    }
 
     // Signature already checked out at this point, so a non-object payload is
     // a claims problem, not a verification problem.

@@ -211,19 +211,31 @@ Since bug 2e2b5225 the bridge says **why** it gave up, as a coarse non-secret
 | `ssoError`           | Meaning                                                  | Fix                                                        |
 | -------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
 | `no_session`         | No apex `exe_sess` cookie, or no `GOTRUE_URL` configured | Log in at `auth.<domain>`; check cookie domain is the apex |
-| `token_unverifiable` | A session was present but could not be verified          | Almost always a missing `GOTRUE_JWT_SECRET` — see §1       |
+| `session_expired`    | The apex session verified, but is past its `exp`         | Nothing — expected. Sign in again                          |
+| `invalid_session`    | The cookie is not a session we can accept (junk, bad signature, wrong issuer/audience) | Nothing, if it came from a bot or a stale tab. If real users see it, the CRM and GoTrue disagree on the secret or the issuer — see §1 |
+| `token_unverifiable` | A session was present and this server holds no key that could check it | Almost always a missing `GOTRUE_JWT_SECRET` — see §1       |
 | `invalid_claims`     | Verified, but the JWT carries no `email`/`sub`           | Check the GoTrue user record                               |
 | `no_crm_access`      | Managed org grants this identity no CRM tier             | Grant `exe_perms` for the org — see §3                     |
 | `not_provisioned`    | Entitled, but no CRM account could be bound              | Check `EXE_ORG_WORKSPACE_ID` and workspace membership      |
+| `server_error`       | The session was fine; something after it threw (database, role sync, login-token) | Read the CRM logs — this is not an SSO configuration fault |
 
 Reaching the CRM sign-in page with **no** `ssoError` means the bridge was never
 invoked at all — suspect the proxy gate (§2) or a frontend bundle that predates
 `GoTrueCallbackRedirectEffect` (see "Deployed image provenance" below).
 
-Note the asymmetry that makes this table worth having: `no_session` is a user
-state, `no_crm_access` and `not_provisioned` are entitlement states, and
-`token_unverifiable` is a **server** fault. Only the last one is an outage, and
-before this table existed all four looked identical from a browser.
+Note the asymmetry that makes this table worth having: `no_session` and
+`session_expired` are user states, `invalid_session` is a property of whatever
+the caller sent, `no_crm_access` and `not_provisioned` are entitlement states,
+and `token_unverifiable` and `server_error` are **server** faults. Only the last
+two are outages, and before this table existed they all looked identical from a
+browser.
+
+`session_expired` and `invalid_session` are deliberately separate from
+`token_unverifiable`, and are logged at `debug`, not `error`. An expired session
+is routine — every logged-in user produces one every hour — and an unauthenticated
+visitor can send a junk cookie on demand. Reporting either as `token_unverifiable`
+sent operators to inspect a `GOTRUE_JWT_SECRET` that was fine, and let ordinary
+bot traffic bury the one message here that means an outage.
 
 ### Deployed image provenance
 

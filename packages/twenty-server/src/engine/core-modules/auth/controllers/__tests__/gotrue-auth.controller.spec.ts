@@ -563,10 +563,16 @@ describe('GoTrueAuthController', () => {
       ).not.toHaveBeenCalled();
     });
 
-    it('redirects to normal login when the GoTrue cookie cannot be verified', async () => {
+    // A throw that is NOT one of jsonwebtoken's classified rejections is
+    // genuinely unexpected and ours — that, and only that, keeps the
+    // server-fault arm. Expiry and junk cookies are asserted separately below,
+    // because this test used to stand in for them and passed for the wrong
+    // reason: a generic Error exercises none of the discrimination that
+    // matters.
+    it('redirects to normal login when verification throws unexpectedly', async () => {
       jest
         .mocked(accessTokenService.verifyGoTrueTokenDetailed)
-        .mockRejectedValue(new Error('invalid token'));
+        .mockRejectedValue(new Error('unexpected internal failure'));
 
       const res = mockResponse();
 
@@ -657,6 +663,10 @@ describe('GoTrueAuthController', () => {
         // This is the shape of a missing GOTRUE_JWT_SECRET: GoTrue signs
         // HS256 and publishes no HMAC key, so verification RESOLVES a failure
         // — it does not throw. That must not be reported as a bad token.
+        const errorSpy = jest
+          .spyOn(Logger.prototype, 'error')
+          .mockImplementation(() => undefined);
+
         jest
           .mocked(accessTokenService.verifyGoTrueTokenDetailed)
           .mockResolvedValue({ ok: false, failure: 'unverifiable' });
@@ -670,7 +680,83 @@ describe('GoTrueAuthController', () => {
         expect(res.redirect).toHaveBeenCalledWith(
           'http://localhost:3000/welcome?ssoError=token_unverifiable',
         );
+        // The one arm that IS an outage keeps its ERROR — the point of
+        // quietening expiry and junk cookies is that this stays visible.
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('GOTRUE_JWT_SECRET'),
+        );
         expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+
+        errorSpy.mockRestore();
+      });
+
+      // `jwt.verify` throws `TokenExpiredError` on an expired session, and the
+      // throw used to escape verification entirely and land in the callback's
+      // catch-all as `token_unverifiable` at ERROR — a reason DEPLOY.md
+      // documents as "almost always a missing GOTRUE_JWT_SECRET". An expired
+      // session is neither a secret problem nor an incident: every logged-in
+      // user produces one every hour.
+      it('reports session_expired, not token_unverifiable, for an expired session', async () => {
+        jest
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({ ok: false, failure: 'expired' });
+
+        const res = mockResponse();
+
+        await controller.gotrueCallback(res, {
+          headers: { cookie: 'exe_sess=expired.jwt' },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=session_expired',
+        );
+        expect(res.redirect).not.toHaveBeenCalledWith(
+          expect.stringContaining('token_unverifiable'),
+        );
+      });
+
+      it('does not log an expired session at error severity', async () => {
+        const errorSpy = jest
+          .spyOn(Logger.prototype, 'error')
+          .mockImplementation(() => undefined);
+
+        jest
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({ ok: false, failure: 'expired' });
+
+        await controller.gotrueCallback(mockResponse(), {
+          headers: { cookie: 'exe_sess=expired.jwt' },
+        } as unknown as Request);
+
+        expect(errorSpy).not.toHaveBeenCalled();
+
+        errorSpy.mockRestore();
+      });
+
+      // Anyone on the internet can send a junk exe_sess cookie. If that path
+      // logged at ERROR, routine bot traffic would bury the one message in
+      // this handler that means an outage.
+      it('reports invalid_session for a junk cookie, without an error log', async () => {
+        const errorSpy = jest
+          .spyOn(Logger.prototype, 'error')
+          .mockImplementation(() => undefined);
+
+        jest
+          .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+          .mockResolvedValue({ ok: false, failure: 'malformed' });
+
+        const res = mockResponse();
+
+        await controller.gotrueCallback(res, {
+          headers: { cookie: 'exe_sess=garbage' },
+        } as unknown as Request);
+
+        expect(res.redirect).toHaveBeenCalledWith(
+          'http://localhost:3000/welcome?ssoError=invalid_session',
+        );
+        expect(errorSpy).not.toHaveBeenCalled();
+
+        errorSpy.mockRestore();
       });
 
       it('reports invalid_claims when the session verifies but carries no identity', async () => {

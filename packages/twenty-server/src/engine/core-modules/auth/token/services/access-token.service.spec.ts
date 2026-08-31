@@ -842,13 +842,67 @@ describe('AccessTokenService', () => {
       expect(result).toEqual({ ok: false, failure: 'unverifiable' });
     });
 
-    it('reports unverifiable for a structurally broken token', async () => {
+    it('reports malformed for a structurally broken token', async () => {
+      // A junk cookie is not evidence of anything about this server, and any
+      // unauthenticated visitor can send one. It must not share an arm with
+      // the missing-key fault the operator gets paged for.
       const result = await service.verifyGoTrueTokenDetailed(
         'not-a-jwt',
         GOTRUE_URL,
       );
 
-      expect(result).toEqual({ ok: false, failure: 'unverifiable' });
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
+    });
+
+    // THE bug this block was extended for: `jwt.verify` THROWS
+    // `TokenExpiredError` on an expired session, and the throw escaped
+    // verifyGoTrueTokenDetailed entirely — bypassing every discriminated
+    // return and surfacing in the callback as `token_unverifiable` at ERROR.
+    // Expiry is hourly and routine; `token_unverifiable` tells the operator to
+    // go and check GOTRUE_JWT_SECRET.
+    it('reports expired for a genuinely expired session', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        jwt.sign(
+          { sub: randomUUID(), email: 'ok@example.com' },
+          SHARED_SECRET,
+          {
+            algorithm: 'HS256',
+            audience: 'authenticated',
+            expiresIn: '-1h',
+            issuer: GOTRUE_ISSUER,
+          },
+        ),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'expired' });
+    });
+
+    it('reports malformed, not expired, for a token signed with the wrong secret', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        sign({ sub: randomUUID(), email: 'ok@example.com' }, 'another-secret'),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
+    });
+
+    it('reports malformed for a token from an unexpected issuer', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        jwt.sign(
+          { sub: randomUUID(), email: 'ok@example.com' },
+          SHARED_SECRET,
+          {
+            algorithm: 'HS256',
+            audience: 'authenticated',
+            expiresIn: '1h',
+            issuer: 'https://attacker.example.com',
+          },
+        ),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
     });
 
     it('keeps the collapsed wrapper behaviour for existing callers', async () => {
