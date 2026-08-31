@@ -188,7 +188,11 @@ jobs:
             # `.github/` path, so the single control this whole design rests on
             # would have silently passed. A check that disappears when the API
             # hiccups is not a control.
-            if ! files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --paginate --jq '.[].filename' 2>&1)"; then
+            # BOTH filename AND previous_filename. A rename reports only the NEW
+            # path in `filename`, so moving a workflow OUT of .github/ would
+            # otherwise sail past this check -- which is precisely the edit an
+            # attacker would want to make invisible.
+            if ! files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)' 2>&1)"; then
               deny "could not list the PR's changed files (${files}); the .github/ tamper check cannot be evaluated, so nothing is approved."
             elif [ -z "$(printf '%s' "$files" | tr -d '[:space:]')" ]; then
               deny "the API returned no changed files for this PR, which cannot be true; refusing to approve on an unverifiable file list."
