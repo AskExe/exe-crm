@@ -36,6 +36,15 @@ name: Codex Approve
 # verdict is carried in a marker line inside the reviewer's own PR comment, which
 # only `github-actions[bot]` can post.
 #
+# HONEST LIMIT, so nobody reads more into this than it can carry: on a same-repo
+# PR the author can already run arbitrary code on the self-hosted runner and read
+# repository secrets from their own workflow. That is true of any GitHub Actions
+# setup and this design does not change it. What it does guarantee is narrower:
+# an automated APPROVAL cannot be minted by PR-controlled code, so push access
+# alone never becomes merge-without-a-human. Everything in `codex-review.yml` is
+# advisory (a PR can rewrite that file, permissions block included); only the
+# checks in THIS file bind.
+#
 # WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
 # DOES mean:  a model read this diff against the repo's review rules (loaded from
 #             the base ref) and reported no [P0]/[P1] finding.

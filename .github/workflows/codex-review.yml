@@ -15,9 +15,18 @@ name: Codex Review
 # `workflow_run` and therefore always executes the DEFAULT BRANCH's copy — code
 # a pull request cannot modify. That split is deliberate: this file runs from
 # the PR's own branch, so if the approval lived here, a PR could edit it to
-# rubber-stamp itself and merge with no human involved. Read `codex-approve.yml`
-# for the full trust model; the summary below is the part that concerns this
-# half.
+# rubber-stamp itself and merge with no human involved.
+#
+# BE PRECISE ABOUT WHAT THAT BUYS. Everything in THIS file is advisory: a PR can
+# rewrite it, including its `permissions:` block and every check below. Only
+# `codex-approve.yml` binds, because only it runs code the PR cannot touch, and
+# it re-derives from the API the one rule that matters (a PR touching `.github/`
+# is never auto-approved). And even that is not a wall around the runner: on a
+# same-repo PR the author can already execute arbitrary code here and read
+# repository secrets from their own workflow. Nothing in a GitHub Actions setup
+# changes that. What this design guarantees is narrower, and it is the thing the
+# founder actually asked for: push access alone never becomes
+# merge-without-a-human.
 #
 # WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
 # -------------------------------------------------
@@ -109,9 +118,15 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
+# `pull-requests: write` here is for the review COMMENT only; this job never
+# approves anything (see the header). Note what this block is NOT: a security
+# control. On a same-repo PR, GitHub takes the permissions from the PR's OWN copy
+# of this file, so a PR can grant itself anything it likes here. That is exactly
+# why the approval lives in `codex-approve.yml` -- base-branch code a PR cannot
+# rewrite -- and why that workflow re-derives the `.github/` rule from the API
+# instead of believing anything this file says.
 permissions:
   contents: read
-  # Needed for BOTH the review comment and the approval/dismissal calls.
   pull-requests: write
 
 concurrency:
@@ -417,6 +432,29 @@ jobs:
 
           # Build the POSTED copy only. $BODY stays verbatim for the gate.
           grep -vE "$DIAG_RE" "$BODY" > "$POST" 2>/dev/null || : > "$POST"
+
+          # CREDENTIAL REDACTION. The review is agent output produced while
+          # reading somebody else's diff on a persistent runner, so it has to be
+          # treated as attacker-influenced: a prompt-injected review could try to
+          # smuggle credential material out through a PR comment. Anything
+          # token-shaped is replaced before posting. Defence in depth, NOT a
+          # guarantee -- an encoded secret defeats any pattern list, which is one
+          # more reason the gate decides on the envelope contract and never on
+          # the prose. Applied to the POSTED copy only, so redaction can never
+          # delete a [P0]/[P1] marker from the gating body.
+          sed -E \
+            -e 's/gh[pousr]_[A-Za-z0-9]{16,}/[redacted-token]/g' \
+            -e 's/github_pat_[A-Za-z0-9_]{20,}/[redacted-token]/g' \
+            -e 's/xox[abposr]-[A-Za-z0-9-]{10,}/[redacted-token]/g' \
+            -e 's/AKIA[0-9A-Z]{16}/[redacted-token]/g' \
+            -e 's/sk-[A-Za-z0-9]{20,}/[redacted-token]/g' \
+            -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[redacted-jwt]/g' \
+            -e 's/(Authorization|Bearer|api[_-]?key|secret|password)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1\2[redacted]/Ig' \
+            -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----/[redacted-private-key]/g' \
+            "$POST" > "$POST.red" && mv "$POST.red" "$POST"
+          if ! cmp -s "$BODY" "$POST"; then
+            echo "posted copy differs from the gating body (diagnostics filtered and/or credential-shaped text redacted)."
+          fi
           if [ "$(wc -c < "$POST")" -gt "$REVIEW_POST_MAX_BYTES" ]; then
             head -c "$REVIEW_POST_MAX_BYTES" "$POST" > "$POST.t"
             printf '\n\n_[truncated at %s bytes - see the workflow run log for the full review]_\n' "$REVIEW_POST_MAX_BYTES" >> "$POST.t"
