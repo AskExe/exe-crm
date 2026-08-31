@@ -61,15 +61,32 @@ name: Codex Approve
 #   1. `workflow_run` only ever runs the DEFAULT BRANCH's copy of this file, so
 #      this workflow does nothing until it is merged. That is inherent to the
 #      design and is the point: the approver is always already-reviewed code.
-#   2. The AskExe org currently sets "Allow GitHub Actions to create and approve
-#      pull requests" to OFF, so `GITHUB_TOKEN` approvals are rejected with
-#      "GitHub Actions is not permitted to approve pull requests". An org owner
-#      must either turn that on (Org Settings -> Actions -> General), or provide
-#      a `REVIEW_APPROVER_TOKEN` secret belonging to a dedicated review-bot
-#      account with `pull_requests: write` — this workflow prefers that secret
-#      when it is present and falls back to `GITHUB_TOKEN`. Until one of those
-#      exists, this job runs, decides correctly, and reports that it could not
-#      submit the approval.
+#   2. Something must be able to submit the approval. The AskExe org currently
+#      sets "Allow GitHub Actions to create and approve pull requests" to OFF, so
+#      `GITHUB_TOKEN` approvals are rejected with "GitHub Actions is not
+#      permitted to approve pull requests". There are two ways to fix that, and
+#      THEY ARE NOT EQUIVALENT:
+#
+#      (a) PREFERRED — leave the org setting OFF and give this job an
+#          environment-scoped token. Create a repository environment named
+#          `codex-approve`, set its deployment branch policy to the DEFAULT
+#          BRANCH ONLY, and add `REVIEW_APPROVER_TOKEN` (a dedicated review-bot
+#          account with `pull_requests: write`) as an ENVIRONMENT secret. This
+#          job declares that environment, and `workflow_run` always runs on the
+#          default branch, so it gets the token. A workflow running on a PR
+#          branch cannot: the branch policy denies it the secret. That is what
+#          makes the split real rather than advisory — it is the missing piece
+#          that stops a PR from editing `codex-review.yml`, granting itself
+#          `pull-requests: write`, and approving itself.
+#
+#      (b) Turning the org setting ON. This works, and it also hands every
+#          workflow in the org — including a PR-controlled one — the ability to
+#          approve pull requests. Anyone with push access could then mint an
+#          approval directly and skip this workflow entirely. Choose it only
+#          with that understood.
+#
+#      Until one of them exists, this job runs, decides correctly, and reports
+#      that it could not submit the approval.
 
 on:
   workflow_run:
@@ -92,6 +109,12 @@ jobs:
     if: github.event.workflow_run.event == 'pull_request'
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: 10
+    # Scopes REVIEW_APPROVER_TOKEN to this workflow. With the environment's
+    # deployment branch policy set to the default branch only, a workflow running
+    # from a PR branch cannot obtain that secret -- see ACTIVATION PREREQUISITES.
+    # Harmless if the environment does not exist yet; the token is then simply
+    # absent and the job falls back to GITHUB_TOKEN.
+    environment: codex-approve
     env:
       # A dedicated review-bot token if the org has one, otherwise the built-in
       # token. See ACTIVATION PREREQUISITES above.
@@ -158,9 +181,35 @@ jobs:
             # Recomputed from the API, NOT taken from the reviewer: a PR that
             # edits the reviewer workflow to fake a clean verdict must touch
             # .github/ to do it, and this check is what catches that.
-            files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --paginate --jq '.[].filename' || true)"
-            if printf '%s\n' "$files" | grep -qE '^\.github/'; then
+            #
+            # FAILS CLOSED, deliberately and in three ways. This used to end in
+            # `|| true`, which meant an API error, an auth blip or a rate limit
+            # produced an empty file list -- and an empty list contains no
+            # `.github/` path, so the single control this whole design rests on
+            # would have silently passed. A check that disappears when the API
+            # hiccups is not a control.
+            if ! files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --paginate --jq '.[].filename' 2>&1)"; then
+              deny "could not list the PR's changed files (${files}); the .github/ tamper check cannot be evaluated, so nothing is approved."
+            elif [ -z "$(printf '%s' "$files" | tr -d '[:space:]')" ]; then
+              deny "the API returned no changed files for this PR, which cannot be true; refusing to approve on an unverifiable file list."
+            elif printf '%s\n' "$files" | grep -qE '^\.github/'; then
               deny "the PR modifies .github/ (CI / review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
+            fi
+          fi
+
+          if [ "$decision" != "deny" ]; then
+            # Re-derived here, not inherited from the reviewer: the reviewer
+            # refuses to recommend approval for a PR opened by the approving
+            # identity, but that refusal lived in PR-controlled code and was
+            # never carried in the verdict. An identity must not approve its own
+            # pull request, so the check that enforces it has to live on this
+            # side.
+            if ! author="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.user.login' 2>&1)"; then
+              deny "could not read the PR author (${author}); refusing to approve."
+            else
+              case "$author" in
+                github-actions\[bot\]|*"[bot]") deny "PR was opened by ${author}; an automated identity must not approve a bot-authored PR." ;;
+              esac
             fi
           fi
 

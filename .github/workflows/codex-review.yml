@@ -21,7 +21,14 @@ name: Codex Review
 # rewrite it, including its `permissions:` block and every check below. Only
 # `codex-approve.yml` binds, because only it runs code the PR cannot touch, and
 # it re-derives from the API the one rule that matters (a PR touching `.github/`
-# is never auto-approved). And even that is not a wall around the runner: on a
+# is never auto-approved).
+#
+# That split is only airtight if the ABILITY to approve is also unavailable to
+# PR-branch code. That is why `codex-approve.yml` asks for an environment-scoped
+# `REVIEW_APPROVER_TOKEN` (environment restricted to the default branch) rather
+# than for the org-wide "Actions may approve pull requests" switch: with the
+# switch on, a PR could add `gh pr review --approve` to its own copy of THIS file
+# and never involve the approver at all. See ACTIVATION PREREQUISITES there. And even that is not a wall around the runner: on a
 # same-repo PR the author can already execute arbitrary code here and read
 # repository secrets from their own workflow. Nothing in a GitHub Actions setup
 # changes that. What this design guarantees is narrower, and it is the thing the
