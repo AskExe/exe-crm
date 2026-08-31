@@ -284,6 +284,9 @@ jobs:
           ELIGIBLE: ${{ steps.eligibility.outputs.eligible }}
           ELIGIBILITY_WHY: ${{ steps.eligibility.outputs.why }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Bound into the marker so a verdict cannot be read as belonging to a
+          # different PR that happens to share this head commit.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -uo pipefail
           RC="$(cat "${CODEX_REVIEW_DIR:?}/codex-rc" 2>/dev/null || echo 1)"
@@ -424,7 +427,7 @@ jobs:
             # line (and only from a comment authored by github-actions[bot]) to
             # learn what the reviewer concluded. It is the single channel between
             # the two halves; everything else the approver decides for itself.
-            echo "<!-- codex-review-verdict sha=${PR_HEAD_SHA} gate=${gate} critical=${critical} verdict=${VERDICT:-NONE} -->"
+            echo "<!-- codex-review-verdict pr=${PR_NUMBER} sha=${PR_HEAD_SHA} gate=${gate} critical=${critical} verdict=${VERDICT:-NONE} -->"
             echo ""
             if [ "$gate" = "fail" ]; then
               echo "> **:x: Review gate FAILED CLOSED — no valid review was produced.**"

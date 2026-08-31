@@ -18,7 +18,11 @@ name: Codex Approve
 #
 # WHAT THIS WORKFLOW REFUSES TO TRUST
 #   * Which PR the verdict is for: the head SHA comes from the `workflow_run`
-#     event and the PR is resolved from the API by that SHA.
+#     event and the PR is resolved from the API by that SHA. If that SHA is the
+#     head of MORE THAN ONE open PR, nothing is approved at all -- their diffs
+#     differ by base, so a verdict for one of them says nothing about the others.
+#     The reviewer also stamps the PR number into its verdict marker, and the
+#     approver requires that number to match.
 #   * Whether the PR is eligible: whether it touches `.github/` is recomputed
 #     HERE, from the API's own file list. This is the load-bearing control. A PR
 #     that tampers with `codex-review.yml` to fake a clean verdict must touch
@@ -93,14 +97,25 @@ jobs:
           set -uo pipefail
           # The SHA comes from the EVENT, not from anything the PR produced, so a
           # tampered reviewer cannot point this workflow at a different PR.
-          num="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+          nums="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
                   -H "Accept: application/vnd.github+json" \
-                  --jq '[.[] | select(.state == "open")] | .[0].number // empty' 2>/dev/null || true)"
-          if [ -z "$num" ]; then
+                  --jq '.[] | select(.state == "open") | .number' 2>/dev/null || true)"
+          count="$(printf '%s\n' "$nums" | grep -c '[0-9]' || true)"
+          if [ "$count" = "0" ]; then
             echo "No open PR found for ${HEAD_SHA}; nothing to approve or dismiss."
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # AMBIGUITY IS A DENIAL, NOT A COIN FLIP. One commit can be the head of
+          # several open PRs against different bases -- their diffs are then
+          # different, and only one of them was reviewed. Taking "the first" would
+          # let a clean review of a small diff approve a PR nobody reviewed.
+          if [ "$count" != "1" ]; then
+            echo "::warning::${HEAD_SHA} is the head of ${count} open PRs; a per-commit verdict cannot be attributed to one of them. Refusing to approve any."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          num="$(printf '%s\n' "$nums" | tr -d '[:space:]')"
           head_now="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${num}" --jq '.head.sha')"
           {
             echo "found=true"
@@ -146,10 +161,10 @@ jobs:
             # marker must name the exact SHA this run reviewed.
             marker="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
               --jq '.[] | select(.user.login == "github-actions[bot]") | .body' 2>/dev/null \
-              | grep -oE "<!-- codex-review-verdict sha=[0-9a-f]{40} gate=[a-z]+ critical=[a-z]+ verdict=[A-Z]* -->" \
-              | grep "sha=${HEAD_SHA} " | tail -1 || true)"
+              | grep -oE "<!-- codex-review-verdict pr=[0-9]+ sha=[0-9a-f]{40} gate=[a-z]+ critical=[a-z]+ verdict=[A-Z]* -->" \
+              | grep "pr=${PR} sha=${HEAD_SHA} " | tail -1 || true)"
             if [ -z "$marker" ]; then
-              deny "no verdict marker from the reviewer was found for ${HEAD_SHA}."
+              deny "no verdict marker from the reviewer was found for PR #${PR} at ${HEAD_SHA}."
             else
               echo "marker: $marker"
               case "$marker" in
