@@ -401,6 +401,40 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Bug d859577c: gitleaks + its Docker preflight used to run AFTER
+      # `yarn install`, so a secret scan of OUR checkout also walked ~2,300
+      # third-party packages in node_modules — 15+ minutes of pure waste, and
+      # a correctness hazard too (.gitleaks.toml's allowlist suppresses
+      # findings, it does not stop the walk, and covers none of node_modules,
+      # so a secret-shaped string in any dependency could turn this required
+      # gate red for code nobody in this repo wrote). Moved immediately after
+      # Checkout, before Setup Node / Install dependencies, so gitleaks scans
+      # a clean tree. No gate is weakened, skipped or softened — same
+      # scanner, same config, same fail-closed behaviour, just earlier.
+      - name: Preflight — Docker daemon reachable (required by gitleaks)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          if ! docker info >/dev/null 2>&1; then
+            echo "::error::Docker daemon is not reachable on this runner. The"
+            echo "::error::gitleaks secret scan runs from a pinned container and"
+            echo "::error::cannot run without it. Start Docker Desktop on"
+            echo "::error::mac-m4-exe-crm and re-run this job. This gate fails"
+            echo "::error::closed by design and will not be skipped."
+            exit 1
+          fi
+          docker version --format 'docker client {{.Client.Version}} / server {{.Server.Version}} ({{.Server.Arch}})'
+
+      # Secret scan (open-source gitleaks binary via its pinned-by-digest image;
+      # the gitleaks GitHub Action requires a paid license for org repos, the CLI
+      # does not). --no-git scans the current checkout. Fails closed on findings.
+      - name: Secret scan (gitleaks)
+        run: |
+          docker run --rm -v "$PWD:/repo" \
+            ghcr.io/gitleaks/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
+            detect --source=/repo --no-git --redact --no-banner --verbose \
+            --config=/repo/.gitleaks.toml
+
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -421,24 +455,6 @@ jobs:
           RECALL_LOCAL_BUILD: '1'
         run: yarn install --immutable
 
-      # Fail fast and legibly if the Docker daemon is not reachable, rather
-      # than letting the gitleaks step below fail with a daemon-connection
-      # error 3 steps later. This can only FAIL the job — it never skips,
-      # softens or bypasses a scanner.
-      - name: Preflight — Docker daemon reachable (required by gitleaks)
-        if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-          if ! docker info >/dev/null 2>&1; then
-            echo "::error::Docker daemon is not reachable on this runner. The"
-            echo "::error::gitleaks secret scan runs from a pinned container and"
-            echo "::error::cannot run without it. Start Docker Desktop on"
-            echo "::error::mac-m4-exe-crm and re-run this job. This gate fails"
-            echo "::error::closed by design and will not be skipped."
-            exit 1
-          fi
-          docker version --format 'docker client {{.Client.Version}} / server {{.Server.Version}} ({{.Server.Arch}})'
-
       # Supply-chain pin gate (bug 112eb501). Fails closed if a customer-facing
       # artifact we generate or ship reacquires a mutable third-party reference
       # (`@main`, `:latest`), names the upstream Twenty org/registry, or hands a
@@ -458,16 +474,6 @@ jobs:
       # gates get disabled. That breakage is filed separately.
       - name: Supply-chain pin gate (generated scaffolding output)
         run: npx nx test create-twenty-app -- src/utils/__tests__/test-template.spec.ts
-
-      # Secret scan (open-source gitleaks binary via its pinned-by-digest image;
-      # the gitleaks GitHub Action requires a paid license for org repos, the CLI
-      # does not). --no-git scans the current checkout. Fails closed on findings.
-      - name: Secret scan (gitleaks)
-        run: |
-          docker run --rm -v "$PWD:/repo" \
-            ghcr.io/gitleaks/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
-            detect --source=/repo --no-git --redact --no-banner --verbose \
-            --config=/repo/.gitleaks.toml
 
       # Production dependency vulnerability scan. The required gate audits only
       # production dependencies at CRITICAL severity; dev-dependency and HIGH
