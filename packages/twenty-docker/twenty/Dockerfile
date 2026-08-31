@@ -187,7 +187,20 @@ ENTRYPOINT ["/init"]
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS twenty
 
-RUN apk add --no-cache curl jq postgresql-client
+# `--upgrade libcrypto3 libssl3` pulls the patched OpenSSL from the Alpine
+# v3.24 repository at build time instead of inheriting whatever the base image
+# baked in (CVE-2026-14456: libcrypto3/libssl3 3.5.7-r0 -> 3.5.8-r0).
+#
+# A base-image digest bump does NOT fix this one, so do not "simplify" this by
+# repinning node:24-alpine and dropping the upgrade. Verified 2026-09-01: the
+# current 24-alpine tag (sha256:e67514e5...) carries the SAME 3.5.7-r0 as the
+# digest pinned above, because upstream alpine:3.24 has not been republished
+# since 3.5.8-r0 landed in the repository. Only an explicit apk upgrade puts
+# the fixed bytes in the artifact.
+#
+# Revisit when a rebuilt base ships 3.5.8-r0 or later on its own — at that
+# point the explicit package names can go and this becomes a plain apk add.
+RUN apk add --no-cache --upgrade curl jq postgresql-client libcrypto3 libssl3
 
 # Drop npm from the RUNTIME image. Every CRITICAL/HIGH finding Trivy reports
 # against the base image lives in npm's own bundled dependencies under
