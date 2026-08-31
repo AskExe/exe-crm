@@ -517,6 +517,40 @@ jobs:
       # Fails closed on HIGH+.
       - name: Container config scan (Trivy)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        # Bound the step (bug d859577c). Trivy hung here for 31.5 minutes and
+        # silently ate the job's entire 40-minute budget, so the REQUIRED check
+        # never returned a verdict at all -- worse than a red one, because there
+        # is nothing to read. A scanner that stops making progress must fail
+        # fast and legibly. This scan takes well under a second (measured 0.62s
+        # against this exact scan-ref), so 10 minutes is enormous headroom, not
+        # a tuning knob to raise when it trips.
+        timeout-minutes: 10
+        env:
+          # Use the checks bundle EMBEDDED in the pinned trivy binary instead of
+          # refreshing it from a registry at scan time.
+          #
+          # WHY (bug d859577c). When the cached bundle goes stale trivy logs
+          #     INFO [checks-client] Need to update the checks bundle
+          #     INFO [checks-client] Downloading the checks bundle...
+          # and then deadlocks -- indefinitely, at 0% CPU, with ZERO sockets
+          # ever opened. It is not slow and it is not the network: ghcr.io
+          # answers a token request from the same host in 0.43s, and the hang
+          # reproduces on a two-line Dockerfile in an empty directory. trivy's
+          # own --timeout does not rescue it, because the deadlock is upstream
+          # of the scan.
+          #
+          # This also makes the gate DETERMINISTIC, which is the same principle
+          # the dependency gate already follows (bug 4395cda9): a required check
+          # must not be coupled to a continuously-changing external feed, or a
+          # green commit silently goes red hours later with no code change. The
+          # checks are now versioned with the pinned trivy release and move only
+          # when someone bumps it deliberately.
+          #
+          # The gate is NOT weakened: the embedded bundle detects the same
+          # findings. Verified on a fixture Dockerfile -- "Tests: 20 (SUCCESSES:
+          # 19, FAILURES: 1)", correctly flagging DS-0002 (HIGH, USER root) --
+          # and the real scan-ref completes clean in 0.62s.
+          TRIVY_SKIP_CHECK_UPDATE: 'true'
         with:
           scan-type: config
           scan-ref: packages/twenty-docker
