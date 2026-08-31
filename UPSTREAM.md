@@ -186,3 +186,7 @@ references in `package.json` files, and hundreds of cross-package imports.
 User-visible branding (HTML titles, email copy, Docker labels, Helm charts)
 has been rebranded to "Exe CRM". Internal directory names are implementation
 detail, not user-facing.
+
+Code review on this fork is automated by the `codex-review` check (see
+`.github/workflows/codex-review.yml`); a clean review approves the PR, and any
+[P0]/[P1] finding blocks the merge and still requires a human.
