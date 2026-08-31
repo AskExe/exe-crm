@@ -1,4 +1,10 @@
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
+import {
+  GO_TRUE_BRIDGE_IN_FLIGHT_MS,
+  GO_TRUE_SENTINEL_COOKIE_NAME,
+  GO_TRUE_SENTINEL_COOKIE_VALUE,
+  markGoTrueCallbackAttempt,
+} from '@/auth/utils/goTrueBridge';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useIsWorkspaceActivationStatusEqualsTo } from '@/workspace/hooks/useIsWorkspaceActivationStatusEqualsTo';
@@ -368,6 +374,50 @@ describe('usePageChangeEffectNavigateLocation', () => {
       expect(usePageChangeEffectNavigateLocation()).toEqual(res);
     },
   );
+
+  // Regression — bug 88f4f6f3. A valid apex SSO session is present and the
+  // bridge has not yet exchanged it for a CRM token pair. Reading that absence
+  // as "logged out" sent the browser to the sign-in form mid-exchange, so an
+  // app the user had already successfully authenticated into visibly regressed
+  // to a login screen, and returnToPath was clobbered on the way out.
+  describe('while the Exe SSO bridge is exchanging an apex session', () => {
+    const setupCase = () => {
+      setupMockIsMatchingLocation(AppPath.Index);
+      setupMockOnboardingStatus(undefined);
+      setupMockIsWorkspaceActivationStatusEqualsTo(false);
+      setupMockHasAccessTokenPair(false);
+      setupMockIsOnAWorkspace(true);
+      setupMockUseParams(undefined);
+      setupMockState(undefined, undefined, undefined, undefined);
+    };
+
+    afterEach(() => {
+      document.cookie = `${GO_TRUE_SENTINEL_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      sessionStorage.clear();
+    });
+
+    it('does not send the browser to sign-in while the exchange is in flight', () => {
+      document.cookie = `${GO_TRUE_SENTINEL_COOKIE_NAME}=${GO_TRUE_SENTINEL_COOKIE_VALUE}`;
+      markGoTrueCallbackAttempt(Date.now());
+      setupCase();
+
+      expect(usePageChangeEffectNavigateLocation()).toBeUndefined();
+    });
+
+    it('sends the browser to sign-in once the exchange has had its window and not delivered', () => {
+      document.cookie = `${GO_TRUE_SENTINEL_COOKIE_NAME}=${GO_TRUE_SENTINEL_COOKIE_VALUE}`;
+      markGoTrueCallbackAttempt(Date.now() - GO_TRUE_BRIDGE_IN_FLIGHT_MS - 1);
+      setupCase();
+
+      expect(usePageChangeEffectNavigateLocation()).toEqual(AppPath.SignInUp);
+    });
+
+    it('sends a visitor with no apex session to sign-in immediately', () => {
+      setupCase();
+
+      expect(usePageChangeEffectNavigateLocation()).toEqual(AppPath.SignInUp);
+    });
+  });
 
   describe('tests should be exhaustive', () => {
     it('all location, onboarding status and suspended/not suspended workspace activation status should be tested', () => {
