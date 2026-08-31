@@ -7,6 +7,7 @@ import { isAppEffectRedirectEnabledState } from '@/app/states/isAppEffectRedirec
 import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useReturnToPath } from '@/auth/hooks/useReturnToPath';
+import { isGoTrueBridgeInFlight } from '@/auth/utils/goTrueBridge';
 import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
 import { isCaptchaScriptLoadedState } from '@/captcha/states/isCaptchaScriptLoadedState';
 import { isCaptchaRequiredForPath } from '@/captcha/utils/isCaptchaRequiredForPath';
@@ -48,6 +49,13 @@ import { useInitializeQueryParamState } from '~/modules/app/hooks/useInitializeQ
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 
+/**
+ * How often to re-ask whether the Exe SSO bridge is still in flight. Short
+ * relative to GO_TRUE_BRIDGE_IN_FLIGHT_MS, and only ever running while a bridge
+ * is actually open.
+ */
+const GO_TRUE_BRIDGE_REEVALUATION_INTERVAL_MS = 250;
+
 const AUTH_AND_ONBOARDING_PATHS = [
   ...ONGOING_USER_CREATION_PATHS,
   ...ONBOARDING_PATHS,
@@ -63,6 +71,29 @@ export const PageChangeEffect = () => {
   const [previousLocation, setPreviousLocation] = useState('');
 
   const location = useLocation();
+
+  // `usePageChangeEffectNavigateLocation` withholds the sign-in redirect while
+  // the Exe SSO bridge is exchanging an apex session for a CRM one (bug
+  // 88f4f6f3). That window closes by the CLOCK, and nothing else in the app
+  // re-renders on the passage of time — so without this tick, a bridge that
+  // was triggered and then never navigated would withhold the sign-in form for
+  // the rest of the tab's life. Bounding the window only helps if somebody
+  // looks at the clock.
+  const [, tickGoTrueBridgeReevaluation] = useState(0);
+  const isAwaitingGoTrueBridge = isGoTrueBridgeInFlight();
+
+  useEffect(() => {
+    if (!isAwaitingGoTrueBridge) {
+      return;
+    }
+
+    const interval = setInterval(
+      () => tickGoTrueBridgeReevaluation((tick) => tick + 1),
+      GO_TRUE_BRIDGE_REEVALUATION_INTERVAL_MS,
+    );
+
+    return () => clearInterval(interval);
+  }, [isAwaitingGoTrueBridge]);
 
   const pageChangeEffectNavigateLocation =
     usePageChangeEffectNavigateLocation();

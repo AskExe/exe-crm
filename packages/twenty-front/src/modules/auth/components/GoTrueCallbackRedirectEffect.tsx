@@ -2,23 +2,14 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { getTokenPair } from '@/apollo/utils/getTokenPair';
+import {
+  clearGoTrueCallbackAttempt,
+  GO_TRUE_CALLBACK_PATH,
+  hasGoTrueSentinelCookie,
+  hasRecentGoTrueCallbackAttempt,
+  markGoTrueCallbackAttempt,
+} from '@/auth/utils/goTrueBridge';
 import { AppPath } from 'twenty-shared/types';
-import { cookieStorage } from '~/utils/cookie-storage';
-
-const GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY =
-  'gotrueCallbackAttemptedAt';
-const GOTRUE_CALLBACK_ATTEMPT_TTL_MS = 60_000;
-
-const hasRecentGoTrueCallbackAttempt = () => {
-  const attemptedAt = Number(
-    sessionStorage.getItem(GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY),
-  );
-
-  return (
-    Number.isFinite(attemptedAt) &&
-    Date.now() - attemptedAt < GOTRUE_CALLBACK_ATTEMPT_TTL_MS
-  );
-};
 
 export const GoTrueCallbackRedirectEffect = () => {
   const location = useLocation();
@@ -29,18 +20,12 @@ export const GoTrueCallbackRedirectEffect = () => {
     }
 
     if (getTokenPair()) {
-      sessionStorage.removeItem(
-        GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY,
-      );
+      clearGoTrueCallbackAttempt();
       return;
     }
 
-    const hasGoTrueSentinel = cookieStorage.getItem('exe_access_token') === '1';
-
-    if (!hasGoTrueSentinel) {
-      sessionStorage.removeItem(
-        GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY,
-      );
+    if (!hasGoTrueSentinelCookie()) {
+      clearGoTrueCallbackAttempt();
       return;
     }
 
@@ -55,12 +40,16 @@ export const GoTrueCallbackRedirectEffect = () => {
     //   exe_sess=<GoTrue JWT>  HttpOnly; carries the real access_token, read
     //                          ONLY server-side by GET /api/auth/gotrue-callback,
     //                          which verifies it and mints a CRM loginToken.
-    // The names/value here MUST match what auth.<domain> sets.
-    sessionStorage.setItem(
-      GOTRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY,
-      Date.now().toString(),
-    );
-    window.location.assign('/api/auth/gotrue-callback');
+    // The names/values live in `@/auth/utils/goTrueBridge` and MUST match what
+    // auth.<domain> sets.
+    //
+    // Mark BEFORE navigating, not after: `assign` only schedules a navigation,
+    // and the rest of the app renders — and decides where it belongs — during
+    // the seconds before the browser leaves. Marking first is what lets
+    // `isGoTrueBridgeInFlight` tell "not logged in" apart from "not logged in
+    // YET" while that navigation is in the air (bug 88f4f6f3).
+    markGoTrueCallbackAttempt();
+    window.location.assign(GO_TRUE_CALLBACK_PATH);
   }, [location.pathname]);
 
   return <></>;

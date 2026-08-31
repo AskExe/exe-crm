@@ -3,6 +3,7 @@ import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import { returnToPathState } from '@/auth/states/returnToPathState';
+import { isGoTrueBridgeInFlight } from '@/auth/utils/goTrueBridge';
 import { calendarBookingPageIdState } from '@/client-config/states/calendarBookingPageIdState';
 import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCurrentLocationOnAWorkspace';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
@@ -60,6 +61,21 @@ export const usePageChangeEffectNavigateLocation = () => {
       AppPath.ResetPassword,
     ])
   ) {
+    // "No CRM token pair" is not the same fact as "this person is logged out".
+    // While the Exe SSO bridge is exchanging a valid apex session for a CRM
+    // one, the token pair legitimately does not exist yet — and bouncing to
+    // sign-in here used to abort an authentication that was already succeeding,
+    // visibly regressing a loaded app to a login form and clobbering
+    // returnToPath on the way out (bug 88f4f6f3).
+    //
+    // This withholds a decision; it does not make one. The in-flight window is
+    // bounded (see GO_TRUE_BRIDGE_IN_FLIGHT_MS), and PageChangeEffect keeps
+    // re-evaluating while it is open, so a bridge that never completes still
+    // lands the user on a login form they can use.
+    if (isGoTrueBridgeInFlight()) {
+      return;
+    }
+
     return AppPath.SignInUp;
   }
 
