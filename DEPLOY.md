@@ -47,7 +47,7 @@ The `docker-compose.yml` includes a `db-backup` sidecar that runs `pg_dump` ever
 > `pg_restore --clean --if-exists` drops and recreates objects. If the backup
 > cron fires its scheduled `pg_dump` during that window it will capture a
 > half-restored database as a "valid" dump and, because retention keeps only
-> the last 7 dumps, prune an older *good* backup to make room. Always suspend
+> the last 7 dumps, prune an older _good_ backup to make room. Always suspend
 > the sidecar first, verify the restore, and resume backups only once the stack
 > is consistent.
 
@@ -104,6 +104,155 @@ If a migration fails or causes data issues:
 2. Restore from the pre-upgrade backup (see Backup & Disaster Recovery above)
 3. Revert to the previous `CRM_IMAGE_TAG` in `.env`
 4. Restart containers
+
+## Exe SSO deployment contract (apex session → CRM session)
+
+The CRM does **not** accept a token in a URL. `exe-auth` deliberately stopped
+appending `?access_token=` (bug 83ba9546 — tokens in URLs leak through history,
+logs and `Referer`). The only supported hand-off is a **server-side cookie
+exchange**:
+
+```
+browser (apex session on .<domain>)
+  ├─ exe_access_token=1   non-HttpOnly sentinel, readable by JS, TRIGGERS the bridge
+  └─ exe_sess=<GoTrue JWT> HttpOnly, the ONLY auth proof
+        │
+        ▼
+GET /api/auth/gotrue-callback      ← the bridge, server-side
+        │  verifies exe_sess against GoTrue, applies exe_perms
+        ▼
+302 /verify?loginToken=…           ← CRM mints its OWN native session (tokenPair)
+```
+
+Three deployment-side conditions must hold, and **each one of them fails
+silently as "the login just bounces back to sign-in"** if it does not. All three
+have bitten this stack in production.
+
+### 1. `GOTRUE_JWT_SECRET` must be on the CRM container
+
+GoTrue signs HS256 and deliberately omits HMAC keys from its JWKS endpoint
+(publishing `k` would leak the secret to the internet). A CRM that has
+`GOTRUE_URL` but no `GOTRUE_JWT_SECRET` therefore has **no key material at all**
+and rejects every genuine session.
+
+`packages/twenty-docker/docker-compose.yml` already passes it through. Any other
+deployment manifest that composes this image must do the same — the variable
+existing in the host's `.env` is not enough; it has to reach the container:
+
+```bash
+docker exec exe-crm sh -c 'env | grep -c GOTRUE_JWT_SECRET'   # must print 1
+```
+
+Since bug 2e2b5225 the server announces this at boot. Check the log line on any
+new deployment:
+
+```
+GoTrue SSO bridge ready: GOTRUE_URL and GOTRUE_JWT_SECRET are both set.
+```
+
+An `ERROR` naming `GOTRUE_JWT_SECRET` instead means SSO cannot work, whatever
+the reverse proxy does.
+
+### 2. The reverse proxy must authenticate a first visit from `exe_sess`
+
+A reverse proxy in front of the CRM must be able to admit a browser that holds a
+valid **apex** session but does not yet hold a CRM session. That is every first
+visit, by construction: the CRM's own `tokenPair` cookie is minted only _after_
+the bridge completes.
+
+A gate that can only recognise `tokenPair` deadlocks — it bounces to auth, auth
+sees a live apex session and bounces straight back, forever (bug 24bd2802). The
+`exe-sso-edge` snippet solves this correctly, and it is worth stating exactly
+how, because the obvious shortcut is a security hole:
+
+1. **Fast path.** If the app's own session cookie is present (`$sso_session_cookie`,
+   `tokenPair` for CRM) the request passes; the app validates its own session.
+2. **First visit.** Otherwise the gate reads the apex `exe_sess` cookie. It is
+   `HttpOnly`, which restricts page JavaScript — never the proxy — so nginx
+   reads it as `$cookie_exe_sess`.
+3. **Validation.** That token is validated against GoTrue (`GET /user`) before
+   anything passes. Failure, or an unreachable GoTrue, fails closed.
+
+> **Never gate on `exe_access_token`.** It is a _presence sentinel_ whose value
+> is the literal `1`, deliberately JS-readable and therefore forgeable by any
+> visitor. Gating on its presence lets anyone walk through the edge and defeats
+> cross-app logout (bug 4a6650f5). It is a logout signal, never an
+> authentication signal. `exe_sess` — validated, not merely present — is the
+> credential.
+
+Given step 2, the bridge endpoint needs **no exemption**: it is admitted like
+any other first visit, and it re-verifies `exe_sess` itself. Do not add
+`auth_request off` for it — that would remove a layer for no benefit.
+
+Verify the gate on a live deployment (read-only; substitute a valid apex token):
+
+```bash
+curl -sS -o /dev/null -D - https://crm.<domain>/                      # expect 302 → auth
+curl -sS -o /dev/null -D - -H "Cookie: exe_sess=$JWT" https://crm.<domain>/   # expect 200
+curl -sS -o /dev/null -D - -H "Cookie: exe_sess=$JWT" \
+  https://crm.<domain>/api/auth/gotrue-callback                       # expect 302 → /verify?loginToken=…
+```
+
+If the third command redirects to `/welcome` instead of `/verify`, the edge is
+fine and the fault is inside the CRM — read the `?ssoError=` value (below).
+
+### 3. The identity must actually be entitled
+
+A managed deployment (`EXE_ORG_ID` set) requires the GoTrue identity's
+`app_metadata.exe_perms` to grant a CRM tier for that org. An identity with no
+entry is refused — by design, and `CRM_REQUIRE_MANAGED_PERMS` is on by default.
+Provision entitlements from the Exe dashboard rather than relaxing the gate.
+
+### Diagnosing a bounce
+
+Since bug 2e2b5225 the bridge says **why** it gave up, as a coarse non-secret
+`?ssoError=` on the sign-in redirect:
+
+| `ssoError`           | Meaning                                                  | Fix                                                        |
+| -------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| `no_session`         | No apex `exe_sess` cookie, or no `GOTRUE_URL` configured | Log in at `auth.<domain>`; check cookie domain is the apex |
+| `session_expired`    | The apex session verified, but is past its `exp`         | Nothing — expected. Sign in again                          |
+| `invalid_session`    | The cookie is not a session we can accept (junk, bad signature, wrong issuer/audience) | Nothing, if it came from a bot or a stale tab. If real users see it, the CRM and GoTrue disagree on the secret or the issuer — see §1 |
+| `token_unverifiable` | A session was present and this server holds no key that could check it | Almost always a missing `GOTRUE_JWT_SECRET` — see §1       |
+| `invalid_claims`     | Verified, but the JWT carries no `email`/`sub`           | Check the GoTrue user record                               |
+| `no_crm_access`      | Managed org grants this identity no CRM tier             | Grant `exe_perms` for the org — see §3                     |
+| `not_provisioned`    | Entitled, but no CRM account could be bound              | Check `EXE_ORG_WORKSPACE_ID` and workspace membership      |
+| `server_error`       | The session was fine; something after it threw (database, role sync, login-token) | Read the CRM logs — this is not an SSO configuration fault |
+
+Reaching the CRM sign-in page with **no** `ssoError` means the bridge was never
+invoked at all — suspect the proxy gate (§2) or a frontend bundle that predates
+`GoTrueCallbackRedirectEffect` (see "Deployed image provenance" below).
+
+Note the asymmetry that makes this table worth having: `no_session` and
+`session_expired` are user states, `invalid_session` is a property of whatever
+the caller sent, `no_crm_access` and `not_provisioned` are entitlement states,
+and `token_unverifiable` and `server_error` are **server** faults. Only the last
+two are outages, and before this table existed they all looked identical from a
+browser.
+
+`session_expired` and `invalid_session` are deliberately separate from
+`token_unverifiable`, and are logged at `debug`, not `error`. An expired session
+is routine — every logged-in user produces one every hour — and an unauthenticated
+visitor can send a junk cookie on demand. Reporting either as `token_unverifiable`
+sent operators to inspect a `GOTRUE_JWT_SECRET` that was fine, and let ordinary
+bot traffic bury the one message here that means an outage.
+
+### Deployed image provenance
+
+Only images built by `.github/workflows/release-stack-image.yml` carry the
+`org.exe.*` chain-of-custody labels. An image without them was hand-built, and
+its server and frontend halves are not guaranteed to come from the same tree —
+which has already shipped a CRM whose server-side bridge existed but whose
+frontend bundle had no `GoTrueCallbackRedirectEffect` to trigger it
+(bug a7329726). Verify before trusting a deployment:
+
+```bash
+docker image inspect "$(docker inspect exe-crm --format '{{.Image}}')" \
+  --format '{{json .Config.Labels}}' | tr ',' '\n' | grep org.exe.
+```
+
+No `org.exe.git_sha` means the running image never went through the pipeline.
+Redeploy from a released tag rather than debugging its behaviour.
 
 ## Gateway authentication (fresh install → gateway can auth)
 

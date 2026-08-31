@@ -94,6 +94,8 @@ const buildController = (
   // (the SSO-bridge callback path uses it).
   const accessTokenService = {
     verifyGoTrueToken: jest.fn(),
+    verifyGoTrueTokenDetailed: jest.fn(),
+    describeGoTrueSigning: jest.fn().mockResolvedValue('symmetric'),
   };
 
   const controller = new GoTrueAuthController(

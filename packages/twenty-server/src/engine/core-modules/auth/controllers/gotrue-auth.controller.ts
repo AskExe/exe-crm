@@ -13,7 +13,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import {
+  AccessTokenService,
+  type GoTrueSigningMode,
+  type GoTrueVerificationResult,
+} from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import {
@@ -56,6 +60,54 @@ type ResolveGoTrueLoginContextResult =
 type ManagedLoginOutcome =
   | { type: 'redirect'; url: string }
   | { type: 'deny'; statusCode: number; error: string };
+
+/**
+ * Why the SSO bridge sent the browser back to sign-in.
+ *
+ * Coarse and non-secret by construction — see
+ * {@link GoTrueAuthController.generateSignInRedirectWithReason}.
+ */
+export const GO_TRUE_BRIDGE_FAILURES = {
+  /** No apex `exe_sess` cookie, or this CRM has no GoTrue configured at all. */
+  NoSession: 'no_session',
+  /**
+   * An `exe_sess` cookie was present but could not be verified. In practice
+   * this is almost always a SERVER misconfiguration — most often a missing
+   * `GOTRUE_JWT_SECRET` (bug 2e2b5225) — not a bad token.
+   */
+  TokenUnverifiable: 'token_unverifiable',
+  /**
+   * The apex session had expired. Routine — every logged-in user's token dies
+   * hourly — and explicitly NOT a server fault: it used to surface as
+   * `token_unverifiable` at ERROR because `jwt.verify` throws on expiry, which
+   * pointed operators at a `GOTRUE_JWT_SECRET` that was never the problem.
+   */
+  SessionExpired: 'session_expired',
+  /**
+   * The `exe_sess` cookie was not a session this deployment could ever accept
+   * — not a JWT, unsupported `alg`, bad signature, or wrong issuer/audience.
+   * Attributable to the caller, so any unauthenticated visitor can produce it
+   * on demand and it must never be logged at a severity that pages anyone.
+   */
+  InvalidSession: 'invalid_session',
+  /** Verified, but the JWT carries no usable identity (`email` / `sub`). */
+  InvalidClaims: 'invalid_claims',
+  /** Managed org, and the identity's `exe_perms` grant no CRM tier. */
+  NoCrmAccess: 'no_crm_access',
+  /** Managed org and a tier was granted, but no CRM account could be bound. */
+  NotProvisioned: 'not_provisioned',
+  /**
+   * The session verified fine, but something downstream of verification threw
+   * — a database outage, role sync, login-token generation. Reporting these as
+   * `token_unverifiable` told operators to go and check GOTRUE_JWT_SECRET when
+   * the secret was never the problem, which is the exact misdiagnosis this
+   * bridge is supposed to prevent.
+   */
+  ServerError: 'server_error',
+} as const;
+
+type GoTrueBridgeFailure =
+  (typeof GO_TRUE_BRIDGE_FAILURES)[keyof typeof GO_TRUE_BRIDGE_FAILURES];
 
 /**
  * /api/auth/gotrue-login  — email+password via GoTrue → redirect to /verify
@@ -123,6 +175,90 @@ export class GoTrueAuthController {
     }
 
     this.logManagedPermsMode();
+    this.logGoTrueBridgeReadiness();
+  }
+
+  /**
+   * Announce, at boot, whether the SSO bridge can actually verify a session.
+   *
+   * WHY (bug 2e2b5225). GoTrue signs its JWTs with a SYMMETRIC key and
+   * deliberately omits HMAC keys from its JWKS endpoint, so a CRM that knows
+   * `GOTRUE_URL` but not `GOTRUE_JWT_SECRET` has no key material and rejects
+   * every genuine apex session. Nothing about that is visible from outside:
+   * `GET /api/auth/gotrue-callback` fails closed and redirects to sign-in,
+   * which is indistinguishable from "the user is not logged in". A deployment
+   * shipped for weeks in exactly that state and cost a five-fault diagnosis.
+   *
+   * A misconfiguration that fails closed still has to be LOUD.
+   */
+  private logGoTrueBridgeReadiness(): void {
+    if (!this.gotrueUrl) {
+      return;
+    }
+
+    if (process.env.GOTRUE_JWT_SECRET) {
+      this.logger.log(
+        'GoTrue SSO bridge ready: GOTRUE_URL and GOTRUE_JWT_SECRET are both set.',
+      );
+
+      return;
+    }
+
+    // GOTRUE_JWT_SECRET being unset is only a fault if GoTrue signs
+    // SYMMETRICALLY. An RS256/ES256 deployment intentionally leaves it unset
+    // and verifies from JWKS, and that is a supported, documented setup — so
+    // shouting MISCONFIGURED at it is a false production alert, and a check
+    // that cries wolf is one operators learn to ignore precisely when it is
+    // right. Ask GoTrue which it is instead of assuming.
+    //
+    // Fire-and-forget: boot must not block on a network call, and the answer is
+    // only ever used to choose a log line.
+    void this.logGoTrueSigningVerdict(this.gotrueUrl);
+  }
+
+  /**
+   * Second half of {@link logGoTrueBridgeReadiness}, once GoTrue has told us
+   * how it signs. Only the symmetric case is an actual misconfiguration.
+   */
+  private async logGoTrueSigningVerdict(gotrueUrl: string): Promise<void> {
+    let mode: GoTrueSigningMode = 'unknown';
+
+    try {
+      mode = await this.accessTokenService.describeGoTrueSigning(gotrueUrl);
+    } catch {
+      mode = 'unknown';
+    }
+
+    if (mode === 'asymmetric') {
+      this.logger.log(
+        `GoTrue SSO bridge ready: ${gotrueUrl} publishes JWKS keys, so apex ` +
+          'sessions are verified asymmetrically and GOTRUE_JWT_SECRET is not ' +
+          'needed.',
+      );
+
+      return;
+    }
+
+    if (mode === 'symmetric') {
+      this.logger.error(
+        `GoTrue SSO bridge MISCONFIGURED: GOTRUE_URL is set (${gotrueUrl}) ` +
+          'but GOTRUE_JWT_SECRET is not, and that GoTrue serves an EMPTY ' +
+          'JWKS — meaning it signs HS256 and publishes no HMAC key. This ' +
+          'server therefore cannot verify ANY apex session and every SSO ' +
+          'login will bounce back to sign-in. Set GOTRUE_JWT_SECRET on this ' +
+          'container to the exact value the GoTrue service uses.',
+      );
+
+      return;
+    }
+
+    this.logger.warn(
+      `GoTrue SSO bridge readiness UNKNOWN: GOTRUE_JWT_SECRET is not set and ` +
+        `${gotrueUrl} JWKS could not be read, so it is not possible to say ` +
+        'whether this deployment verifies asymmetrically. If GoTrue signs ' +
+        'HS256, every SSO login will bounce back to sign-in until ' +
+        'GOTRUE_JWT_SECRET is set.',
+    );
   }
 
   /**
@@ -259,6 +395,30 @@ export class GoTrueAuthController {
     }
 
     return `${this.serverBaseUrl.replace(/\/$/, '')}${AppPath.SignInUp}`;
+  }
+
+  /**
+   * Sign-in redirect that says WHY the bridge gave up.
+   *
+   * Every failure arm of `GET /api/auth/gotrue-callback` used to emit the same
+   * bare redirect to sign-in. From the outside, "your apex session cannot be
+   * verified because the server has no key material", "your account carries no
+   * permissions for this org" and "you are simply not logged in" were the same
+   * observable event: a bounce. That is the single biggest reason the broken
+   * demo login took a five-fault investigation to explain.
+   *
+   * The reason is a coarse, non-secret enum — it names the class of failure,
+   * never the token, the claim contents or the org. It is safe in a URL and in
+   * a browser history, unlike the `?access_token=` handoff that was removed
+   * from this flow for exactly that reason (bug 83ba9546).
+   */
+  private generateSignInRedirectWithReason(
+    reason: GoTrueBridgeFailure,
+  ): string {
+    const base = this.generateSignInRedirect();
+    const separator = base.includes('?') ? '&' : '?';
+
+    return `${base}${separator}ssoError=${reason}`;
   }
 
   private getRequestCookie(req: Request | undefined, key: string) {
@@ -658,27 +818,146 @@ export class GoTrueAuthController {
   @Get('gotrue-callback')
   @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueCallback(@Res() res: Response, @Req() req?: Request) {
-    const signInRedirect = this.generateSignInRedirect();
     const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
 
     if (!goTrueSessionToken || !this.gotrueUrl) {
-      return res.redirect(signInRedirect);
+      this.logger.log(
+        `GoTrue callback: nothing to exchange (exe_sess ${
+          goTrueSessionToken ? 'present' : 'absent'
+        }, GOTRUE_URL ${this.gotrueUrl ? 'set' : 'unset'})`,
+      );
+
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.NoSession,
+        ),
+      );
     }
+
+    // Verification gets its OWN try/catch. The outer one below used to wrap the
+    // repository lookups, managed provisioning and login-token generation as
+    // well, so a database outage was reported as `token_unverifiable` and sent
+    // the operator to check GOTRUE_JWT_SECRET — a secret that was fine. A
+    // bridge whose whole purpose is saying why it gave up must not lie about
+    // which half failed.
+    let verification: GoTrueVerificationResult;
 
     try {
       // bug 74588d76: exe-auth stores the real GoTrue JWT in an HttpOnly
       // domain cookie; CRM must verify it cryptographically before bridging.
-      const claims = await this.accessTokenService.verifyGoTrueToken(
+      verification = await this.accessTokenService.verifyGoTrueTokenDetailed(
         goTrueSessionToken,
         this.gotrueUrl,
       );
+    } catch (err) {
+      // Verification now discriminates everything it can attribute to the
+      // token — expiry, bad signature, junk cookie — and returns it, so a
+      // throw that reaches here is genuinely unexpected and OURS: log at ERROR
+      // to surface it as a server fault (bug 2e2b5225).
+      this.logger.error(
+        `GoTrue callback could not verify the apex session: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.TokenUnverifiable,
+        ),
+      );
+    }
+
+    // "Could not verify" and "verified but useless" are different faults with
+    // different owners. They used to collapse into one arm because
+    // verifyGoTrueToken returned a bare null for both (bug 2e2b5225), which
+    // made the invalid_claims arm below unreachable for a missing email.
+    if (!verification.ok) {
+      if (verification.failure === 'expired') {
+        // Routine, expected, and hourly. Logged at debug so that a genuine
+        // GOTRUE_JWT_SECRET misconfiguration stays visible instead of being
+        // buried under ordinary session churn.
+        this.logger.debug(
+          'GoTrue callback: the apex session has expired; sending the ' +
+            'visitor back to sign in.',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.SessionExpired,
+          ),
+        );
+      }
+
+      if (verification.failure === 'malformed') {
+        // An unauthenticated visitor — bot, scanner, stale tab — can send any
+        // cookie it likes. Logging that at ERROR would let anyone on the
+        // internet drown the one message in this handler that means an outage.
+        this.logger.debug(
+          'GoTrue callback: the exe_sess cookie is not a session this ' +
+            'deployment can accept (not a JWT, unsupported alg, bad ' +
+            'signature, or wrong issuer/audience).',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.InvalidSession,
+          ),
+        );
+      }
+
+      if (verification.failure === 'unverifiable') {
+        this.logger.error(
+          'GoTrue callback could not verify the apex session: no usable ' +
+            'verification key. If GoTrue signs HS256, GOTRUE_JWT_SECRET must ' +
+            'be set on this container.',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.TokenUnverifiable,
+          ),
+        );
+      }
+
+      if (verification.failure === 'centrally_disabled') {
+        this.logger.warn(
+          'GoTrue callback rejected: the identity is centrally disabled at ' +
+            'GoTrue. The session signature was valid.',
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.NoCrmAccess,
+          ),
+        );
+      }
+
+      this.logger.warn(
+        'GoTrue callback rejected: invalid token claims (the signature was ' +
+          'valid, but the session carries no usable identity).',
+      );
+
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.InvalidClaims,
+        ),
+      );
+    }
+
+    const claims = verification.claims;
+
+    try {
       const email = claims?.email;
       const subject = claims?.sub;
 
       if (!email || !subject) {
         this.logger.warn('GoTrue callback rejected: invalid token claims');
 
-        return res.redirect(signInRedirect);
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.InvalidClaims,
+          ),
+        );
       }
 
       // Enforce Exe unified perms on the SSO-bridge path too — this endpoint
@@ -696,7 +975,11 @@ export class GoTrueAuthController {
             `GoTrue callback denied for ${email} — managed org ${this.exeOrgId} grants no CRM access`,
           );
 
-          return res.redirect(signInRedirect);
+          return res.redirect(
+            this.generateSignInRedirectWithReason(
+              GO_TRUE_BRIDGE_FAILURES.NoCrmAccess,
+            ),
+          );
         }
 
         const existingUser = await this.findUser(email);
@@ -708,10 +991,14 @@ export class GoTrueAuthController {
 
         if (outcome.type === 'deny') {
           this.logger.warn(
-            `GoTrue callback denied for ${email} — managed enforcement failed (${outcome.statusCode})`,
+            `GoTrue callback denied for ${email} — managed enforcement failed (${outcome.statusCode}): ${outcome.error}`,
           );
 
-          return res.redirect(signInRedirect);
+          return res.redirect(
+            this.generateSignInRedirectWithReason(
+              GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
+            ),
+          );
         }
 
         this.logger.log(
@@ -727,7 +1014,19 @@ export class GoTrueAuthController {
       });
 
       if (contextResult.type !== 'success') {
-        return res.redirect(signInRedirect);
+        this.logger.warn(
+          `GoTrue callback denied for ${email} — no CRM account could be bound (${
+            contextResult.type === 'error'
+              ? `${contextResult.statusCode}: ${contextResult.error}`
+              : contextResult.type
+          })`,
+        );
+
+        return res.redirect(
+          this.generateSignInRedirectWithReason(
+            GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
+          ),
+        );
       }
 
       const redirectUrl = await this.generateLoginTokenRedirect(
@@ -739,9 +1038,22 @@ export class GoTrueAuthController {
 
       return res.redirect(redirectUrl);
     } catch (err) {
-      this.logger.warn(`GoTrue callback rejected: ${err}`);
+      // Everything in this block runs AFTER the session verified successfully:
+      // repository lookups, managed provisioning, role sync, login-token
+      // generation. A failure here is an operational fault on our side, not a
+      // token fault, and must not be reported as `token_unverifiable` — doing
+      // so sends the operator to inspect a GOTRUE_JWT_SECRET that is correct.
+      this.logger.error(
+        `GoTrue callback failed AFTER the apex session verified: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
 
-      return res.redirect(signInRedirect);
+      return res.redirect(
+        this.generateSignInRedirectWithReason(
+          GO_TRUE_BRIDGE_FAILURES.ServerError,
+        ),
+      );
     }
   }
 

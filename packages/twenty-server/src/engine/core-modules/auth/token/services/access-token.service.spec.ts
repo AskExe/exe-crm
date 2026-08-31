@@ -764,6 +764,217 @@ describe('AccessTokenService', () => {
     });
   });
 
+  // ── bug 2e2b5225 ────────────────────────────────────────────────────────────
+  // verifyGoTrueToken collapsed every rejection to a bare `null`, so the SSO
+  // callback could not tell "this server holds no key that can check the
+  // signature" (OUR misconfiguration — go set GOTRUE_JWT_SECRET) from "the
+  // signature checked out but the token carries no identity" (a property of
+  // the token). The callback's invalid_claims arm was therefore UNREACHABLE
+  // for a missing email, and every such login was reported as
+  // token_unverifiable — sending the operator to inspect a secret that was
+  // fine. These pin the distinction at the source.
+  describe('verifyGoTrueTokenDetailed reports WHY a session was rejected', () => {
+    const GOTRUE_URL = 'http://gotrue:9999';
+    const GOTRUE_ISSUER = 'http://gotrue:9999/auth/v1';
+    const SHARED_SECRET = 'gotrue-shared-secret-value-do-not-log';
+
+    const mockJwks = (keys: unknown[]) => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys }),
+      } as Response) as typeof fetch;
+    };
+
+    const sign = (payload: object, secret: string | Buffer = SHARED_SECRET) =>
+      jwt.sign(payload, secret, {
+        algorithm: 'HS256',
+        audience: 'authenticated',
+        expiresIn: '1h',
+        issuer: GOTRUE_ISSUER,
+      });
+
+    beforeEach(() => {
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        GOTRUE_JWT_SECRET: SHARED_SECRET,
+      });
+      mockJwks([]);
+    });
+
+    it('returns the claims for a good session', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        sign({ sub: randomUUID(), email: 'ok@example.com' }),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({
+        ok: true,
+        claims: expect.objectContaining({ email: 'ok@example.com' }),
+      });
+    });
+
+    // THE regression this bug is about: a verified token with no email is an
+    // identity problem, not a key problem, and must not be reported as one.
+    it('reports invalid_claims for a verified token carrying no email', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        sign({ sub: randomUUID() }),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'invalid_claims' });
+    });
+
+    it('reports unverifiable when no key can check the signature', async () => {
+      mockConfig({
+        FRONTEND_URL: 'https://crm.example.com',
+        GOTRUE_URL,
+        // The exact production fault: GOTRUE_URL set, secret missing, and a
+        // symmetric GoTrue publishing an empty JWKS.
+        GOTRUE_JWT_SECRET: undefined,
+      });
+
+      const result = await service.verifyGoTrueTokenDetailed(
+        sign({ sub: randomUUID(), email: 'ok@example.com' }),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'unverifiable' });
+    });
+
+    it('reports malformed for a structurally broken token', async () => {
+      // A junk cookie is not evidence of anything about this server, and any
+      // unauthenticated visitor can send one. It must not share an arm with
+      // the missing-key fault the operator gets paged for.
+      const result = await service.verifyGoTrueTokenDetailed(
+        'not-a-jwt',
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
+    });
+
+    // THE bug this block was extended for: `jwt.verify` THROWS
+    // `TokenExpiredError` on an expired session, and the throw escaped
+    // verifyGoTrueTokenDetailed entirely — bypassing every discriminated
+    // return and surfacing in the callback as `token_unverifiable` at ERROR.
+    // Expiry is hourly and routine; `token_unverifiable` tells the operator to
+    // go and check GOTRUE_JWT_SECRET.
+    it('reports expired for a genuinely expired session', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        jwt.sign(
+          { sub: randomUUID(), email: 'ok@example.com' },
+          SHARED_SECRET,
+          {
+            algorithm: 'HS256',
+            audience: 'authenticated',
+            expiresIn: '-1h',
+            issuer: GOTRUE_ISSUER,
+          },
+        ),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'expired' });
+    });
+
+    it('reports malformed, not expired, for a token signed with the wrong secret', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        sign({ sub: randomUUID(), email: 'ok@example.com' }, 'another-secret'),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
+    });
+
+    it('reports malformed for a token from an unexpected issuer', async () => {
+      const result = await service.verifyGoTrueTokenDetailed(
+        jwt.sign(
+          { sub: randomUUID(), email: 'ok@example.com' },
+          SHARED_SECRET,
+          {
+            algorithm: 'HS256',
+            audience: 'authenticated',
+            expiresIn: '1h',
+            issuer: 'https://attacker.example.com',
+          },
+        ),
+        GOTRUE_URL,
+      );
+
+      expect(result).toEqual({ ok: false, failure: 'malformed' });
+    });
+
+    it('keeps the collapsed wrapper behaviour for existing callers', async () => {
+      // verifyGoTrueToken must stay null-returning: tryValidateGoTrueToken and
+      // the older tests depend on it.
+      expect(
+        await service.verifyGoTrueToken(
+          sign({ sub: randomUUID() }),
+          GOTRUE_URL,
+        ),
+      ).toBeNull();
+      expect(
+        await service.verifyGoTrueToken(
+          sign({ sub: randomUUID(), email: 'ok@example.com' }),
+          GOTRUE_URL,
+        ),
+      ).toEqual(expect.objectContaining({ email: 'ok@example.com' }));
+    });
+  });
+
+  // The boot-time readiness check used to declare any GOTRUE_URL-without-secret
+  // deployment MISCONFIGURED. That is false for RS256/ES256 GoTrue, which
+  // intentionally leaves the secret unset and verifies from JWKS. GoTrue omits
+  // HMAC keys from JWKS, so an EMPTY key set is positive evidence of symmetric
+  // signing and a non-empty one of asymmetric — enough to stop guessing.
+  describe('describeGoTrueSigning', () => {
+    const GOTRUE_URL = 'http://gotrue:9999';
+
+    beforeEach(() => {
+      mockConfig({ FRONTEND_URL: 'https://crm.example.com', GOTRUE_URL });
+    });
+
+    it('reads an empty JWKS as symmetric signing', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [] }),
+      } as Response) as typeof fetch;
+
+      expect(await service.describeGoTrueSigning(GOTRUE_URL)).toBe('symmetric');
+    });
+
+    it('reads a populated JWKS as asymmetric signing', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: [{ kty: 'RSA', kid: 'k1' }] }),
+      } as Response) as typeof fetch;
+
+      expect(await service.describeGoTrueSigning(GOTRUE_URL)).toBe(
+        'asymmetric',
+      );
+    });
+
+    it('reports unknown rather than guessing when GoTrue is unreachable', async () => {
+      // An unreachable GoTrue is not evidence in either direction, and a boot
+      // probe must never turn a transient network fault into a verdict.
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('ECONNREFUSED')) as typeof fetch;
+
+      expect(await service.describeGoTrueSigning(GOTRUE_URL)).toBe('unknown');
+    });
+
+    it('reports unknown for a malformed JWKS', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ keys: 'not-an-array' }),
+      } as Response) as typeof fetch;
+
+      expect(await service.describeGoTrueSigning(GOTRUE_URL)).toBe('unknown');
+    });
+  });
+
   describe('verifyGoTrueToken algorithm-confusion defence', () => {
     const GOTRUE_URL = 'http://gotrue:9999';
     const GOTRUE_ISSUER = 'http://gotrue:9999/auth/v1';
