@@ -4,11 +4,20 @@ name: Codex Review
 # ------------
 # Automated PR code review by the Codex CLI, running on our own self-hosted
 # runners. Ported from `exe-os/.github/workflows/codex-review.yml`, with one
-# addition exe-os does not have: when the review comes back clean, this job
-# SUBMITS A REAL GITHUB APPROVAL, not just a comment (see "AUTOMATED APPROVAL"
-# below). Nothing here talks to GitHub-hosted runners and nothing here needs an
-# org secret: the reviewer authenticates with the Codex login already present on
-# the runner host, and the PR comment/approval use the built-in GITHUB_TOKEN.
+# addition exe-os does not have: a clean review can UNBLOCK the PR by earning a
+# real GitHub approval, so a human no longer has to click approve on every
+# trivial diff. Nothing here talks to GitHub-hosted runners and nothing here
+# needs an org secret: the reviewer authenticates with the Codex login already
+# present on the runner host, and the PR comment uses the built-in GITHUB_TOKEN.
+#
+# THIS WORKFLOW CANNOT APPROVE ANYTHING. It reviews, comments, and blocks. The
+# approval is submitted by the separate `codex-approve.yml`, which runs on
+# `workflow_run` and therefore always executes the DEFAULT BRANCH's copy — code
+# a pull request cannot modify. That split is deliberate: this file runs from
+# the PR's own branch, so if the approval lived here, a PR could edit it to
+# rubber-stamp itself and merge with no human involved. Read `codex-approve.yml`
+# for the full trust model; the summary below is the part that concerns this
+# half.
 #
 # WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
 # -------------------------------------------------
@@ -33,21 +42,29 @@ name: Codex Review
 # plus the ones you judge worth a human". It buys velocity on the boring
 # majority. It does not buy assurance.
 #
-# WHEN IT DELIBERATELY REFUSES TO APPROVE (fail-closed by design)
-#   1. Any [P0]/[P1] finding      -> the check FAILS and no approval is given.
-#   2. No valid review produced   -> the check FAILS (missing/malformed envelope,
-#      reviewer crash, upstream diagnostics). "No review" can never masquerade
-#      as "clean review".
+# WHEN NO APPROVAL IS EARNED (fail-closed by design)
+#   1. Any [P0]/[P1] finding      -> this check FAILS; the approver sees a failed
+#      run and refuses.
+#   2. No valid review produced   -> this check FAILS (missing/malformed
+#      envelope, reviewer crash, upstream diagnostics). "No review" can never
+#      masquerade as "clean review".
 #   3. The PR touches `.github/`  -> the review still runs and still gates, but
-#      approval is WITHHELD and a human must approve. This is the important one:
-#      on `pull_request`, the workflow YAML that grants the approval is itself
-#      PR-controlled, so a PR could otherwise edit this file to rubber-stamp
-#      itself. Withholding approval on CI changes closes that self-approval loop
-#      -- including for the PR you are reading right now.
-#   4. Fork PRs                   -> GITHUB_TOKEN is read-only on forks, so no
-#      approval is possible. Documented rather than silently swallowed.
-# When approval is withheld or later invalidated, any earlier automated approval
-# on the PR is DISMISSED, so a stale green never survives a newly-dirty diff.
+#      `codex-approve.yml` refuses to approve (it recomputes that condition from
+#      the API itself, so a PR editing this file cannot escape it). A human must
+#      approve -- including for the PR you are reading right now.
+#   4. Fork PRs                   -> the review is NOT RUN AT ALL and this check
+#      fails with an explanation. Reviewing a fork's diff means handing
+#      PR-controlled content to an agent on the persistent runner where the Codex
+#      login lives; a fork PR gets a human, not a bot.
+#
+# SANDBOX: the reviewer runs with `sandbox_mode=workspace-write` and
+# `network_access=false`, NOT the `danger-full-access` exe-os uses. The agent
+# reads a diff written by someone else, so it must be assumed prompt-injectable;
+# with no network and no writes outside the workspace, an injected agent has no
+# egress channel and cannot modify the runner. It can still read what the runner
+# user can read, and it can still write into its own review text -- so a review
+# body is untrusted output, which is exactly why the gate parses it with a strict
+# envelope contract rather than believing its prose.
 #
 # POSITIVE-EVIDENCE CONTRACT (see .github/codex-review-prompt.txt)
 # A green result requires PROOF that a review actually happened. The reviewer
@@ -158,9 +175,11 @@ jobs:
           fi
           echo "ok=true" >> "$GITHUB_OUTPUT"
 
-      # Approval eligibility is decided from repository/event facts BEFORE the
-      # review runs, so the decision cannot be influenced by the review output.
-      - name: Determine approval eligibility
+      # Decided from repository/event facts BEFORE the review runs, so nothing
+      # here can be influenced by the review output. NOTE: the approval-side
+      # copy of the `.github/` rule lives in `codex-approve.yml` and is the one
+      # that actually binds; the copy here only shapes the PR comment.
+      - name: Determine review/approval eligibility
         if: github.event_name == 'pull_request'
         id: eligibility
         env:
@@ -172,15 +191,18 @@ jobs:
           git fetch origin "$BASE_REF" --depth=200 || true
           CHANGED="$(git diff --name-only "origin/${BASE_REF}"...HEAD || true)"
 
-          eligible=true; why="eligible"
+          eligible=true; why="eligible"; run_review=true
 
-          # 1. Fork PRs get a read-only GITHUB_TOKEN; approval is impossible.
+          # 1. Fork PRs: do not hand PR-controlled content to an agent running on
+          #    the persistent runner that holds the Codex login. Skip the review
+          #    entirely and fail the check with an explanation -- a fork PR gets a
+          #    human reviewer, not a bot.
           if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
-            eligible=false; why="PR is from a fork ($HEAD_REPO); GITHUB_TOKEN is read-only there and cannot approve."
-          # 2. CI-integrity carve-out. On pull_request the workflow file that
-          #    performs the approval is itself PR-controlled, so a PR that edits
-          #    .github/ could otherwise rubber-stamp itself. The review still
-          #    runs and still blocks on findings -- only the approval is withheld.
+            eligible=false; run_review=false
+            why="PR is from a fork ($HEAD_REPO). The automated reviewer is not run on fork content, and GITHUB_TOKEN cannot approve there. A human must review and approve."
+          # 2. CI-integrity carve-out. The review still runs and still blocks on
+          #    findings; only the approval is withheld. `codex-approve.yml`
+          #    enforces this independently -- this copy is for the PR comment.
           elif printf '%s\n' "$CHANGED" | grep -qE '^\.github/'; then
             eligible=false; why="PR modifies .github/ (CI/review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
           # 3. Never approve a PR opened by the same identity that would approve it.
@@ -188,12 +210,15 @@ jobs:
             eligible=false; why="PR was opened by github-actions[bot]; the approving identity must not approve its own PR."
           fi
 
-          echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
-          echo "why=$(printf '%s' "$why" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
-          echo "approval eligible=$eligible ($why)"
+          {
+            echo "eligible=$eligible"
+            echo "run_review=$run_review"
+            echo "why=$(printf '%s' "$why" | tr '\n' ' ')"
+          } >> "$GITHUB_OUTPUT"
+          echo "run_review=$run_review approval_eligible=$eligible ($why)"
 
       - name: Run Codex review
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
@@ -231,7 +256,8 @@ jobs:
           codex exec \
             --skip-git-repo-check \
             -c model="$CODEX_MODEL" \
-            -c sandbox_mode="danger-full-access" \
+            -c sandbox_mode="workspace-write" \
+            -c sandbox_workspace_write.network_access=false \
             --output-last-message "$LAST" \
             - < "$PROMPT" > "$TRANSCRIPT" 2>&1
           rc=$?
@@ -249,7 +275,7 @@ jobs:
       # Never exits non-zero: it records a verdict so the comment still gets
       # posted explaining WHY the gate failed. The gate step enforces it.
       - name: Validate and sanitise review
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         id: validate
         env:
           # Passed as env, not interpolated into the script body: these values
@@ -257,6 +283,7 @@ jobs:
           # must never be able to terminate a shell string.
           ELIGIBLE: ${{ steps.eligibility.outputs.eligible }}
           ELIGIBILITY_WHY: ${{ steps.eligibility.outputs.why }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -uo pipefail
           RC="$(cat "${CODEX_REVIEW_DIR:?}/codex-rc" 2>/dev/null || echo 1)"
@@ -393,6 +420,12 @@ jobs:
           {
             echo "## Codex review"
             echo ""
+            # Machine-readable verdict marker. `codex-approve.yml` reads THIS
+            # line (and only from a comment authored by github-actions[bot]) to
+            # learn what the reviewer concluded. It is the single channel between
+            # the two halves; everything else the approver decides for itself.
+            echo "<!-- codex-review-verdict sha=${PR_HEAD_SHA} gate=${gate} critical=${critical} verdict=${VERDICT:-NONE} -->"
+            echo ""
             if [ "$gate" = "fail" ]; then
               echo "> **:x: Review gate FAILED CLOSED — no valid review was produced.**"
               echo ">"
@@ -406,76 +439,34 @@ jobs:
             fi
             echo ""
             if [ "$approve" = "yes" ]; then
-              echo "**:white_check_mark: Approving this PR automatically.** An automated approval means a"
-              echo "model read this diff against the repo's review rules and found no [P0]/[P1]"
-              echo "issue. It does **not** mean the change is correct, tested, or safe — no human"
-              echo "looked at it. Request a human review anyway for anything high-stakes."
+              echo "**:white_check_mark: Clean review — this PR is eligible for automated approval.**"
+              echo "The approval itself is submitted by the separate \`codex-approve\` workflow,"
+              echo "which re-checks eligibility from base-branch code this PR cannot modify."
+              echo ""
+              echo "An automated approval means a model read this diff against the repo's review"
+              echo "rules and found no [P0]/[P1] issue. It does **not** mean the change is correct,"
+              echo "tested, or safe — no human looked at it. Request a human review anyway for"
+              echo "anything high-stakes."
             elif [ "$gate" = "pass" ] && [ "$critical" = "no" ]; then
-              echo "**:hand: No blocking findings, but automated approval was withheld:**"
+              echo "**:hand: No blocking findings, but automated approval will be withheld:**"
               echo "$ELIGIBILITY_WHY"
               echo ""
               echo "A human approval is required to merge."
             else
-              echo "**:no_entry: Not approving.** A human approval is required to merge."
+              echo "**:no_entry: No automated approval.** A human approval is required to merge."
             fi
             echo ""
             echo "---"
-            echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner. [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. This bot never approves a PR that touches \`.github/\`._"
+            echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner, sandboxed with no network access. [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. Nothing that touches \`.github/\` is ever auto-approved._"
           } > "${CODEX_REVIEW_DIR}/review-body.md"
 
       - name: Post review to PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
         run: |
           gh pr comment "$PR" --body-file "${CODEX_REVIEW_DIR:?}/review-body.md" || true
-
-      # AUTOMATED APPROVAL. Submitted as github-actions[bot] with the built-in
-      # GITHUB_TOKEN; it counts toward the org ruleset's
-      # `required_approving_review_count`, which is the whole point -- a clean PR
-      # stops waiting on a human. `dismiss_stale_reviews_on_push` is on in that
-      # ruleset, so the approval dies on the next push and this job re-earns it.
-      - name: Approve PR (clean review only)
-        if: github.event_name == 'pull_request' && steps.validate.outputs.approve == 'yes'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -uo pipefail
-          # Idempotent: a re-run on the same head SHA must not stack approvals.
-          existing="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
-            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == \"${HEAD_SHA}\")] | length" 2>/dev/null || echo 0)"
-          if [ "${existing:-0}" != "0" ]; then
-            echo "This head SHA is already approved by github-actions[bot]; nothing to do."
-            exit 0
-          fi
-          gh pr review "$PR" --approve --body \
-            "Automated approval: Codex review of this diff produced no [P0]/[P1] findings. This is a code-pattern review, not a correctness or safety guarantee, and no human has looked at this change. Request a human review for anything high-stakes."
-          echo "Approved PR #${PR} at ${HEAD_SHA}."
-
-      # The inverse: if we are NOT approving, make sure no EARLIER automated
-      # approval is still standing. Otherwise a PR that was clean at commit A and
-      # grew a [P0] at commit B could still show a bot approval.
-      - name: Withdraw stale automated approval
-        if: github.event_name == 'pull_request' && steps.validate.outputs.approve != 'yes'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          set -uo pipefail
-          ids="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and .state == "APPROVED") | .id' 2>/dev/null || true)"
-          if [ -z "$ids" ]; then
-            echo "No standing automated approval to withdraw."
-            exit 0
-          fi
-          for id in $ids; do
-            gh api -X PUT "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews/${id}/dismissals" \
-              -f message="Withdrawn: the current head of this PR is not eligible for automated approval (findings present, no valid review, or CI-configuration change). A human approval is required." \
-              -f event="DISMISS" >/dev/null && echo "Dismissed automated approval $id." || echo "::warning::Could not dismiss review $id."
-          done
 
       # BLOCKING GATE. Fail-closed contract:
       #   - preflight failed          -> the job already failed above.
@@ -483,8 +474,19 @@ jobs:
       #                                  positive proof of a review).
       #   - envelope present, [P0]/[P1] markers -> FAIL.
       #   - envelope present, no critical markers -> PASS.
+      # Fork PRs never reach the reviewer (see eligibility step 1). Report the
+      # check red with the reason rather than silently green: "not reviewed" must
+      # never look like "reviewed and clean".
+      - name: Fork PR - automated review not run
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review != 'true'
+        env:
+          WHY: ${{ steps.eligibility.outputs.why }}
+        run: |
+          echo "::error::Automated review was not run: ${WHY}"
+          exit 1
+
       - name: Gate on CRITICAL findings
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         run: |
           set -uo pipefail
           if [ "${{ steps.validate.outputs.gate }}" != "pass" ]; then

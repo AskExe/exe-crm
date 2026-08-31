@@ -1,0 +1,205 @@
+name: Codex Approve
+
+# WHAT THIS IS
+# ------------
+# The half of the automated-review mechanism that is allowed to APPROVE a pull
+# request. It is a separate workflow, triggered by `workflow_run`, for exactly
+# one reason: **a `workflow_run` job always executes the copy of this file on the
+# DEFAULT BRANCH, never the copy in the PR.** The reviewer half
+# (`codex-review.yml`) runs on `pull_request`, so on a same-repo PR it runs the
+# PR's own copy — which means a PR could edit its own review workflow to declare
+# itself clean. If the approval lived there, push access to a branch would be
+# enough to mint an approval and merge with no human involved. So it does not
+# live there.
+#
+# The reviewer has NO approval power at all: it reviews, comments, and blocks on
+# [P0]/[P1]. This workflow — reviewed, merged, base-branch code that a PR cannot
+# modify — decides whether that verdict earns an approval.
+#
+# WHAT THIS WORKFLOW REFUSES TO TRUST
+#   * Which PR the verdict is for: the head SHA comes from the `workflow_run`
+#     event and the PR is resolved from the API by that SHA.
+#   * Whether the PR is eligible: whether it touches `.github/` is recomputed
+#     HERE, from the API's own file list. This is the load-bearing control. A PR
+#     that tampers with `codex-review.yml` to fake a clean verdict must touch
+#     `.github/` to do it, and this workflow — which that PR cannot modify — sees
+#     that and refuses. Tampering therefore buys nothing: the human approval
+#     requirement stays exactly where it was.
+#   * A failed or stale review: `workflow_run.conclusion` must be `success` and
+#     the reviewed SHA must still be the PR's head.
+#
+# It trusts the reviewer for ONE thing: what it concluded about the code. That
+# verdict is carried in a marker line inside the reviewer's own PR comment, which
+# only `github-actions[bot]` can post.
+#
+# WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
+# DOES mean:  a model read this diff against the repo's review rules (loaded from
+#             the base ref) and reported no [P0]/[P1] finding.
+# DOES NOT mean: that the change is correct (the reviewer runs no tests and boots
+#             nothing), that it is safe (a pattern reviewer misses subtle logic
+#             inversions, bad product decisions, migrations that only hurt against
+#             real data, and backdoors written to look ordinary), or that a human
+#             agreed with it (nobody looked).
+# It converts "a human must approve EVERY PR" into "a human must approve the ones
+# the reviewer flagged, plus the ones you judge worth a human". It buys velocity,
+# not assurance. Ask for a human on anything high-stakes anyway.
+#
+# ACTIVATION PREREQUISITES (both are one-time, and neither is a code change):
+#   1. `workflow_run` only ever runs the DEFAULT BRANCH's copy of this file, so
+#      this workflow does nothing until it is merged. That is inherent to the
+#      design and is the point: the approver is always already-reviewed code.
+#   2. The AskExe org currently sets "Allow GitHub Actions to create and approve
+#      pull requests" to OFF, so `GITHUB_TOKEN` approvals are rejected with
+#      "GitHub Actions is not permitted to approve pull requests". An org owner
+#      must either turn that on (Org Settings -> Actions -> General), or provide
+#      a `REVIEW_APPROVER_TOKEN` secret belonging to a dedicated review-bot
+#      account with `pull_requests: write` — this workflow prefers that secret
+#      when it is present and falls back to `GITHUB_TOKEN`. Until one of those
+#      exists, this job runs, decides correctly, and reports that it could not
+#      submit the approval.
+
+on:
+  workflow_run:
+    workflows: ["Codex Review"]
+    types: [completed]
+
+permissions:
+  contents: read
+  # Submit / dismiss reviews and read PR comments.
+  pull-requests: write
+
+concurrency:
+  group: codex-approve-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  approve:
+    name: codex-approve
+    # Only PR-triggered review runs can produce an approvable verdict.
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 10
+    env:
+      # A dedicated review-bot token if the org has one, otherwise the built-in
+      # token. See ACTIVATION PREREQUISITES above.
+      GH_TOKEN: ${{ secrets.REVIEW_APPROVER_TOKEN || secrets.GITHUB_TOKEN }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+    steps:
+      - name: Resolve the pull request from the reviewed SHA
+        id: pr
+        run: |
+          set -uo pipefail
+          # The SHA comes from the EVENT, not from anything the PR produced, so a
+          # tampered reviewer cannot point this workflow at a different PR.
+          num="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+                  -H "Accept: application/vnd.github+json" \
+                  --jq '[.[] | select(.state == "open")] | .[0].number // empty' 2>/dev/null || true)"
+          if [ -z "$num" ]; then
+            echo "No open PR found for ${HEAD_SHA}; nothing to approve or dismiss."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          head_now="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${num}" --jq '.head.sha')"
+          {
+            echo "found=true"
+            echo "number=$num"
+            echo "head_now=$head_now"
+          } >> "$GITHUB_OUTPUT"
+          echo "PR #$num (reviewed ${HEAD_SHA}, current head ${head_now})"
+
+      # THE LOAD-BEARING CONTROLS. All recomputed here, in base-branch code the
+      # PR cannot edit.
+      - name: Decide
+        id: decide
+        if: steps.pr.outputs.found == 'true'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+          HEAD_NOW: ${{ steps.pr.outputs.head_now }}
+        run: |
+          set -uo pipefail
+          decision="approve"; why=""
+          deny() { if [ "$decision" != "deny" ]; then decision="deny"; why="$1"; fi; }
+
+          if [ "$RUN_CONCLUSION" != "success" ]; then
+            deny "the Codex Review run did not succeed (conclusion: ${RUN_CONCLUSION}) — findings, or no valid review was produced."
+          elif [ "$HEAD_NOW" != "$HEAD_SHA" ]; then
+            deny "the PR head moved (${HEAD_SHA} -> ${HEAD_NOW}); this verdict is stale."
+          elif [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            deny "the PR head is a fork (${HEAD_REPO}); a fork PR cannot be auto-approved."
+          fi
+
+          if [ "$decision" != "deny" ]; then
+            # Recomputed from the API, NOT taken from the reviewer: a PR that
+            # edits the reviewer workflow to fake a clean verdict must touch
+            # .github/ to do it, and this check is what catches that.
+            files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --paginate --jq '.[].filename' || true)"
+            if printf '%s\n' "$files" | grep -qE '^\.github/'; then
+              deny "the PR modifies .github/ (CI / review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
+            fi
+          fi
+
+          if [ "$decision" != "deny" ]; then
+            # The verdict marker is emitted by the reviewer into its own PR
+            # comment. Only github-actions[bot] can author that comment, and the
+            # marker must name the exact SHA this run reviewed.
+            marker="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
+              --jq '.[] | select(.user.login == "github-actions[bot]") | .body' 2>/dev/null \
+              | grep -oE "<!-- codex-review-verdict sha=[0-9a-f]{40} gate=[a-z]+ critical=[a-z]+ verdict=[A-Z]* -->" \
+              | grep "sha=${HEAD_SHA} " | tail -1 || true)"
+            if [ -z "$marker" ]; then
+              deny "no verdict marker from the reviewer was found for ${HEAD_SHA}."
+            else
+              echo "marker: $marker"
+              case "$marker" in
+                *"gate=pass critical=no verdict=CLEAN"*) : ;;
+                *) deny "the reviewer's verdict for this commit is not clean ($marker)." ;;
+              esac
+            fi
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "why=$(printf '%s' "$why" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+          echo "decision=$decision ${why}"
+
+      - name: Approve
+        if: steps.decide.outputs.decision == 'approve'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -uo pipefail
+          # Idempotent: a re-run on the same head SHA must not stack approvals.
+          existing="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
+            --jq "[.[] | select(.state == \"APPROVED\" and .commit_id == \"${HEAD_SHA}\" and (.body | startswith(\"Automated approval:\")))] | length" 2>/dev/null || echo 0)"
+          if [ "${existing:-0}" != "0" ]; then
+            echo "Already approved at ${HEAD_SHA}."
+            exit 0
+          fi
+          if ! gh pr review "$PR" --repo "$GITHUB_REPOSITORY" --approve --body \
+            "Automated approval: the Codex review of this diff produced no [P0]/[P1] findings. This is a code-pattern review, not a proof of correctness or safety, and no human has read this change. Request a human review for anything high-stakes."; then
+            echo "::error::Could not submit the approval. If the message was 'GitHub Actions is not permitted to approve pull requests', an org owner must enable that setting (Org Settings -> Actions -> General) or provide a REVIEW_APPROVER_TOKEN secret. See ACTIVATION PREREQUISITES in this workflow."
+            exit 1
+          fi
+          echo "Approved PR #${PR} at ${HEAD_SHA}."
+
+      # The inverse: never leave a stale automated approval standing on a PR that
+      # is no longer clean, or whose reviewer never finished.
+      - name: Withdraw stale automated approval
+        if: steps.pr.outputs.found == 'true' && steps.decide.outputs.decision != 'approve'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+          WHY: ${{ steps.decide.outputs.why }}
+        run: |
+          set -uo pipefail
+          ids="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
+            --jq '.[] | select(.state == "APPROVED" and (.body | startswith("Automated approval:"))) | .id' 2>/dev/null || true)"
+          if [ -z "$ids" ]; then
+            echo "Nothing to withdraw. Not approving because: ${WHY:-not eligible}"
+            exit 0
+          fi
+          for id in $ids; do
+            gh api -X PUT "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews/${id}/dismissals" \
+              -f message="Automated approval withdrawn: ${WHY:-this PR is no longer eligible for automated approval}. A human approval is required." \
+              -f event="DISMISS" >/dev/null && echo "Dismissed $id." || echo "::warning::Could not dismiss review $id."
+          done
