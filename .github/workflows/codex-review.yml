@@ -57,14 +57,28 @@ name: Codex Review
 #      PR-controlled content to an agent on the persistent runner where the Codex
 #      login lives; a fork PR gets a human, not a bot.
 #
-# SANDBOX: the reviewer runs with `sandbox_mode=workspace-write` and
-# `network_access=false`, NOT the `danger-full-access` exe-os uses. The agent
-# reads a diff written by someone else, so it must be assumed prompt-injectable;
-# with no network and no writes outside the workspace, an injected agent has no
-# egress channel and cannot modify the runner. It can still read what the runner
-# user can read, and it can still write into its own review text -- so a review
-# body is untrusted output, which is exactly why the gate parses it with a strict
-# envelope contract rather than believing its prose.
+# SANDBOX (read this before changing CODEX_SANDBOX_MODE)
+# The reviewer reads a diff written by somebody else, so it must be assumed
+# prompt-injectable. The containment we actually rely on, in order:
+#   1. FORK PRs ARE NEVER REVIEWED. That removes the untrusted-outsider case
+#      entirely, and it is the control that matters most. What remains is people
+#      with push access to this repo -- who can already execute arbitrary code on
+#      this runner through `ci.yml`, so the reviewer is not a new door for them.
+#   2. The gate never believes the review's prose: the envelope contract, the
+#      diagnostics filter, and the [P0]/[P1] grep are what decide, so an injected
+#      agent cannot talk its way to a pass, only to a block.
+#   3. Codex's own sandbox, WHERE THE RUNNER CAN ACTUALLY PROVIDE ONE.
+# On (3): `mac-fast` runners get `workspace-write` with `network_access=false` --
+# no egress, no writes outside the workspace. The Linux runner (build-my) CANNOT:
+# Ubuntu 24.04 sets `kernel.apparmor_restrict_unprivileged_userns=1`, so
+# bubblewrap cannot create a user namespace as the runner user and EVERY sandboxed
+# command fails before it starts ("bwrap: setting up uid map: Permission denied").
+# A sandboxed reviewer there does not fail safe in a useful way -- it produces a
+# review that says "I could not read the diff", which the gate correctly refuses,
+# so the gate is simply always red. Until that host is fixed (an AppArmor profile
+# for bwrap, or relaxing that sysctl -- an ops decision, filed separately), the
+# Linux lane runs `danger-full-access`, exactly as exe-os does today, and leans on
+# controls 1 and 2.
 #
 # POSITIVE-EVIDENCE CONTRACT (see .github/codex-review-prompt.txt)
 # A green result requires PROOF that a review actually happened. The reviewer
@@ -112,6 +126,12 @@ env:
   # current models catalog and emit diagnostics where the review should be.
   CODEX_MIN_VERSION: "0.147.0"
   CODEX_MODEL: "gpt-5.5"
+  # See the SANDBOX note in the header before changing this. `workspace-write`
+  # is the safer setting and is used wherever the runner can actually sandbox;
+  # this repo's Linux runner cannot (bubblewrap is blocked by AppArmor), and a
+  # sandbox that cannot start makes the gate permanently red rather than safe.
+  CODEX_SANDBOX_MODE: "danger-full-access"
+  CODEX_SANDBOX_NETWORK: "true"
   # Hard cap on what is posted to the PR. The review body is the agent's final
   # message only -- a raw upstream API response must never reach a PR comment.
   REVIEW_POST_MAX_BYTES: "16000"
@@ -256,8 +276,8 @@ jobs:
           codex exec \
             --skip-git-repo-check \
             -c model="$CODEX_MODEL" \
-            -c sandbox_mode="workspace-write" \
-            -c sandbox_workspace_write.network_access=false \
+            -c sandbox_mode="$CODEX_SANDBOX_MODE" \
+            -c sandbox_workspace_write.network_access="$CODEX_SANDBOX_NETWORK" \
             --output-last-message "$LAST" \
             - < "$PROMPT" > "$TRANSCRIPT" 2>&1
           rc=$?
@@ -460,7 +480,7 @@ jobs:
             fi
             echo ""
             echo "---"
-            echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner, sandboxed with no network access. [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. Nothing that touches \`.github/\` is ever auto-approved._"
+            echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner (sandbox: ${CODEX_SANDBOX_MODE}). [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. Nothing that touches \`.github/\` is ever auto-approved._"
           } > "${CODEX_REVIEW_DIR}/review-body.md"
 
       - name: Post review to PR
