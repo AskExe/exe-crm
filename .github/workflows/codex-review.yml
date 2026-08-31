@@ -10,14 +10,19 @@ name: Codex Review
 # needs an org secret: the reviewer authenticates with the Codex login already
 # present on the runner host, and the PR comment uses the built-in GITHUB_TOKEN.
 #
-# THIS WORKFLOW CANNOT APPROVE ANYTHING. It reviews, comments, and blocks. The
-# approval is submitted by the separate `codex-approve.yml`, which runs on
-# `workflow_run` and therefore always executes the DEFAULT BRANCH's copy — code
-# a pull request cannot modify. That split is deliberate: this file runs from
-# the PR's own branch, so if the approval lived here, a PR could edit it to
-# rubber-stamp itself and merge with no human involved. Read `codex-approve.yml`
-# for the full trust model; the summary below is the part that concerns this
-# half.
+# THIS WORKFLOW HOLDS NO WRITE TOKEN AT ALL. It reviews and it blocks. The PR
+# comment and the approval are both published by the separate
+# `codex-approve.yml`, which runs on `workflow_run` and therefore always executes
+# the DEFAULT BRANCH's copy — code a pull request cannot modify. That split is
+# deliberate: this file runs from the PR's own branch, so anything it could do,
+# a PR could rewrite it to do. Read `codex-approve.yml` for the full trust model.
+#
+# HONEST LIMIT, stated up front: on a same-repo PR the author can already run
+# arbitrary code on this self-hosted runner (that is what CI is) and can already
+# read repository secrets from their own workflow. This split does not fix that,
+# and nothing in a GitHub Actions setup can. What it fixes is narrower and still
+# worth having: the automated APPROVAL cannot be minted by PR-controlled code, so
+# push access alone never becomes merge-without-a-human.
 #
 # WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
 # -------------------------------------------------
@@ -109,10 +114,14 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
+# NO WRITE POWERS. This job runs code from the PR branch, so it is handed the
+# weakest token GitHub will give it: read-only. It cannot comment, approve, or
+# label. It hands its review to `codex-approve.yml` as a build artifact, and that
+# workflow -- base-branch code -- does the posting and the approving. Adding
+# `pull-requests: write` back here would re-open the hole this split exists to
+# close: a PR could then edit this file to call `gh pr review --approve` itself.
 permissions:
   contents: read
-  # Needed for BOTH the review comment and the approval/dismissal calls.
-  pull-requests: write
 
 concurrency:
   # Dedicated per-PR slot so this gate is never collaterally cancelled by a
@@ -443,10 +452,10 @@ jobs:
           {
             echo "## Codex review"
             echo ""
-            # Machine-readable verdict marker. `codex-approve.yml` reads THIS
-            # line (and only from a comment authored by github-actions[bot]) to
-            # learn what the reviewer concluded. It is the single channel between
-            # the two halves; everything else the approver decides for itself.
+            # Machine-readable marker, kept in the posted body purely so a
+            # human reading the PR can see which commit was reviewed. The
+            # approver does not parse this -- it reads verdict.env from the
+            # artifact and re-derives everything else itself.
             echo "<!-- codex-review-verdict pr=${PR_NUMBER} sha=${PR_HEAD_SHA} gate=${gate} critical=${critical} verdict=${VERDICT:-NONE} -->"
             echo ""
             if [ "$gate" = "fail" ]; then
@@ -483,13 +492,38 @@ jobs:
             echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner (sandbox: ${CODEX_SANDBOX_MODE}). [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. Nothing that touches \`.github/\` is ever auto-approved._"
           } > "${CODEX_REVIEW_DIR}/review-body.md"
 
-      - name: Post review to PR
+      # Hand the review to the approver. This is the ONLY channel between the two
+      # halves, and it carries no authority of its own: `codex-approve.yml`
+      # re-derives the PR, the eligibility, and the run's success for itself, and
+      # redacts this body before posting it.
+      - name: Publish review for the approver
         if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          gh pr comment "$PR" --body-file "${CODEX_REVIEW_DIR:?}/review-body.md" || true
+          set -uo pipefail
+          out="${CODEX_REVIEW_DIR:?}/out"
+          install -d -m 700 "$out"
+          cp "${CODEX_REVIEW_DIR}/review-body.md" "$out/review-body.md"
+          {
+            echo "pr=${PR_NUMBER}"
+            echo "head_sha=${PR_HEAD_SHA}"
+            echo "gate=${{ steps.validate.outputs.gate }}"
+            echo "critical=${{ steps.validate.outputs.critical }}"
+            echo "verdict=${{ steps.validate.outputs.verdict }}"
+          } > "$out/verdict.env"
+          cat "$out/verdict.env"
+          echo "REVIEW_OUT_DIR=$out" >> "$GITHUB_ENV"
+
+      - name: Upload review artifact
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codex-review-verdict
+          path: ${{ env.REVIEW_OUT_DIR }}
+          retention-days: 7
+          if-no-files-found: error
 
       # BLOCKING GATE. Fail-closed contract:
       #   - preflight failed          -> the job already failed above.
@@ -524,6 +558,8 @@ jobs:
           fi
           echo "Review confirmed (verdict: ${{ steps.validate.outputs.verdict }}). No [P0]/[P1] findings - review gate passed."
 
+      # Runs last on purpose: the artifact upload above reads from this
+      # directory, so nothing may remove it earlier.
       - name: Clean isolated review workspace
         if: always() && github.event_name == 'pull_request'
         run: |

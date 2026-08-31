@@ -12,9 +12,10 @@ name: Codex Approve
 # enough to mint an approval and merge with no human involved. So it does not
 # live there.
 #
-# The reviewer has NO approval power at all: it reviews, comments, and blocks on
-# [P0]/[P1]. This workflow — reviewed, merged, base-branch code that a PR cannot
-# modify — decides whether that verdict earns an approval.
+# The reviewer holds NO write token at all: it reviews and it blocks, and hands
+# its output over as a build artifact. This workflow — reviewed, merged,
+# base-branch code that a PR cannot modify — is the only half with write powers:
+# it posts the review comment and decides whether the verdict earns an approval.
 #
 # WHAT THIS WORKFLOW REFUSES TO TRUST
 #   * Which PR the verdict is for: the head SHA comes from the `workflow_run`
@@ -32,9 +33,21 @@ name: Codex Approve
 #   * A failed or stale review: `workflow_run.conclusion` must be `success` and
 #     the reviewed SHA must still be the PR's head.
 #
-# It trusts the reviewer for ONE thing: what it concluded about the code. That
-# verdict is carried in a marker line inside the reviewer's own PR comment, which
-# only `github-actions[bot]` can post.
+# It trusts the reviewer for ONE thing: what it concluded about the code, read
+# from the run's `codex-review-verdict` artifact.
+#
+# The review text is REDACTED before it is posted. The reviewer is an agent
+# reading somebody else's diff on a persistent runner, so its output has to be
+# treated as attacker-influenced: a prompt-injected review could try to smuggle
+# credential material out through the comment. Anything token-shaped is replaced
+# before the comment is published. That is a mitigation, not a guarantee — an
+# encoded secret can defeat any pattern list, which is one more reason the review
+# body is never what the gate decides on.
+#
+# HONEST LIMIT: on a same-repo PR the author can already run arbitrary code on the
+# self-hosted runner and read repository secrets from their own workflow. Nothing
+# here changes that. What this design does guarantee is narrower: an automated
+# APPROVAL cannot be minted by PR-controlled code.
 #
 # WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
 # DOES mean:  a model read this diff against the repo's review rules (loaded from
@@ -69,7 +82,9 @@ on:
 
 permissions:
   contents: read
-  # Submit / dismiss reviews and read PR comments.
+  # Download the reviewer run's artifact.
+  actions: read
+  # Post the review comment; submit / dismiss approvals.
   pull-requests: write
 
 concurrency:
@@ -88,6 +103,7 @@ jobs:
       # token. See ACTIVATION PREREQUISITES above.
       GH_TOKEN: ${{ secrets.REVIEW_APPROVER_TOKEN || secrets.GITHUB_TOKEN }}
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
       RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
       HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
     steps:
@@ -124,6 +140,56 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "PR #$num (reviewed ${HEAD_SHA}, current head ${head_now})"
 
+      - name: Download the reviewer's output
+        id: artifact
+        if: steps.pr.outputs.found == 'true'
+        run: |
+          set -uo pipefail
+          dir="${RUNNER_TEMP:?}/codex-verdict-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          install -d -m 700 "$dir"
+          if ! gh run download "${RUN_ID}" --repo "$GITHUB_REPOSITORY" \
+                 --name codex-review-verdict --dir "$dir" >/dev/null 2>&1; then
+            echo "::warning::Run ${RUN_ID} published no codex-review-verdict artifact (the reviewer failed before it could, or the PR was not eligible for review)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "VERDICT_DIR=$dir" >> "$GITHUB_ENV"
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          cat "$dir/verdict.env"
+
+      # Post the review the PR author actually reads. Done HERE, not in the
+      # reviewer, so that PR-controlled code never needs a write token.
+      - name: Post review to the PR
+        if: steps.pr.outputs.found == 'true' && steps.artifact.outputs.ok == 'true'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -uo pipefail
+          src="${VERDICT_DIR:?}/review-body.md"
+          out="${VERDICT_DIR}/review-body.redacted.md"
+          [ -s "$src" ] || { echo "::warning::empty review body; nothing to post."; exit 0; }
+
+          # Credential-shaped redaction. The review is agent output produced while
+          # reading somebody else's diff, so treat it as attacker-influenced. This
+          # is defence in depth, not a proof: an encoded secret defeats any
+          # pattern list, which is why the gate never trusts this text either.
+          sed -E \
+            -e 's/gh[pousr]_[A-Za-z0-9]{16,}/[redacted-token]/g' \
+            -e 's/github_pat_[A-Za-z0-9_]{20,}/[redacted-token]/g' \
+            -e 's/xox[abposr]-[A-Za-z0-9-]{10,}/[redacted-token]/g' \
+            -e 's/AKIA[0-9A-Z]{16}/[redacted-token]/g' \
+            -e 's/sk-[A-Za-z0-9]{20,}/[redacted-token]/g' \
+            -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[redacted-jwt]/g' \
+            -e 's/(Authorization|Bearer|api[_-]?key|secret|password)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1\2[redacted]/Ig' \
+            -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----/[redacted-private-key]/g' \
+            "$src" > "$out"
+
+          if ! cmp -s "$src" "$out"; then
+            echo "::warning::The review body contained credential-shaped text; it was redacted before posting."
+          fi
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$out" || \
+            echo "::warning::Could not post the review comment."
+
       # THE LOAD-BEARING CONTROLS. All recomputed here, in base-branch code the
       # PR cannot edit.
       - name: Decide
@@ -132,6 +198,7 @@ jobs:
         env:
           PR: ${{ steps.pr.outputs.number }}
           HEAD_NOW: ${{ steps.pr.outputs.head_now }}
+          ARTIFACT_OK: ${{ steps.artifact.outputs.ok }}
         run: |
           set -uo pipefail
           decision="approve"; why=""
@@ -155,22 +222,20 @@ jobs:
             fi
           fi
 
+          if [ "$decision" != "deny" ] && [ "$ARTIFACT_OK" != "true" ]; then
+            deny "the Codex Review run published no verdict artifact, so no review can be confirmed."
+          fi
+
           if [ "$decision" != "deny" ]; then
-            # The verdict marker is emitted by the reviewer into its own PR
-            # comment. Only github-actions[bot] can author that comment, and the
-            # marker must name the exact SHA this run reviewed.
-            marker="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
-              --jq '.[] | select(.user.login == "github-actions[bot]") | .body' 2>/dev/null \
-              | grep -oE "<!-- codex-review-verdict pr=[0-9]+ sha=[0-9a-f]{40} gate=[a-z]+ critical=[a-z]+ verdict=[A-Z]* -->" \
-              | grep "pr=${PR} sha=${HEAD_SHA} " | tail -1 || true)"
-            if [ -z "$marker" ]; then
-              deny "no verdict marker from the reviewer was found for PR #${PR} at ${HEAD_SHA}."
-            else
-              echo "marker: $marker"
-              case "$marker" in
-                *"gate=pass critical=no verdict=CLEAN"*) : ;;
-                *) deny "the reviewer's verdict for this commit is not clean ($marker)." ;;
-              esac
+            # The verdict is the ONE thing taken from the reviewer. It must name
+            # this PR and this commit, or it is not about the diff being approved.
+            gate=""; critical=""; verdict=""; pr=""; head_sha=""
+            # shellcheck disable=SC1091
+            . "${VERDICT_DIR:?}/verdict.env"
+            if [ "$pr" != "$PR" ] || [ "$head_sha" != "$HEAD_SHA" ]; then
+              deny "the verdict artifact is for a different target (pr=${pr:-?} sha=${head_sha:-?})."
+            elif [ "$gate" != "pass" ] || [ "$critical" != "no" ] || [ "$verdict" != "CLEAN" ]; then
+              deny "the reviewer's verdict is not clean (gate=${gate:-?} critical=${critical:-?} verdict=${verdict:-?})."
             fi
           fi
 
