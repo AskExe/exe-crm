@@ -223,7 +223,15 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -uo pipefail
+          # This is the LAST step that needs the git credential; the next step
+          # removes it. So the fetch must actually succeed here -- if it silently
+          # failed, CHANGED would come back empty and a PR touching .github/
+          # would look eligible for approval.
           git fetch origin "$BASE_REF" --depth=200 || true
+          if ! git rev-parse --verify --quiet "origin/${BASE_REF}" >/dev/null; then
+            echo "::error::could not fetch origin/${BASE_REF}; refusing to evaluate eligibility against an unknown base."
+            exit 1
+          fi
           CHANGED="$(git diff --name-only "origin/${BASE_REF}"...HEAD || true)"
 
           eligible=true; why="eligible"; run_review=true
@@ -252,13 +260,37 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "run_review=$run_review approval_eligible=$eligible ($why)"
 
+      # actions/checkout persists the job's GITHUB_TOKEN into .git/config as an
+      # http.extraheader so later git commands can authenticate. That credential
+      # must not still be sitting there when an agent starts reading a diff that
+      # somebody else wrote -- on the Linux lane the reviewer runs unsandboxed
+      # (see the SANDBOX note), so a prompt-injected agent could simply read it
+      # out of the config file and use it. Everything that needs the credential
+      # has already run by this point; remove it, and fail the job if it is still
+      # present rather than assuming the unset worked.
+      - name: Drop persisted git credentials before invoking the reviewer
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        run: |
+          set -uo pipefail
+          git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
+          git submodule foreach --recursive 'git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true' 2>/dev/null || true
+          if git config --local --list | grep -qi 'extraheader'; then
+            echo "::error::a persisted git credential is still present in .git/config; refusing to run the reviewer."
+            exit 1
+          fi
+          echo "No persisted git credential remains in .git/config."
+
       - name: Run Codex review
         if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set -uo pipefail
-          git fetch origin "$BASE_REF" --depth=200 || true
+          # Best-effort only: the git credential was removed by the previous step,
+          # so on a private repo this fetch will fail -- and it does not need to
+          # succeed. origin/$BASE_REF was already fetched during the eligibility
+          # step, which is where the base ref is guaranteed to exist.
+          git fetch origin "$BASE_REF" --depth=200 2>/dev/null || true
 
           # Load the review prompt from the TRUSTED BASE REF, not the PR
           # checkout. Otherwise a PR can rewrite its own review instructions to
