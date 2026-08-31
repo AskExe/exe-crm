@@ -207,9 +207,21 @@ jobs:
             fail "Codex is not authenticated on the runner"
           fi
 
-          raw="$(codex --version 2>&1 | head -1)"
-          ver="$(printf '%s' "$raw" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
-          [ -n "$ver" ] || fail "could not parse codex version from: $raw"
+          # Tolerate leading noise. `codex --version` can emit warnings or update
+          # notices BEFORE the version line (npm notices, deprecation warnings,
+          # keyring messages). This used to read line 1 only, so a single benign
+          # warning left `ver` empty and `fail` aborted the step -- turning a
+          # REQUIRED review gate into a run where no review ever happened. Scan
+          # the whole output: prefer a line that looks like codex's own version
+          # line, then fall back to the first version-shaped token anywhere.
+          raw="$(codex --version 2>&1 || true)"
+          ver="$(printf '%s\n' "$raw" \
+            | grep -iE '(^|[^[:alnum:]])codex([^[:alnum:]]|$)|^[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
+            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+          if [ -z "$ver" ]; then
+            ver="$(printf '%s\n' "$raw" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+          fi
+          [ -n "$ver" ] || fail "could not parse codex version from: $(printf '%s' "$raw" | tr '\n' ' ')"
           echo "codex version: $ver (minimum $CODEX_MIN_VERSION)"
           lowest="$(printf '%s\n%s\n' "$ver" "$CODEX_MIN_VERSION" | sort -V | head -1)"
           if [ "$lowest" != "$CODEX_MIN_VERSION" ] && [ "$ver" != "$CODEX_MIN_VERSION" ]; then
@@ -253,7 +265,10 @@ jobs:
           # 2. CI-integrity carve-out. The review still runs and still blocks on
           #    findings; only the approval is withheld. `codex-approve.yml`
           #    enforces this independently -- this copy is for the PR comment.
-          elif printf '%s\n' "$CHANGED" | grep -qE '^\.github/'; then
+          #    Case-insensitive: the macOS runners use a case-insensitive
+          #    filesystem, so `.GitHub/workflows/x.yml` is the SAME file on disk
+          #    and would otherwise slip past a case-sensitive match.
+          elif printf '%s\n' "$CHANGED" | grep -qiE '^\.github/'; then
             eligible=false; why="PR modifies .github/ (CI/review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
           # 2b. Agent-instruction carve-out. Same reasoning as 2, different
           #     location: `codex exec` runs with the PR checkout as its working

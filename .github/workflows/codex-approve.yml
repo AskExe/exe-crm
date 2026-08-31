@@ -199,7 +199,12 @@ jobs:
               deny "could not list the PR's changed files (${files}); the .github/ tamper check cannot be evaluated, so nothing is approved."
             elif [ -z "$(printf '%s' "$files" | tr -d '[:space:]')" ]; then
               deny "the API returned no changed files for this PR, which cannot be true; refusing to approve on an unverifiable file list."
-            elif printf '%s\n' "$files" | grep -qE '^\.github/'; then
+            # Case-insensitive, for the same reason the AGENTS.md check below
+            # is: the runners use a case-insensitive filesystem, so a PR that
+            # spells the path `.GitHub/workflows/codex-approve.yml` still edits
+            # THIS file on disk, while a case-sensitive match would not see it
+            # and the PR could reach automated approval.
+            elif printf '%s\n' "$files" | grep -qiE '^\.github/'; then
               deny "the PR modifies .github/ (CI / review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
             # AGENT-INSTRUCTION FILES ARE REVIEW CONFIGURATION TOO, and they do
             # not live under .github/. The reviewer runs `codex exec` with the PR
