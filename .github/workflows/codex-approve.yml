@@ -284,6 +284,19 @@ jobs:
 
       # The inverse: never leave a stale automated approval standing on a PR that
       # is no longer clean, or whose reviewer never finished.
+      #
+      # SCOPE -- this dismisses exactly two things and nothing else:
+      #   1. an approval for a commit that is no longer the PR head (truly stale), and
+      #   2. the approval for the commit THIS run reviewed, because this run has
+      #      just decided that commit is not approvable.
+      # It must NOT touch a still-valid approval that a DIFFERENT, newer run minted
+      # for the current head. Runs finish out of order -- an older run for commit A
+      # can be cancelled, retried or simply slow and land after a newer run has
+      # already approved commit B. A blanket dismissal lets that late loser revoke
+      # the winner's verdict and leaves a correctly-approved PR blocked until a
+      # rerun or a human. That is a reliability bug, not a safety one, and the fix
+      # must not trade safety for it: case 2 above is what keeps a no-longer-clean
+      # current head from staying approved.
       - name: Withdraw stale automated approval
         if: steps.pr.outputs.found == 'true' && steps.decide.outputs.decision != 'approve'
         env:
@@ -291,8 +304,33 @@ jobs:
           WHY: ${{ steps.decide.outputs.why }}
         run: |
           set -uo pipefail
-          ids="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
-            --jq '.[] | select(.state == "APPROVED" and (.body | startswith("Automated approval:"))) | .id' 2>/dev/null || true)"
+          # Read the head NOW, not the value resolved when this job started. The
+          # whole point of this step is that another run may have moved ahead of us
+          # while we were working, and steps.pr.outputs.head_now predates that.
+          live_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.head.sha' 2>/dev/null || true)"
+          if ! printf '%s' "$live_head" | grep -qE '^[0-9a-f]{40}$'; then
+            # FAIL CLOSED. If the current head cannot be established we cannot tell
+            # a valid approval from a stale one, so we dismiss all of them: a
+            # missing approval costs a rerun, a wrongly-kept one costs the gate.
+            echo "::warning::Could not read the current head of PR #${PR}; dismissing every automated approval (fail closed)."
+            live_head=""
+          fi
+
+          rows="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" --paginate \
+            --jq '.[] | select(.state == "APPROVED" and (.body | startswith("Automated approval:"))) | "\(.id) \(.commit_id)"' 2>/dev/null || true)"
+
+          # The loop runs in a subshell (pipe), so it cannot assign to $ids -- it
+          # PRINTS the survivors on stdout instead and the caller captures them.
+          # Anything explanatory goes to stderr so it stays out of that capture.
+          ids="$(printf '%s\n' "$rows" | while read -r id commit_id; do
+            [ -n "${id:-}" ] || continue
+            if [ -n "$live_head" ] && [ "${commit_id:-}" = "$live_head" ] && [ "${commit_id:-}" != "$HEAD_SHA" ]; then
+              echo "Keeping review ${id}: it approves the current head ${commit_id}, which this run did not review." >&2
+              continue
+            fi
+            printf '%s\n' "$id"
+          done)"
+
           if [ -z "$ids" ]; then
             echo "Nothing to withdraw. Not approving because: ${WHY:-not eligible}"
             exit 0
