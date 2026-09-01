@@ -1,0 +1,682 @@
+name: Codex Review
+
+# WHAT THIS IS
+# ------------
+# Automated PR code review by the Codex CLI, running on our own self-hosted
+# runners. Ported from `exe-os/.github/workflows/codex-review.yml`, with one
+# addition exe-os does not have: a clean review can UNBLOCK the PR by earning a
+# real GitHub approval, so a human no longer has to click approve on every
+# trivial diff. Nothing here talks to GitHub-hosted runners and nothing here
+# needs an org secret: the reviewer authenticates with the Codex login already
+# present on the runner host, and the PR comment uses the built-in GITHUB_TOKEN.
+#
+# THIS WORKFLOW CANNOT APPROVE ANYTHING. It reviews, comments, and blocks. The
+# approval is submitted by the separate `codex-approve.yml`, which runs on
+# `workflow_run` and therefore always executes the DEFAULT BRANCH's copy — code
+# a pull request cannot modify. That split is deliberate: this file runs from
+# the PR's own branch, so if the approval lived here, a PR could edit it to
+# rubber-stamp itself and merge with no human involved.
+#
+# BE PRECISE ABOUT WHAT THAT BUYS. Everything in THIS file is advisory: a PR can
+# rewrite it, including its `permissions:` block and every check below. Only
+# `codex-approve.yml` binds, because only it runs code the PR cannot touch, and
+# it re-derives from the API the one rule that matters (a PR touching `.github/`
+# is never auto-approved).
+#
+# That split is only airtight if the ABILITY to approve is also unavailable to
+# PR-branch code. That is why `codex-approve.yml` asks for an environment-scoped
+# `REVIEW_APPROVER_TOKEN` (environment restricted to the default branch) rather
+# than for the org-wide "Actions may approve pull requests" switch: with the
+# switch on, a PR could add `gh pr review --approve` to its own copy of THIS file
+# and never involve the approver at all. See ACTIVATION PREREQUISITES there. And even that is not a wall around the runner: on a
+# same-repo PR the author can already execute arbitrary code here and read
+# repository secrets from their own workflow. Nothing in a GitHub Actions setup
+# changes that. What this design guarantees is narrower, and it is the thing the
+# founder actually asked for: push access alone never becomes
+# merge-without-a-human.
+#
+# WHAT AN AUTOMATED APPROVAL DOES AND DOES NOT MEAN
+# -------------------------------------------------
+# DOES mean:  a model read the diff of this PR against its base, was given this
+#             repository's review rules (.github/codex-review-prompt.txt, loaded
+#             from the BASE ref so a PR cannot rewrite its own rules), produced a
+#             well-formed review, and reported no [P0]/[P1] finding.
+# DOES NOT mean:
+#   * the change is correct. The reviewer does not run the test suite, does not
+#     boot the app, and cannot observe runtime behaviour. CI is what proves the
+#     code works; this gate only reads it.
+#   * the change is safe. A pattern reviewer catches pattern-shaped defects. It
+#     will miss a subtle logic inversion, a bad product decision, a migration
+#     that is fine in isolation and catastrophic against production data, or an
+#     intentionally hidden backdoor written to look ordinary.
+#   * a human agreed with it. Nobody looked. If the diff is high-stakes -- auth,
+#     crypto, billing, migrations, permissions, anything customer-data-shaped --
+#     ask a human to look ANYWAY. A green check here is not cover for skipping
+#     that, and it should never be cited as if it were sign-off.
+# In short: this converts "a human must click approve on EVERY PR, including
+# typo fixes" into "a human must click approve on the PRs a reviewer flagged,
+# plus the ones you judge worth a human". It buys velocity on the boring
+# majority. It does not buy assurance.
+#
+# WHEN NO APPROVAL IS EARNED (fail-closed by design)
+#   1. Any [P0]/[P1] finding      -> this check FAILS; the approver sees a failed
+#      run and refuses.
+#   2. No valid review produced   -> this check FAILS (missing/malformed
+#      envelope, reviewer crash, upstream diagnostics). "No review" can never
+#      masquerade as "clean review".
+#   3. The PR touches `.github/`  -> the review still runs and still gates, but
+#      `codex-approve.yml` refuses to approve (it recomputes that condition from
+#      the API itself, so a PR editing this file cannot escape it). A human must
+#      approve -- including for the PR you are reading right now.
+#   4. Fork PRs                   -> the review is NOT RUN AT ALL and this check
+#      fails with an explanation. Reviewing a fork's diff means handing
+#      PR-controlled content to an agent on the persistent runner where the Codex
+#      login lives; a fork PR gets a human, not a bot.
+#
+# SANDBOX (read this before changing CODEX_SANDBOX_MODE)
+# The reviewer reads a diff written by somebody else, so it must be assumed
+# prompt-injectable. The containment we actually rely on, in order:
+#   1. FORK PRs ARE NEVER REVIEWED. That removes the untrusted-outsider case
+#      entirely, and it is the control that matters most. What remains is people
+#      with push access to this repo -- who can already execute arbitrary code on
+#      this runner through `ci.yml`, so the reviewer is not a new door for them.
+#   2. The gate never believes the review's prose: the envelope contract, the
+#      diagnostics filter, and the [P0]/[P1] grep are what decide, so an injected
+#      agent cannot talk its way to a pass, only to a block.
+#   3. THE REVIEWER NEVER RUNS IN THE PR CHECKOUT. `codex exec` runs in a
+#      pristine detached checkout of the BASE ref, with the PR's diff handed to
+#      it as a patch file. The Codex CLI auto-loads AGENTS.md /
+#      AGENTS.override.md (and any configured project_doc_fallback_filenames)
+#      from the working directory's project root and MERGES them into the
+#      agent's instructions -- a second instruction channel that pinning the
+#      PROMPT to the base ref does not cover, so a PR editing AGENTS.md could
+#      steer the reviewer into approving that same PR (bug 8eebb070). Running
+#      from the base checkout closes that channel and every other
+#      auto-loaded-file path, known or not.
+#   4. Codex's own sandbox, WHERE THE RUNNER CAN ACTUALLY PROVIDE ONE.
+# On (4): `mac-fast` runners get `workspace-write` with `network_access=false` --
+# no egress, no writes outside the workspace. The Linux runner (build-my) CANNOT:
+# Ubuntu 24.04 sets `kernel.apparmor_restrict_unprivileged_userns=1`, so
+# bubblewrap cannot create a user namespace as the runner user and EVERY sandboxed
+# command fails before it starts ("bwrap: setting up uid map: Permission denied").
+# A sandboxed reviewer there does not fail safe in a useful way -- it produces a
+# review that says "I could not read the diff", which the gate correctly refuses,
+# so the gate is simply always red. Until that host is fixed (an AppArmor profile
+# for bwrap, or relaxing that sysctl -- an ops decision, filed separately), the
+# Linux lane runs `danger-full-access`, exactly as exe-os does today, and leans on
+# controls 1 and 2.
+#
+# POSITIVE-EVIDENCE CONTRACT (see .github/codex-review-prompt.txt)
+# A green result requires PROOF that a review actually happened. The reviewer
+# must emit a machine-readable envelope:
+#     CODEX-REVIEW-BEGIN
+#     ...review body...
+#     CODEX-REVIEW-VERDICT: CLEAN | FINDINGS
+# The gate reads ONLY the agent's final message (codex exec
+# --output-last-message), never the runner transcript. If the envelope is
+# missing, malformed, empty, or contains upstream diagnostics instead of a
+# review, the gate FAILS CLOSED -- an error dump cannot pass as a clean review.
+#
+# MERGE QUEUE SAFETY: if this is made a REQUIRED status check, the context must
+# report on BOTH `pull_request` AND `merge_group` or the merge queue stalls
+# forever. On `merge_group` the job short-circuits to a green pass-through (the
+# PR already passed the gate at PR time) and never approves anything.
+#
+# RUNNER: `[self-hosted, linux, x64]` == build-my-crm-1, whose runner user
+# (`build`) has the Codex CLI installed and logged in. GitHub-hosted runners are
+# never used in this org. Keep the label list LITERAL -- an expression in
+# `runs-on` renders the job unschedulable on self-hosted runners.
+
+on:
+  pull_request:
+    # ready_for_review is required: without it a PR opened as a draft and later
+    # marked ready never gets reviewed, and the gate would report on a stale run
+    # (or not at all).
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+
+# `pull-requests: write` here is for the review COMMENT only; this job never
+# approves anything (see the header). Note what this block is NOT: a security
+# control. On a same-repo PR, GitHub takes the permissions from the PR's OWN copy
+# of this file, so a PR can grant itself anything it likes here. That is exactly
+# why the approval lives in `codex-approve.yml` -- base-branch code a PR cannot
+# rewrite -- and why that workflow re-derives the `.github/` rule from the API
+# instead of believing anything this file says.
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # Dedicated per-PR slot so this gate is never collaterally cancelled by a
+  # sibling workflow. cancel-in-progress drops a superseded run rather than
+  # queueing it behind a commit nobody is waiting on any more.
+  group: codex-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Minimum Codex CLI the runner must have. Older clients cannot decode the
+  # current models catalog and emit diagnostics where the review should be.
+  CODEX_MIN_VERSION: "0.147.0"
+  CODEX_MODEL: "gpt-5.5"
+  # See the SANDBOX note in the header before changing this. `workspace-write`
+  # is the safer setting and is used wherever the runner can actually sandbox;
+  # this repo's Linux runner cannot (bubblewrap is blocked by AppArmor), and a
+  # sandbox that cannot start makes the gate permanently red rather than safe.
+  CODEX_SANDBOX_MODE: "danger-full-access"
+  CODEX_SANDBOX_NETWORK: "true"
+  # Hard cap on what is posted to the PR. The review body is the agent's final
+  # message only -- a raw upstream API response must never reach a PR comment.
+  REVIEW_POST_MAX_BYTES: "16000"
+
+jobs:
+  codex-review:
+    name: codex-review
+    if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 25
+    steps:
+      # merge_group pass-through: the PR-time gate already ran; the merge queue
+      # only needs this context to report green. Keep this FIRST so the job
+      # always reports on merge_group even though the review steps are PR-only.
+      - name: merge_group pass-through
+        if: github.event_name == 'merge_group'
+        run: |
+          echo "merge_group event: the codex review gate already ran at PR time. Green context only."
+          exit 0
+
+      - name: Checkout PR
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      # Several runner services share each physical host. Fixed /tmp names let a
+      # superseded/orphaned review overwrite another PR's verdict. Namespace
+      # every artifact by run attempt before invoking Codex.
+      - name: Prepare isolated review workspace
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          review_dir="${RUNNER_TEMP:?}/codex-review-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          install -d -m 700 "$review_dir"
+          echo "CODEX_REVIEW_DIR=$review_dir" >> "$GITHUB_ENV"
+
+      # Fail-closed preflight. A review gate must not pass when the reviewer
+      # cannot run. This checks LAUNCHABILITY (installed + authed + new enough);
+      # mid-run failures are caught by the envelope validation.
+      - name: Verify Codex reviewer
+        if: github.event_name == 'pull_request'
+        id: preflight
+        run: |
+          set -uo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          command -v codex >/dev/null 2>&1 || fail "codex CLI not found on the runner"
+
+          if codex login status 2>&1 | grep -qi "not logged in"; then
+            fail "Codex is not authenticated on the runner"
+          fi
+
+          # Tolerate leading noise. `codex --version` can emit warnings or update
+          # notices BEFORE the version line (npm notices, deprecation warnings,
+          # keyring messages). This used to read line 1 only, so a single benign
+          # warning left `ver` empty and `fail` aborted the step -- turning a
+          # REQUIRED review gate into a run where no review ever happened. Scan
+          # the whole output: prefer a line that looks like codex's own version
+          # line, then fall back to the first version-shaped token anywhere.
+          raw="$(codex --version 2>&1 || true)"
+          ver="$(printf '%s\n' "$raw" \
+            | grep -iE '(^|[^[:alnum:]])codex([^[:alnum:]]|$)|^[[:space:]]*v?[0-9]+\.[0-9]+\.[0-9]+' \
+            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+          if [ -z "$ver" ]; then
+            ver="$(printf '%s\n' "$raw" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+          fi
+          [ -n "$ver" ] || fail "could not parse codex version from: $(printf '%s' "$raw" | tr '\n' ' ')"
+          echo "codex version: $ver (minimum $CODEX_MIN_VERSION)"
+          lowest="$(printf '%s\n%s\n' "$ver" "$CODEX_MIN_VERSION" | sort -V | head -1)"
+          if [ "$lowest" != "$CODEX_MIN_VERSION" ] && [ "$ver" != "$CODEX_MIN_VERSION" ]; then
+            fail "codex $ver is older than the required $CODEX_MIN_VERSION. Run: npm install -g @openai/codex@latest on the runner."
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      # Decided from repository/event facts BEFORE the review runs, so nothing
+      # here can be influenced by the review output. NOTE: the approval-side
+      # copy of the `.github/` rule lives in `codex-approve.yml` and is the one
+      # that actually binds; the copy here only shapes the PR comment.
+      - name: Determine review/approval eligibility
+        if: github.event_name == 'pull_request'
+        id: eligibility
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -uo pipefail
+          # This is the LAST step that needs the git credential; the next step
+          # removes it. So the fetch must actually succeed here -- if it silently
+          # failed, CHANGED would come back empty and a PR touching .github/
+          # would look eligible for approval.
+          git fetch origin "$BASE_REF" --depth=200 || true
+          if ! git rev-parse --verify --quiet "origin/${BASE_REF}" >/dev/null; then
+            echo "::error::could not fetch origin/${BASE_REF}; refusing to evaluate eligibility against an unknown base."
+            exit 1
+          fi
+          CHANGED="$(git diff --name-only "origin/${BASE_REF}"...HEAD || true)"
+
+          eligible=true; why="eligible"; run_review=true
+
+          # 1. Fork PRs: do not hand PR-controlled content to an agent running on
+          #    the persistent runner that holds the Codex login. Skip the review
+          #    entirely and fail the check with an explanation -- a fork PR gets a
+          #    human reviewer, not a bot.
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            eligible=false; run_review=false
+            why="PR is from a fork ($HEAD_REPO). The automated reviewer is not run on fork content, and GITHUB_TOKEN cannot approve there. A human must review and approve."
+          # 2. CI-integrity carve-out. The review still runs and still blocks on
+          #    findings; only the approval is withheld. `codex-approve.yml`
+          #    enforces this independently -- this copy is for the PR comment.
+          #    Case-insensitive: the macOS runners use a case-insensitive
+          #    filesystem, so `.GitHub/workflows/x.yml` is the SAME file on disk
+          #    and would otherwise slip past a case-sensitive match.
+          elif printf '%s\n' "$CHANGED" | grep -qiE '^\.github/'; then
+            eligible=false; why="PR modifies .github/ (CI/review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
+          # 2b. Agent-instruction carve-out. Same reasoning as 2, different
+          #     location. Primary control: the reviewer now runs in a clean
+          #     BASE-REF checkout, so PR-controlled AGENTS.md / AGENTS.override.md
+          #     / .codex/ are never on disk for Codex to auto-load (bug 8eebb070).
+          #     This carve-out is the second layer: a PR touching those files
+          #     still loses approval eligibility, so a regression of the cwd
+          #     control can never silently re-open the hole. Matched at any
+          #     depth and case-insensitively (macOS runners are case-insensitive).
+          #     `codex-approve.yml` enforces this independently; this copy exists
+          #     so the PR comment tells the truth about eligibility.
+          elif printf '%s\n' "$CHANGED" | grep -qiE '(^|/)AGENTS(\.override)?\.md$|(^|/)\.codex/'; then
+            eligible=false; why="PR modifies agent-instruction files (AGENTS.md, AGENTS.override.md or .codex/), which Codex auto-merges into the reviewer's own instructions from the PR checkout. Automated approval is withheld so a PR cannot steer the review of itself. A human must approve."
+          # 3. Never approve a PR opened by the same identity that would approve it.
+          elif [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
+            eligible=false; why="PR was opened by github-actions[bot]; the approving identity must not approve its own PR."
+          fi
+
+          {
+            echo "eligible=$eligible"
+            echo "run_review=$run_review"
+            echo "why=$(printf '%s' "$why" | tr '\n' ' ')"
+          } >> "$GITHUB_OUTPUT"
+          echo "run_review=$run_review approval_eligible=$eligible ($why)"
+
+      # actions/checkout persists the job's GITHUB_TOKEN into .git/config as an
+      # http.extraheader so later git commands can authenticate. That credential
+      # must not still be sitting there when an agent starts reading a diff that
+      # somebody else wrote -- on the Linux lane the reviewer runs unsandboxed
+      # (see the SANDBOX note), so a prompt-injected agent could simply read it
+      # out of the config file and use it. Everything that needs the credential
+      # has already run by this point; remove it, and fail the job if it is still
+      # present rather than assuming the unset worked.
+      - name: Drop persisted git credentials before invoking the reviewer
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        run: |
+          set -uo pipefail
+          git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true
+          git submodule foreach --recursive 'git config --local --unset-all http.https://github.com/.extraheader 2>/dev/null || true' 2>/dev/null || true
+          if git config --local --list | grep -qi 'extraheader'; then
+            echo "::error::a persisted git credential is still present in .git/config; refusing to run the reviewer."
+            exit 1
+          fi
+          echo "No persisted git credential remains in .git/config."
+
+      - name: Run Codex review
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -uo pipefail
+          # Best-effort only: the git credential was removed by the previous step,
+          # so on a private repo this fetch will fail -- and it does not need to
+          # succeed. origin/$BASE_REF was already fetched during the eligibility
+          # step, which is where the base ref is guaranteed to exist.
+          git fetch origin "$BASE_REF" --depth=200 2>/dev/null || true
+
+          # Load the review prompt from the TRUSTED BASE REF, not the PR
+          # checkout. Otherwise a PR can rewrite its own review instructions to
+          # suppress the security rules or force a CLEAN verdict, making this
+          # gate self-bypassable. Fall back to the PR copy only when the base has
+          # no contract-bearing prompt yet (bootstrap: the PR that introduces the
+          # contract). @@BASE@@ / @@PATCH@@ are substituted below; the reviewer
+          # READS the patch file rather than regenerating the diff itself.
+          PROMPT_SRC=.github/codex-review-prompt.txt
+          BASE_PROMPT="${CODEX_REVIEW_DIR:?}/base-prompt.txt"
+          PROMPT="${CODEX_REVIEW_DIR}/codex-prompt.txt"
+          LAST="${CODEX_REVIEW_DIR}/codex-last.txt"
+          TRANSCRIPT="${CODEX_REVIEW_DIR}/codex-transcript.log"
+          RC_FILE="${CODEX_REVIEW_DIR}/codex-rc"
+          if git show "origin/${BASE_REF}:.github/codex-review-prompt.txt" > "$BASE_PROMPT" 2>/dev/null \
+             && grep -q 'CODEX-REVIEW-VERDICT' "$BASE_PROMPT"; then
+            PROMPT_SRC="$BASE_PROMPT"
+            echo "Review prompt loaded from trusted base ref origin/${BASE_REF}."
+          else
+            echo "::warning::origin/${BASE_REF} has no contract-bearing review prompt; bootstrapping from the PR copy. Expected only for the PR that introduces the contract."
+          fi
+          # THE REVIEWER NEVER RUNS INSIDE THE PR CHECKOUT (bug 8eebb070). The
+          # Codex CLI auto-loads AGENTS.md / AGENTS.override.md (plus any
+          # configured project_doc_fallback_filenames) from the working
+          # directory's project root and MERGES them into the agent's
+          # instructions -- a second, independent instruction channel that
+          # pinning the PROMPT to the base ref does not cover. A PR that edited
+          # AGENTS.md could therefore steer the reviewer into approving that
+          # same PR. So the PR checkout's ONLY job is to produce the patch; the
+          # agent runs in a pristine detached checkout of the trusted base ref,
+          # and the PR's content reaches it only as DATA (the patch file path).
+          BASEWT="${CODEX_REVIEW_DIR}/base-checkout"
+          PATCH="${CODEX_REVIEW_DIR}/pr.patch"
+          git diff "origin/${BASE_REF}...HEAD" > "$PATCH"
+          if [ ! -s "$PATCH" ]; then
+            echo "::error::empty diff against origin/${BASE_REF}; there is nothing to review, so no review (and no approval) can be produced."
+            exit 1
+          fi
+          git worktree add --quiet --detach "$BASEWT" "origin/${BASE_REF}"
+          # FAIL CLOSED on the cwd itself: unless the worktree is EXACTLY a
+          # pristine checkout of the trusted base ref, the agent does not run.
+          base_sha="$(git rev-parse "origin/${BASE_REF}")"
+          if [ "$(git -C "$BASEWT" rev-parse HEAD)" != "$base_sha" ] \
+             || [ -n "$(git -C "$BASEWT" status --porcelain 2>/dev/null)" ]; then
+            echo "::error::the reviewer working tree is not a pristine checkout of origin/${BASE_REF} (${base_sha}); refusing to run the reviewer."
+            exit 1
+          fi
+          sed -e "s|@@BASE@@|origin/${BASE_REF}|g" -e "s|@@PATCH@@|${PATCH}|g" "$PROMPT_SRC" > "$PROMPT"
+
+          # `codex review --base` cannot take a custom [PROMPT] (mutually
+          # exclusive), so it cannot be made to emit the verdict envelope this
+          # gate requires. `codex exec` can, and --output-last-message hands us
+          # the agent's final message with none of the runner transcript.
+          rm -f "$LAST"
+          set +e
+          (
+            # cwd is the BASE-REF checkout, NOT the PR checkout (see above).
+            cd "$BASEWT" || exit 1
+            codex exec \
+              --skip-git-repo-check \
+              -c model="$CODEX_MODEL" \
+              -c sandbox_mode="$CODEX_SANDBOX_MODE" \
+              -c sandbox_workspace_write.network_access="$CODEX_SANDBOX_NETWORK" \
+              --output-last-message "$LAST" \
+              - < "$PROMPT" > "$TRANSCRIPT" 2>&1
+          )
+          rc=$?
+          set -e
+          echo "codex exit code: $rc"
+          echo "$rc" > "$RC_FILE"
+
+          # Transcript goes to the RUN LOG ONLY -- never to a PR comment. Tail it
+          # so a failure is diagnosable without dumping tens of KB of API JSON.
+          echo "----- codex transcript (last 4 KB, run log only) -----"
+          tail -c 4000 "$TRANSCRIPT" || true
+          echo "----- end transcript -----"
+
+      # Validate the positive-evidence envelope and build a sanitised comment.
+      # Never exits non-zero: it records a verdict so the comment still gets
+      # posted explaining WHY the gate failed. The gate step enforces it.
+      - name: Validate and sanitise review
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        id: validate
+        env:
+          # Passed as env, not interpolated into the script body: these values
+          # are derived from PR-controlled metadata (head repo, author login) and
+          # must never be able to terminate a shell string.
+          ELIGIBLE: ${{ steps.eligibility.outputs.eligible }}
+          ELIGIBILITY_WHY: ${{ steps.eligibility.outputs.why }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Bound into the marker so a verdict cannot be read as belonging to a
+          # different PR that happens to share this head commit.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          RC="$(cat "${CODEX_REVIEW_DIR:?}/codex-rc" 2>/dev/null || echo 1)"
+          LAST="${CODEX_REVIEW_DIR}/codex-last.txt"
+          # BODY is the GATING source: the envelope content, verbatim and
+          # uncapped. It is never sanitised -- stripping lines from it could
+          # delete a legitimate [P0]/[P1] finding that happens to quote one of
+          # the diagnostic tokens. POST is the separate, sanitised + capped copy
+          # for the PR comment.
+          BODY="${CODEX_REVIEW_DIR}/review-clean.txt"
+          POST="${CODEX_REVIEW_DIR}/review-post.txt"
+          : > "$BODY"; : > "$POST"
+
+          gate="pass"; reason=""
+          fail_gate() { if [ "$gate" = "pass" ]; then gate="fail"; reason="$1"; fi; }
+
+          BEGIN_RE='^[[:space:]]*CODEX-REVIEW-BEGIN[[:space:]]*$'
+          VERDICT_RE='^[[:space:]]*CODEX-REVIEW-VERDICT:[[:space:]]*(CLEAN|FINDINGS)[[:space:]]*$'
+          # SINGLE SOURCE OF TRUTH for what counts as a finding marker. The
+          # "does this look like a review" check and the "does this block" check
+          # MUST agree, or a body like "Finding: [P1] ..." passes validation,
+          # misses the blocking grep, and a blocking finding goes green. Both are
+          # UNANCHORED over the same tag shape, and CRIT_RE is a strict subset of
+          # PTAG_RE by construction. Err toward blocking.
+          PTAG_RE='\[(P0|P1|P2)\]'
+          CRIT_RE='\[(P0|P1)\]'
+          # LINE-ANCHORED on purpose (with an optional log timestamp). A real
+          # review may legitimately *quote* these strings in a finding, so only a
+          # line that STARTS as machine output counts as diagnostics.
+          DIAG_RE='^[[:space:]]*([0-9TZ:.+-]+[[:space:]]+)?(ERROR|WARN|DEBUG) codex_[a-z_]+::|^[[:space:]]*(failed to refresh available models|stream disconnected before completion|failed to decode models response)|^[[:space:]]*\{?"models":[[:space:]]*\[\{"slug"'
+
+          # ---- Fail-closed chain. Each check requires POSITIVE evidence. ----
+          if [ "$RC" != "0" ]; then
+            fail_gate "codex exited non-zero ($RC) - the reviewer errored out."
+          elif [ ! -s "$LAST" ]; then
+            fail_gate "codex produced no final message - no review was generated."
+          else
+            # The contract says the final message is EXACTLY the envelope.
+            # Enforce it: exactly one BEGIN, exactly one VERDICT, BEGIN first
+            # non-blank line, VERDICT last. Otherwise stray diagnostics or extra
+            # findings could sit outside the extracted window and be ignored.
+            n_begin="$(grep -cE "$BEGIN_RE" "$LAST" || true)"
+            n_verdict="$(grep -cE '^[[:space:]]*CODEX-REVIEW-VERDICT:' "$LAST" || true)"
+            first_line="$(grep -vE '^[[:space:]]*$' "$LAST" | head -1)"
+            last_line="$(grep -vE '^[[:space:]]*$' "$LAST" | tail -1)"
+
+            if [ "$n_begin" -ne 1 ]; then
+              fail_gate "expected exactly one CODEX-REVIEW-BEGIN marker, found $n_begin - this is not a well-formed review."
+            elif [ "$n_verdict" -ne 1 ]; then
+              fail_gate "expected exactly one CODEX-REVIEW-VERDICT line, found $n_verdict - a review cannot be confirmed, so the gate fails closed."
+            elif ! printf '%s\n' "$first_line" | grep -qE "$BEGIN_RE"; then
+              fail_gate "content appears before CODEX-REVIEW-BEGIN - the final message is not exactly the review envelope."
+            elif ! printf '%s\n' "$last_line" | grep -qE "$VERDICT_RE"; then
+              fail_gate "the final message does not end with a valid CODEX-REVIEW-VERDICT: CLEAN|FINDINGS line - a review cannot be confirmed, so the gate fails closed."
+            fi
+          fi
+
+          if [ "$gate" = "pass" ]; then
+            # Envelope is well-formed and is the whole message: everything
+            # strictly between the markers is the review body.
+            awk -v b="$BEGIN_RE" -v v="^[[:space:]]*CODEX-REVIEW-VERDICT:" '
+              $0 ~ b { f=1; next }
+              $0 ~ v { f=0 }
+              f { print }
+            ' "$LAST" > "$BODY"
+
+            # Anchored + single-valued. An unanchored grep also matches prose
+            # mentions of the marker inside a finding, which would emit a
+            # multi-line value and corrupt GITHUB_OUTPUT.
+            VERDICT="$(grep -E "$VERDICT_RE" "$LAST" | tail -1 | grep -oE '(CLEAN|FINDINGS)' | tail -1)"
+            echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+
+            # Structure check 1: the body must have substance.
+            content_bytes="$(grep -vE '^[[:space:]]*$' "$BODY" | wc -c)"
+            echo "review content bytes: $content_bytes"
+            if [ "$content_bytes" -lt 12 ]; then
+              fail_gate "review envelope is present but carries no review content - no review was produced."
+            fi
+
+            # Structure check 2: the body must LOOK like a review -- at least one
+            # severity-tagged finding, or the explicit no-findings sentence the
+            # prompt mandates. This is what stops an error dump wrapped in
+            # envelope markers from passing as a review.
+            if ! grep -qE "$PTAG_RE" "$BODY" \
+               && ! grep -qiE '^[[:space:]]*(-[[:space:]]*)?No issues found\.?[[:space:]]*$' "$BODY"; then
+              fail_gate "review body contains neither a [P0]/[P1]/[P2] finding nor 'No issues found.' - this does not have the shape of a review."
+            fi
+
+            # Structure check 3: no raw machine output inside the envelope.
+            if grep -qE "$DIAG_RE" "$BODY"; then
+              fail_gate "reviewer emitted upstream diagnostics instead of a review (models-catalog / transport error)."
+            fi
+
+            # Consistency: a CLEAN verdict that still carries critical markers is
+            # self-contradictory. Trust the markers and block.
+            if [ "$VERDICT" = "CLEAN" ] && grep -qE "$CRIT_RE" "$BODY"; then
+              fail_gate "reviewer declared CLEAN but the body contains [P0]/[P1] markers - contradictory review."
+            fi
+          fi
+
+          # The blocking decision is made HERE, with CRIT_RE, next to the
+          # validation that uses PTAG_RE. The gate step consumes this boolean and
+          # owns no pattern of its own, so the two definitions cannot drift apart.
+          critical=no
+          if [ -s "$BODY" ] && grep -qE "$CRIT_RE" "$BODY"; then critical=yes; fi
+          echo "critical=$critical" >> "$GITHUB_OUTPUT"
+          echo "critical findings present: $critical"
+
+          # Build the POSTED copy only. $BODY stays verbatim for the gate.
+          grep -vE "$DIAG_RE" "$BODY" > "$POST" 2>/dev/null || : > "$POST"
+
+          # CREDENTIAL REDACTION. The review is agent output produced while
+          # reading somebody else's diff on a persistent runner, so it has to be
+          # treated as attacker-influenced: a prompt-injected review could try to
+          # smuggle credential material out through a PR comment. Anything
+          # token-shaped is replaced before posting. Defence in depth, NOT a
+          # guarantee -- an encoded secret defeats any pattern list, which is one
+          # more reason the gate decides on the envelope contract and never on
+          # the prose. Applied to the POSTED copy only, so redaction can never
+          # delete a [P0]/[P1] marker from the gating body.
+          sed -E \
+            -e 's/gh[pousr]_[A-Za-z0-9]{16,}/[redacted-token]/g' \
+            -e 's/github_pat_[A-Za-z0-9_]{20,}/[redacted-token]/g' \
+            -e 's/xox[abposr]-[A-Za-z0-9-]{10,}/[redacted-token]/g' \
+            -e 's/AKIA[0-9A-Z]{16}/[redacted-token]/g' \
+            -e 's/sk-[A-Za-z0-9]{20,}/[redacted-token]/g' \
+            -e 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/[redacted-jwt]/g' \
+            -e 's/[Bb]earer[[:space:]]+[A-Za-z0-9._~+/=-]{8,}/Bearer [redacted]/g' \
+            -e 's/(Authorization|api[_-]?key|secret|password)([[:space:]]*[:=][[:space:]]*)[^[:space:]]+/\1\2[redacted]/Ig' \
+            -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----/[redacted-private-key]/g' \
+            "$POST" > "$POST.red" && mv "$POST.red" "$POST"
+          if ! cmp -s "$BODY" "$POST"; then
+            echo "posted copy differs from the gating body (diagnostics filtered and/or credential-shaped text redacted)."
+          fi
+          if [ "$(wc -c < "$POST")" -gt "$REVIEW_POST_MAX_BYTES" ]; then
+            head -c "$REVIEW_POST_MAX_BYTES" "$POST" > "$POST.t"
+            printf '\n\n_[truncated at %s bytes - see the workflow run log for the full review]_\n' "$REVIEW_POST_MAX_BYTES" >> "$POST.t"
+            mv "$POST.t" "$POST"
+          fi
+
+          # Collapse to a single line: any newline here corrupts GITHUB_OUTPUT.
+          reason="$(printf '%s' "$reason" | tr '\n' ' ')"
+          echo "gate=$gate" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          echo "gate=$gate reason=$reason"
+
+          # Approve only when the gate passed, no critical findings exist, the
+          # reviewer itself said CLEAN, and the PR is eligible for automated
+          # approval. All four must hold.
+          approve=no
+          if [ "$gate" = "pass" ] && [ "$critical" = "no" ] && [ "$VERDICT" = "CLEAN" ] \
+             && [ "$ELIGIBLE" = "true" ]; then
+            approve=yes
+          fi
+          echo "approve=$approve" >> "$GITHUB_OUTPUT"
+          echo "will approve: $approve"
+
+          {
+            echo "## Codex review"
+            echo ""
+            # Machine-readable verdict marker. `codex-approve.yml` reads THIS
+            # line (and only from a comment authored by github-actions[bot]) to
+            # learn what the reviewer concluded. It is the single channel between
+            # the two halves; everything else the approver decides for itself.
+            echo "<!-- codex-review-verdict pr=${PR_NUMBER} sha=${PR_HEAD_SHA} gate=${gate} critical=${critical} verdict=${VERDICT:-NONE} -->"
+            echo ""
+            if [ "$gate" = "fail" ]; then
+              echo "> **:x: Review gate FAILED CLOSED — no valid review was produced.**"
+              echo ">"
+              echo "> $reason"
+              echo ">"
+              echo "> This is a runner/reviewer problem, not a finding about your code."
+              echo "> Diagnostics are in the workflow run log; they are deliberately not"
+              echo "> posted here. Re-run the job once the reviewer is healthy."
+            else
+              if [ -s "$POST" ]; then cat "$POST"; else echo "_No findings._"; fi
+            fi
+            echo ""
+            if [ "$approve" = "yes" ]; then
+              echo "**:white_check_mark: Clean review — this PR is eligible for automated approval.**"
+              echo "The approval itself is submitted by the separate \`codex-approve\` workflow,"
+              echo "which re-checks eligibility from base-branch code this PR cannot modify."
+              echo ""
+              echo "An automated approval means a model read this diff against the repo's review"
+              echo "rules and found no [P0]/[P1] issue. It does **not** mean the change is correct,"
+              echo "tested, or safe — no human looked at it. Request a human review anyway for"
+              echo "anything high-stakes."
+            elif [ "$gate" = "pass" ] && [ "$critical" = "no" ]; then
+              echo "**:hand: No blocking findings, but automated approval will be withheld:**"
+              echo "$ELIGIBILITY_WHY"
+              echo ""
+              echo "A human approval is required to merge."
+            else
+              echo "**:no_entry: No automated approval.** A human approval is required to merge."
+            fi
+            echo ""
+            echo "---"
+            echo "_Automated review by codex \`$(codex --version 2>/dev/null | head -1)\` on the self-hosted runner (sandbox: ${CODEX_SANDBOX_MODE}). [P0]/[P1] (CRITICAL) findings BLOCK the merge. A missing or malformed review also blocks. Nothing that touches \`.github/\` is ever auto-approved._"
+          } > "${CODEX_REVIEW_DIR}/review-body.md"
+
+      - name: Post review to PR
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --body-file "${CODEX_REVIEW_DIR:?}/review-body.md" || true
+
+      # BLOCKING GATE. Fail-closed contract:
+      #   - preflight failed          -> the job already failed above.
+      #   - no valid review envelope  -> FAIL (a gate must not pass without
+      #                                  positive proof of a review).
+      #   - envelope present, [P0]/[P1] markers -> FAIL.
+      #   - envelope present, no critical markers -> PASS.
+      # Fork PRs never reach the reviewer (see eligibility step 1). Report the
+      # check red with the reason rather than silently green: "not reviewed" must
+      # never look like "reviewed and clean".
+      - name: Fork PR - automated review not run
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review != 'true'
+        env:
+          WHY: ${{ steps.eligibility.outputs.why }}
+        run: |
+          echo "::error::Automated review was not run: ${WHY}"
+          exit 1
+
+      - name: Gate on CRITICAL findings
+        if: github.event_name == 'pull_request' && steps.eligibility.outputs.run_review == 'true'
+        run: |
+          set -uo pipefail
+          if [ "${{ steps.validate.outputs.gate }}" != "pass" ]; then
+            echo "::error::Codex review gate FAILED CLOSED: ${{ steps.validate.outputs.reason }}"
+            exit 1
+          fi
+          # No pattern here on purpose -- the blocking decision comes from the
+          # validate step, which is where the finding-marker patterns are defined.
+          if [ "${{ steps.validate.outputs.critical }}" != "no" ]; then
+            echo "::error::Codex review found [CRITICAL] issue(s) - blocking. See the PR comment."
+            exit 1
+          fi
+          echo "Review confirmed (verdict: ${{ steps.validate.outputs.verdict }}). No [P0]/[P1] findings - review gate passed."
+
+      - name: Clean isolated review workspace
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          case "${CODEX_REVIEW_DIR:-}" in
+            "${RUNNER_TEMP:?}"/codex-review-*) rm -rf -- "$CODEX_REVIEW_DIR"
+              # The base-ref worktree lived inside CODEX_REVIEW_DIR; drop its
+              # stale registration from this checkout if any remains.
+              git worktree prune 2>/dev/null || true ;;
+            *) echo "::error::Refusing to clean unexpected review path"; exit 1 ;;
+          esac
