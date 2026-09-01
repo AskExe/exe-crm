@@ -83,8 +83,18 @@ name: Codex Review
 #   2. The gate never believes the review's prose: the envelope contract, the
 #      diagnostics filter, and the [P0]/[P1] grep are what decide, so an injected
 #      agent cannot talk its way to a pass, only to a block.
-#   3. Codex's own sandbox, WHERE THE RUNNER CAN ACTUALLY PROVIDE ONE.
-# On (3): `mac-fast` runners get `workspace-write` with `network_access=false` --
+#   3. THE REVIEWER NEVER RUNS IN THE PR CHECKOUT. `codex exec` runs in a
+#      pristine detached checkout of the BASE ref, with the PR's diff handed to
+#      it as a patch file. The Codex CLI auto-loads AGENTS.md /
+#      AGENTS.override.md (and any configured project_doc_fallback_filenames)
+#      from the working directory's project root and MERGES them into the
+#      agent's instructions -- a second instruction channel that pinning the
+#      PROMPT to the base ref does not cover, so a PR editing AGENTS.md could
+#      steer the reviewer into approving that same PR (bug 8eebb070). Running
+#      from the base checkout closes that channel and every other
+#      auto-loaded-file path, known or not.
+#   4. Codex's own sandbox, WHERE THE RUNNER CAN ACTUALLY PROVIDE ONE.
+# On (4): `mac-fast` runners get `workspace-write` with `network_access=false` --
 # no egress, no writes outside the workspace. The Linux runner (build-my) CANNOT:
 # Ubuntu 24.04 sets `kernel.apparmor_restrict_unprivileged_userns=1`, so
 # bubblewrap cannot create a user namespace as the runner user and EVERY sandboxed
@@ -271,11 +281,12 @@ jobs:
           elif printf '%s\n' "$CHANGED" | grep -qiE '^\.github/'; then
             eligible=false; why="PR modifies .github/ (CI/review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
           # 2b. Agent-instruction carve-out. Same reasoning as 2, different
-          #     location: `codex exec` runs with the PR checkout as its working
-          #     directory and the Codex CLI merges AGENTS.md / AGENTS.override.md
-          #     / .codex/ found there into its instructions -- separately from the
-          #     review prompt, which is pinned to the base ref. A PR that edits
-          #     those can therefore steer the review of itself. Matched at any
+          #     location. Primary control: the reviewer now runs in a clean
+          #     BASE-REF checkout, so PR-controlled AGENTS.md / AGENTS.override.md
+          #     / .codex/ are never on disk for Codex to auto-load (bug 8eebb070).
+          #     This carve-out is the second layer: a PR touching those files
+          #     still loses approval eligibility, so a regression of the cwd
+          #     control can never silently re-open the hole. Matched at any
           #     depth and case-insensitively (macOS runners are case-insensitive).
           #     `codex-approve.yml` enforces this independently; this copy exists
           #     so the PR comment tells the truth about eligibility.
@@ -330,8 +341,8 @@ jobs:
           # suppress the security rules or force a CLEAN verdict, making this
           # gate self-bypassable. Fall back to the PR copy only when the base has
           # no contract-bearing prompt yet (bootstrap: the PR that introduces the
-          # contract). @@BASE@@ is the diff base; the reviewer runs the diff
-          # itself so it can pull file context.
+          # contract). @@BASE@@ / @@PATCH@@ are substituted below; the reviewer
+          # READS the patch file rather than regenerating the diff itself.
           PROMPT_SRC=.github/codex-review-prompt.txt
           BASE_PROMPT="${CODEX_REVIEW_DIR:?}/base-prompt.txt"
           PROMPT="${CODEX_REVIEW_DIR}/codex-prompt.txt"
@@ -345,7 +356,33 @@ jobs:
           else
             echo "::warning::origin/${BASE_REF} has no contract-bearing review prompt; bootstrapping from the PR copy. Expected only for the PR that introduces the contract."
           fi
-          sed "s|@@BASE@@|origin/${BASE_REF}|g" "$PROMPT_SRC" > "$PROMPT"
+          # THE REVIEWER NEVER RUNS INSIDE THE PR CHECKOUT (bug 8eebb070). The
+          # Codex CLI auto-loads AGENTS.md / AGENTS.override.md (plus any
+          # configured project_doc_fallback_filenames) from the working
+          # directory's project root and MERGES them into the agent's
+          # instructions -- a second, independent instruction channel that
+          # pinning the PROMPT to the base ref does not cover. A PR that edited
+          # AGENTS.md could therefore steer the reviewer into approving that
+          # same PR. So the PR checkout's ONLY job is to produce the patch; the
+          # agent runs in a pristine detached checkout of the trusted base ref,
+          # and the PR's content reaches it only as DATA (the patch file path).
+          BASEWT="${CODEX_REVIEW_DIR}/base-checkout"
+          PATCH="${CODEX_REVIEW_DIR}/pr.patch"
+          git diff "origin/${BASE_REF}...HEAD" > "$PATCH"
+          if [ ! -s "$PATCH" ]; then
+            echo "::error::empty diff against origin/${BASE_REF}; there is nothing to review, so no review (and no approval) can be produced."
+            exit 1
+          fi
+          git worktree add --quiet --detach "$BASEWT" "origin/${BASE_REF}"
+          # FAIL CLOSED on the cwd itself: unless the worktree is EXACTLY a
+          # pristine checkout of the trusted base ref, the agent does not run.
+          base_sha="$(git rev-parse "origin/${BASE_REF}")"
+          if [ "$(git -C "$BASEWT" rev-parse HEAD)" != "$base_sha" ] \
+             || [ -n "$(git -C "$BASEWT" status --porcelain 2>/dev/null)" ]; then
+            echo "::error::the reviewer working tree is not a pristine checkout of origin/${BASE_REF} (${base_sha}); refusing to run the reviewer."
+            exit 1
+          fi
+          sed -e "s|@@BASE@@|origin/${BASE_REF}|g" -e "s|@@PATCH@@|${PATCH}|g" "$PROMPT_SRC" > "$PROMPT"
 
           # `codex review --base` cannot take a custom [PROMPT] (mutually
           # exclusive), so it cannot be made to emit the verdict envelope this
@@ -353,13 +390,17 @@ jobs:
           # the agent's final message with none of the runner transcript.
           rm -f "$LAST"
           set +e
-          codex exec \
-            --skip-git-repo-check \
-            -c model="$CODEX_MODEL" \
-            -c sandbox_mode="$CODEX_SANDBOX_MODE" \
-            -c sandbox_workspace_write.network_access="$CODEX_SANDBOX_NETWORK" \
-            --output-last-message "$LAST" \
-            - < "$PROMPT" > "$TRANSCRIPT" 2>&1
+          (
+            # cwd is the BASE-REF checkout, NOT the PR checkout (see above).
+            cd "$BASEWT" || exit 1
+            codex exec \
+              --skip-git-repo-check \
+              -c model="$CODEX_MODEL" \
+              -c sandbox_mode="$CODEX_SANDBOX_MODE" \
+              -c sandbox_workspace_write.network_access="$CODEX_SANDBOX_NETWORK" \
+              --output-last-message "$LAST" \
+              - < "$PROMPT" > "$TRANSCRIPT" 2>&1
+          )
           rc=$?
           set -e
           echo "codex exit code: $rc"
@@ -633,6 +674,9 @@ jobs:
         run: |
           set -euo pipefail
           case "${CODEX_REVIEW_DIR:-}" in
-            "${RUNNER_TEMP:?}"/codex-review-*) rm -rf -- "$CODEX_REVIEW_DIR" ;;
+            "${RUNNER_TEMP:?}"/codex-review-*) rm -rf -- "$CODEX_REVIEW_DIR"
+              # The base-ref worktree lived inside CODEX_REVIEW_DIR; drop its
+              # stale registration from this checkout if any remains.
+              git worktree prune 2>/dev/null || true ;;
             *) echo "::error::Refusing to clean unexpected review path"; exit 1 ;;
           esac

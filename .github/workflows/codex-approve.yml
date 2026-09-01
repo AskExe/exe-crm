@@ -207,17 +207,24 @@ jobs:
             elif printf '%s\n' "$files" | grep -qiE '^\.github/'; then
               deny "the PR modifies .github/ (CI / review configuration). Automated approval is withheld so a PR cannot alter the mechanism that approves it. A human must approve."
             # AGENT-INSTRUCTION FILES ARE REVIEW CONFIGURATION TOO, and they do
-            # not live under .github/. The reviewer runs `codex exec` with the PR
-            # CHECKOUT as its working directory, and the Codex CLI silently
-            # merges AGENTS.md / AGENTS.override.md / .codex/ from that working
-            # tree into the agent's instructions. The review PROMPT is pinned to
-            # the base ref, but these files are not part of the prompt -- they
-            # are picked up by the CLI itself, and they arrive from the PR. So a
-            # PR that edits AGENTS.md (routine-looking housekeeping in a repo
-            # that already has one) can instruct the reviewer to report CLEAN
-            # regardless of what the rest of the diff does, and the marker it
-            # emits would be a genuine github-actions[bot] marker for this SHA.
-            # Every other control in this file would pass it.
+            # not live under .github/. The Codex CLI auto-loads and merges
+            # AGENTS.md / AGENTS.override.md (plus any configured
+            # project_doc_fallback_filenames; the shipped default is an EMPTY
+            # list, so those two names are the complete default set) from the
+            # agent's working directory into its instructions -- a channel that
+            # pinning the review PROMPT to the base ref does not cover. The
+            # PRIMARY control is on the reviewer side: `codex exec` now runs in
+            # a pristine BASE-REF checkout with the PR diff handed over as a
+            # patch file, so PR-controlled instruction files are never on disk
+            # for the CLI to load at all (bug 8eebb070). THIS deny-list is the
+            # second, independent layer, and it must stay: if the cwd control
+            # were ever regressed, a PR that edits AGENTS.md (routine-looking
+            # housekeeping in a repo that already has one) could again steer
+            # the reviewer into reporting CLEAN regardless of the rest of the
+            # diff, and the marker it emits would be a genuine
+            # github-actions[bot] marker for this SHA that every other control
+            # in this file would pass. Denying such PRs outright keeps the
+            # human-approval requirement exactly where it was.
             # Matched at ANY depth -- Codex resolves AGENTS.md from the working
             # directory and merges nested ones, so a root-only check misses
             # `sub/AGENTS.md` -- and case-insensitively, because the macOS
