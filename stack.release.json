@@ -42,7 +42,9 @@
         "SERVER_URL",
         "APP_SECRET",
         "PG_DATABASE_URL",
-        "REDIS_URL"
+        "REDIS_URL",
+        "GOTRUE_URL",
+        "GOTRUE_JWT_SECRET"
       ]
     },
     "breakingChanges": [],

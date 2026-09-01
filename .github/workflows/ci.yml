@@ -447,6 +447,16 @@ jobs:
       - name: Supply-chain pin gate (shipped + SDK artifacts)
         run: npx vitest run tests/supply-chain-pins.test.ts
 
+      # SSO env contract (bugs 2e2b5225 / 2355a199). A missing GOTRUE_JWT_SECRET
+      # on the exe-crm container is invisible from inside the image — the CRM
+      # boots healthy and fails closed on every login. The release contract
+      # (stack.release.json requiredEnv) is what stack operators audit, so it
+      # must declare the SSO verification env, and the compose file this repo
+      # ships must pass each declared var through. Cheap (seconds), same
+      # before-the-slow-scanners slot as the pin gate above it.
+      - name: SSO env contract gate (release manifest declares GoTrue env)
+        run: npx vitest run tests/sso-env-contract.test.ts
+
       # Asserts against the workflow the scaffolder ACTUALLY EMITS, not against
       # the template source — the defect lived inside a generated string, so
       # only generated output proves anything.
