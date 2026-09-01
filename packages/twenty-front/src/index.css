@@ -16,6 +16,15 @@ button {
   font-size: 13px;
 }
 
+/* Form controls must inherit the brand font too: record-table cell editor
+   inputs were falling back to the browser's default (Arial), rendering data
+   cells in a non-brand font. Found in the 2026-09-02 brand font audit. */
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 form {
   display: contents;
 }
