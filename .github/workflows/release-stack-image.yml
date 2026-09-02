@@ -400,3 +400,5 @@ jobs:
             echo "Pin the **digest** above in the exe-os stack manifest. The digest is an"
             echo "OUTPUT of this release (bug cc8feeee) — do not pre-commit it here."
           } >> "$GITHUB_STEP_SUMMARY"
+
+# retrigger: stale check association after driver switch
