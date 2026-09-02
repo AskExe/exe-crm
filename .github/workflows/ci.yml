@@ -17,7 +17,7 @@ concurrency:
 jobs:
   lint-typecheck:
     name: Lint & Typecheck
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
+    runs-on: fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]')
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -244,7 +244,7 @@ jobs:
   server-tests-mac:
     name: Server unit tests (mac)
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
+    runs-on: fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]')
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -399,7 +399,7 @@ jobs:
   # never skip a scanner.
   security-scan:
     name: Security scan (secrets, deps, container config)
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
+    runs-on: fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]')
     timeout-minutes: 40
     steps:
       - name: Checkout
