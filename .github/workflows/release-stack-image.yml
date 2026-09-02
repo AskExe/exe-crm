@@ -24,17 +24,23 @@ jobs:
   # ---------------------------------------------------------------------------
   require-green-ci:
     name: Require green CI for commit
-    # Bug e3b77fc8: this job MUST NOT run on the self-hosted pool. It is a pure
-    # api.github.com poll — no checkout, no Docker, no secrets, only
-    # ${{ github.token }} — so it needs none of the self-hosted capabilities,
-    # and exe-crm has ONE self-hosted linux runner. Scheduling the waiter onto
-    # the same single runner as the thing it waits for is a deadlock by
-    # construction: the gate holds the runner, so the CI run it polls for can
-    # never start, so the gate can only ever time out. Running it on a hosted
-    # runner makes the wait free and lets CI actually use the pool.
-    # The `release-image` job below intentionally STAYS self-hosted (it builds
-    # and pushes the image, and needs that capacity).
-    runs-on: ubuntu-latest
+    # Bug e3b77fc8: this waiter must never be able to starve the CI run it
+    # polls. It is a pure api.github.com poll — no checkout, no Docker, no
+    # secrets, only ${{ github.token }}. It used to dodge starvation on
+    # GitHub-hosted ubuntu-latest; that lane is banned by founder directive
+    # 2026-09-02, so it shares a local lane with CI. Two properties make that
+    # safe here:
+    #   - The Linux x64 pool has TWO runners (mac-vm-crm-1 + build-my-crm-1
+    #     until it is retired). A waiter can hold at most one of them, so a CI
+    #     run always has another slot to land on — no circular wait, unlike a
+    #     single-runner lane where the waiter holding THE runner deadlocks the
+    #     CI run it polls for.
+    #   - The waiter is queued BEHIND pending CI jobs, never ahead of an
+    #     already-running one: it is only scheduled once a runner is idle, so
+    #     it cannot preempt work in flight.
+    # The 30-minute poll ceiling below is the hard backstop: even a pathologi-
+    # cal queue can only cost one timed-out release, never a stuck runner.
+    runs-on: [self-hosted, linux]
     steps:
       - name: Gate on green CI of exact SHA
         shell: bash
@@ -60,12 +66,12 @@ jobs:
 
           # bug e3b77fc8: this gate USED to run on the same single self-hosted
           # runner as CI, so any wait here starved the very CI run it polls for.
-          # The short 300s window was a mitigation for that. Now that the gate
-          # runs on a hosted runner (see runs-on above), waiting costs the
-          # self-hosted pool nothing, so the window is restored to 30 minutes:
-          # CI on this pool routinely queues behind other jobs, and timing out
-          # at 5 minutes just forces an operator re-dispatch for a run that was
-          # about to go green anyway. Still overridable per-run.
+          # The short 300s window was a mitigation for that. The waiter now
+          # shares the 2-runner Linux pool with CI (see runs-on above): it can
+          # hold at most one slot, CI always has the other, and the 30-minute
+          # ceiling bounds any pathological queue — timing out at 5 minutes
+          # just forces an operator re-dispatch for a run that was about to go
+          # green anyway. Still overridable per-run.
           GRACE = int(os.environ.get('REQUIRE_GREEN_CI_GRACE_SECS', '1800'))
           deadline = time.time() + GRACE
           while True:
@@ -177,6 +183,10 @@ jobs:
         with:
           context: .
           file: packages/twenty-docker/twenty/Dockerfile
+          # Explicit, not inherited: the x64 lane now runs on the ARM64 ci-linux
+          # VM (mac-vm-crm-1). Without this pin a lane swap would silently
+          # produce a linux/arm64 image for an amd64 customer fleet.
+          platforms: linux/amd64
           push: true
           # PUSH-BEFORE-VERIFY ORDERING (bug cc8feeee). build-push must push to
           # produce a digest, so *something* becomes resolvable before any gate
