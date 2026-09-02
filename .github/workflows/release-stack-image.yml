@@ -147,6 +147,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ env.GHCR_TOKEN }}
 
+      # The build below pins platforms: linux/amd64, so its RUN steps (yarn
+      # install, the twenty build) may execute cross-arch on an arm64 host —
+      # the x64 lane now runs on mac-vm-crm-1 in the ci-linux VM. Binfmt MUST
+      # be guaranteed by the workflow, not inherited from the host: an
+      # unconfigured host would fail mid-RUN before any verification gate
+      # could fire. Same fix as AskExe/exe-os#1026.
+      - name: Set up QEMU (amd64 binfmt for cross-arch builds)
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: amd64
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
