@@ -40,6 +40,10 @@ jobs:
     # that on GitHub-hosted ubuntu-latest; that lane is banned by founder
     # directive 2026-09-02, so the macOS mac-fast runner (a different physical
     # host from the monitored Linux lane) is the least-correlated local lane.
+    # ACCEPTED RESIDUAL RISK: with no GitHub-hosted lane left, an outage of the
+    # mac-fast host itself stalls this alerter exactly like the outages it
+    # watches. No uncorrelated lane exists anymore; the 15-minute cron plus the
+    # Stuck-release issue trail make the stall visible as a missing heartbeat.
     runs-on: [self-hosted, macOS, ARM64, mac-fast]
     timeout-minutes: 10
     steps:
