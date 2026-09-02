@@ -62,7 +62,10 @@ jobs:
 
   brand-drift:
     name: Brand drift check
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    # Dependabot branches used to get ubuntu-latest here; GitHub-hosted runners
+    # are banned by founder directive 2026-09-02, so every actor gets the same
+    # local Linux lane (mac-vm-crm-1 in the ci-linux VM).
+    runs-on: fromJSON('["self-hosted", "linux", "x64"]')
     # The scan itself takes ~2s, but `timeout-minutes` covers the WHOLE job —
     # including the self-hosted runner's `ci-slot-acquire.sh` job-started hook,
     # which blocks in "Set up runner" until a slot frees on the shared x64 box.
@@ -172,7 +175,10 @@ jobs:
   server-tests:
     name: Server unit tests
     if: github.event_name == 'push'
-    runs-on: ${{ github.actor == 'dependabot[bot]' && 'ubuntu-latest' || fromJSON('["self-hosted", "linux", "x64"]') }}
+    # Dependabot branches used to get ubuntu-latest here; GitHub-hosted runners
+    # are banned by founder directive 2026-09-02, so every actor gets the same
+    # local Linux lane (mac-vm-crm-1 in the ci-linux VM).
+    runs-on: fromJSON('["self-hosted", "linux", "x64"]')
     timeout-minutes: 40
     steps:
       - name: Checkout

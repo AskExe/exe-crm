@@ -34,10 +34,13 @@ permissions:
 
 jobs:
   release-run-health:
-    runs-on: ubuntu-latest
-    # CRITICAL: must NOT run on the self-hosted runner. The very failure
-    # this detects is "no self-hosted runner is available" — an alerter
-    # queued behind the same broken resource cannot report on it.
+    # CRITICAL: must NOT run on the Linux CI pool it monitors. The very failure
+    # this detects is "no self-hosted runner is available" — an alerter queued
+    # behind the same broken resource cannot report on it. It used to dodge
+    # that on GitHub-hosted ubuntu-latest; that lane is banned by founder
+    # directive 2026-09-02, so the macOS mac-fast runner (a different physical
+    # host from the monitored Linux lane) is the least-correlated local lane.
+    runs-on: [self-hosted, macOS, ARM64, mac-fast]
     timeout-minutes: 10
     steps:
       - name: Checkout

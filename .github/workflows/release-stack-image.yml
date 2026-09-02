@@ -24,17 +24,18 @@ jobs:
   # ---------------------------------------------------------------------------
   require-green-ci:
     name: Require green CI for commit
-    # Bug e3b77fc8: this job MUST NOT run on the self-hosted pool. It is a pure
-    # api.github.com poll — no checkout, no Docker, no secrets, only
-    # ${{ github.token }} — so it needs none of the self-hosted capabilities,
-    # and exe-crm has ONE self-hosted linux runner. Scheduling the waiter onto
-    # the same single runner as the thing it waits for is a deadlock by
-    # construction: the gate holds the runner, so the CI run it polls for can
-    # never start, so the gate can only ever time out. Running it on a hosted
-    # runner makes the wait free and lets CI actually use the pool.
-    # The `release-image` job below intentionally STAYS self-hosted (it builds
-    # and pushes the image, and needs that capacity).
-    runs-on: ubuntu-latest
+    # Bug e3b77fc8: this job MUST NOT run on the Linux CI pool it polls. It is a
+    # pure api.github.com poll — no checkout, no Docker, no secrets, only
+    # ${{ github.token }} — so it needs none of the Linux lane's capabilities,
+    # and scheduling the waiter onto the same runners as the CI run it waits
+    # for is a deadlock by construction: the gate holds the runner, so the CI
+    # run it polls for can never start, so the gate can only ever time out. It
+    # used to dodge this on GitHub-hosted ubuntu-latest; that lane is banned by
+    # founder directive 2026-09-02, so the gate moved to the macOS mac-fast
+    # runner — a different physical host from the Linux pool, so the wait stays
+    # free and CI keeps its runners. The `release-image` job below intentionally
+    # STAYS on the Linux lane (it builds and pushes the image).
+    runs-on: [self-hosted, macOS, ARM64, mac-fast]
     steps:
       - name: Gate on green CI of exact SHA
         shell: bash
@@ -61,11 +62,11 @@ jobs:
           # bug e3b77fc8: this gate USED to run on the same single self-hosted
           # runner as CI, so any wait here starved the very CI run it polls for.
           # The short 300s window was a mitigation for that. Now that the gate
-          # runs on a hosted runner (see runs-on above), waiting costs the
-          # self-hosted pool nothing, so the window is restored to 30 minutes:
-          # CI on this pool routinely queues behind other jobs, and timing out
-          # at 5 minutes just forces an operator re-dispatch for a run that was
-          # about to go green anyway. Still overridable per-run.
+          # runs on the separate macOS mac-fast host (see runs-on above), waiting
+          # costs the Linux pool nothing, so the window is restored to 30
+          # minutes: CI on this pool routinely queues behind other jobs, and
+          # timing out at 5 minutes just forces an operator re-dispatch for a
+          # run that was about to go green anyway. Still overridable per-run.
           GRACE = int(os.environ.get('REQUIRE_GREEN_CI_GRACE_SECS', '1800'))
           deadline = time.time() + GRACE
           while True:
@@ -177,6 +178,10 @@ jobs:
         with:
           context: .
           file: packages/twenty-docker/twenty/Dockerfile
+          # Explicit, not inherited: the x64 lane now runs on the ARM64 ci-linux
+          # VM (mac-vm-crm-1). Without this pin a lane swap would silently
+          # produce a linux/arm64 image for an amd64 customer fleet.
+          platforms: linux/amd64
           push: true
           # PUSH-BEFORE-VERIFY ORDERING (bug cc8feeee). build-push must push to
           # produce a digest, so *something* becomes resolvable before any gate
