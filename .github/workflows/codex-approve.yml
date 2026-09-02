@@ -110,7 +110,7 @@ jobs:
     name: codex-approve
     # Only PR-triggered review runs can produce an approvable verdict.
     if: github.event.workflow_run.event == 'pull_request'
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, mac-local]
     timeout-minutes: 10
     # Scopes REVIEW_APPROVER_TOKEN to this workflow. With the environment's
     # deployment branch policy set to the default branch only, a workflow running

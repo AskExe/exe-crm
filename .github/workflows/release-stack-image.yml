@@ -110,7 +110,7 @@ jobs:
 
   release-image:
     needs: require-green-ci
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, mac-local]
     env:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || github.token }}
     steps:

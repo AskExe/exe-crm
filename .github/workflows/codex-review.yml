@@ -172,7 +172,7 @@ jobs:
   codex-review:
     name: codex-review
     if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, mac-local]
     timeout-minutes: 25
     steps:
       # merge_group pass-through: the PR-time gate already ran; the merge queue
