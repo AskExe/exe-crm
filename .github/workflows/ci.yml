@@ -24,6 +24,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: CI concurrency workflow guard (bug 4187ed64)
+        # Fails if server-tests' acquire/release steps are removed or
+        # renamed from this file, independent of
+        # scripts/ci-concurrency-slot.sh's own behavior (see bug d859577c
+        # for why that regression class needs its own test).
+        shell: bash
+        run: bash scripts/ci-workflow-slot-guard-test.sh
+
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -143,6 +151,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Acquire heavy-CI concurrency slot
+        # bug 4187ed64: this job's self-hosted [linux, x64] runner is part of
+        # the SAME shared self-hosted fleet exe-os, exe-wiki and exe-erp land
+        # heavy CI on (mac-m4-1 and its ci-linux Lima VM), with nothing
+        # arbitrating between repos. Measured: loadavg 110 (then 102), 19
+        # concurrent workers across four repos' CI running simultaneously,
+        # which showed up here as #158 failing with "runner lost
+        # communication with the server" and no failed step recorded —
+        # external termination, not a code failure.
+        #
+        # Skipped for dependabot (ubuntu-latest, GitHub-hosted — no shared
+        # host to contend for). scripts/ci-concurrency-slot.sh and
+        # scripts/ci-portable.sh are verbatim copies of AskExe/exe-os's (same
+        # registry, same token-based release + TTL + GitHub-API liveness
+        # reclaim; edit in exe-os and re-copy, do not fork).
+        #
+        # No CI_HOST_RESERVED_CORES override here: unlike the mac-fast lanes,
+        # this job is not known to run natively on the box hosting Docker
+        # Desktop + the ci-linux VM, so it uses the same cores/workers
+        # arithmetic as every other host that isn't opting in.
+        if: github.actor != 'dependabot[bot]'
+        env:
+          # Cost of one slot: `--configuration=ci` pins jest to maxWorkers=1.
+          CI_HEAVY_SLOT_WORKERS: "1"
+          EXE_OS_CI_SLOT_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: bash scripts/ci-concurrency-slot.sh
+
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -171,6 +207,11 @@ jobs:
         # twenty-client-sdk) first so they resolve in the jest module context;
         # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
         run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
+
+      - name: Release heavy-CI concurrency slot
+        if: always() && github.actor != 'dependabot[bot]'
+        shell: bash
+        run: bash scripts/ci-concurrency-slot.sh --release
 
   security-scan:
     name: Security scan (secrets, deps, container config)
