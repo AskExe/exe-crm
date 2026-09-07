@@ -1,8 +1,8 @@
 // GENERATED FILE - DO NOT EDIT BY HAND.
 //
 // Source : AskExe/exe-os  packages/exe-theme/tokens.json
-// Branch : fix/exe-theme-reconcile-crm
-// Commit : 47d54b58
+// Branch : main
+// Commit : 5e403f20
 // Resync : run packages/twenty-ui/scripts/sync-exe-theme.sh
 //
 // Generated from the vendored tokens.json next to this file. It exists as a
