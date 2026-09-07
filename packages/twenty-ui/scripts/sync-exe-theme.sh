@@ -17,8 +17,8 @@
 #
 set -euo pipefail
 
-EXE_THEME_REF="${EXE_THEME_REF:-47d54b58}"
-EXE_THEME_BRANCH="fix/exe-theme-reconcile-crm"
+EXE_THEME_REF="${EXE_THEME_REF:-5e403f20}"
+EXE_THEME_BRANCH="main"
 SRC_REPO="AskExe/exe-os"
 
 PACKAGE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
