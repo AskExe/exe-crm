@@ -244,7 +244,7 @@
     "ws@npm:^8.18.3": "8.21.0",
     "browserslist": "^4.28.8"
   },
-  "version": "0.9.51",
+  "version": "0.9.58",
   "nx": {},
   "scripts": {
     "docs:generate": "tsx packages/twenty-docs/scripts/generate-docs-json.ts",
