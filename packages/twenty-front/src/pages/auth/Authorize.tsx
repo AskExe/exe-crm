@@ -17,6 +17,7 @@ import {
   FindApplicationRegistrationByClientIdDocument,
 } from '~/generated-metadata/graphql';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
+import { exeFoundryBold } from 'twenty-ui/theme';
 
 const StyledContainer = styled.div`
   align-items: center;
@@ -37,7 +38,7 @@ const StyledAppsContainer = styled.div`
 
 const StyledText = styled.div`
   color: ${themeCssVariables.font.color.primary};
-  font-family: 'Epilogue', ${themeCssVariables.font.family};
+  font-family: ${exeFoundryBold.font.family.display};
   font-size: ${themeCssVariables.font.size.xl};
   font-weight: 900;
   letter-spacing: 0;

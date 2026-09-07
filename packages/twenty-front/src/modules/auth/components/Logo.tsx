@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { exeFoundryBold } from 'twenty-ui/theme';
 
 const StyledBrandLogo = styled.div`
   align-items: center;
@@ -12,7 +13,7 @@ const StyledBrandLogo = styled.div`
 // oxlint-disable-next-line exe-crm/no-hardcoded-colors
 const StyledExe = styled.span`
   color: #f5d76e;
-  font-family: 'Epilogue', sans-serif;
+  font-family: ${exeFoundryBold.font.family.display};
   font-size: 30px;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -21,7 +22,7 @@ const StyledExe = styled.span`
 // oxlint-disable-next-line exe-crm/no-hardcoded-colors
 const StyledProduct = styled.span`
   color: #e8e6f0;
-  font-family: 'Epilogue', sans-serif;
+  font-family: ${exeFoundryBold.font.family.display};
   font-size: 30px;
   font-weight: 700;
   letter-spacing: 0.15em;
