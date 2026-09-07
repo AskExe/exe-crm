@@ -140,6 +140,64 @@ jobs:
           print('image=' + rel['image'])
           PY2
 
+      # ── Git-tag provenance gate (bug c7702beb, ported from exe-erp 2c9bf186) ──
+      # exe-erp shipped ghcr.io/askexe/exe-erp:v0.3.2/3/4 on 2026-08-31 with no
+      # matching git tag at all: three `workflow_dispatch` runs against `main`
+      # each published stack.release.json's `version` field as a release image
+      # tag, and nothing checked whether that version had ever been tagged in
+      # git. exe-crm has the identical exposure — this workflow also accepts
+      # `workflow_dispatch` (see `on:` above) alongside a tag push, and the
+      # published image tag is likewise DERIVED from stack.release.json's
+      # `version`, never from the git ref. crm's v0.9.55 image tag has no
+      # corresponding `git tag -l` entry for exactly this reason (bug c7702beb).
+      #
+      # This does not overlap the tag-reuse guard in "Publish release tag"
+      # below (bug 2fe79166): that step refuses to move an EXISTING registry
+      # tag onto different bytes. This step refuses to publish AT ALL unless a
+      # real git tag for the declared version exists and points at the exact
+      # commit being built — the missing check that let an untagged commit be
+      # released as a named version in the first place.
+      #
+      # Deliberately NO break-glass variable: an override here is an override
+      # on "is this code released at all," which is the whole question.
+      - name: Assert this version exists as a git tag at this commit (fail closed)
+        env:
+          STACK_VERSION: ${{ steps.release.outputs.stack_version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v${STACK_VERSION}"
+
+          # The API is the authority, not the runner's local refs: actions/checkout
+          # here does not fetch tags, so `git tag -l` would be empty even for a
+          # correctly tagged release.
+          if ! resp="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" --jq '.object.sha, .object.type' 2>/dev/null)"; then
+            echo "::error::stack.release.json declares version ${STACK_VERSION}, but git tag ${tag} does not exist in ${GITHUB_REPOSITORY}."
+            echo "::error::Refusing to publish ghcr.io/askexe/exe-crm:${tag} — it would be a release-named image for a commit nobody tagged (bug c7702beb, ported from exe-erp bug 2c9bf186)."
+            echo "::error::Push the tag at the reviewed commit first: git tag ${tag} <sha> && git push origin ${tag}. That alone triggers this workflow."
+            exit 1
+          fi
+
+          sha="$(printf '%s\n' "$resp" | sed -n '1p')"
+          type="$(printf '%s\n' "$resp" | sed -n '2p')"
+          # Annotated tags point at a tag object; dereference to the commit.
+          if [ "$type" = "tag" ]; then
+            sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${sha}" --jq '.object.sha')"
+          fi
+
+          if [ -z "$sha" ] || [ "$sha" = "null" ]; then
+            echo "::error::git tag ${tag} exists but could not be resolved to a commit. Unverifiable provenance fails closed."
+            exit 1
+          fi
+
+          if [ "$sha" != "${GITHUB_SHA}" ]; then
+            echo "::error::git tag ${tag} points at ${sha}, but this run is building ${GITHUB_SHA}."
+            echo "::error::Publishing would put bytes built from an untagged commit behind a released tag name (bug c7702beb). Refusing."
+            exit 1
+          fi
+
+          echo "✓ ${tag} exists in ${GITHUB_REPOSITORY} and points at ${GITHUB_SHA}."
+
       - name: Login to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
