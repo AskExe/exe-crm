@@ -36,7 +36,7 @@ const StyledPageContainer = styled.div`
 
 const StyledSubtitle = styled.p`
   color: ${exeFoundryBold.dark.font.color.secondary};
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 14px;
   font-weight: 400;
   margin: 0 0 32px;

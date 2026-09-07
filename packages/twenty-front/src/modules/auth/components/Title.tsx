@@ -2,6 +2,7 @@ import { styled } from '@linaria/react';
 import React from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { AnimatedEaseIn } from 'twenty-ui/utilities';
+import { exeFoundryBold } from 'twenty-ui/theme';
 
 type TitleProps = React.PropsWithChildren & {
   animate?: boolean;
@@ -10,7 +11,7 @@ type TitleProps = React.PropsWithChildren & {
 
 const StyledTitle = styled.div<Pick<TitleProps, 'noMarginTop'>>`
   color: ${themeCssVariables.font.color.primary};
-  font-family: 'Epilogue', ${themeCssVariables.font.family};
+  font-family: ${exeFoundryBold.font.family.display};
   font-size: ${themeCssVariables.font.size.xxl};
   font-weight: 900;
   letter-spacing: 0;

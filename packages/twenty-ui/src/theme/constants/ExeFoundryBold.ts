@@ -6,26 +6,28 @@
 // color(display-p3 ...) where needed; keep hex as the source of truth for parity
 // with the rest of Exe's surfaces (landing, desktop, wiki).
 
+import { EXE_THEME_SHARED } from './exeThemeShared';
+
 export const exeFoundryBold = {
   // ─── Brand primitives ──────────────────────────────────────────────
   brand: {
-    gold: '#F5D76E',        // Exe Gold — accent, CTA, focus
-    goldHover: '#FADF85',   // +6% lightness for hover
-    goldActive: '#E6C54F',  // −6% for active / pressed
-    void: '#0F0E1A',        // canvas (dark)
-    stratum: '#1A1832',     // card fill (dark)
+    gold: EXE_THEME_SHARED.accent.base,        // Exe Gold — accent, CTA, focus
+    goldHover: EXE_THEME_SHARED.accent.hover,   // +6% lightness for hover
+    goldActive: EXE_THEME_SHARED.accent.active, // −6% for active / pressed
+    void: EXE_THEME_SHARED.background.primary,  // canvas (dark)
+    stratum: EXE_THEME_SHARED.background.tertiary, // card fill (dark)
     aura: '#6B4C9A',        // purple glow — info / highlight / chart
-    bone: '#F0EDE8',        // primary text (dark mode)
-    ash: '#A09CAF',         // secondary text (dark mode)
+    bone: EXE_THEME_SHARED.text.primary,        // primary text (dark mode)
+    ash: EXE_THEME_SHARED.text.muted,           // secondary text (dark mode)
   },
 
   // ─── Dark mode ─────────────────────────────────────────────────────
   dark: {
     background: {
       noisy: '#0F0E1A',           // full-bleed noise textures use void
-      primary: '#0F0E1A',         // canvas
-      secondary: '#15142A',       // subtle elevation (hover bands, rails)
-      tertiary: '#1A1832',        // cards, sheet surfaces
+      primary: EXE_THEME_SHARED.background.primary,     // canvas
+      secondary: EXE_THEME_SHARED.background.secondary, // subtle elevation (hover bands, rails)
+      tertiary: EXE_THEME_SHARED.background.tertiary,   // cards, sheet surfaces
       quaternary: '#221F3E',      // card hover, popovers
       invertedPrimary: '#F0EDE8', // inverted surface (rare — light-on-dark badges)
       invertedSecondary: '#E8E4DC',
@@ -53,13 +55,13 @@ export const exeFoundryBold = {
 
     font: {
       color: {
-        primary: '#F0EDE8',     // body, headings
-        secondary: '#A09CAF',   // meta, labels
+        primary: EXE_THEME_SHARED.text.primary,     // body, headings
+        secondary: EXE_THEME_SHARED.text.muted,     // meta, labels
         tertiary: '#6F6A80',    // placeholder, muted
         light: '#4A4660',       // disabled
         extraLight: '#2E2B42',  // barely-visible
-        inverted: '#0F0E1A',    // on-gold, on-light surfaces
-        danger: '#F87171',
+        inverted: EXE_THEME_SHARED.text.inverted,   // on-gold, on-light surfaces
+        danger: EXE_THEME_SHARED.status.error,
       },
     },
 
@@ -114,7 +116,7 @@ export const exeFoundryBold = {
 
     // State / feedback
     state: {
-      success: { text: '#86EFAC', background: 'rgba(134, 239, 172, 0.14)', border: 'rgba(134, 239, 172, 0.32)' },
+      success: { text: EXE_THEME_SHARED.status.success, background: 'rgba(134, 239, 172, 0.14)', border: 'rgba(134, 239, 172, 0.32)' },
       warning: { text: '#F59E0B', background: 'rgba(245, 159, 11, 0.14)', border: 'rgba(245, 159, 11, 0.36)' }, // never gold
       error:   { text: '#F87171', background: 'rgba(248, 113, 113, 0.14)', border: 'rgba(248, 113, 113, 0.36)' },
       info:    { text: '#A78BFA', background: 'rgba(107, 76, 154, 0.18)', border: 'rgba(107, 76, 154, 0.40)' },  // Aura family
@@ -250,9 +252,9 @@ export const exeFoundryBold = {
   // Load via Google Fonts or self-host. Preload Epilogue 900 + Manrope 400.
   font: {
     family: {
-      display: '"Epilogue", "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
-      body:    '"Manrope", "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
-      mono:    '"Space Grotesk", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
+      display: EXE_THEME_SHARED.font.display,
+      body:    EXE_THEME_SHARED.font.body,
+      mono:    EXE_THEME_SHARED.font.mono,
     },
     weight: {
       regular: 400,

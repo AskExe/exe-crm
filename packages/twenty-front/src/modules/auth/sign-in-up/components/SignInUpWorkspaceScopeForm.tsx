@@ -48,7 +48,7 @@ const StyledTab = styled.button<{ isActive: boolean }>`
     isActive ? TOKENS.textPrimary : TOKENS.textSecondary};
   cursor: pointer;
   flex: 1;
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 13px;
   font-weight: 400;
   min-height: 44px;
@@ -79,7 +79,7 @@ const StyledFieldGroup = styled.div`
 
 const StyledLabel = styled.label`
   color: ${TOKENS.textSecondary};
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 12px;
   font-weight: 400;
 `;
@@ -90,7 +90,7 @@ const StyledInput = styled.input`
   border-radius: ${TOKENS.radiusMd};
   box-sizing: border-box;
   color: ${TOKENS.textPrimary};
-  font-family: 'Space Grotesk', monospace;
+  font-family: ${exeFoundryBold.font.family.mono};
   font-size: 16px;
   height: 42px;
   outline: none;
@@ -113,7 +113,7 @@ const StyledInput = styled.input`
 
 const StyledHelperText = styled.p`
   color: ${TOKENS.textSecondary};
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 12px;
   font-style: italic;
   margin: 4px 0 0;
@@ -125,7 +125,7 @@ const StyledGoldButton = styled.button`
   border-radius: ${TOKENS.radiusMd};
   color: ${exeFoundryBold.dark.font.color.inverted};
   cursor: pointer;
-  font-family: 'Epilogue', sans-serif;
+  font-family: ${exeFoundryBold.font.family.display};
   font-size: 16px;
   font-weight: 700;
   height: 42px;
@@ -160,7 +160,7 @@ const StyledForgotPassword = styled.button`
   border: none;
   color: ${TOKENS.textSecondary};
   cursor: pointer;
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 13px;
   margin-top: 16px;
   padding: 0;
@@ -190,7 +190,7 @@ const StyledDividerLine = styled.div`
 
 const StyledDividerText = styled.span`
   color: ${TOKENS.textSecondary};
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 12px;
 `;
 
@@ -201,7 +201,7 @@ const StyledSsoLink = styled.a`
   color: ${TOKENS.textPrimary};
   cursor: pointer;
   display: flex;
-  font-family: 'Manrope', sans-serif;
+  font-family: ${exeFoundryBold.font.family.body};
   font-size: 13px;
   font-weight: 500;
   height: 42px;
