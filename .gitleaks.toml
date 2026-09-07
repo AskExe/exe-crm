@@ -19,6 +19,13 @@ useDefault = true
 [allowlist]
 description = "Triaged upstream test fixtures, mock data, demo data, and vendored binaries."
 paths = [
+  # Belt-and-braces for bug d859577c: gitleaks is meant to run BEFORE
+  # `yarn install` (see .github/workflows/ci.yml, security-scan job), so
+  # node_modules should never exist when this scan runs. This exclusion is a
+  # second line of defense so a future reordering regression dilutes the
+  # gate's signal with third-party findings instead of a required check
+  # scanning ~2,300 vendored packages nobody in this repo wrote.
+  '''(^|/)node_modules/''',
   # Vendored Yarn release bundles (binary-ish blobs, generic-api-key false positive)
   '''(^|/)\.yarn/releases/.*\.cjs$''',
   # Unit/integration test specs and helpers
