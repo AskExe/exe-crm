@@ -5068,10 +5068,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@faker-js/faker@npm:^9.8.0":
-  version: 9.8.0
-  resolution: "@faker-js/faker@npm:9.8.0"
-  checksum: 10c0/f5db1125c1ea0115b9142fb4d4cb37cac2da4cd12ed02afb1cabf3b9600bd365bf480386250975a4fb200d77c00e8364dc8f61ac273a9dcdd2f2f42c3b29b0ec
+"@faker-js/faker@npm:^10.6.0":
+  version: 10.6.0
+  resolution: "@faker-js/faker@npm:10.6.0"
+  checksum: 10c0/ee285d597249a019f3a11b6705d1908616ea9e880207ca4f89e6205dbf7e98abd1129f025f5da19484f5e88f556b0629a4363745ff0bbaf1984ebf54cffde6e3
   languageName: node
   linkType: hard
 
@@ -49887,7 +49887,7 @@ __metadata:
     "@envelop/core": "npm:4.0.3"
     "@envelop/on-resolve": "npm:4.1.0"
     "@esbuild-plugins/node-modules-polyfill": "npm:^0.2.2"
-    "@faker-js/faker": "npm:^9.8.0"
+    "@faker-js/faker": "npm:^10.6.0"
     "@file-type/pdf": "npm:^0.2.0"
     "@graphql-tools/schema": "npm:10.0.4"
     "@graphql-tools/utils": "npm:9.2.1"

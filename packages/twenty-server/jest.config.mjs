@@ -9,7 +9,7 @@ const jestConfig = {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./setupTests.ts'],
   transformIgnorePatterns: [
-    '/node_modules/(?!(file-type|@file-type|strtok3|token-types|@borewit|@tokenizer|uint8array-extras|read-next-line)/)',
+    '/node_modules/(?!(file-type|@file-type|strtok3|token-types|@borewit|@tokenizer|uint8array-extras|read-next-line|@faker-js)/)',
   ],
   testRegex: '.*\\.spec\\.ts$',
   transform: {
