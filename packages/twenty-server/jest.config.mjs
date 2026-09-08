@@ -9,7 +9,11 @@ const jestConfig = {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./setupTests.ts'],
   transformIgnorePatterns: [
-    '/node_modules/(?!(file-type|@file-type|strtok3|token-types|@borewit|@tokenizer|uint8array-extras|read-next-line)/)',
+    // @faker-js/faker is ESM-only from v10 onwards (v9 shipped a dual
+    // CJS+ESM build, which is why it never needed to be listed here).
+    // Without it in this allowlist jest fails with
+    // "SyntaxError: Cannot use import statement outside a module".
+    '/node_modules/(?!(file-type|@file-type|strtok3|token-types|@borewit|@tokenizer|uint8array-extras|read-next-line|@faker-js)/)',
   ],
   testRegex: '.*\\.spec\\.ts$',
   transform: {

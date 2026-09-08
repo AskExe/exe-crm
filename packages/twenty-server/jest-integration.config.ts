@@ -37,6 +37,11 @@ const jestConfig: JestConfigWithTsJest = {
   globalTeardown: '<rootDir>/test/integration/utils/teardown-test.ts',
   testTimeout: 20000,
   maxWorkers: 1,
+  // @faker-js/faker is ESM-only from v10 onwards. jest's default
+  // transformIgnorePatterns skips all of node_modules, which makes the
+  // integration specs that import faker fail with
+  // "SyntaxError: Cannot use import statement outside a module".
+  transformIgnorePatterns: ['/node_modules/(?!(@faker-js)/)'],
   transform: {
     '^.+\\.(t|j)s$': [
       '@swc/jest',

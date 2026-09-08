@@ -67,26 +67,26 @@ describe('computeSchemaComponents', () => {
     "description": "Object description",
     "example": {
       "fieldCurrency": {
-        "amountMicros": "284000000",
+        "amountMicros": "704000000",
         "currencyCode": "EUR",
       },
       "fieldEmails": {
         "additionalEmails": null,
-        "primaryEmail": "mina.gutmann9@hotmail.com",
+        "primaryEmail": "eldred.dibbert@hotmail.com",
       },
       "fieldFullName": {
-        "firstName": "Shad",
-        "lastName": "Osinski",
+        "firstName": "Breanna",
+        "lastName": "Wisoky",
       },
       "fieldLinks": {
         "primaryLinkLabel": "",
-        "primaryLinkUrl": "https://narrow-help.net/",
+        "primaryLinkUrl": "https://downright-swath.biz",
         "secondaryLinks": [],
       },
       "fieldMultiSelect": [
         "OPTION_1",
       ],
-      "fieldNumber": 346.2151663160047,
+      "fieldNumber": 419.7753198888915,
       "fieldPhones": {
         "additionalPhones": [],
         "primaryPhoneCallingCode": "+33",
@@ -560,26 +560,26 @@ describe('computeSchemaComponents', () => {
     "description": "Object description",
     "example": {
       "fieldCurrency": {
-        "amountMicros": "253000000",
+        "amountMicros": "851000000",
         "currencyCode": "EUR",
       },
       "fieldEmails": {
         "additionalEmails": null,
-        "primaryEmail": "keegan_donnelly96@hotmail.com",
+        "primaryEmail": "sven_damore@gmail.com",
       },
       "fieldFullName": {
-        "firstName": "Shad",
-        "lastName": "Jones",
+        "firstName": "Yolanda",
+        "lastName": "Schamberger",
       },
       "fieldLinks": {
         "primaryLinkLabel": "",
-        "primaryLinkUrl": "https://unlawful-blowgun.biz",
+        "primaryLinkUrl": "https://rotten-eyebrow.net",
         "secondaryLinks": [],
       },
       "fieldMultiSelect": [
         "OPTION_1",
       ],
-      "fieldNumber": 692.6302930536448,
+      "fieldNumber": 957.9316406203515,
       "fieldPhones": {
         "additionalPhones": [],
         "primaryPhoneCallingCode": "+33",
