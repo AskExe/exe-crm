@@ -156,8 +156,27 @@ concurrency:
 env:
   # Minimum Codex CLI the runner must have. Older clients cannot decode the
   # current models catalog and emit diagnostics where the review should be.
-  CODEX_MIN_VERSION: "0.147.0"
-  CODEX_MODEL: "gpt-5.5"
+  #
+  # PINNED TO 0.153.4, NOT SET LOOSELY: this is the CLI version CODEX_MODEL
+  # below was verified against. A runner on an older CLI can pass this check
+  # while still being unable to reach the pinned model -- that gap is exactly
+  # how this bug hid: the CLI was "new enough" by the old (0.147.0) bar while
+  # CODEX_MODEL 404'd on every single run, and the failure was indistinguishable
+  # from the reviewer finding real problems. Bump this only together with
+  # CODEX_MODEL, and only after verifying the new pairing actually returns a
+  # completion on the target runner.
+  CODEX_MIN_VERSION: "0.153.4"
+  # gpt-5.5 (previous value) 404s for this account: "The model `gpt-5.5` does
+  # not exist or you do not have access to it." That is the root cause of bug
+  # 65a3273f -- codex-review failing on 7 of the last 8 exe-crm PRs. The lane
+  # was never reporting code findings; the reviewer could not start. exe-os hit
+  # the identical failure as bug 781251cf and this pin is the backport of that
+  # fix. gpt-6-astra was verified working at codex-cli 0.153.4 on 2026-09-09:
+  # `codex exec -c model="gpt-6-astra" "reply OK"` returned a completion, while
+  # the same call with gpt-5.5 returned 404. If this ever needs to change again,
+  # verify the new model on the actual runner BEFORE committing -- do not trust
+  # the account's advertised model list, which is exactly what went stale here.
+  CODEX_MODEL: "gpt-6-astra"
   # See the SANDBOX note in the header before changing this. `workspace-write`
   # is the safer setting and is used wherever the runner can actually sandbox;
   # this repo's Linux runner cannot (bubblewrap is blocked by AppArmor), and a
@@ -235,9 +254,51 @@ jobs:
           echo "codex version: $ver (minimum $CODEX_MIN_VERSION)"
           lowest="$(printf '%s\n%s\n' "$ver" "$CODEX_MIN_VERSION" | sort -V | head -1)"
           if [ "$lowest" != "$CODEX_MIN_VERSION" ] && [ "$ver" != "$CODEX_MIN_VERSION" ]; then
-            fail "codex $ver is older than the required $CODEX_MIN_VERSION. Run: npm install -g @openai/codex@latest on the runner."
+            fail "codex $ver is older than the required $CODEX_MIN_VERSION. Older clients cannot decode the models catalog and emit diagnostics instead of a review. Run: npm install -g @openai/codex@latest on the runner."
           fi
           echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      # Fail-closed preflight, part 2 (bug 65a3273f; backport of exe-os bug
+      # 781251cf). The check above proves the CLI is installed, authed, and new
+      # enough -- but that is LAUNCHABILITY, not USABILITY. This bug's actual
+      # failure was a 404 on the pinned model: auth was fine, the CLI was fine,
+      # the version check passed, and yet every run 404'd because the account
+      # cannot reach CODEX_MODEL. That failure looked identical to "the reviewer
+      # found problems" for 7 of the last 8 PRs -- THE SILENCE this step exists
+      # to break. Run one trivial, cheap completion against the exact configured
+      # model BEFORE spending a full review invocation on it, and fail with a
+      # message that names the model and the CLI version, so a dead gate can
+      # never again be mistaken for a gate doing its job.
+      - name: Verify configured model is reachable
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+          # NOTE: `set -uo pipefail` does NOT disable errexit, and GitHub Actions
+          # runs this with `bash -e`. A bare `out="$(...)"` assignment therefore
+          # ABORTS the step the moment codex exits nonzero -- which is precisely
+          # the model-access failure this preflight exists to diagnose, so every
+          # diagnostic below would be dead code in its only real scenario.
+          # Capturing the status via `if` keeps errexit suppressed for this one
+          # command so the diagnostics actually run.
+          if out="$(cd /tmp && codex exec --skip-git-repo-check -c model="$CODEX_MODEL" "reply with the exact text PREFLIGHT-OK and nothing else" 2>&1)"; then
+            rc=0
+          else
+            rc=$?
+          fi
+          if [ $rc -eq 0 ] && printf '%s' "$out" | grep -q 'PREFLIGHT-OK'; then
+            echo "model preflight ok: $CODEX_MODEL is reachable on codex-cli $(codex --version 2>/dev/null | head -1)"
+            exit 0
+          fi
+          version="$(codex --version 2>/dev/null | head -1)"
+          if printf '%s' "$out" | grep -qE 'does not exist or you do not have access to it|model_not_found|404 Not Found'; then
+            echo "::error::MISCONFIGURED GATE, NOT A REVIEW FINDING: model \"$CODEX_MODEL\" is not reachable on codex-cli $version for the runner's authenticated account (upstream: model access/404 error). This is bug 65a3273f's failure mode. Fix by pinning CODEX_MODEL to a model verified working on this runner, not by changing review code."
+          else
+            echo "::error::MISCONFIGURED GATE, NOT A REVIEW FINDING: preflight call to model \"$CODEX_MODEL\" on codex-cli $version failed or returned no completion (exit $rc). This is a reviewer-launchability problem, not a code-review result."
+          fi
+          echo "----- preflight output (run log only) -----"
+          printf '%s\n' "$out" | tail -c 4000
+          echo "----- end preflight output -----"
+          exit 1
 
       # Decided from repository/event facts BEFORE the review runs, so nothing
       # here can be influenced by the review output. NOTE: the approval-side
@@ -459,9 +520,25 @@ jobs:
           # line that STARTS as machine output counts as diagnostics.
           DIAG_RE='^[[:space:]]*([0-9TZ:.+-]+[[:space:]]+)?(ERROR|WARN|DEBUG) codex_[a-z_]+::|^[[:space:]]*(failed to refresh available models|stream disconnected before completion|failed to decode models response)|^[[:space:]]*\{?"models":[[:space:]]*\[\{"slug"'
 
+          # Belt-and-suspenders for bug 65a3273f: the preflight step already
+          # catches a dead CODEX_MODEL before the real review runs, but if the
+          # model becomes unreachable mid-run (revoked between preflight and
+          # here, rate-limited, etc.) the failure must still be distinguishable
+          # from a reviewer that ran and errored on its own. Check the raw
+          # transcript for the same model/access error signature and say so
+          # explicitly, naming the model and CLI version, instead of folding it
+          # into the generic "errored out" reason -- which is the exact wording
+          # that made this bug unreadable for 7 PRs.
+          MODEL_ERR_RE='does not exist or you do not have access to it|model_not_found|404 Not Found'
+          TRANSCRIPT="${CODEX_REVIEW_DIR}/codex-transcript.log"
+
           # ---- Fail-closed chain. Each check requires POSITIVE evidence. ----
           if [ "$RC" != "0" ]; then
-            fail_gate "codex exited non-zero ($RC) - the reviewer errored out."
+            if [ -s "$TRANSCRIPT" ] && grep -qE "$MODEL_ERR_RE" "$TRANSCRIPT"; then
+              fail_gate "MISCONFIGURED GATE, NOT A REVIEW FINDING: model \"$CODEX_MODEL\" became unreachable on codex-cli $(codex --version 2>/dev/null | head -1) mid-run (upstream model access/404 error). This is bug 65a3273f's failure mode, not a code-review result."
+            else
+              fail_gate "codex exited non-zero ($RC) - the reviewer errored out."
+            fi
           elif [ ! -s "$LAST" ]; then
             fail_gate "codex produced no final message - no review was generated."
           else
