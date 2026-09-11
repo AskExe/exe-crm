@@ -42,6 +42,7 @@ services:
 
       APP_SECRET: '${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}'
       EXE_LICENSE_KEY: '${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}'
+      EXE_LICENSE_URL: '${EXE_LICENSE_URL:-https://cloud.askexe.com/auth/activate}'
       EXE_CRM_ADMIN_TOKEN: ${EXE_CRM_ADMIN_TOKEN:-}
       # Trusted-proxy configuration for abuse accounting (bug 29837293). See
       # .env.example — getting these wrong degrades rate limiting, it never
@@ -131,6 +132,7 @@ services:
 
       APP_SECRET: '${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}'
       EXE_LICENSE_KEY: '${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}'
+      EXE_LICENSE_URL: '${EXE_LICENSE_URL:-https://cloud.askexe.com/auth/activate}'
 
       # Google auth — set values in .env to enable
       MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED:-}
@@ -233,9 +235,23 @@ services:
         limits:
           memory: 512m
           cpus: '0.5'
-    command: ['--maxmemory-policy', 'noeviction', '--requirepass', '${REDIS_PASSWORD:?Set REDIS_PASSWORD}']
+    command:
+      [
+        '--maxmemory-policy',
+        'noeviction',
+        '--requirepass',
+        '${REDIS_PASSWORD:?Set REDIS_PASSWORD}',
+      ]
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:?Set REDIS_PASSWORD}', '--no-auth-warning', 'ping']
+      test:
+        [
+          'CMD',
+          'redis-cli',
+          '-a',
+          '${REDIS_PASSWORD:?Set REDIS_PASSWORD}',
+          '--no-auth-warning',
+          'ping',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10

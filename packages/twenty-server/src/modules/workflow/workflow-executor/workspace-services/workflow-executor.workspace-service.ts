@@ -373,12 +373,9 @@ export class WorkflowExecutorWorkspaceService {
   }
 
   private async canBillWorkflowNodeExecution(workspaceId: string) {
-    return (
-      !this.billingService.isBillingEnabled() ||
-      (await this.billingService.canBillMeteredProduct(
-        workspaceId,
-        BillingProductKey.WORKFLOW_NODE_EXECUTION,
-      ))
+    return this.billingService.canBillMeteredProduct(
+      workspaceId,
+      BillingProductKey.WORKFLOW_NODE_EXECUTION,
     );
   }
 

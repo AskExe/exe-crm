@@ -1,4 +1,4 @@
-// Exe installation licenses authorize features; Twenty billing stays disabled.
+// Exe installation licenses authorize features; upstream billing stays disabled.
 import { Injectable } from '@nestjs/common';
 
 import { readExeLicense } from 'src/engine/core-modules/enterprise/services/exe-license-authority';

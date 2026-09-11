@@ -325,8 +325,8 @@ describe('WorkflowExecutorWorkspaceService', () => {
       );
     });
 
-    it('should stop when billing validation fails', async () => {
-      mockBillingService.isBillingEnabled.mockReturnValueOnce(true);
+    it('denies an inactive installation even when upstream billing is disabled', async () => {
+      mockBillingService.isBillingEnabled.mockReturnValueOnce(false);
       mockBillingService.canBillMeteredProduct.mockReturnValueOnce(false);
 
       await service.executeFromSteps({
