@@ -1,6 +1,9 @@
 import { StepStatus } from 'twenty-shared/workflow';
 
-import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import {
+  type WorkflowAction,
+  WorkflowActionType,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { workflowShouldKeepRunning } from 'src/modules/workflow/workflow-executor/utils/workflow-should-keep-running.util';
 
 describe('workflowShouldKeepRunning', () => {
@@ -38,6 +41,39 @@ describe('workflowShouldKeepRunning', () => {
       expect(workflowShouldKeepRunning({ steps, stepInfos })).toBeTruthy();
     });
   });
+
+  it.each([undefined, 'other'])(
+    'ignores an unselected conditional child (selection %s)',
+    (matchingBranchId) => {
+      const steps = [
+        {
+          id: 'condition',
+          type: WorkflowActionType.IF_ELSE,
+          settings: {
+            input: {
+              branches: [
+                { id: 'selected', nextStepIds: ['child'] },
+                { id: 'other', nextStepIds: [] },
+              ],
+            },
+          },
+        } as WorkflowAction,
+        { id: 'child' } as WorkflowAction,
+      ];
+      expect(
+        workflowShouldKeepRunning({
+          steps,
+          stepInfos: {
+            condition: {
+              status: StepStatus.SUCCESS,
+              result: { matchingBranchId },
+            },
+            child: { status: StepStatus.NOT_STARTED },
+          },
+        }),
+      ).toBe(false);
+    },
+  );
 
   describe('should return false', () => {
     it('workflow run only have success steps', () => {
