@@ -87,7 +87,8 @@ Required for Compose/stack boot:
 | `CRM_IMAGE_TAG` | Must match the pinned release, currently `v0.9.51`; do not use `latest`. |
 | `SERVER_URL` | Public origin, e.g. `https://crm.example.com`. |
 | `APP_SECRET` | Session/app secret; generate with `openssl rand -base64 32`. |
-| `EXE_LICENSE_KEY` | Customer license key. |
+| `EXE_LICENSE_KEY` | Environment-only installation key; feature checks verify it through the GoTrue-backed license gateway. The legacy `ENTERPRISE_KEY` alias is also environment-only. |
+| `EXE_LICENSE_URL` | Environment-only HTTPS activation endpoint (default `https://cloud.askexe.com/auth/activate`). Invalid licenses deny features; unavailable authority returns a retryable error. |
 | `PG_DATABASE_PASSWORD` or `PG_DATABASE_URL` | Postgres credentials/connection string. |
 | `REDIS_PASSWORD` or `REDIS_URL` | Redis auth/connection string. |
 | `EXE_BACKUP_KEY` | Required by the backup sidecar; stores encrypted `.dump.gpg` backups. Keep off-VPS too. |

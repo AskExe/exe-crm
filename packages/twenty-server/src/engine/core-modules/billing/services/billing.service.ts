@@ -1,5 +1,7 @@
-// Stub: exe-os uses its own license server for billing
+// Exe installation licenses authorize features; upstream billing stays disabled.
 import { Injectable } from '@nestjs/common';
+
+import { readExeLicense } from 'src/engine/core-modules/enterprise/services/exe-license-authority';
 
 @Injectable()
 export class BillingService {
@@ -17,13 +19,13 @@ export class BillingService {
     _workspaceId: string,
     _entitlementKey: string,
   ): Promise<boolean> {
-    return true;
+    return (await readExeLicense()) !== null;
   }
 
   async canBillMeteredProduct(
     _workspaceId: string,
     _productKey: string,
   ): Promise<boolean> {
-    return true;
+    return (await readExeLicense()) !== null;
   }
 }

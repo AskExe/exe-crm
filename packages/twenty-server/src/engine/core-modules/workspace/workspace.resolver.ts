@@ -298,17 +298,17 @@ export class WorkspaceResolver {
   }
 
   @ResolveField(() => Boolean)
-  hasValidEnterpriseKey(): boolean {
+  hasValidEnterpriseKey(): Promise<boolean> {
     return this.enterprisePlanService.hasValidEnterpriseKey();
   }
 
   @ResolveField(() => Boolean)
-  hasValidSignedEnterpriseKey(): boolean {
+  hasValidSignedEnterpriseKey(): Promise<boolean> {
     return this.enterprisePlanService.hasValidSignedEnterpriseKey();
   }
 
   @ResolveField(() => Boolean)
-  hasValidEnterpriseValidityToken(): boolean {
+  hasValidEnterpriseValidityToken(): Promise<boolean> {
     return this.enterprisePlanService.hasValidEnterpriseValidityToken();
   }
 

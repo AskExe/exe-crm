@@ -4,6 +4,7 @@ import {
   type CanActivate,
   type ExecutionContext,
   Injectable,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import {
@@ -20,9 +21,9 @@ export class EnterpriseFeaturesEnabledGuard implements CanActivate {
     private readonly enterprisePlanService: EnterprisePlanService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
-      if (!this.enterprisePlanService.isValid()) {
+      if (!(await this.enterprisePlanService.isValid())) {
         throw new AuthException(
           'Enterprise features are not enabled',
           AuthExceptionCode.ENTERPRISE_VALIDITY_TOKEN_NOT_VALID,
@@ -31,6 +32,7 @@ export class EnterpriseFeaturesEnabledGuard implements CanActivate {
 
       return true;
     } catch (err) {
+      if (err instanceof ServiceUnavailableException) throw err;
       this.guardRedirectService.dispatchErrorFromGuard(
         context,
         err,

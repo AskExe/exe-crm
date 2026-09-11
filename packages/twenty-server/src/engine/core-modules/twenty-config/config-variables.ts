@@ -1504,11 +1504,31 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
     isSensitive: true,
+    isEnvOnly: true,
     description: 'License key for the Enterprise version',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
   ENTERPRISE_KEY: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    isSensitive: true,
+    isEnvOnly: true,
+    description: 'Installation license key verified by the Exe authority',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  EXE_LICENSE_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    isEnvOnly: true,
+    description: 'HTTPS installation license activation endpoint',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  EXE_LICENSE_URL?: string;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ADVANCED_SETTINGS,

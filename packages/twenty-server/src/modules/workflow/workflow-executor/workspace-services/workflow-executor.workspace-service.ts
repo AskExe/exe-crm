@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+
+import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
 
 import { isString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
@@ -132,13 +134,20 @@ export class WorkflowExecutorWorkspaceService {
         workflowRunStatus: workflowRun.status,
       })
     ) {
-      actionOutput = await this.executeStep({
-        step: stepToExecute,
-        steps,
-        stepInfos,
-        workflowRunId,
-        workspaceId,
-      });
+      try {
+        actionOutput = await this.executeStep({
+          step: stepToExecute,
+          steps,
+          stepInfos,
+          workflowRunId,
+          workspaceId,
+        });
+      } catch (error) {
+        // This step owns its queued retry. Continue scheduling other branches,
+        // including selected children after skipped branches reach a join.
+        if (error instanceof WorkflowLicenseDeferredError) return;
+        throw error;
+      }
 
       if (isDefined(actionOutput.error)) {
         const enclosingIterator = findEnclosingIteratorWithContinueOnFailure({
@@ -344,7 +353,13 @@ export class WorkflowExecutorWorkspaceService {
       return;
     }
 
-    if (workflowShouldKeepRunning({ stepInfos, steps })) {
+    if (
+      workflowShouldKeepRunning({
+        stepInfos,
+        steps,
+        triggerNextStepIds: workflowRun.state.flow.trigger?.nextStepIds,
+      })
+    ) {
       return;
     }
 
@@ -373,12 +388,9 @@ export class WorkflowExecutorWorkspaceService {
   }
 
   private async canBillWorkflowNodeExecution(workspaceId: string) {
-    return (
-      !this.billingService.isBillingEnabled() ||
-      (await this.billingService.canBillMeteredProduct(
-        workspaceId,
-        BillingProductKey.WORKFLOW_NODE_EXECUTION,
-      ))
+    return this.billingService.canBillMeteredProduct(
+      workspaceId,
+      BillingProductKey.WORKFLOW_NODE_EXECUTION,
     );
   }
 
@@ -463,7 +475,21 @@ export class WorkflowExecutorWorkspaceService {
     workflowRunId: string;
     workspaceId: string;
   }) {
-    const canBill = await this.canBillWorkflowNodeExecution(workspaceId);
+    let canBill: boolean;
+
+    try {
+      canBill = await this.canBillWorkflowNodeExecution(workspaceId);
+    } catch (error) {
+      if (!(error instanceof ServiceUnavailableException)) throw error;
+      // No action or RUNNING step state has been written yet. Retry precisely
+      // this step without replaying the earlier successful workflow actions.
+      await this.messageQueueService.add<RunWorkflowJobData>(
+        RUN_WORKFLOW_JOB_NAME,
+        { workspaceId, workflowRunId, retryStepId: step.id },
+        { delay: 60_000 },
+      );
+      throw new WorkflowLicenseDeferredError();
+    }
 
     if (!canBill) {
       return {

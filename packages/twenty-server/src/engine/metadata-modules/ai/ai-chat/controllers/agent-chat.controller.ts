@@ -1,5 +1,6 @@
 import {
   Body,
+  ForbiddenException,
   Controller,
   Post,
   Res,
@@ -13,14 +14,9 @@ import type { Response } from 'express';
 import type { ExtendedUIMessage } from 'twenty-shared/ai';
 
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
-import {
-  BillingException,
-  BillingExceptionCode,
-} from 'src/engine/core-modules/billing/billing.exception';
 import { BillingProductKey } from 'src/engine/core-modules/billing/enums/billing-product-key.enum';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
-import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import type { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
@@ -47,7 +43,6 @@ export class AgentChatController {
   constructor(
     private readonly agentStreamingService: AgentChatStreamingService,
     private readonly billingService: BillingService,
-    private readonly twentyConfigService: TwentyConfigService,
     private readonly aiModelRegistryService: AiModelRegistryService,
   ) {}
 
@@ -79,18 +74,13 @@ export class AgentChatController {
       workspace,
     );
 
-    if (this.twentyConfigService.get('IS_BILLING_ENABLED')) {
-      const canBill = await this.billingService.canBillMeteredProduct(
-        workspace.id,
-        BillingProductKey.WORKFLOW_NODE_EXECUTION,
-      );
+    const canBill = await this.billingService.canBillMeteredProduct(
+      workspace.id,
+      BillingProductKey.WORKFLOW_NODE_EXECUTION,
+    );
 
-      if (!canBill) {
-        throw new BillingException(
-          'Credits exhausted',
-          BillingExceptionCode.BILLING_CREDITS_EXHAUSTED,
-        );
-      }
+    if (!canBill) {
+      throw new ForbiddenException('Installation license is inactive');
     }
 
     this.agentStreamingService.streamAgentChat({
