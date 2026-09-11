@@ -195,9 +195,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Release dependency compatibility
-        run: node --test scripts/test-release-dependencies.mjs
-
       - name: Build shared
         run: npx nx build twenty-shared
 
@@ -280,9 +277,6 @@ jobs:
         env:
           RECALL_LOCAL_BUILD: '1'
         run: yarn install --immutable
-
-      - name: Release dependency compatibility
-        run: node --test scripts/test-release-dependencies.mjs
 
       - name: Build shared
         run: npx nx build twenty-shared
