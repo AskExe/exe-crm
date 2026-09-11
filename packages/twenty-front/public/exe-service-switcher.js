@@ -60,6 +60,13 @@ class ExeServiceSwitcher extends HTMLElement {
   constructor() {
     super();
     this._shadow = this.attachShadow({ mode: "open" });
+    this._shadow.addEventListener("click", (event) => {
+      if (!event.target.closest?.(".exe-ss-logout")) return;
+      const logout = new CustomEvent("exe-logout", {
+        bubbles: true, composed: true, cancelable: true,
+      });
+      if (!this.dispatchEvent(logout)) event.preventDefault();
+    });
   }
 
   connectedCallback() {
@@ -112,7 +119,7 @@ class ExeServiceSwitcher extends HTMLElement {
       ? `
         <div class="exe-ss-user">
           <span class="exe-ss-email">${this._escapeHtml(user)}</span>
-          <a href="https://${domain}/auth/logout" class="exe-ss-logout" title="Sign out">
+          <a href="https://auth.${domain}/logout" class="exe-ss-logout" title="Sign out">
             ${ICONS.logout}
           </a>
         </div>
