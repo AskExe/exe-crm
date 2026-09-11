@@ -16,15 +16,15 @@ export const ExeServiceSwitcher = () => {
   const showAuthModal = useShowAuthModal();
   const { signOut } = useAuth();
   const switcherRef = useRef<HTMLElement>(null);
-  const signingOut = useRef(false);
 
   useEffect(() => {
     const element = switcherRef.current;
     if (!element) return;
+    let signingOut = false;
     const handleLogout = (event: Event) => {
       event.preventDefault();
-      if (signingOut.current) return;
-      signingOut.current = true;
+      if (signingOut) return;
+      signingOut = true;
       void signOutViaCentralPage(signOut);
     };
     element.addEventListener('exe-logout', handleLogout);
