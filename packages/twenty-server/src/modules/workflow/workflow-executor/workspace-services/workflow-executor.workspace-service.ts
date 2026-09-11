@@ -134,13 +134,20 @@ export class WorkflowExecutorWorkspaceService {
         workflowRunStatus: workflowRun.status,
       })
     ) {
-      actionOutput = await this.executeStep({
-        step: stepToExecute,
-        steps,
-        stepInfos,
-        workflowRunId,
-        workspaceId,
-      });
+      try {
+        actionOutput = await this.executeStep({
+          step: stepToExecute,
+          steps,
+          stepInfos,
+          workflowRunId,
+          workspaceId,
+        });
+      } catch (error) {
+        // This step owns its queued retry. Continue scheduling other branches,
+        // including selected children after skipped branches reach a join.
+        if (error instanceof WorkflowLicenseDeferredError) return;
+        throw error;
+      }
 
       if (isDefined(actionOutput.error)) {
         const enclosingIterator = findEnclosingIteratorWithContinueOnFailure({

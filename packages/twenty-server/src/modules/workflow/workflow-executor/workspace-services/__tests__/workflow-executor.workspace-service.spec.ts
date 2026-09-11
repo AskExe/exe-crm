@@ -1,5 +1,4 @@
 import { ServiceUnavailableException } from '@nestjs/common';
-import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import {
@@ -59,6 +58,7 @@ describe('WorkflowExecutorWorkspaceService', () => {
   const mockWorkflowRunWorkspaceService = {
     endWorkflowRun: jest.fn(),
     updateWorkflowRunStepInfo: jest.fn(),
+    updateWorkflowRunStepInfos: jest.fn(),
     getWorkflowRunOrFail: jest.fn(),
   };
 
@@ -429,7 +429,7 @@ describe('WorkflowExecutorWorkspaceService', () => {
               workflowRunId: mockWorkflowRunId,
               stepIds: ['step-1', 'step-2'],
             }),
-          ).rejects.toBeInstanceOf(WorkflowLicenseDeferredError);
+          ).resolves.toBeUndefined();
           expect(mockMessageQueueService.add).toHaveBeenCalledTimes(2);
           expect(mockWorkflowExecutor.execute).not.toHaveBeenCalled();
           mockBillingService.canBillMeteredProduct.mockResolvedValue(true);
@@ -466,7 +466,123 @@ describe('WorkflowExecutorWorkspaceService', () => {
       },
     );
 
+    it('schedules selected children when an unselected branch join is deferred', async () => {
+      const action = (id: string, nextStepIds: string[] = []) =>
+        ({
+          ...mockSteps[0],
+          id,
+          nextStepIds,
+        }) as WorkflowAction;
+      const steps = [
+        {
+          ...action('condition'),
+          type: WorkflowActionType.IF_ELSE,
+          settings: {
+            input: {
+              branches: [
+                { id: 'chosen', nextStepIds: ['selected'] },
+                { id: 'other', nextStepIds: ['skipped'] },
+              ],
+            },
+          },
+        } as WorkflowAction,
+        action('prior', ['join']),
+        action('skipped', ['join']),
+        action('join'),
+        action('selected'),
+      ];
+      const stepInfos: WorkflowRunStepInfos = {
+        condition: { status: StepStatus.NOT_STARTED },
+        prior: { status: StepStatus.SUCCESS },
+        skipped: { status: StepStatus.NOT_STARTED },
+        join: { status: StepStatus.NOT_STARTED },
+        selected: { status: StepStatus.NOT_STARTED },
+      };
+      mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockResolvedValue({
+        status: WorkflowRunStatus.RUNNING,
+        workflowId: 'workflow-id',
+        state: {
+          flow: { steps, trigger: { nextStepIds: ['condition', 'prior'] } },
+          stepInfos,
+        },
+      });
+      mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfo.mockImplementation(
+        async ({ stepId, stepInfo }) => {
+          stepInfos[stepId] = stepInfo;
+        },
+      );
+      mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfos.mockImplementation(
+        async ({ stepInfos: updates }) => {
+          Object.assign(stepInfos, updates);
+        },
+      );
+      (shouldExecuteStep as jest.Mock).mockImplementation(
+        jest.requireActual(
+          'src/modules/workflow/workflow-executor/utils/should-execute-step.util',
+        ).shouldExecuteStep,
+      );
+      mockWorkflowExecutor.execute.mockResolvedValueOnce({
+        result: { matchingBranchId: 'chosen' },
+      });
+      mockBillingService.canBillMeteredProduct
+        .mockRejectedValue(new ServiceUnavailableException())
+        .mockResolvedValueOnce(true);
+      const execute = (stepId: string) =>
+        service.executeFromSteps({
+          workspaceId: mockWorkspaceId,
+          workflowRunId: mockWorkflowRunId,
+          stepIds: [stepId],
+        });
+      try {
+        await execute('condition');
+        expect(stepInfos.skipped.status).toBe(StepStatus.SKIPPED);
+        expect(
+          mockMessageQueueService.add.mock.calls.map(
+            (call) => call[1].retryStepId,
+          ),
+        ).toEqual(['join', 'selected']);
+        expect(mockWorkflowExecutor.execute).toHaveBeenCalledTimes(1);
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).not.toHaveBeenCalled();
+        mockBillingService.canBillMeteredProduct.mockResolvedValue(true);
+        await execute('join');
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).not.toHaveBeenCalled();
+        await execute('selected');
+        expect(mockWorkflowExecutor.execute).toHaveBeenCalledTimes(3);
+        expect(stepInfos.join.status).toBe(StepStatus.SUCCESS);
+        expect(stepInfos.selected.status).toBe(StepStatus.SUCCESS);
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({ status: WorkflowRunStatus.COMPLETED }),
+        );
+      } finally {
+        mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockReturnValue({
+          state: { flow: { steps: mockSteps }, stepInfos: mockStepInfos },
+          workflowId: 'workflow-id',
+        });
+        mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfo.mockReset();
+        mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfos.mockReset();
+        mockBillingService.canBillMeteredProduct.mockReturnValue(true);
+        (shouldExecuteStep as jest.Mock).mockReturnValue(true);
+      }
+    });
+
     it('requeues only the unstarted step when license authority is unavailable', async () => {
+      const waitingRun = {
+        status: WorkflowRunStatus.RUNNING,
+        state: {
+          flow: { steps: mockSteps, trigger: { nextStepIds: ['step-1'] } },
+          stepInfos: mockStepInfos,
+        },
+        workflowId: 'workflow-id',
+      };
+      mockWorkflowRunWorkspaceService.getWorkflowRunOrFail
+        .mockResolvedValueOnce(waitingRun)
+        .mockResolvedValueOnce(waitingRun);
       mockBillingService.canBillMeteredProduct.mockRejectedValueOnce(
         new ServiceUnavailableException(),
       );
@@ -476,7 +592,7 @@ describe('WorkflowExecutorWorkspaceService', () => {
           stepIds: ['step-1'],
           workspaceId: mockWorkspaceId,
         }),
-      ).rejects.toBeInstanceOf(WorkflowLicenseDeferredError);
+      ).resolves.toBeUndefined();
       expect(mockMessageQueueService.add).toHaveBeenCalledWith(
         expect.any(String),
         {
