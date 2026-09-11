@@ -43,6 +43,27 @@ describe('GoTrue-backed installation license enforcement', () => {
     );
   });
 
+  it('uses the legacy deployment key and default endpoint when optional env values are blank', async () => {
+    process.env.EXE_LICENSE_KEY = ' ';
+    process.env.ENTERPRISE_KEY = 'exe_sk_legacy_test';
+    process.env.EXE_LICENSE_URL = ' ';
+    reply({ valid: true, plan: 'enterprise', expiresAt: null });
+    expect(await readExeLicense()).toMatchObject({ plan: 'enterprise' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL('https://cloud.askexe.com/auth/activate'),
+      expect.objectContaining({
+        body: JSON.stringify({ apiKey: 'exe_sk_legacy_test' }),
+      }),
+    );
+  });
+
+  it('fails closed without either configured installation key', async () => {
+    process.env.EXE_LICENSE_KEY = '';
+    process.env.ENTERPRISE_KEY = '';
+    await expect(readExeLicense()).rejects.toMatchObject({ status: 503 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('does not retain enterprise access after the next authority read revokes it', async () => {
     reply({ valid: true, plan: 'enterprise', expiresAt: null });
     const service = new EnterprisePlanService();

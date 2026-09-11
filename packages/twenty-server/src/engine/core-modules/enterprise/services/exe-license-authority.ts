@@ -9,9 +9,11 @@ const PLANS = new Set(['free', 'pro', 'team', 'agency', 'enterprise']);
 
 /** Resolve the installation key through the gateway's fresh GoTrue authority. */
 export const readExeLicense = async (): Promise<ExeLicense | null> => {
-  const apiKey = process.env.EXE_LICENSE_KEY ?? process.env.ENTERPRISE_KEY;
+  const apiKey =
+    process.env.EXE_LICENSE_KEY?.trim() || process.env.ENTERPRISE_KEY?.trim();
   const endpoint =
-    process.env.EXE_LICENSE_URL ?? 'https://cloud.askexe.com/auth/activate';
+    process.env.EXE_LICENSE_URL?.trim() ||
+    'https://cloud.askexe.com/auth/activate';
 
   if (!apiKey) {
     throw new ServiceUnavailableException(
