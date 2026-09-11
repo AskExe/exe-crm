@@ -57,11 +57,24 @@ test('XML signing verifies intact content and rejects a modified payload', () =>
   );
 });
 
-test('YAML config nested values survive serialization', () => {
-  const yaml = require('js-yaml');
-  const config = { service: 'crm', enabled: true, allowed: ['read', 'write'] };
-  assert.deepEqual(yaml.load(yaml.dump(config)), config);
-});
+for (const [major, consumerRequire] of [
+  [3, require],
+  [4, createRequire(require.resolve('cosmiconfig'))],
+]) {
+  test(`YAML v${major} config nested values survive serialization`, () => {
+    const yaml = consumerRequire('js-yaml');
+    assert.equal(
+      Number(consumerRequire('js-yaml/package.json').version.split('.')[0]),
+      major,
+    );
+    const config = {
+      service: 'crm',
+      enabled: true,
+      allowed: ['read', 'write'],
+    };
+    assert.deepEqual(yaml.load(yaml.dump(config)), config);
+  });
+}
 
 test('Multer parses a multipart field and in-memory attachment', async () => {
   const multer = require('multer');
