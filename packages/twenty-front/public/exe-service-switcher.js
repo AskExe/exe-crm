@@ -60,6 +60,13 @@ class ExeServiceSwitcher extends HTMLElement {
   constructor() {
     super();
     this._shadow = this.attachShadow({ mode: "open" });
+    this._shadow.addEventListener("click", (event) => {
+      if (!event.target.closest?.(".exe-ss-logout")) return;
+      const logout = new CustomEvent("exe-logout", {
+        bubbles: true, composed: true, cancelable: true,
+      });
+      if (!this.dispatchEvent(logout)) event.preventDefault();
+    });
   }
 
   connectedCallback() {

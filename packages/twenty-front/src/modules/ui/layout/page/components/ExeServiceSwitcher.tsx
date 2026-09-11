@@ -1,7 +1,9 @@
+import { useAuth } from '@/auth/hooks/useAuth';
+import { signOutViaCentralPage } from '@/auth/utils/signOutViaCentralPage';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { useShowAuthModal } from '@/ui/layout/hooks/useShowAuthModal';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Loads the <exe-service-switcher> Web Component and renders it at the top
@@ -12,6 +14,22 @@ import { useEffect } from 'react';
  */
 export const ExeServiceSwitcher = () => {
   const showAuthModal = useShowAuthModal();
+  const { signOut } = useAuth();
+  const switcherRef = useRef<HTMLElement>(null);
+  const signingOut = useRef(false);
+
+  useEffect(() => {
+    const element = switcherRef.current;
+    if (!element) return;
+    const handleLogout = (event: Event) => {
+      event.preventDefault();
+      if (signingOut.current) return;
+      signingOut.current = true;
+      void signOutViaCentralPage(signOut);
+    };
+    element.addEventListener('exe-logout', handleLogout);
+    return () => element.removeEventListener('exe-logout', handleLogout);
+  }, [signOut, showAuthModal]);
   const currentUser = useAtomStateValue(currentUserState);
 
   useEffect(() => {
@@ -24,5 +42,11 @@ export const ExeServiceSwitcher = () => {
   // Don't render on auth/login screens
   if (showAuthModal) return null;
 
-  return <exe-service-switcher current="CRM" user={currentUser?.email ?? ''} />;
+  return (
+    <exe-service-switcher
+      ref={switcherRef}
+      current="CRM"
+      user={currentUser?.email ?? ''}
+    />
+  );
 };

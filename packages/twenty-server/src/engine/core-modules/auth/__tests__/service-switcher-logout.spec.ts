@@ -10,7 +10,7 @@ function renderSwitcher(domain?: string, signedIn = true): string {
   if (signedIn) attributes.set('user', 'member@example.test');
   if (domain) attributes.set('base-url', domain);
   class TestElement {
-    shadow = { innerHTML: '' };
+    shadow = { innerHTML: '', addEventListener: () => {} };
     attachShadow() {
       return this.shadow;
     }
