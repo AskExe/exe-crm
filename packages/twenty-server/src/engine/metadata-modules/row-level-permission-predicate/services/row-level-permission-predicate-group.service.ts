@@ -136,7 +136,7 @@ export class RowLevelPermissionPredicateGroupService {
   private async hasRowLevelPermissionFeature(
     workspaceId: string,
   ): Promise<boolean> {
-    const hasValidEnterprisePlan = this.enterprisePlanService.isValid();
+    const hasValidEnterprisePlan = await this.enterprisePlanService.isValid();
 
     const isRowLevelPermissionEnabled =
       await this.billingService.hasEntitlement(

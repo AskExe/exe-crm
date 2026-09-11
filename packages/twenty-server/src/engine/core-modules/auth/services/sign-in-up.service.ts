@@ -456,11 +456,11 @@ export class SignInUpService {
   private async assertWorkspaceCountWithinLimit(
     workspaceCount: number,
   ): Promise<void> {
-    if (this.enterprisePlanService.isValid()) {
+    if (workspaceCount < MAX_WORKSPACES_WITHOUT_ENTERPRISE_KEY) {
       return;
     }
 
-    if (workspaceCount < MAX_WORKSPACES_WITHOUT_ENTERPRISE_KEY) {
+    if (await this.enterprisePlanService.isValid()) {
       return;
     }
 

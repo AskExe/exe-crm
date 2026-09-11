@@ -1,21 +1,34 @@
-// Stub: exe-os uses its own license server — always valid
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+
+import { readExeLicense } from './exe-license-authority';
 
 @Injectable()
 export class EnterprisePlanService {
-  isValid(): boolean {
-    return true;
+  async isValid(): Promise<boolean> {
+    return (await readExeLicense())?.plan === 'enterprise';
   }
 
-  hasValidEnterpriseKey(): boolean {
-    return true;
+  // These GraphQL display flags also appear on the public sign-in page.
+  // An outage hides enterprise affordances without preventing basic login;
+  // actual feature guards use isValid(), which preserves the retryable error.
+  private async publicValidityFlag(): Promise<boolean> {
+    try {
+      return await this.isValid();
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) return false;
+      throw error;
+    }
   }
 
-  hasValidSignedEnterpriseKey(): boolean {
-    return true;
+  hasValidEnterpriseKey(): Promise<boolean> {
+    return this.publicValidityFlag();
   }
 
-  hasValidEnterpriseValidityToken(): boolean {
-    return true;
+  hasValidSignedEnterpriseKey(): Promise<boolean> {
+    return this.publicValidityFlag();
+  }
+
+  hasValidEnterpriseValidityToken(): Promise<boolean> {
+    return this.publicValidityFlag();
   }
 }
