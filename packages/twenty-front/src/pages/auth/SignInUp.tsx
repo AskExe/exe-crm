@@ -11,6 +11,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import { Logo } from '@/auth/components/Logo';
+import { GoTrueSignInError } from '@/auth/components/GoTrueSignInError';
 // EmailVerificationSent REMOVED — GoTrue owns email verification.
 // SignInUpGlobalScopeForm REMOVED — not rendered (we always show workspace scope form).
 import { SignInUpWorkspaceScopeForm } from '@/auth/sign-in-up/components/SignInUpWorkspaceScopeForm';
@@ -100,6 +101,7 @@ export const SignInUp = () => {
         />
       </AnimatedEaseIn>
       <StyledSubtitle>Sign in to your workspace</StyledSubtitle>
+      <GoTrueSignInError />
       {signInUpForm}
     </StyledPageContainer>
   );

@@ -63,13 +63,13 @@ export const GO_TRUE_BRIDGE_IN_FLIGHT_MS = 10_000;
  * already told us it gave up, so making the user wait out a timeout before
  * showing them a login form would be withholding a decision that is in.
  */
-let bridgeReportedFailureOnLoad: boolean | undefined;
+let bridgeReportedFailureOnLoad: string | null | undefined;
 
-const hasBridgeReportedFailure = (): boolean => {
+export const getGoTrueBridgeFailure = (): string | null => {
   if (bridgeReportedFailureOnLoad === undefined) {
     bridgeReportedFailureOnLoad = new URLSearchParams(
       window.location.search,
-    ).has('ssoError');
+    ).get('ssoError');
   }
 
   return bridgeReportedFailureOnLoad;
@@ -129,7 +129,7 @@ export const isGoTrueBridgeInFlight = (now: number = Date.now()): boolean => {
   }
 
   // The server already said no, and said why. Show the form.
-  if (hasBridgeReportedFailure()) {
+  if (getGoTrueBridgeFailure() !== null) {
     return false;
   }
 
