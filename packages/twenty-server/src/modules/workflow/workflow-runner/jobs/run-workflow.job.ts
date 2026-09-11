@@ -52,6 +52,16 @@ export class RunWorkflowJob {
               workflowRunId,
               workspaceId,
             });
+          if (run.status === WorkflowRunStatus.STOPPING) {
+            // A deferred step owns a queued wake-up even after cancellation.
+            // Settle status without executing it or restarting the iterator.
+            await this.workflowExecutorWorkspaceService.executeFromSteps({
+              workspaceId,
+              workflowRunId,
+              stepIds: [],
+            });
+            return;
+          }
           if (run.status !== WorkflowRunStatus.RUNNING) return;
           await this.workflowExecutorWorkspaceService.executeFromSteps({
             workspaceId,

@@ -51,6 +51,18 @@ describe('Workflow license retry', () => {
     await job.handle(input);
     expect(executeFromSteps).not.toHaveBeenCalled();
   });
+  it('settles cancellation without executing the deferred step', async () => {
+    getWorkflowRunOrFail.mockResolvedValue({
+      status: WorkflowRunStatus.STOPPING,
+    });
+    await job.handle(input);
+    expect(executeFromSteps).toHaveBeenCalledWith({
+      workflowRunId: 'run',
+      workspaceId: 'workspace',
+      stepIds: [],
+    });
+    expect(endWorkflowRun).not.toHaveBeenCalled();
+  });
   it('still records definitive execution errors', async () => {
     executeFromSteps.mockRejectedValue(new Error('Action failed'));
     await expect(job.handle(input)).rejects.toThrow('Action failed');

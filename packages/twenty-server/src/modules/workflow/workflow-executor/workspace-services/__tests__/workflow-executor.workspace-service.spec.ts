@@ -332,6 +332,40 @@ describe('WorkflowExecutorWorkspaceService', () => {
       );
     });
 
+    it('finishes a cancelled deferred run without executing any actions', async () => {
+      mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockResolvedValue({
+        status: WorkflowRunStatus.STOPPING,
+        state: {
+          flow: { steps: mockSteps },
+          stepInfos: {
+            'step-1': { status: StepStatus.STOPPED },
+            'step-2': { status: StepStatus.NOT_STARTED },
+          },
+        },
+      });
+      try {
+        await service.executeFromSteps({
+          workspaceId: mockWorkspaceId,
+          workflowRunId: mockWorkflowRunId,
+          stepIds: [],
+        });
+        expect(mockWorkflowExecutor.execute).not.toHaveBeenCalled();
+        expect(mockBillingService.canBillMeteredProduct).not.toHaveBeenCalled();
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).toHaveBeenCalledWith({
+          workspaceId: mockWorkspaceId,
+          workflowRunId: mockWorkflowRunId,
+          status: WorkflowRunStatus.STOPPED,
+        });
+      } finally {
+        mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockReturnValue({
+          state: { flow: { steps: mockSteps }, stepInfos: mockStepInfos },
+          workflowId: 'workflow-id',
+        });
+      }
+    });
+
     it('keeps parallel deferred trigger branches alive until both retries complete', async () => {
       const steps = mockSteps.map((step) => ({ ...step, nextStepIds: [] }));
       const stepInfos: WorkflowRunStepInfos = {
