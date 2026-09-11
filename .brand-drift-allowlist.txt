@@ -106,3 +106,7 @@ packages/twenty-ui/scripts/sync-exe-theme.sh
 # the sync script, so the reference cannot be edited out by hand.
 packages/twenty-ui/src/theme/constants/exe-theme/tokens.json
 packages/twenty-ui/src/theme/constants/exe-theme/tokens.ts
+
+# The logout regression executes the exact vendored browser asset through its
+# internal package path; this is not customer-facing upstream branding.
+packages/twenty-server/src/engine/core-modules/auth/__tests__/service-switcher-logout.spec.ts
