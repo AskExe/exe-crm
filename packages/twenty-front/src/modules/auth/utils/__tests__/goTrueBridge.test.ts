@@ -1,5 +1,6 @@
 import {
   clearGoTrueCallbackAttempt,
+  getGoTrueBridgeFailure,
   GO_TRUE_BRIDGE_IN_FLIGHT_MS,
   GO_TRUE_CALLBACK_ATTEMPT_TTL_MS,
   GO_TRUE_SENTINEL_COOKIE_NAME,
@@ -153,5 +154,21 @@ describe('goTrueBridge', () => {
 
       expect(isGoTrueBridgeInFlight(NOW)).toBe(false);
     });
+  });
+});
+
+describe('getGoTrueBridgeFailure', () => {
+  it('retains the failure reason after navigation removes the query', () => {
+    setSearch('?ssoError=not_provisioned');
+    expect(getGoTrueBridgeFailure()).toBe('not_provisioned');
+    window.history.replaceState({}, '', '/welcome');
+    expect(getGoTrueBridgeFailure()).toBe('not_provisioned');
+  });
+
+  it('distinguishes no failure from an empty unknown failure', () => {
+    setSearch('');
+    expect(getGoTrueBridgeFailure()).toBeNull();
+    setSearch('?ssoError=');
+    expect(getGoTrueBridgeFailure()).toBe('');
   });
 });
