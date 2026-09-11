@@ -1,4 +1,7 @@
-import { type ExecutionContext } from '@nestjs/common';
+import {
+  type ExecutionContext,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 import { EnterprisePlanService } from 'src/engine/core-modules/enterprise/services/enterprise-plan.service';
 import { GuardRedirectService } from 'src/engine/core-modules/guard-redirect/services/guard-redirect.service';
@@ -19,6 +22,20 @@ describe('Enterprise feature guard', () => {
 
     expect(await guard.canActivate({} as ExecutionContext)).toBe(false);
     expect(dispatchErrorFromGuard).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves retryable authority errors instead of redirecting SSO requests', async () => {
+    const dispatchErrorFromGuard = jest.fn();
+    const guard = new EnterpriseFeaturesEnabledGuard(
+      { dispatchErrorFromGuard } as unknown as GuardRedirectService,
+      {
+        isValid: jest.fn().mockRejectedValue(new ServiceUnavailableException()),
+      } as unknown as EnterprisePlanService,
+    );
+    await expect(
+      guard.canActivate({} as ExecutionContext),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(dispatchErrorFromGuard).not.toHaveBeenCalled();
   });
 
   it('allows a confirmed enterprise decision', async () => {

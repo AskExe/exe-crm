@@ -1,3 +1,5 @@
+import { ServiceUnavailableException } from '@nestjs/common';
+import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { getWorkflowRunContext, StepStatus } from 'twenty-shared/workflow';
@@ -323,6 +325,33 @@ describe('WorkflowExecutorWorkspaceService', () => {
       expect(workflowActionFactory.get).not.toHaveBeenCalledWith(
         WorkflowActionType.SEND_EMAIL,
       );
+    });
+
+    it('requeues only the unstarted step when license authority is unavailable', async () => {
+      mockBillingService.canBillMeteredProduct.mockRejectedValueOnce(
+        new ServiceUnavailableException(),
+      );
+      await expect(
+        service.executeFromSteps({
+          workflowRunId: mockWorkflowRunId,
+          stepIds: ['step-1'],
+          workspaceId: mockWorkspaceId,
+        }),
+      ).rejects.toBeInstanceOf(WorkflowLicenseDeferredError);
+      expect(mockMessageQueueService.add).toHaveBeenCalledWith(
+        expect.any(String),
+        {
+          workflowRunId: mockWorkflowRunId,
+          workspaceId: mockWorkspaceId,
+          retryStepId: 'step-1',
+        },
+        { delay: 60_000 },
+      );
+      expect(workflowActionFactory.get).not.toHaveBeenCalled();
+      expect(
+        workflowRunWorkspaceService.updateWorkflowRunStepInfo,
+      ).not.toHaveBeenCalled();
+      expect(workflowRunWorkspaceService.endWorkflowRun).not.toHaveBeenCalled();
     });
 
     it('denies an inactive installation even when upstream billing is disabled', async () => {

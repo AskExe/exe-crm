@@ -1,5 +1,6 @@
 import {
   Body,
+  ForbiddenException,
   Controller,
   Post,
   Res,
@@ -13,10 +14,6 @@ import type { Response } from 'express';
 import type { ExtendedUIMessage } from 'twenty-shared/ai';
 
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
-import {
-  BillingException,
-  BillingExceptionCode,
-} from 'src/engine/core-modules/billing/billing.exception';
 import { BillingProductKey } from 'src/engine/core-modules/billing/enums/billing-product-key.enum';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
@@ -83,10 +80,7 @@ export class AgentChatController {
     );
 
     if (!canBill) {
-      throw new BillingException(
-        'Installation license is inactive',
-        BillingExceptionCode.BILLING_CREDITS_EXHAUSTED,
-      );
+      throw new ForbiddenException('Installation license is inactive');
     }
 
     this.agentStreamingService.streamAgentChat({

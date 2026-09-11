@@ -1,5 +1,7 @@
 import { Scope } from '@nestjs/common';
 
+import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
+
 import { isDefined } from 'twenty-shared/utils';
 
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
@@ -37,13 +39,26 @@ export class RunWorkflowJob {
   async handle({
     workflowRunId,
     lastExecutedStepId,
+    retryStepId,
     workspaceId,
   }: RunWorkflowJobData): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
       try {
-        if (lastExecutedStepId) {
+        if (retryStepId) {
+          const run =
+            await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
+              workflowRunId,
+              workspaceId,
+            });
+          if (run.status !== WorkflowRunStatus.RUNNING) return;
+          await this.workflowExecutorWorkspaceService.executeFromSteps({
+            workspaceId,
+            workflowRunId,
+            stepIds: [retryStepId],
+          });
+        } else if (lastExecutedStepId) {
           await this.resumeWorkflowExecution({
             workspaceId,
             workflowRunId,
@@ -56,6 +71,7 @@ export class RunWorkflowJob {
           });
         }
       } catch (error) {
+        if (error instanceof WorkflowLicenseDeferredError) return;
         await this.workflowRunWorkspaceService.endWorkflowRun({
           workspaceId,
           workflowRunId,

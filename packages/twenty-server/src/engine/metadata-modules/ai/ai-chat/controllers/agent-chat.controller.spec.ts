@@ -1,4 +1,7 @@
-import { ServiceUnavailableException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 import type { Response } from 'express';
 
@@ -35,7 +38,7 @@ describe('Agent chat installation license', () => {
   it('rejects an inactive installation while upstream billing is disabled', async () => {
     jest.spyOn(billing, 'canBillMeteredProduct').mockResolvedValue(false);
     expect(billing.isBillingEnabled()).toBe(false);
-    await expect(call()).rejects.toThrow('Installation license is inactive');
+    await expect(call()).rejects.toBeInstanceOf(ForbiddenException);
     expect(streamAgentChat).not.toHaveBeenCalled();
   });
 

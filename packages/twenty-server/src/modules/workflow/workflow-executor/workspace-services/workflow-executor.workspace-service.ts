@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+
+import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
 
 import { isString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
@@ -460,7 +462,21 @@ export class WorkflowExecutorWorkspaceService {
     workflowRunId: string;
     workspaceId: string;
   }) {
-    const canBill = await this.canBillWorkflowNodeExecution(workspaceId);
+    let canBill: boolean;
+
+    try {
+      canBill = await this.canBillWorkflowNodeExecution(workspaceId);
+    } catch (error) {
+      if (!(error instanceof ServiceUnavailableException)) throw error;
+      // No action or RUNNING step state has been written yet. Retry precisely
+      // this step without replaying the earlier successful workflow actions.
+      await this.messageQueueService.add<RunWorkflowJobData>(
+        RUN_WORKFLOW_JOB_NAME,
+        { workspaceId, workflowRunId, retryStepId: step.id },
+        { delay: 60_000 },
+      );
+      throw new WorkflowLicenseDeferredError();
+    }
 
     if (!canBill) {
       return {

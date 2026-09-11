@@ -4,6 +4,7 @@ import {
   type CanActivate,
   type ExecutionContext,
   Injectable,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import {
@@ -31,6 +32,7 @@ export class EnterpriseFeaturesEnabledGuard implements CanActivate {
 
       return true;
     } catch (err) {
+      if (err instanceof ServiceUnavailableException) throw err;
       this.guardRedirectService.dispatchErrorFromGuard(
         context,
         err,
