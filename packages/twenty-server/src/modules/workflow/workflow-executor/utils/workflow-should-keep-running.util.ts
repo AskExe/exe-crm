@@ -7,14 +7,30 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/work
 export const workflowShouldKeepRunning = ({
   stepInfos,
   steps,
+  triggerNextStepIds = [],
 }: {
   stepInfos: WorkflowRunStepInfos;
   steps: WorkflowAction[];
+  triggerNextStepIds?: string[];
 }) => {
   const runningOrPendingStepExists = steps.some((step) =>
     [StepStatus.PENDING, StepStatus.RUNNING].includes(
       stepInfos[step.id]?.status,
     ),
+  );
+
+  // Trigger children have no action parent in `steps`. A deferred initial
+  // branch must keep the run alive while another branch completes its retry.
+  const unstartedTriggerChild = steps.some(
+    (step) =>
+      triggerNextStepIds.includes(step.id) &&
+      stepInfos[step.id]?.status === StepStatus.NOT_STARTED &&
+      shouldExecuteStep({
+        step,
+        steps,
+        stepInfos,
+        workflowRunStatus: WorkflowRunStatus.RUNNING,
+      }),
   );
 
   const completedStepWithNotStartedExecutableChildren = steps.some(
@@ -43,6 +59,8 @@ export const workflowShouldKeepRunning = ({
   );
 
   return (
-    runningOrPendingStepExists || completedStepWithNotStartedExecutableChildren
+    runningOrPendingStepExists ||
+    unstartedTriggerChild ||
+    completedStepWithNotStartedExecutableChildren
   );
 };

@@ -2,7 +2,12 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import { WorkflowLicenseDeferredError } from 'src/modules/workflow/workflow-executor/exceptions/workflow-license-deferred.error';
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { getWorkflowRunContext, StepStatus } from 'twenty-shared/workflow';
+import {
+  getWorkflowRunContext,
+  StepStatus,
+  type WorkflowRunStepInfos,
+} from 'twenty-shared/workflow';
+import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
 
 import { BILLING_WORKFLOW_EXECUTION_ERROR_MESSAGE } from 'src/engine/core-modules/billing/constants/billing-workflow-execution-error-message.constant';
 import { USAGE_RECORDED } from 'src/engine/core-modules/usage/constants/usage-recorded.constant';
@@ -325,6 +330,79 @@ describe('WorkflowExecutorWorkspaceService', () => {
       expect(workflowActionFactory.get).not.toHaveBeenCalledWith(
         WorkflowActionType.SEND_EMAIL,
       );
+    });
+
+    it('keeps parallel deferred trigger branches alive until both retries complete', async () => {
+      const steps = mockSteps.map((step) => ({ ...step, nextStepIds: [] }));
+      const stepInfos: WorkflowRunStepInfos = {
+        'step-1': { status: StepStatus.NOT_STARTED },
+        'step-2': { status: StepStatus.NOT_STARTED },
+      };
+      const run = {
+        status: WorkflowRunStatus.RUNNING,
+        workflowId: 'workflow-id',
+        state: {
+          flow: { steps, trigger: { nextStepIds: ['step-1', 'step-2'] } },
+          stepInfos,
+        },
+      };
+      mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockResolvedValue(
+        run,
+      );
+      mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfo.mockImplementation(
+        async ({ stepId, stepInfo }) => {
+          stepInfos[stepId] = stepInfo;
+        },
+      );
+      (shouldExecuteStep as jest.Mock).mockImplementation(
+        jest.requireActual(
+          'src/modules/workflow/workflow-executor/utils/should-execute-step.util',
+        ).shouldExecuteStep,
+      );
+      mockBillingService.canBillMeteredProduct.mockRejectedValue(
+        new ServiceUnavailableException(),
+      );
+      try {
+        await expect(
+          service.executeFromSteps({
+            workspaceId: mockWorkspaceId,
+            workflowRunId: mockWorkflowRunId,
+            stepIds: ['step-1', 'step-2'],
+          }),
+        ).rejects.toBeInstanceOf(WorkflowLicenseDeferredError);
+        expect(mockMessageQueueService.add).toHaveBeenCalledTimes(2);
+        expect(mockWorkflowExecutor.execute).not.toHaveBeenCalled();
+        mockBillingService.canBillMeteredProduct.mockResolvedValue(true);
+        await service.executeFromSteps({
+          workspaceId: mockWorkspaceId,
+          workflowRunId: mockWorkflowRunId,
+          stepIds: ['step-1'],
+        });
+        expect(stepInfos['step-1'].status).toBe(StepStatus.SUCCESS);
+        expect(stepInfos['step-2'].status).toBe(StepStatus.NOT_STARTED);
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).not.toHaveBeenCalled();
+        await service.executeFromSteps({
+          workspaceId: mockWorkspaceId,
+          workflowRunId: mockWorkflowRunId,
+          stepIds: ['step-2'],
+        });
+        expect(mockWorkflowExecutor.execute).toHaveBeenCalledTimes(2);
+        expect(
+          mockWorkflowRunWorkspaceService.endWorkflowRun,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({ status: WorkflowRunStatus.COMPLETED }),
+        );
+      } finally {
+        mockWorkflowRunWorkspaceService.getWorkflowRunOrFail.mockReturnValue({
+          state: { flow: { steps: mockSteps }, stepInfos: mockStepInfos },
+          workflowId: 'workflow-id',
+        });
+        mockWorkflowRunWorkspaceService.updateWorkflowRunStepInfo.mockReset();
+        mockBillingService.canBillMeteredProduct.mockReturnValue(true);
+        (shouldExecuteStep as jest.Mock).mockReturnValue(true);
+      }
     });
 
     it('requeues only the unstarted step when license authority is unavailable', async () => {

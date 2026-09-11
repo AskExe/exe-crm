@@ -346,7 +346,13 @@ export class WorkflowExecutorWorkspaceService {
       return;
     }
 
-    if (workflowShouldKeepRunning({ stepInfos, steps })) {
+    if (
+      workflowShouldKeepRunning({
+        stepInfos,
+        steps,
+        triggerNextStepIds: workflowRun.state.flow.trigger?.nextStepIds,
+      })
+    ) {
       return;
     }
 
