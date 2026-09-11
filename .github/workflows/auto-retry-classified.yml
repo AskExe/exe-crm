@@ -160,4 +160,25 @@ jobs:
           fi
 
           echo "decision=retry reason=infra-classified: run $RUN_ID attempt $RUN_ATTEMPT had 0 real failed steps and $annotation_matches infra annotation(s)."
-          gh run rerun "$RUN_ID" --repo "$REPOSITORY" --failed
+
+          # The workflow_run event payload may be stale: the superseded-cancel
+          # policy can flip this run to cancelled AFTER the event fired but
+          # BEFORE we get here, and `gh run rerun` refuses cancelled runs.
+          # Re-fetch the live conclusion — a superseded run must not be retried.
+          target_conclusion="$(gh api "/repos/$REPOSITORY/actions/runs/$RUN_ID" --jq '.conclusion')"
+          if [ "$target_conclusion" = "cancelled" ]; then
+            echo "decision=skip reason=superseded: run $RUN_ID is cancelled (a newer run for a newer commit exists) — intentionally not retried."
+            exit 0
+          fi
+
+          # Noise-only workflow: mask ONLY the exit code of the rerun, never
+          # the reason — log the command's stderr loudly so failures stay
+          # diagnosable. Under `set -e` a rerun refusal would otherwise fail
+          # this workflow and report an infra retry as a CI failure of its own.
+          if rerun_err="$(gh run rerun "$RUN_ID" --repo "$REPOSITORY" --failed 2>&1)"; then
+            echo "rerun triggered for run $RUN_ID (conclusion='$target_conclusion')."
+          else
+            echo "::warning::gh run rerun failed for run $RUN_ID (conclusion='$target_conclusion') — exit code masked, noise-only workflow:"
+            echo "$rerun_err" >&2
+            exit 0
+          fi
