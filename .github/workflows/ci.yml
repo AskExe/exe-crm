@@ -514,6 +514,17 @@ jobs:
       - name: CI order gate (gitleaks precedes dependency install)
         run: npx vitest run tests/ci-security-scan-gitleaks-order.test.ts
 
+      # Regression guard for bug 2606eacd. auto-retry-classified.yml called
+      # `gh run rerun` bare; the superseded-cancel policy can flip the target
+      # run to `cancelled` between the workflow_run event and the rerun, and
+      # gh refuses cancelled runs — which under `set -euo pipefail` turned an
+      # advisory noise-reduction workflow into a red check of its own. The
+      # test extracts that workflow's own shell tail and executes it against a
+      # stubbed gh, proving it REFUSES a superseded run and still PERMITS a
+      # legitimate one. Cheap (~1s) and needs only node_modules.
+      - name: Auto-retry rerun guard (superseded runs are not retried)
+        run: npx vitest run tests/auto-retry-rerun-superseded-guard.test.ts
+
       # Production dependency vulnerability scan. The required gate audits only
       # production dependencies at CRITICAL severity; dev-dependency and HIGH
       # advisory signals are surfaced by the non-blocking informational step below.
