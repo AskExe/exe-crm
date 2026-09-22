@@ -38,6 +38,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       findOneByOrFail: jest.fn(({ id }) =>
         Promise.resolve(owners.find((user) => user.id === id)),
       ),
+      restore: jest.fn().mockResolvedValue(undefined),
     };
     const keyValuePairRepository = {
       findOneBy: jest.fn().mockResolvedValue(marker),
@@ -102,6 +103,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     return {
       command,
       workspaceRepository,
+      userRepository,
       keyValuePairRepository,
       signInUpService,
       workspaceService,
@@ -170,6 +172,10 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     expect(context.workspaceService.deleteWorkspace).toHaveBeenCalledWith(
       workspace.id,
     );
+    expect(context.userRepository.restore).toHaveBeenCalledWith([
+      'owner-1',
+      'owner-2',
+    ]);
     expect(context.queryRunner.query).toHaveBeenNthCalledWith(
       1,
       'SELECT pg_advisory_lock(hashtext($1))',
@@ -197,5 +203,6 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     expect(context.workspaceService.deleteWorkspace).toHaveBeenCalledWith(
       'pending',
     );
+    expect(context.userRepository.restore).toHaveBeenCalledWith(['owner-1']);
   });
 });

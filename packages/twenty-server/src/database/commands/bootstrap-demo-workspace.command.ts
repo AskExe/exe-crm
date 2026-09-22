@@ -154,7 +154,7 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
       });
     } catch (error) {
       if (!existingDemo) {
-        await this.workspaceService.deleteWorkspace(workspace.id);
+        await this.deleteWorkspacePreservingUsers(workspace.id, users);
       }
       throw error;
     }
@@ -287,8 +287,19 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
       });
       return activatedWorkspace;
     } catch (error) {
-      await this.workspaceService.deleteWorkspace(workspace.id);
+      await this.deleteWorkspacePreservingUsers(workspace.id, [primaryOwner]);
       throw error;
+    }
+  }
+
+  private async deleteWorkspacePreservingUsers(
+    workspaceId: string,
+    users: UserEntity[],
+  ): Promise<void> {
+    try {
+      await this.workspaceService.deleteWorkspace(workspaceId);
+    } finally {
+      await this.userRepository.restore(users.map(({ id }) => id));
     }
   }
 }
