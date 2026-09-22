@@ -1312,4 +1312,75 @@ describe('AccessTokenService', () => {
       expect(fetchCallCount).toBe(1); // No additional fetch
     });
   });
+
+  describe('fresh confirmed GoTrue user', () => {
+    const expected = { sub: 'user-1', email: 'visitor@example.com' };
+
+    it('accepts only a matching confirmed current user', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: expected.sub,
+          email: expected.email,
+          email_confirmed_at: '2026-09-22T00:00:00Z',
+          banned: false,
+        }),
+      } as Response);
+
+      await expect(
+        service.requireFreshConfirmedGoTrueUser(
+          'token',
+          'https://auth.example.com/auth/v1',
+          expected,
+        ),
+      ).resolves.toEqual({ id: expected.sub, email: expected.email });
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://auth.example.com/auth/v1/user',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer token' },
+        }),
+      );
+    });
+
+    it.each([
+      { ok: false, status: 401 },
+      {
+        ok: true,
+        json: async () => ({ id: expected.sub, email: expected.email }),
+      },
+      {
+        ok: true,
+        json: async () => ({
+          id: 'different-user',
+          email: expected.email,
+          email_confirmed_at: '2026-09-22T00:00:00Z',
+        }),
+      },
+    ])(
+      'fails closed for an untrusted fresh-user response',
+      async (response) => {
+        global.fetch = jest.fn().mockResolvedValue(response as Response);
+
+        await expect(
+          service.requireFreshConfirmedGoTrueUser(
+            'token',
+            'https://auth.example.com/auth/v1',
+            expected,
+          ),
+        ).resolves.toBeNull();
+      },
+    );
+
+    it('fails closed when GoTrue is unavailable', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('offline'));
+
+      await expect(
+        service.requireFreshConfirmedGoTrueUser(
+          'token',
+          'https://auth.example.com/auth/v1',
+          expected,
+        ),
+      ).resolves.toBeNull();
+    });
+  });
 });

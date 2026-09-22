@@ -256,7 +256,16 @@ const buildExeSsoUrl = () => {
   return `https://${authHost}/login?product=CRM&redirect=${encodeURIComponent(redirect)}`;
 };
 
+const buildExeDemoSsoUrl = () => {
+  const authHost = `auth.${getRegistrableDomain(window.location.hostname)}`;
+  const redirect = `${window.location.origin}/welcome?demo=1`;
+
+  return `https://${authHost}/login?product=CRM%20DEMO&redirect=${encodeURIComponent(redirect)}`;
+};
+
 export const SignInUpWorkspaceScopeForm = () => {
+  const isDemoJoin =
+    new URLSearchParams(window.location.search).get('demo') === '1';
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -265,6 +274,8 @@ export const SignInUpWorkspaceScopeForm = () => {
   const [adminToken, setAdminToken] = useState('');
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState('');
   // Setup wizard state
   const [showSetup, setShowSetup] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
@@ -379,6 +390,65 @@ export const SignInUpWorkspaceScopeForm = () => {
     },
     [adminToken],
   );
+
+  const handleDemoJoin = useCallback(async () => {
+    setDemoError('');
+    setDemoLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/gotrue-demo-join', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-Exe-Demo-Intent': 'join-read-only-demo' },
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        window.location.href = buildExeDemoSsoUrl();
+        return;
+      }
+
+      if (!response.ok || !data.redirectUrl) {
+        throw new Error(data.error || 'The public demo is unavailable');
+      }
+
+      window.location.href = data.redirectUrl;
+    } catch (error) {
+      setDemoError(
+        error instanceof Error
+          ? error.message
+          : 'The public demo is unavailable',
+      );
+    } finally {
+      setDemoLoading(false);
+    }
+  }, []);
+
+  if (isDemoJoin) {
+    return (
+      <StyledContentContainer>
+        <StyledAdminTokenForm>
+          <StyledFieldGroup>
+            <StyledLabel>Explore the CRM DEMO</StyledLabel>
+            <StyledHelperText>
+              Join a shared workspace with synthetic records. Demo visitors can
+              browse, search, and inspect data, but cannot edit records or use
+              admin and automation tools.
+            </StyledHelperText>
+          </StyledFieldGroup>
+          {demoError && <StyledErrorMessage>{demoError}</StyledErrorMessage>}
+          <StyledGoldButton
+            type="button"
+            disabled={demoLoading}
+            onClick={handleDemoJoin}
+          >
+            {demoLoading ? <StyledSpinner /> : 'JOIN READ-ONLY DEMO'}
+          </StyledGoldButton>
+          <StyledSsoLink href="/welcome">Use a private workspace</StyledSsoLink>
+        </StyledAdminTokenForm>
+      </StyledContentContainer>
+    );
+  }
 
   // Setup wizard — shown after first login when backend returns needsSetup
   if (showSetup) {

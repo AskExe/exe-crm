@@ -88,6 +88,11 @@ export type GoTrueVerificationResult =
   | { ok: true; claims: GoTrueJwtPayload }
   | { ok: false; failure: GoTrueVerificationFailure };
 
+export type GoTrueConfirmedUser = {
+  id: string;
+  email: string;
+};
+
 /** How the configured GoTrue signs its tokens, as observed from its JWKS. */
 export type GoTrueSigningMode =
   /** JWKS published at least one key (RS or ES); no shared secret needed. */
@@ -603,6 +608,54 @@ export class AccessTokenService {
         email,
       },
     };
+  }
+
+  /**
+   * Re-read the authenticated GoTrue user before granting public demo access.
+   * Unlike the ordinary session health check, every uncertainty fails closed:
+   * demo admission must prove current identity, confirmation and revocation.
+   */
+  async requireFreshConfirmedGoTrueUser(
+    token: string,
+    gotrueUrl: string,
+    expected: { sub: string; email: string },
+  ): Promise<GoTrueConfirmedUser | null> {
+    try {
+      const normalizedBase = gotrueUrl.endsWith('/')
+        ? gotrueUrl
+        : `${gotrueUrl}/`;
+      const response = await fetch(new URL('user', normalizedBase).toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!response.ok) return null;
+
+      const payload = (await response.json()) as {
+        id?: string;
+        email?: string;
+        email_confirmed_at?: string | null;
+        confirmed_at?: string | null;
+        banned?: boolean;
+      } | null;
+      const email = payload?.email?.toLowerCase().trim();
+      const confirmedAt = payload?.email_confirmed_at ?? payload?.confirmed_at;
+
+      if (
+        !payload?.id ||
+        payload.id !== expected.sub ||
+        !email ||
+        email !== expected.email.toLowerCase().trim() ||
+        !confirmedAt ||
+        payload.banned === true
+      ) {
+        return null;
+      }
+
+      return { id: payload.id, email };
+    } catch {
+      return null;
+    }
   }
 
   /**
