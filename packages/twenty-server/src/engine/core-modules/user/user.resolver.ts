@@ -9,12 +9,13 @@ import { GraphQLJSONObject } from 'graphql-type-json';
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 
 import { SupportDriver } from 'src/engine/core-modules/twenty-config/interfaces/support.interface';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import {
   AuthException,
   AuthExceptionCode,
@@ -76,6 +77,29 @@ const getHMACKey = (email?: string, key?: string | null) => {
   return hmac.update(email).digest('hex');
 };
 
+const DEMO_BOOTSTRAP_MARKER_KEY = 'exe.demo-workspace-bootstrap.v1';
+
+const markerHasCanonicalOwner = (value: JSON | null, userId: string) => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const ownerUserIds = (value as { ownerUserIds?: unknown }).ownerUserIds;
+
+  if (
+    !Array.isArray(ownerUserIds) ||
+    ownerUserIds.length !== 2 ||
+    ownerUserIds.some(
+      (ownerUserId) =>
+        typeof ownerUserId !== 'string' || ownerUserId.length === 0,
+    )
+  ) {
+    return false;
+  }
+
+  return new Set(ownerUserIds).size === 2 && ownerUserIds.includes(userId);
+};
+
 @MetadataResolver(() => UserEntity)
 @UseFilters(PermissionsGraphqlApiExceptionFilter)
 export class UserResolver {
@@ -88,12 +112,35 @@ export class UserResolver {
     private readonly userVarService: UserVarsService,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
     private readonly userRoleService: UserRoleService,
     private readonly permissionsService: PermissionsService,
     private readonly workspaceMemberTranspiler: WorkspaceMemberTranspiler,
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
+
+  private async canReadWorkspaceMemberDirectory({
+    userId,
+    workspaceId,
+  }: {
+    userId: string;
+    workspaceId: string;
+  }): Promise<boolean> {
+    if (workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID) return true;
+
+    const marker = await this.keyValuePairRepository.findOne({
+      where: {
+        workspaceId,
+        userId: IsNull(),
+        key: DEMO_BOOTSTRAP_MARKER_KEY,
+        deletedAt: IsNull(),
+      },
+    });
+
+    return markerHasCanonicalOwner(marker?.value ?? null, userId);
+  }
 
   private async getUserWorkspacePermissions({
     currentUserWorkspace,
@@ -255,10 +302,19 @@ export class UserResolver {
   })
   async workspaceMembers(
     @Parent() _user: UserEntity,
+    @AuthUser() { id: userId }: AuthContextUser,
     @AuthWorkspace({ allowUndefined: true })
     workspace: WorkspaceEntity | undefined,
   ): Promise<WorkspaceMemberDTO[]> {
     if (!workspace) return [];
+    if (
+      !(await this.canReadWorkspaceMemberDirectory({
+        userId,
+        workspaceId: workspace.id,
+      }))
+    ) {
+      return [];
+    }
 
     const workspaceMemberEntities = await this.userService.loadWorkspaceMembers(
       workspace,
@@ -324,10 +380,19 @@ export class UserResolver {
   })
   async deletedWorkspaceMembers(
     @Parent() _user: UserEntity,
+    @AuthUser() { id: userId }: AuthContextUser,
     @AuthWorkspace({ allowUndefined: true })
     workspace: WorkspaceEntity | undefined,
   ): Promise<DeletedWorkspaceMemberDTO[]> {
     if (!workspace) return [];
+    if (
+      !(await this.canReadWorkspaceMemberDirectory({
+        userId,
+        workspaceId: workspace.id,
+      }))
+    ) {
+      return [];
+    }
 
     const workspaceMemberEntities =
       await this.userService.loadDeletedWorkspaceMembersOnly(workspace);
