@@ -582,6 +582,57 @@ describe('GoTrueAuthController', () => {
       ).not.toHaveBeenCalled();
     });
 
+    it('accepts the configured HTTPS origin behind a TLS-terminating proxy', async () => {
+      process.env.SERVER_URL = 'https://crm.example.com';
+      const module = await buildTestModule();
+      const proxyController = module.get(GoTrueAuthController);
+      const proxyAccessTokenService = module.get(AccessTokenService);
+
+      jest
+        .mocked(proxyAccessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({ ok: false, failure: 'malformed' });
+      const res = mockResponse();
+
+      await proxyController.gotrueSetup(
+        { workspaceName: 'New Workspace' },
+        res,
+        {
+          // Express reports HTTP without trust-proxy even though the browser
+          // reached the configured public origin over HTTPS.
+          protocol: 'http',
+          headers: {
+            cookie: 'exe_sess=verified.jwt',
+            host: 'crm.internal:3000',
+            origin: 'https://crm.example.com',
+            'x-forwarded-proto': 'https',
+          },
+        } as unknown as Request,
+      );
+
+      expect(
+        proxyAccessTokenService.verifyGoTrueTokenDetailed,
+      ).toHaveBeenCalledWith('verified.jwt', 'http://gotrue:9999');
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('rejects a URL-shaped Origin containing a path', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000/not-an-origin',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
     it('rejects non-string workspace names without throwing', async () => {
       const res = mockResponse();
 

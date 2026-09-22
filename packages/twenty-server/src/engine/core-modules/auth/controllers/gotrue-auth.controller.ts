@@ -129,6 +129,7 @@ export class GoTrueAuthController {
   private readonly gotrueUrl: string | undefined;
   private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
+  private readonly trustedBrowserOrigins: Set<string>;
   /**
    * This deployment's canonical Exe org id (unified-permissions §2). When
    * unset, CRM RBAC enforcement is OFF and native behavior is preserved for
@@ -168,6 +169,17 @@ export class GoTrueAuthController {
       : undefined;
     this.serverBaseUrl =
       process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
+    this.trustedBrowserOrigins = new Set(
+      [process.env.FRONTEND_URL, this.serverBaseUrl]
+        .map((value) => {
+          try {
+            return value ? new URL(value).origin : undefined;
+          } catch {
+            return undefined;
+          }
+        })
+        .filter((value): value is string => value !== undefined),
+    );
 
     // Enforcement-off is supported, but never SILENT. Without this, a
     // deployment that believes RBAC is on has no signal that every exe_perms
@@ -459,27 +471,30 @@ export class GoTrueAuthController {
 
   private isSameOriginBrowserRequest(req: Request | undefined): boolean {
     const originHeader = req?.headers.origin;
-    const hostHeader = req?.headers.host;
 
-    if (
-      typeof originHeader !== 'string' ||
-      typeof hostHeader !== 'string' ||
-      !originHeader ||
-      !hostHeader
-    ) {
+    if (typeof originHeader !== 'string' || !originHeader) {
       return false;
     }
 
     try {
       const origin = new URL(originHeader);
-      const forwardedProtocol = req.headers['x-forwarded-proto'];
-      const protocol =
-        req.protocol ||
-        (typeof forwardedProtocol === 'string'
-          ? forwardedProtocol.split(',')[0]?.trim()
-          : undefined);
 
-      return origin.host === hostHeader && origin.protocol === `${protocol}:`;
+      // Origin is defined as scheme + host + port. Reject URL-shaped values
+      // with any additional components instead of normalizing them silently.
+      if (
+        origin.pathname !== '/' ||
+        origin.search ||
+        origin.hash ||
+        origin.username ||
+        origin.password
+      ) {
+        return false;
+      }
+
+      // Compare only with operator-controlled public origins. req.protocol is
+      // "http" behind a TLS-terminating edge unless Express trust-proxy is
+      // enabled, while forwarding headers must not become client authority.
+      return this.trustedBrowserOrigins.has(origin.origin);
     } catch {
       return false;
     }
