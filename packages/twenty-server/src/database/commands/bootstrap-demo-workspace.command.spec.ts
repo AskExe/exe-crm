@@ -25,10 +25,10 @@ describe('BootstrapDemoWorkspaceCommand', () => {
 
   const setup = ({
     existingWorkspace = null,
-    marker = { id: 'marker' },
+    marker = { id: 'marker', value: { ownerUserIds: ['old-owner'] } },
   }: {
     existingWorkspace?: (typeof workspace & { deletedAt?: Date | null }) | null;
-    marker?: { id: string } | null;
+    marker?: { id: string; value?: unknown } | null;
   } = {}) => {
     const workspaceRepository = {
       findOne: jest.fn().mockResolvedValue(existingWorkspace),
@@ -43,6 +43,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     const keyValuePairRepository = {
       findOneBy: jest.fn().mockResolvedValue(marker),
       insert: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
     };
     const roleRepository = {
       findOneByOrFail: jest.fn().mockResolvedValue({ id: 'admin-role' }),
@@ -135,7 +136,10 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       context.userRoleService.assignRoleToManyUserWorkspace,
     ).toHaveBeenCalledTimes(2);
     expect(context.keyValuePairRepository.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: workspace.id }),
+      expect.objectContaining({
+        workspaceId: workspace.id,
+        value: { ownerUserIds: ['owner-1', 'owner-2'] },
+      }),
     );
     expect(
       context.workflowTriggerWorkspaceService.deactivateWorkflowVersion,
@@ -149,6 +153,25 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     expect(
       context.userWorkspaceService.addUserToWorkspaceIfUserNotInWorkspace,
     ).toHaveBeenCalledTimes(2);
+    expect(context.keyValuePairRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: workspace.id }),
+      { value: { ownerUserIds: ['owner-1', 'owner-2'] }, deletedAt: null },
+    );
+  });
+
+  it('repairs malformed or drifted owner marker data on reconciliation', async () => {
+    const context = setup({
+      existingWorkspace: workspace,
+      marker: { id: 'marker', value: { ownerUserIds: 'malformed' } },
+    });
+    await context.command.run([], {
+      execute: true,
+      owner: ['owner-2:two@example.com', 'owner-1:one@example.com'],
+    });
+    expect(context.keyValuePairRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: workspace.id }),
+      { value: { ownerUserIds: ['owner-1', 'owner-2'] }, deletedAt: null },
+    );
   });
 
   it('rejects an unmarked DEMO name collision', async () => {
@@ -205,6 +228,18 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     expect(context.queryRunner.query.mock.invocationCallOrder[0]).toBeLessThan(
       context.workspaceRepository.findOne.mock.invocationCallOrder[0],
     );
+  });
+
+  it('does not rewrite the marker when existing-workspace reconciliation fails', async () => {
+    const context = setup({ existingWorkspace: workspace });
+    context.userRoleService.assignRoleToManyUserWorkspace.mockRejectedValueOnce(
+      new Error('role failure'),
+    );
+    await expect(
+      context.command.run([], { execute: true, owner: ownerOptions }),
+    ).rejects.toThrow('role failure');
+    expect(context.keyValuePairRepository.update).not.toHaveBeenCalled();
+    expect(context.workspaceService.deleteWorkspace).not.toHaveBeenCalled();
   });
 
   it('removes a newly activated workspace when marker creation fails', async () => {

@@ -116,11 +116,12 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
   }
 
   private async executeBootstrap(users: UserEntity[]): Promise<void> {
+    const ownerUserIds = users.map(({ id }) => id).sort();
     const existingDemo = await this.findExistingDemo();
 
     const workspace = existingDemo
       ? await this.assertManagedDemo(existingDemo)
-      : await this.createDemo(users[0]);
+      : await this.createDemo(users[0], ownerUserIds);
 
     try {
       const adminRole = await this.roleRepository.findOneByOrFail({
@@ -152,6 +153,17 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
       await this.workspaceRepository.update(workspace.id, {
         isPublicInviteLinkEnabled: false,
       });
+      await this.keyValuePairRepository.update(
+        {
+          workspaceId: workspace.id,
+          userId: IsNull(),
+          key: DEMO_BOOTSTRAP_MARKER_KEY,
+        },
+        {
+          value: { ownerUserIds } as unknown as JSON,
+          deletedAt: null,
+        },
+      );
     } catch (error) {
       if (!existingDemo) {
         await this.deleteWorkspacePreservingUsers(workspace.id, users);
@@ -236,7 +248,7 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
     return workspace;
   }
 
-  private async createDemo(primaryOwner: UserEntity) {
+  private async createDemo(primaryOwner: UserEntity, ownerUserIds: string[]) {
     // The operator command supplies the authorization boundary. The in-memory
     // admin flag selects the canonical creation path without changing the user.
     const { workspace } = await this.signInUpService.signUpOnNewWorkspace({
@@ -283,6 +295,7 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
         userId: null,
         key: DEMO_BOOTSTRAP_MARKER_KEY,
         type: KeyValuePairType.CONFIG_VARIABLE,
+        value: { ownerUserIds } as unknown as JSON,
         textValueDeprecated: null,
         deletedAt: null,
       });
