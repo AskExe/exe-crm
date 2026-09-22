@@ -96,6 +96,8 @@ export const GO_TRUE_BRIDGE_FAILURES = {
   NoCrmAccess: 'no_crm_access',
   /** Managed org and a tier was granted, but no CRM account could be bound. */
   NotProvisioned: 'not_provisioned',
+  /** Verified unmanaged identity needs a workspace name for first-time setup. */
+  NeedsSetup: 'needs_setup',
   /**
    * The session verified fine, but something downstream of verification threw
    * — a database outage, role sync, login-token generation. Reporting these as
@@ -127,6 +129,7 @@ export class GoTrueAuthController {
   private readonly gotrueUrl: string | undefined;
   private readonly adminTokenHash: Buffer | undefined;
   private readonly serverBaseUrl: string | undefined;
+  private readonly trustedBrowserOrigins: Set<string>;
   /**
    * This deployment's canonical Exe org id (unified-permissions §2). When
    * unset, CRM RBAC enforcement is OFF and native behavior is preserved for
@@ -166,6 +169,17 @@ export class GoTrueAuthController {
       : undefined;
     this.serverBaseUrl =
       process.env.SERVER_URL || process.env.REACT_APP_SERVER_BASE_URL;
+    this.trustedBrowserOrigins = new Set(
+      [process.env.FRONTEND_URL, this.serverBaseUrl]
+        .map((value) => {
+          try {
+            return value ? new URL(value).origin : undefined;
+          } catch {
+            return undefined;
+          }
+        })
+        .filter((value): value is string => value !== undefined),
+    );
 
     // Enforcement-off is supported, but never SILENT. Without this, a
     // deployment that believes RBAC is on has no signal that every exe_perms
@@ -453,6 +467,37 @@ export class GoTrueAuthController {
     }
 
     return undefined;
+  }
+
+  private isSameOriginBrowserRequest(req: Request | undefined): boolean {
+    const originHeader = req?.headers.origin;
+
+    if (typeof originHeader !== 'string' || !originHeader) {
+      return false;
+    }
+
+    try {
+      const origin = new URL(originHeader);
+
+      // Origin is defined as scheme + host + port. Reject URL-shaped values
+      // with any additional components instead of normalizing them silently.
+      if (
+        origin.pathname !== '/' ||
+        origin.search ||
+        origin.hash ||
+        origin.username ||
+        origin.password
+      ) {
+        return false;
+      }
+
+      // Compare only with operator-controlled public origins. req.protocol is
+      // "http" behind a TLS-terminating edge unless Express trust-proxy is
+      // enabled, while forwarding headers must not become client authority.
+      return this.trustedBrowserOrigins.has(origin.origin);
+    } catch {
+      return false;
+    }
   }
 
   private async resolveGoTrueLoginContext({
@@ -806,6 +851,88 @@ export class GoTrueAuthController {
     }
   }
 
+  // First-time unmanaged setup still belongs to CRM because it names the CRM
+  // workspace. Identity remains centralized: this endpoint accepts no email,
+  // password, token, or reset secret and trusts only the verified HttpOnly
+  // apex session established by auth.<domain>.
+  @Post('gotrue-setup')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
+  async gotrueSetup(
+    @Body() body: { workspaceName?: unknown },
+    @Res() res: Response,
+    @Req() req?: Request,
+  ) {
+    const workspaceName =
+      typeof body?.workspaceName === 'string'
+        ? body.workspaceName.trim()
+        : undefined;
+    const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
+
+    if (!workspaceName || workspaceName.length > 255) {
+      return res.status(400).json({
+        error: 'Workspace name must be between 1 and 255 characters',
+      });
+    }
+
+    // The apex session cookie is same-site across sibling subdomains, so it is
+    // not a CSRF defense by itself. This browser-only mutation requires the
+    // unforgeable Origin header to match the CRM host exactly.
+    if (!this.isSameOriginBrowserRequest(req)) {
+      return res.status(403).json({ error: 'Request origin is not allowed' });
+    }
+
+    if (!goTrueSessionToken || !this.gotrueUrl) {
+      return res.status(401).json({ error: 'Central session is required' });
+    }
+
+    const verification = await this.accessTokenService
+      .verifyGoTrueTokenDetailed(goTrueSessionToken, this.gotrueUrl)
+      .catch(() => undefined);
+    const email = verification?.ok ? verification.claims?.email : undefined;
+    const subject = verification?.ok ? verification.claims?.sub : undefined;
+
+    if (!email || !subject) {
+      return res.status(401).json({ error: 'Central session is invalid' });
+    }
+
+    const permsResolution = resolveExePermsForOrg(
+      decodeJwtAppMetadata(goTrueSessionToken),
+      this.exeOrgId,
+    );
+
+    // Managed tenants are provisioned only through their canonical org binding.
+    // Never let this convenience endpoint bypass that membership enforcement.
+    if (permsResolution.managed || isManagedPermsRequired()) {
+      return res.status(403).json({
+        error: 'Workspace setup is managed by your administrator',
+      });
+    }
+
+    const contextResult = await this.resolveGoTrueLoginContext({
+      email,
+      req,
+      workspaceName,
+    });
+
+    if (contextResult.type !== 'success') {
+      return res
+        .status(contextResult.type === 'error' ? contextResult.statusCode : 400)
+        .json({
+          error:
+            contextResult.type === 'error'
+              ? contextResult.error
+              : 'Workspace setup could not be completed',
+        });
+    }
+
+    const redirectUrl = await this.generateLoginTokenRedirect(
+      contextResult.ctx.user.email,
+      contextResult.ctx.workspace.id,
+    );
+
+    return res.json({ redirectUrl });
+  }
+
   // Public by design (SSO bridge callback, same pattern as the OAuth
   // callbacks): the caller is not yet authenticated with the CRM — identity
   // is proven in-handler by cryptographically verifying the GoTrue JWT from
@@ -1024,7 +1151,9 @@ export class GoTrueAuthController {
 
         return res.redirect(
           this.generateSignInRedirectWithReason(
-            GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
+            contextResult.type === 'needsSetup'
+              ? GO_TRUE_BRIDGE_FAILURES.NeedsSetup
+              : GO_TRUE_BRIDGE_FAILURES.NotProvisioned,
           ),
         );
       }

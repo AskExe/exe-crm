@@ -477,6 +477,190 @@ describe('GoTrueAuthController', () => {
       );
     });
 
+    it('completes first workspace setup from the verified central session without credentials', async () => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: { sub: 'gotrue-user-id', email: 'new@exe.ai' },
+        });
+      userRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(MOCK_USER);
+      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
+      userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000',
+        },
+      } as unknown as Request);
+
+      expect(signInUpService.signUpOnNewWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newUserWithPicture: expect.objectContaining({ email: 'new@exe.ai' }),
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
+        }),
+      );
+    });
+
+    it('rejects workspace setup without a verified central session', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('does not let workspace setup bypass managed membership enforcement', async () => {
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: { sub: 'gotrue-user-id', email: 'new@exe.ai' },
+        });
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('rejects setup from a sibling origin even with a central session cookie', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'https',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'crm.example.com',
+          origin: 'https://wiki.example.com',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects setup when the browser origin is missing', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'https',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'crm.example.com',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('accepts the configured HTTPS origin behind a TLS-terminating proxy', async () => {
+      process.env.SERVER_URL = 'https://crm.example.com';
+      const module = await buildTestModule();
+      const proxyController = module.get(GoTrueAuthController);
+      const proxyAccessTokenService = module.get(AccessTokenService);
+
+      jest
+        .mocked(proxyAccessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({ ok: false, failure: 'malformed' });
+      const res = mockResponse();
+
+      await proxyController.gotrueSetup(
+        { workspaceName: 'New Workspace' },
+        res,
+        {
+          // Express reports HTTP without trust-proxy even though the browser
+          // reached the configured public origin over HTTPS.
+          protocol: 'http',
+          headers: {
+            cookie: 'exe_sess=verified.jwt',
+            host: 'crm.internal:3000',
+            origin: 'https://crm.example.com',
+            'x-forwarded-proto': 'https',
+          },
+        } as unknown as Request,
+      );
+
+      expect(
+        proxyAccessTokenService.verifyGoTrueTokenDetailed,
+      ).toHaveBeenCalledWith('verified.jwt', 'http://gotrue:9999');
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('rejects a URL-shaped Origin containing a path', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000/not-an-origin',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-string workspace names without throwing', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 42 }, res, {
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects workspace names longer than the UI limit', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'x'.repeat(256) }, res, {
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
     it('returns needsSetup when first login without workspaceName (bootstrap opt-out)', async () => {
       // Only reachable when the managed-required gate is opted out; with the
       // default gate on we refuse before prompting for a workspace name.
@@ -625,6 +809,7 @@ describe('GoTrueAuthController', () => {
     });
 
     it('does not provision a first-login callback without workspace setup', async () => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
       jest
         .mocked(accessTokenService.verifyGoTrueTokenDetailed)
         .mockResolvedValue({
@@ -645,7 +830,7 @@ describe('GoTrueAuthController', () => {
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome?ssoError=not_provisioned',
+        'http://localhost:3000/welcome?ssoError=needs_setup',
       );
     });
 
