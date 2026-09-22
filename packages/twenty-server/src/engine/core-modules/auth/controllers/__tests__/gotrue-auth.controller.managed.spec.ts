@@ -52,7 +52,13 @@ const buildController = (
   const workspace =
     'workspace' in overrides
       ? overrides.workspace
-      : { id: CANONICAL_WS_ID, defaultRoleId: DEFAULT_ROLE_ID };
+      : {
+          id: CANONICAL_WS_ID,
+          defaultRoleId: DEFAULT_ROLE_ID,
+          subdomain: 'demo',
+          customDomain: null,
+          isCustomDomainEnabled: false,
+        };
 
   const loginTokenService = {
     generateLoginToken: jest.fn().mockResolvedValue({ token: 'login-token' }),
@@ -64,6 +70,10 @@ const buildController = (
   const workspaceService = { activateWorkspace: jest.fn() };
   const workspaceDomainsService = {
     getWorkspaceByOriginOrDefaultWorkspace: jest.fn(),
+    getWorkspaceUrls: jest.fn().mockReturnValue({
+      customUrl: undefined,
+      subdomainUrl: 'https://demo.crm.example.com',
+    }),
   };
   const roleSyncService = {
     applyCrmTier: jest
@@ -82,7 +92,10 @@ const buildController = (
     ensureDemoViewerMembership: jest.fn().mockResolvedValue(true),
   };
   const userRepository = {
-    findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ id: USER_ID, email: EMAIL, isEmailVerified: false }),
+    save: jest.fn().mockImplementation(async (user) => user),
   };
   const userWorkspaceRepository = {
     findOne: jest.fn().mockResolvedValue(
@@ -153,12 +166,17 @@ const demoRequest = () => ({
 
 describe('GoTrueAuthController public DEMO join', () => {
   it('binds only to EXE_DEMO_WORKSPACE_ID and preserves an existing owner role', async () => {
-    const { controller, accessTokenService, roleSyncService, signInUpService } =
-      buildController({
-        EXE_ORG_ID: ORG_ID,
-        EXE_ORG_WORKSPACE_ID: 'ws-exe-private',
-        EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
-      });
+    const {
+      controller,
+      accessTokenService,
+      roleSyncService,
+      signInUpService,
+      userRepository,
+    } = buildController({
+      EXE_ORG_ID: ORG_ID,
+      EXE_ORG_WORKSPACE_ID: 'ws-exe-private',
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+    });
     accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
       ok: true,
       claims: { sub: USER_ID, email: EMAIL },
@@ -175,8 +193,13 @@ describe('GoTrueAuthController public DEMO join', () => {
       workspaceId: CANONICAL_WS_ID,
     });
     expect(res.json).toHaveBeenCalledWith({
-      redirectUrl: expect.stringContaining('/verify?loginToken='),
+      redirectUrl: expect.stringMatching(
+        /^https:\/\/demo\.crm\.example\.com\/verify\?loginToken=/,
+      ),
     });
+    expect(userRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ isEmailVerified: true }),
+    );
   });
 
   it('seats a new visitor directly on the verified read-only role', async () => {
@@ -240,6 +263,26 @@ describe('GoTrueAuthController public DEMO join', () => {
       claims: { sub: USER_ID, email: EMAIL },
     });
     roleSyncService.ensureDemoViewerMembership.mockResolvedValue(false);
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when the freshly confirmed email cannot be persisted', async () => {
+    const {
+      controller,
+      accessTokenService,
+      loginTokenService,
+      userRepository,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    userRepository.save.mockRejectedValue(new Error('database unavailable'));
     const res = makeRes();
 
     await controller.joinGoTrueDemo(res, demoRequest() as any);

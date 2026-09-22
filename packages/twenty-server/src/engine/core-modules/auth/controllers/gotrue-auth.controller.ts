@@ -387,6 +387,7 @@ export class GoTrueAuthController {
   private async generateLoginTokenRedirect(
     email: string,
     workspaceId: string,
+    baseUrlOverride?: string,
   ): Promise<string> {
     const loginToken = await this.loginTokenService.generateLoginToken(
       email,
@@ -394,16 +395,16 @@ export class GoTrueAuthController {
       AuthProviderEnum.SSO,
     );
 
-    if (!this.serverBaseUrl) {
+    const baseUrl = baseUrlOverride ?? this.serverBaseUrl;
+
+    if (!baseUrl) {
       throw new Error(
         'SERVER_URL (or REACT_APP_SERVER_BASE_URL) must be set. ' +
           'Cannot generate login redirect without a configured base URL.',
       );
     }
 
-    const baseUrl = this.serverBaseUrl;
-
-    return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
+    return `${baseUrl.replace(/\/$/, '')}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
 
   private generateSignInRedirect(): string {
@@ -1573,6 +1574,23 @@ export class GoTrueAuthController {
       };
     }
 
+    // Fresh GoTrue confirmation is the authority for public DEMO admission.
+    // Persist that result on the CRM user before token exchange, otherwise a
+    // newly provisioned visitor is rejected when CRM email verification is
+    // required even though GoTrue has just proved the address is confirmed.
+    if (!user.isEmailVerified) {
+      try {
+        user.isEmailVerified = true;
+        user = await this.userRepository.save(user);
+      } catch {
+        return {
+          type: 'deny',
+          statusCode: 503,
+          error: 'Demo access is temporarily unavailable',
+        };
+      }
+    }
+
     // Preserve canonical Admin owners, while reconciling every other existing
     // or concurrently-created membership to the dedicated DEMO Viewer role.
     const roleIsSafe = await this.roleSyncService.ensureDemoViewerMembership({
@@ -1590,9 +1608,17 @@ export class GoTrueAuthController {
     }
 
     try {
+      const workspaceUrls =
+        this.workspaceDomainsService.getWorkspaceUrls(workspace);
+      const demoBaseUrl = workspaceUrls.customUrl ?? workspaceUrls.subdomainUrl;
+
       return {
         type: 'redirect',
-        url: await this.generateLoginTokenRedirect(user.email, workspace.id),
+        url: await this.generateLoginTokenRedirect(
+          user.email,
+          workspace.id,
+          demoBaseUrl,
+        ),
       };
     } catch {
       return {
