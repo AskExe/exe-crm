@@ -1576,6 +1576,7 @@ export class GoTrueAuthController {
     // Preserve canonical Admin owners, while reconciling every other existing
     // or concurrently-created membership to the dedicated DEMO Viewer role.
     const roleIsSafe = await this.roleSyncService.ensureDemoViewerMembership({
+      userId: user.id,
       userWorkspaceId: membership.id,
       workspaceId: workspace.id,
     });

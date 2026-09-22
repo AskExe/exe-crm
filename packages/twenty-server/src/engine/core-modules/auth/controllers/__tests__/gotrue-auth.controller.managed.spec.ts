@@ -170,6 +170,7 @@ describe('GoTrueAuthController public DEMO join', () => {
     expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
     expect(roleSyncService.applyCrmTier).not.toHaveBeenCalled();
     expect(roleSyncService.ensureDemoViewerMembership).toHaveBeenCalledWith({
+      userId: USER_ID,
       userWorkspaceId: USER_WORKSPACE_ID,
       workspaceId: CANONICAL_WS_ID,
     });
