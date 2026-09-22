@@ -477,6 +477,65 @@ describe('GoTrueAuthController', () => {
       );
     });
 
+    it('completes first workspace setup from the verified central session without credentials', async () => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: { sub: 'gotrue-user-id', email: 'new@exe.ai' },
+        });
+      userRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(MOCK_USER);
+      workspaceRepo.findOne.mockResolvedValue(MOCK_WORKSPACE);
+      userWorkspaceRepo.findOne.mockResolvedValue(MOCK_USER_WORKSPACE);
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        headers: { cookie: 'exe_sess=verified.jwt' },
+      } as unknown as Request);
+
+      expect(signInUpService.signUpOnNewWorkspace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newUserWithPicture: expect.objectContaining({ email: 'new@exe.ai' }),
+        }),
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          redirectUrl: expect.stringContaining('/verify?loginToken='),
+        }),
+      );
+    });
+
+    it('rejects workspace setup without a verified central session', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        headers: {},
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('does not let workspace setup bypass managed membership enforcement', async () => {
+      jest
+        .mocked(accessTokenService.verifyGoTrueTokenDetailed)
+        .mockResolvedValue({
+          ok: true,
+          claims: { sub: 'gotrue-user-id', email: 'new@exe.ai' },
+        });
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        headers: { cookie: 'exe_sess=verified.jwt' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+    });
+
     it('returns needsSetup when first login without workspaceName (bootstrap opt-out)', async () => {
       // Only reachable when the managed-required gate is opted out; with the
       // default gate on we refuse before prompting for a workspace name.
@@ -625,6 +684,7 @@ describe('GoTrueAuthController', () => {
     });
 
     it('does not provision a first-login callback without workspace setup', async () => {
+      process.env.CRM_REQUIRE_MANAGED_PERMS = 'false';
       jest
         .mocked(accessTokenService.verifyGoTrueTokenDetailed)
         .mockResolvedValue({
@@ -645,7 +705,7 @@ describe('GoTrueAuthController', () => {
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
       expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/welcome?ssoError=not_provisioned',
+        'http://localhost:3000/welcome?ssoError=needs_setup',
       );
     });
 
