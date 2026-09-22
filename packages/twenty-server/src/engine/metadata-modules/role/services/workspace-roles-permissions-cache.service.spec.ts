@@ -53,6 +53,16 @@ describe('WorkspaceRolesPermissionsCacheService public DEMO privacy', () => {
       STANDARD_OBJECTS.calendarChannel.universalIdentifier,
       true,
     ),
+    objectMetadata(
+      'attachment',
+      STANDARD_OBJECTS.attachment.universalIdentifier,
+      true,
+    ),
+    objectMetadata(
+      'workflow-run',
+      STANDARD_OBJECTS.workflowRun.universalIdentifier,
+      true,
+    ),
     objectMetadata('synthetic-company', 'synthetic-company', false),
   ];
 
@@ -77,6 +87,23 @@ describe('WorkspaceRolesPermissionsCacheService public DEMO privacy', () => {
         canDestroyObjectRecords: false,
       });
     }
+  });
+
+  it('allows only safe system reads and denies every system mutation', async () => {
+    const permissions = await service.computeForCache('demo-workspace');
+
+    expect(permissions[demoRole.id].attachment).toMatchObject({
+      canReadObjectRecords: true,
+      canUpdateObjectRecords: false,
+      canSoftDeleteObjectRecords: false,
+      canDestroyObjectRecords: false,
+    });
+    expect(permissions[demoRole.id]['workflow-run']).toMatchObject({
+      canReadObjectRecords: false,
+      canUpdateObjectRecords: false,
+      canSoftDeleteObjectRecords: false,
+      canDestroyObjectRecords: false,
+    });
   });
 
   it('keeps synthetic CRM records readable and does not change other roles', async () => {

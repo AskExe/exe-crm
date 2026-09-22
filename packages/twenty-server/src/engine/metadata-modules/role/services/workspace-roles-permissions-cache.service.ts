@@ -23,14 +23,14 @@ const WORKFLOW_STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS = [
   STANDARD_OBJECTS.workflowVersion.universalIdentifier,
 ] as const;
 
-// Public DEMO visitors may browse synthetic CRM records, but never the member
-// directory or integration identities. The default model grants every role full
-// access to system objects, so this dedicated role needs a narrow exception.
-const DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS = [
-  STANDARD_OBJECTS.workspaceMember.universalIdentifier,
-  STANDARD_OBJECTS.connectedAccount.universalIdentifier,
-  STANDARD_OBJECTS.messageChannel.universalIdentifier,
-  STANDARD_OBJECTS.calendarChannel.universalIdentifier,
+// These are the only system records needed to render relationships and files
+// attached to the synthetic CRM records. Identity, messaging, calendar,
+// workflow, and other internal system records remain invisible.
+const DEMO_READABLE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS = [
+  STANDARD_OBJECTS.attachment.universalIdentifier,
+  STANDARD_OBJECTS.noteTarget.universalIdentifier,
+  STANDARD_OBJECTS.taskTarget.universalIdentifier,
+  STANDARD_OBJECTS.timelineActivity.universalIdentifier,
 ] as const;
 
 @Injectable()
@@ -85,11 +85,11 @@ export class WorkspaceRolesPermissionsCacheService extends WorkspaceCacheProvide
         if (
           role.universalIdentifier ===
             EXE_DEMO_VIEWER_ROLE.universalIdentifier &&
-          DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS.includes(
-            universalIdentifier as (typeof DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS)[number],
-          )
+          isSystem
         ) {
-          canRead = false;
+          canRead = DEMO_READABLE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS.includes(
+            universalIdentifier as (typeof DEMO_READABLE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS)[number],
+          );
           canUpdate = false;
           canSoftDelete = false;
           canDestroy = false;

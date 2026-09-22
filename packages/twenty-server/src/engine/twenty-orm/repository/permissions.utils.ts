@@ -109,12 +109,6 @@ export const validateOperationIsPermittedOrThrow = ({
     );
   }
 
-  const objectMetadataIsSystem = objectMetadata.isSystem === true;
-
-  if (objectMetadataIsSystem) {
-    return;
-  }
-
   const columnNameToFieldMetadataIdMap = getColumnNameToFieldMetadataIdMap(
     objectMetadata,
     flatFieldMetadataMaps,
