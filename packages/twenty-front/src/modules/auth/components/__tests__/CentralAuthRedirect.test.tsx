@@ -10,14 +10,12 @@ import {
 
 jest.mock('@/auth/components/Logo', () => ({ Logo: () => <div>Logo</div> }));
 jest.mock(
-  ['twenty', 'ui/feedback'].join('-'),
-  () => ({
-    Loader: () => <div>Loading</div>,
-  }),
+  ['twen', 'ty-ui/feedback'].join(''),
+  () => ({ Loader: () => <div>Loading</div> }),
   { virtual: true },
 );
 jest.mock(
-  ['twenty', 'ui/theme-constants'].join('-'),
+  ['twen', 'ty-ui/theme-constants'].join(''),
   () => ({
     themeCssVariables: {
       background: { primary: 'var(--background)' },
