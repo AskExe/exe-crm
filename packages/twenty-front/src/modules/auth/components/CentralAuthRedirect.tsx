@@ -117,6 +117,7 @@ export const CentralAuthRedirect = () => {
             id="workspace-name"
             name="workspaceName"
             autoComplete="organization"
+            maxLength={255}
             value={workspaceName}
             onChange={(event) => setWorkspaceName(event.target.value)}
           />

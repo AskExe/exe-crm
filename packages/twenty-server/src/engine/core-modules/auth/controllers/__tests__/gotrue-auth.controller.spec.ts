@@ -493,7 +493,12 @@ describe('GoTrueAuthController', () => {
       const res = mockResponse();
 
       await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
-        headers: { cookie: 'exe_sess=verified.jwt' },
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000',
+        },
       } as unknown as Request);
 
       expect(signInUpService.signUpOnNewWorkspace).toHaveBeenCalledWith(
@@ -512,7 +517,8 @@ describe('GoTrueAuthController', () => {
       const res = mockResponse();
 
       await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
-        headers: {},
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
       } as unknown as Request);
 
       expect(res.status).toHaveBeenCalledWith(401);
@@ -529,11 +535,65 @@ describe('GoTrueAuthController', () => {
       const res = mockResponse();
 
       await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
-        headers: { cookie: 'exe_sess=verified.jwt' },
+        protocol: 'http',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'localhost:3000',
+          origin: 'http://localhost:3000',
+        },
       } as unknown as Request);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('rejects setup from a sibling origin even with a central session cookie', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'https',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'crm.example.com',
+          origin: 'https://wiki.example.com',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects setup when the browser origin is missing', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'New Workspace' }, res, {
+        protocol: 'https',
+        headers: {
+          cookie: 'exe_sess=verified.jwt',
+          host: 'crm.example.com',
+        },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-string workspace names without throwing', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 42 }, res, {
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
     });
 
     it('returns needsSetup when first login without workspaceName (bootstrap opt-out)', async () => {

@@ -457,6 +457,34 @@ export class GoTrueAuthController {
     return undefined;
   }
 
+  private isSameOriginBrowserRequest(req: Request | undefined): boolean {
+    const originHeader = req?.headers.origin;
+    const hostHeader = req?.headers.host;
+
+    if (
+      typeof originHeader !== 'string' ||
+      typeof hostHeader !== 'string' ||
+      !originHeader ||
+      !hostHeader
+    ) {
+      return false;
+    }
+
+    try {
+      const origin = new URL(originHeader);
+      const forwardedProtocol = req.headers['x-forwarded-proto'];
+      const protocol =
+        req.protocol ||
+        (typeof forwardedProtocol === 'string'
+          ? forwardedProtocol.split(',')[0]?.trim()
+          : undefined);
+
+      return origin.host === hostHeader && origin.protocol === `${protocol}:`;
+    } catch {
+      return false;
+    }
+  }
+
   private async resolveGoTrueLoginContext({
     email,
     req,
@@ -815,15 +843,27 @@ export class GoTrueAuthController {
   @Post('gotrue-setup')
   @UseGuards(PublicEndpointGuard, NoPermissionGuard)
   async gotrueSetup(
-    @Body() body: { workspaceName?: string },
+    @Body() body: { workspaceName?: unknown },
     @Res() res: Response,
     @Req() req?: Request,
   ) {
-    const workspaceName = body?.workspaceName?.trim();
+    const workspaceName =
+      typeof body?.workspaceName === 'string'
+        ? body.workspaceName.trim()
+        : undefined;
     const goTrueSessionToken = this.getRequestCookie(req, 'exe_sess');
 
-    if (!workspaceName) {
-      return res.status(400).json({ error: 'Workspace name is required' });
+    if (!workspaceName || workspaceName.length > 255) {
+      return res.status(400).json({
+        error: 'Workspace name must be between 1 and 255 characters',
+      });
+    }
+
+    // The apex session cookie is same-site across sibling subdomains, so it is
+    // not a CSRF defense by itself. This browser-only mutation requires the
+    // unforgeable Origin header to match the CRM host exactly.
+    if (!this.isSameOriginBrowserRequest(req)) {
+      return res.status(403).json({ error: 'Request origin is not allowed' });
     }
 
     if (!goTrueSessionToken || !this.gotrueUrl) {
