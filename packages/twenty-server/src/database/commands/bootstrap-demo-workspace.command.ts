@@ -21,9 +21,10 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
 import {
-  WorkflowStatus,
-  type WorkflowWorkspaceEntity,
-} from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+  WorkflowVersionStatus,
+  type WorkflowVersionWorkspaceEntity,
+} from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
+import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-trigger/workspace-services/workflow-trigger.workspace-service';
 
 const DEMO_WORKSPACE_NAME = 'DEMO';
 const DEMO_BOOTSTRAP_MARKER_KEY = 'exe.demo-workspace-bootstrap.v1';
@@ -56,6 +57,7 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly userRoleService: UserRoleService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly workflowTriggerWorkspaceService: WorkflowTriggerWorkspaceService,
   ) {
     super();
   }
@@ -217,37 +219,52 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
       existingUser: { ...primaryOwner, canAccessFullAdminPanel: true },
     });
 
-    const activatedWorkspace = await this.workspaceService.activateWorkspace(
-      fromUserEntityToFlat(primaryOwner),
-      workspace,
-      { displayName: DEMO_WORKSPACE_NAME },
-    );
-    if (!activatedWorkspace)
-      throw new Error('DEMO activation did not return a workspace');
-
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
-      const workflowRepository =
-        await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
-          activatedWorkspace.id,
-          'workflow',
-          { shouldBypassPermissionChecks: true },
-        );
-      await workflowRepository.update(
-        {},
-        {
-          statuses: [WorkflowStatus.DEACTIVATED],
-        },
+    try {
+      const activatedWorkspace = await this.workspaceService.activateWorkspace(
+        fromUserEntityToFlat(primaryOwner),
+        workspace,
+        { displayName: DEMO_WORKSPACE_NAME },
       );
-    }, buildSystemAuthContext(activatedWorkspace.id));
+      if (!activatedWorkspace)
+        throw new Error('DEMO activation did not return a workspace');
 
-    await this.keyValuePairRepository.insert({
-      workspaceId: activatedWorkspace.id,
-      userId: null,
-      key: DEMO_BOOTSTRAP_MARKER_KEY,
-      type: KeyValuePairType.CONFIG_VARIABLE,
-      textValueDeprecated: null,
-      deletedAt: null,
-    });
-    return activatedWorkspace;
+      const activeWorkflowVersionIds =
+        await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+          async () => {
+            const workflowVersionRepository =
+              await this.globalWorkspaceOrmManager.getRepository<WorkflowVersionWorkspaceEntity>(
+                activatedWorkspace.id,
+                'workflowVersion',
+                { shouldBypassPermissionChecks: true },
+              );
+            const activeVersions = await workflowVersionRepository.find({
+              where: { status: WorkflowVersionStatus.ACTIVE },
+              select: { id: true },
+            });
+            return activeVersions.map(({ id }) => id);
+          },
+          buildSystemAuthContext(activatedWorkspace.id),
+        );
+
+      for (const workflowVersionId of activeWorkflowVersionIds) {
+        await this.workflowTriggerWorkspaceService.deactivateWorkflowVersion(
+          workflowVersionId,
+          activatedWorkspace.id,
+        );
+      }
+
+      await this.keyValuePairRepository.insert({
+        workspaceId: activatedWorkspace.id,
+        userId: null,
+        key: DEMO_BOOTSTRAP_MARKER_KEY,
+        type: KeyValuePairType.CONFIG_VARIABLE,
+        textValueDeprecated: null,
+        deletedAt: null,
+      });
+      return activatedWorkspace;
+    } catch (error) {
+      await this.workspaceService.deleteWorkspace(workspace.id);
+      throw error;
+    }
   }
 }

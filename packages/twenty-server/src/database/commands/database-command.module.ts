@@ -13,6 +13,7 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreEngineVersionModule } from 'src/engine/core-engine-version/core-engine-version.module';
 import { CoreMigrationRunnerModule } from 'src/database/commands/core-migration-runner/core-migration-runner.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
+import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GenerateApiKeyCommand } from 'src/engine/core-modules/api-key/commands/generate-api-key.command';
 import { MarketplaceModule } from 'src/engine/core-modules/application/application-marketplace/marketplace.module';
 import { StaleRegistrationCleanupModule } from 'src/engine/core-modules/application/application-oauth/stale-registration-cleanup/stale-registration-cleanup.module';
@@ -29,6 +30,7 @@ import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
+import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
@@ -44,6 +46,7 @@ import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { WorkflowRunQueueModule } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workflow-run-queue.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
+import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/workflow-trigger.module';
 
 @Module({
   imports: [
@@ -69,6 +72,9 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
     DevSeederModule,
     WorkspaceManagerModule,
     UserRoleModule,
+    UserWorkspaceModule,
+    AuthModule,
+    WorkflowTriggerModule,
     DataSourceModule,
     WorkspaceCacheStorageModule,
     ApiKeyModule,

@@ -1,5 +1,4 @@
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
-
 import { BootstrapDemoWorkspaceCommand } from 'src/database/commands/bootstrap-demo-workspace.command';
 
 const owner = (id: string, email: string) => ({
@@ -68,13 +67,16 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       assignRoleToManyUserWorkspace: jest.fn().mockResolvedValue(undefined),
     };
     const workflowRepository = {
-      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockResolvedValue([{ id: 'workflow-version-1' }]),
     };
     const globalWorkspaceOrmManager = {
       executeInWorkspaceContext: jest.fn((callback: () => Promise<void>) =>
         callback(),
       ),
       getRepository: jest.fn().mockResolvedValue(workflowRepository),
+    };
+    const workflowTriggerWorkspaceService = {
+      deactivateWorkflowVersion: jest.fn().mockResolvedValue(true),
     };
     const command = new BootstrapDemoWorkspaceCommand(
       workspaceRepository as never,
@@ -86,6 +88,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       userWorkspaceService as never,
       userRoleService as never,
       globalWorkspaceOrmManager as never,
+      workflowTriggerWorkspaceService as never,
     );
     return {
       command,
@@ -96,6 +99,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       userWorkspaceService,
       userRoleService,
       workflowRepository,
+      workflowTriggerWorkspaceService,
     };
   };
 
@@ -121,10 +125,9 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     expect(context.keyValuePairRepository.insert).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: workspace.id }),
     );
-    expect(context.workflowRepository.update).toHaveBeenCalledWith(
-      {},
-      { statuses: ['DEACTIVATED'] },
-    );
+    expect(
+      context.workflowTriggerWorkspaceService.deactivateWorkflowVersion,
+    ).toHaveBeenCalledWith('workflow-version-1', workspace.id);
   });
 
   it('reconciles a marked workspace without creating another', async () => {
@@ -156,6 +159,20 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     ).rejects.toThrow('role failure');
     expect(context.workspaceService.deleteWorkspace).toHaveBeenCalledWith(
       workspace.id,
+    );
+  });
+
+  it('removes a newly activated workspace when marker creation fails', async () => {
+    const context = setup();
+    context.keyValuePairRepository.insert.mockRejectedValueOnce(
+      new Error('marker failure'),
+    );
+
+    await expect(
+      context.command.run([], { execute: true, owner: ownerOptions }),
+    ).rejects.toThrow('marker failure');
+    expect(context.workspaceService.deleteWorkspace).toHaveBeenCalledWith(
+      'pending',
     );
   });
 });
