@@ -11,16 +11,26 @@ import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
 import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
 
-import { WorkspaceCacheProvider } from 'src/engine/workspace-cache/interfaces/workspace-cache-provider.service';
-
+import { EXE_DEMO_VIEWER_ROLE } from 'src/engine/core-modules/auth/constants/exe-managed-roles.constant';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { WorkspaceCache } from 'src/engine/workspace-cache/decorators/workspace-cache.decorator';
+import { WorkspaceCacheProvider } from 'src/engine/workspace-cache/interfaces/workspace-cache-provider.service';
 
 const WORKFLOW_STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS = [
   STANDARD_OBJECTS.workflow.universalIdentifier,
   STANDARD_OBJECTS.workflowRun.universalIdentifier,
   STANDARD_OBJECTS.workflowVersion.universalIdentifier,
+] as const;
+
+// Public DEMO visitors may browse synthetic CRM records, but never the member
+// directory or integration identities. Twenty normally grants every role full
+// access to system objects, so this dedicated role needs a narrow exception.
+const DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS = [
+  STANDARD_OBJECTS.workspaceMember.universalIdentifier,
+  STANDARD_OBJECTS.connectedAccount.universalIdentifier,
+  STANDARD_OBJECTS.messageChannel.universalIdentifier,
+  STANDARD_OBJECTS.calendarChannel.universalIdentifier,
 ] as const;
 
 @Injectable()
@@ -73,6 +83,17 @@ export class WorkspaceRolesPermissionsCacheService extends WorkspaceCacheProvide
         const restrictedFields: RestrictedFieldsPermissions = {};
 
         if (
+          role.universalIdentifier ===
+            EXE_DEMO_VIEWER_ROLE.universalIdentifier &&
+          DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS.includes(
+            universalIdentifier as (typeof DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS)[number],
+          )
+        ) {
+          canRead = false;
+          canUpdate = false;
+          canSoftDelete = false;
+          canDestroy = false;
+        } else if (
           WORKFLOW_STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.includes(
             universalIdentifier as (typeof WORKFLOW_STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS)[number],
           )

@@ -74,6 +74,11 @@ const buildController = (
       .mockResolvedValue(
         'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
       ),
+    resolveDemoViewerRoleId: jest
+      .fn()
+      .mockResolvedValue(
+        'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
+      ),
   };
   const userRepository = {
     findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
@@ -172,6 +177,7 @@ describe('GoTrueAuthController public DEMO join', () => {
     const {
       controller,
       accessTokenService,
+      roleSyncService,
       signInUpService,
       userWorkspaceRepository,
     } = buildController(
@@ -196,6 +202,10 @@ describe('GoTrueAuthController public DEMO join', () => {
     expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
       expect.objectContaining({ roleId: MANAGED_ROLE_ID }),
     );
+    expect(roleSyncService.resolveDemoViewerRoleId).toHaveBeenCalledWith(
+      CANONICAL_WS_ID,
+    );
+    expect(roleSyncService.resolveAssignableRoleId).not.toHaveBeenCalled();
   });
 
   it('requires an explicit same-origin POST intent', async () => {

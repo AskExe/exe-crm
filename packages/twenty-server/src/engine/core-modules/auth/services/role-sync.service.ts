@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import {
+  EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+  EXE_DEMO_VIEWER_ROLE,
   EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
   EXE_MANAGED_MEMBER_ROLE,
   EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
@@ -30,6 +32,12 @@ const VIEWER_SPEC: ManagedRoleSpec = {
   ...EXE_MANAGED_VIEWER_ROLE,
   icon: 'IconEye',
   flags: EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
+};
+
+const DEMO_VIEWER_SPEC: ManagedRoleSpec = {
+  ...EXE_DEMO_VIEWER_ROLE,
+  icon: 'IconEye',
+  flags: EXE_DEMO_VIEWER_PERMISSION_FLAGS,
 };
 
 const MEMBER_SPEC: ManagedRoleSpec = {
@@ -181,6 +189,11 @@ export class RoleSyncService {
     if (tier === 'none') return null;
 
     return this.resolveTargetRoleId({ tier, workspaceId });
+  }
+
+  /** Resolve the dedicated public DEMO role without touching a membership. */
+  async resolveDemoViewerRoleId(workspaceId: string): Promise<string | null> {
+    return this.ensureManagedRoleId(DEMO_VIEWER_SPEC, workspaceId);
   }
 
   private async resolveTargetRoleId({

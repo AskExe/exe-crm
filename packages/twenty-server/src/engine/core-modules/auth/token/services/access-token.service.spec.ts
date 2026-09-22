@@ -1359,7 +1359,9 @@ describe('AccessTokenService', () => {
     ])(
       'fails closed for an untrusted fresh-user response',
       async (response) => {
-        global.fetch = jest.fn().mockResolvedValue(response as Response);
+        global.fetch = jest
+          .fn()
+          .mockResolvedValue(response as unknown as Response);
 
         await expect(
           service.requireFreshConfirmedGoTrueUser(

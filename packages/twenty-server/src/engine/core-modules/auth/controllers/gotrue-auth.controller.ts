@@ -1526,10 +1526,9 @@ export class GoTrueAuthController {
     // Existing DEMO members keep their current role. In particular, this must
     // never demote either owner from Admin to Viewer on a later public visit.
     if (!membership) {
-      const viewerRoleId = await this.roleSyncService.resolveAssignableRoleId({
-        tier: 'read',
-        workspaceId: workspace.id,
-      });
+      const viewerRoleId = await this.roleSyncService.resolveDemoViewerRoleId(
+        workspace.id,
+      );
 
       if (!viewerRoleId) {
         return {

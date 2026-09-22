@@ -39,6 +39,21 @@ export const EXE_MANAGED_VIEWER_PERMISSION_FLAGS = {
 } as const;
 
 /**
+ * Public DEMO visitors use a distinct role so the permission cache can deny
+ * workspace-member and connected-account system records without changing the
+ * ordinary managed Viewer contract used by private Exe workspaces.
+ */
+export const EXE_DEMO_VIEWER_ROLE = {
+  universalIdentifier: 'e0e00003-a1b2-4c3d-8e5f-6a7b8c9d0e3f',
+  label: 'Exe Demo Viewer',
+  description: 'Exe public DEMO read-only role',
+} as const;
+
+export const EXE_DEMO_VIEWER_PERMISSION_FLAGS = {
+  ...EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
+} as const;
+
+/**
  * Managed "Member" role — the write tier (crm:write) target.
  *
  * We do NOT map crm:write to the workspace's `defaultRoleId`: that pointer is
