@@ -24,7 +24,7 @@ const WORKFLOW_STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS = [
 ] as const;
 
 // Public DEMO visitors may browse synthetic CRM records, but never the member
-// directory or integration identities. Twenty normally grants every role full
+// directory or integration identities. The default model grants every role full
 // access to system objects, so this dedicated role needs a narrow exception.
 const DEMO_PRIVATE_SYSTEM_OBJECT_UNIVERSAL_IDENTIFIERS = [
   STANDARD_OBJECTS.workspaceMember.universalIdentifier,
