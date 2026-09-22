@@ -67,6 +67,15 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     const userRoleService = {
       assignRoleToManyUserWorkspace: jest.fn().mockResolvedValue(undefined),
     };
+    const workflowRepository = {
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const globalWorkspaceOrmManager = {
+      executeInWorkspaceContext: jest.fn((callback: () => Promise<void>) =>
+        callback(),
+      ),
+      getRepository: jest.fn().mockResolvedValue(workflowRepository),
+    };
     const command = new BootstrapDemoWorkspaceCommand(
       workspaceRepository as never,
       userRepository as never,
@@ -76,6 +85,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       workspaceService as never,
       userWorkspaceService as never,
       userRoleService as never,
+      globalWorkspaceOrmManager as never,
     );
     return {
       command,
@@ -85,6 +95,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       workspaceService,
       userWorkspaceService,
       userRoleService,
+      workflowRepository,
     };
   };
 
@@ -109,6 +120,10 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     ).toHaveBeenCalledTimes(2);
     expect(context.keyValuePairRepository.insert).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: workspace.id }),
+    );
+    expect(context.workflowRepository.update).toHaveBeenCalledWith(
+      {},
+      { statuses: ['DEACTIVATED'] },
     );
   });
 
