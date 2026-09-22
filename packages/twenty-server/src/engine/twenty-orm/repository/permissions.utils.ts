@@ -221,6 +221,10 @@ export const validateQueryIsPermittedOrThrow = ({
     getTargetEntityAndOperationType(expressionMap);
 
   if (isSubQuery) {
+    // The sole raw-subquery construction path calls
+    // WorkspaceSelectQueryBuilder.getQueryWithPermissions() on the inner
+    // entity query before wrapping it. This outer alias contains raw SQL and
+    // no entity metadata to authorize again.
     return;
   }
 
@@ -305,40 +309,45 @@ const validatePermissionsForJoinsAndReturnSelectsWithoutJoins = ({
 
   const indexesOfSelectsForJoinedAlias: number[] = [];
 
-  for (const [_index, joinedAlias] of joinAttributesAliases.entries()) {
+  for (const joinedAlias of joinAttributesAliases) {
     const entity = expressionMap.aliases.find(
       (alias) => alias.type === 'join' && alias.name === joinedAlias,
     )?.metadata;
 
     if (isDefined(entity)) {
-      for (const [index, select] of expressionMap.selects.entries()) {
-        const regex = /"(\w+)"\."(\w+)"/;
-        const extractedAlias = select.selection.match(regex)?.[1]; // "person"."name" -> "person"
+      const joinedSelects = expressionMap.selects
+        .map((select, index) => ({ select, index }))
+        .filter(({ select }) => {
+          const extractedAlias =
+            select.selection.match(/"(\w+)"\."(\w+)"/)?.[1];
 
-        if (isDefined(extractedAlias) && extractedAlias === joinedAlias) {
-          indexesOfSelectsForJoinedAlias.push(index);
+          return (
+            select.selection === joinedAlias || extractedAlias === joinedAlias
+          );
+        });
+      const allFieldsSelected = joinedSelects.some(
+        ({ select }) => select.selection === joinedAlias,
+      );
 
-          const selectedColumns = getSelectedColumnsFromExpressionMap({
-            operationType: 'select',
-            expressionMapSelects: expressionMap.selects.filter(
-              (_select, indexOfSelect) => indexOfSelect === index,
-            ),
-            allFieldsSelected: false,
-          });
+      indexesOfSelectsForJoinedAlias.push(
+        ...joinedSelects.map(({ index }) => index),
+      );
 
-          validateOperationIsPermittedOrThrow({
-            entityName: entity.name,
-            operationType: 'select' as OperationType,
-            objectsPermissions,
-            flatObjectMetadataMaps,
-            flatFieldMetadataMaps,
-            objectIdByNameSingular,
-            selectedColumns,
-            allFieldsSelected: false,
-            updatedColumns: [],
-          });
-        }
-      }
+      validateOperationIsPermittedOrThrow({
+        entityName: entity.name,
+        operationType: 'select',
+        objectsPermissions,
+        flatObjectMetadataMaps,
+        flatFieldMetadataMaps,
+        objectIdByNameSingular,
+        selectedColumns: getSelectedColumnsFromExpressionMap({
+          operationType: 'select',
+          expressionMapSelects: joinedSelects.map(({ select }) => select),
+          allFieldsSelected,
+        }),
+        allFieldsSelected,
+        updatedColumns: [],
+      });
     }
   }
 

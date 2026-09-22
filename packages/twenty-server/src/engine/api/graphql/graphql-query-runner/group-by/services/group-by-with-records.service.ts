@@ -214,7 +214,7 @@ export class GroupByWithRecordsService {
     const pageEnd = offsetForRecords + RECORDS_PER_GROUP_LIMIT;
 
     const mainQuery = mainQueryQueryBuilder
-      .from(`(${subQuery.getQuery()})`, 'ranked_records')
+      .from(`(${subQuery.getQueryWithPermissions()})`, 'ranked_records')
       .setParameters(queryBuilderForSubQuery.expressionMap.parameters)
 
       .select(groupByAliases)

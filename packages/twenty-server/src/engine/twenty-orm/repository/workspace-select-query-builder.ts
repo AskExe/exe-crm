@@ -150,6 +150,15 @@ export class WorkspaceSelectQueryBuilder<
     }
   }
 
+  // Raw SQL embedding does not execute the inner builder, so TypeORM would
+  // otherwise skip its permission validation. This is the only supported way
+  // to obtain SQL from a workspace query builder for use as a subquery.
+  getQueryWithPermissions(): string {
+    this.validatePermissions();
+
+    return super.getQuery();
+  }
+
   override async getOne(): Promise<T | null> {
     try {
       this.validatePermissions();

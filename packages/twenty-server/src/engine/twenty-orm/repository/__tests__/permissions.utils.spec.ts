@@ -6,6 +6,8 @@ import { PermissionsException } from 'src/engine/metadata-modules/permissions/pe
 
 const SYSTEM_OBJECT_ID = 'system-object-id';
 const SYSTEM_OBJECT_NAME = 'workspaceMember';
+const MAIN_OBJECT_ID = 'main-object-id';
+const MAIN_OBJECT_NAME = 'company';
 
 const flatObjectMetadataMaps = {
   byUniversalIdentifier: {
@@ -15,9 +17,16 @@ const flatObjectMetadataMaps = {
       isSystem: true,
       fieldIds: [],
     },
+    'main-object-universal-id': {
+      id: MAIN_OBJECT_ID,
+      universalIdentifier: 'main-object-universal-id',
+      isSystem: false,
+      fieldIds: [],
+    },
   },
   universalIdentifierById: {
     [SYSTEM_OBJECT_ID]: 'system-object-universal-id',
+    [MAIN_OBJECT_ID]: 'main-object-universal-id',
   },
 };
 
@@ -95,6 +104,46 @@ describe('system-object query authorization', () => {
         flatObjectMetadataMaps: flatObjectMetadataMaps as never,
         flatFieldMetadataMaps: flatFieldMetadataMaps as never,
         objectIdByNameSingular: {
+          [SYSTEM_OBJECT_NAME]: SYSTEM_OBJECT_ID,
+        },
+        shouldBypassPermissionChecks: false,
+      }),
+    ).toThrow(PermissionsException);
+  });
+
+  it.each([
+    { label: 'whole-alias', selects: [{ selection: SYSTEM_OBJECT_NAME }] },
+    {
+      label: 'column',
+      selects: [{ selection: `"${SYSTEM_OBJECT_NAME}"."name"` }],
+    },
+    { label: 'filter-only', selects: [] },
+  ])('denies a $label join to a restricted system object', ({ selects }) => {
+    expect(() =>
+      validateQueryIsPermittedOrThrow({
+        expressionMap: {
+          aliases: [
+            { metadata: { name: MAIN_OBJECT_NAME } },
+            {
+              type: 'join',
+              name: SYSTEM_OBJECT_NAME,
+              metadata: { name: SYSTEM_OBJECT_NAME },
+            },
+          ],
+          queryType: 'select',
+          selects,
+          joinAttributes: [{ alias: { name: SYSTEM_OBJECT_NAME } }],
+          returning: undefined,
+          valuesSet: undefined,
+        } as never,
+        objectsPermissions: {
+          [MAIN_OBJECT_ID]: permission(true),
+          [SYSTEM_OBJECT_ID]: permission(false),
+        },
+        flatObjectMetadataMaps: flatObjectMetadataMaps as never,
+        flatFieldMetadataMaps: flatFieldMetadataMaps as never,
+        objectIdByNameSingular: {
+          [MAIN_OBJECT_NAME]: MAIN_OBJECT_ID,
           [SYSTEM_OBJECT_NAME]: SYSTEM_OBJECT_ID,
         },
         shouldBypassPermissionChecks: false,
