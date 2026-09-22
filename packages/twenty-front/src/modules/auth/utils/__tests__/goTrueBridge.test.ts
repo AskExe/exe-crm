@@ -8,10 +8,25 @@ import {
   hasGoTrueSentinelCookie,
   hasRecentGoTrueCallbackAttempt,
   isGoTrueBridgeInFlight,
+  isGoTrueDemoJoinIntent,
   markGoTrueCallbackAttempt,
   readGoTrueCallbackAttemptedAt,
   resetGoTrueBridgeFailureCaptureForTesting,
 } from '@/auth/utils/goTrueBridge';
+
+describe('isGoTrueDemoJoinIntent', () => {
+  it('accepts only the active welcome route with explicit demo intent', () => {
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/welcome', search: '?demo=1' }),
+    ).toBe(true);
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/welcome', search: '?demo=0' }),
+    ).toBe(false);
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/other', search: '?demo=1' }),
+    ).toBe(false);
+  });
+});
 
 const setCookie = (name: string, value: string) => {
   document.cookie = `${name}=${value}`;

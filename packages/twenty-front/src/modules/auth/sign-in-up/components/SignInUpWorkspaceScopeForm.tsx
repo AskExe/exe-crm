@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { exeFoundryBold } from 'twenty-ui/theme';
 
 import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
+import { isGoTrueDemoJoinIntent } from '@/auth/utils/goTrueBridge';
 
 import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
 
@@ -264,8 +265,7 @@ const buildExeDemoSsoUrl = () => {
 };
 
 export const SignInUpWorkspaceScopeForm = () => {
-  const isDemoJoin =
-    new URLSearchParams(window.location.search).get('demo') === '1';
+  const isDemoJoin = isGoTrueDemoJoinIntent(window.location);
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

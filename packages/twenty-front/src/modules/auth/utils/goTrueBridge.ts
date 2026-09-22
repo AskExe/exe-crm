@@ -1,5 +1,6 @@
 import { getTokenPair } from '@/apollo/utils/getTokenPair';
 import { isDefined } from 'twenty-shared/utils';
+import { AppPath } from 'twenty-shared/types';
 import { cookieStorage } from '~/utils/cookie-storage';
 
 /**
@@ -31,6 +32,13 @@ export const GO_TRUE_SENTINEL_COOKIE_NAME = 'exe_access_token';
 export const GO_TRUE_SENTINEL_COOKIE_VALUE = '1';
 
 export const GO_TRUE_CALLBACK_PATH = '/api/auth/gotrue-callback';
+
+export const isGoTrueDemoJoinIntent = ({
+  pathname,
+  search,
+}: Pick<Location, 'pathname' | 'search'>): boolean =>
+  pathname === AppPath.SignInUp &&
+  new URLSearchParams(search).get('demo') === '1';
 
 const GO_TRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY =
   'gotrueCallbackAttemptedAt';
