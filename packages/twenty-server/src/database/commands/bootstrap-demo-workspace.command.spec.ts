@@ -27,7 +27,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     existingWorkspace = null,
     marker = { id: 'marker' },
   }: {
-    existingWorkspace?: typeof workspace | null;
+    existingWorkspace?: (typeof workspace & { deletedAt?: Date | null }) | null;
     marker?: { id: string } | null;
   } = {}) => {
     const workspaceRepository = {
@@ -153,6 +153,22 @@ describe('BootstrapDemoWorkspaceCommand', () => {
 
   it('rejects an unmarked DEMO name collision', async () => {
     const context = setup({ existingWorkspace: workspace, marker: null });
+    await expect(
+      context.command.run([], { execute: true, owner: ownerOptions }),
+    ).rejects.toThrow('name collision');
+    expect(
+      context.userWorkspaceService.addUserToWorkspaceIfUserNotInWorkspace,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('rejects a marked but soft-deleted DEMO workspace', async () => {
+    const context = setup({
+      existingWorkspace: {
+        ...workspace,
+        deletedAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    });
+
     await expect(
       context.command.run([], { execute: true, owner: ownerOptions }),
     ).rejects.toThrow('name collision');

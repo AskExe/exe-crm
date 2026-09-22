@@ -226,6 +226,7 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
     });
     if (
       !marker ||
+      workspace.deletedAt ||
       workspace.activationStatus !== WorkspaceActivationStatus.ACTIVE
     ) {
       throw new Error(
