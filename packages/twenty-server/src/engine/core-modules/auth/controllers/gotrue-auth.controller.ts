@@ -1523,8 +1523,6 @@ export class GoTrueAuthController {
         })
       : null;
 
-    // Existing DEMO members keep their current role. In particular, this must
-    // never demote either owner from Admin to Viewer on a later public visit.
     if (!membership) {
       const viewerRoleId = await this.roleSyncService.resolveDemoViewerRoleId(
         workspace.id,
@@ -1572,6 +1570,21 @@ export class GoTrueAuthController {
         type: 'deny',
         statusCode: 503,
         error: 'Demo access could not be created',
+      };
+    }
+
+    // Preserve canonical Admin owners, while reconciling every other existing
+    // or concurrently-created membership to the dedicated DEMO Viewer role.
+    const roleIsSafe = await this.roleSyncService.ensureDemoViewerMembership({
+      userWorkspaceId: membership.id,
+      workspaceId: workspace.id,
+    });
+
+    if (!roleIsSafe) {
+      return {
+        type: 'deny',
+        statusCode: 503,
+        error: 'Demo access is temporarily unavailable',
       };
     }
 

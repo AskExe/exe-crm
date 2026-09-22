@@ -196,6 +196,53 @@ export class RoleSyncService {
     return this.ensureManagedRoleId(DEMO_VIEWER_SPEC, workspaceId);
   }
 
+  /** Preserve a canonical DEMO Admin owner and secure every other member. */
+  async ensureDemoViewerMembership({
+    userWorkspaceId,
+    workspaceId,
+  }: {
+    userWorkspaceId: string;
+    workspaceId: string;
+  }): Promise<boolean> {
+    const currentRole = await this.userRoleService
+      .getRolesByUserWorkspaces({
+        userWorkspaceIds: [userWorkspaceId],
+        workspaceId,
+      })
+      .then((map) => map.get(userWorkspaceId)?.[0]);
+
+    if (
+      currentRole?.universalIdentifier ===
+      STANDARD_ROLE.admin.universalIdentifier
+    ) {
+      return true;
+    }
+
+    const viewerRoleId = await this.ensureManagedRoleId(
+      DEMO_VIEWER_SPEC,
+      workspaceId,
+    );
+
+    if (!viewerRoleId) return false;
+    if (currentRole?.id === viewerRoleId) return true;
+
+    try {
+      await this.userRoleService.assignRoleToManyUserWorkspace({
+        workspaceId,
+        userWorkspaceIds: [userWorkspaceId],
+        roleId: viewerRoleId,
+      });
+
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `RoleSync: failed to secure DEMO Viewer for userWorkspace ${userWorkspaceId}: ${err}`,
+      );
+
+      return false;
+    }
+  }
+
   private async resolveTargetRoleId({
     tier,
     workspaceId,

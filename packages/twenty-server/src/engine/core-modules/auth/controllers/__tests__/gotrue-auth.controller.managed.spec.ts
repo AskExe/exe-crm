@@ -79,6 +79,7 @@ const buildController = (
       .mockResolvedValue(
         'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
       ),
+    ensureDemoViewerMembership: jest.fn().mockResolvedValue(true),
   };
   const userRepository = {
     findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
@@ -168,6 +169,10 @@ describe('GoTrueAuthController public DEMO join', () => {
 
     expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
     expect(roleSyncService.applyCrmTier).not.toHaveBeenCalled();
+    expect(roleSyncService.ensureDemoViewerMembership).toHaveBeenCalledWith({
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: CANONICAL_WS_ID,
+    });
     expect(res.json).toHaveBeenCalledWith({
       redirectUrl: expect.stringContaining('/verify?loginToken='),
     });
@@ -220,6 +225,26 @@ describe('GoTrueAuthController public DEMO join', () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(accessTokenService.verifyGoTrueTokenDetailed).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when an existing member role cannot be secured', async () => {
+    const {
+      controller,
+      accessTokenService,
+      roleSyncService,
+      loginTokenService,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    roleSyncService.ensureDemoViewerMembership.mockResolvedValue(false);
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
   });
 
   it('fails closed when fresh GoTrue confirmation cannot be proven', async () => {
