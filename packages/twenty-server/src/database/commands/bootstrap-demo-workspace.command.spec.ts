@@ -78,6 +78,14 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     const workflowTriggerWorkspaceService = {
       deactivateWorkflowVersion: jest.fn().mockResolvedValue(true),
     };
+    const queryRunner = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      query: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+    };
+    const dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(queryRunner),
+    };
     const command = new BootstrapDemoWorkspaceCommand(
       workspaceRepository as never,
       userRepository as never,
@@ -89,6 +97,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       userRoleService as never,
       globalWorkspaceOrmManager as never,
       workflowTriggerWorkspaceService as never,
+      dataSource as never,
     );
     return {
       command,
@@ -100,6 +109,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       userRoleService,
       workflowRepository,
       workflowTriggerWorkspaceService,
+      queryRunner,
     };
   };
 
@@ -159,6 +169,19 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     ).rejects.toThrow('role failure');
     expect(context.workspaceService.deleteWorkspace).toHaveBeenCalledWith(
       workspace.id,
+    );
+    expect(context.queryRunner.query).toHaveBeenNthCalledWith(
+      1,
+      'SELECT pg_advisory_lock(hashtext($1))',
+      ['exe.demo-workspace-bootstrap'],
+    );
+    expect(context.queryRunner.query).toHaveBeenLastCalledWith(
+      'SELECT pg_advisory_unlock(hashtext($1))',
+      ['exe.demo-workspace-bootstrap'],
+    );
+    expect(context.queryRunner.release).toHaveBeenCalled();
+    expect(context.queryRunner.query.mock.invocationCallOrder[0]).toBeLessThan(
+      context.workspaceRepository.findOne.mock.invocationCallOrder[0],
     );
   });
 

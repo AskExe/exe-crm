@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { Command, CommandRunner, Option } from 'nest-commander';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
-import { IsNull, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 
 import {
   KeyValuePairEntity,
@@ -28,6 +28,7 @@ import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-t
 
 const DEMO_WORKSPACE_NAME = 'DEMO';
 const DEMO_BOOTSTRAP_MARKER_KEY = 'exe.demo-workspace-bootstrap.v1';
+const DEMO_BOOTSTRAP_LOCK_KEY = 'exe.demo-workspace-bootstrap';
 
 type BootstrapDemoWorkspaceOptions = {
   execute?: boolean;
@@ -58,6 +59,8 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
     private readonly userRoleService: UserRoleService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowTriggerWorkspaceService: WorkflowTriggerWorkspaceService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {
     super();
   }
@@ -84,12 +87,8 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
   ): Promise<void> {
     const owners = this.parseOwners(options.owner ?? []);
     const users = await this.loadVerifiedOwners(owners);
-    const existingDemo = await this.workspaceRepository.findOne({
-      where: { displayName: DEMO_WORKSPACE_NAME },
-      withDeleted: true,
-    });
-
     if (!options.execute) {
+      const existingDemo = await this.findExistingDemo();
       this.logger.log(
         JSON.stringify({
           mode: 'dry-run',
@@ -100,6 +99,24 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
       );
       return;
     }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.query('SELECT pg_advisory_lock(hashtext($1))', [
+      DEMO_BOOTSTRAP_LOCK_KEY,
+    ]);
+    try {
+      await this.executeBootstrap(users);
+    } finally {
+      await queryRunner.query('SELECT pg_advisory_unlock(hashtext($1))', [
+        DEMO_BOOTSTRAP_LOCK_KEY,
+      ]);
+      await queryRunner.release();
+    }
+  }
+
+  private async executeBootstrap(users: UserEntity[]): Promise<void> {
+    const existingDemo = await this.findExistingDemo();
 
     const workspace = existingDemo
       ? await this.assertManagedDemo(existingDemo)
@@ -151,6 +168,13 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
         role: 'Admin',
       }),
     );
+  }
+
+  private async findExistingDemo() {
+    return await this.workspaceRepository.findOne({
+      where: { displayName: DEMO_WORKSPACE_NAME },
+      withDeleted: true,
+    });
   }
 
   private parseOwners(values: string[]): OwnerIdentity[] {
