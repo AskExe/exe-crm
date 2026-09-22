@@ -596,6 +596,20 @@ describe('GoTrueAuthController', () => {
       ).not.toHaveBeenCalled();
     });
 
+    it('rejects workspace names longer than the UI limit', async () => {
+      const res = mockResponse();
+
+      await controller.gotrueSetup({ workspaceName: 'x'.repeat(256) }, res, {
+        protocol: 'http',
+        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' },
+      } as unknown as Request);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(
+        accessTokenService.verifyGoTrueTokenDetailed,
+      ).not.toHaveBeenCalled();
+    });
+
     it('returns needsSetup when first login without workspaceName (bootstrap opt-out)', async () => {
       // Only reachable when the managed-required gate is opted out; with the
       // default gate on we refuse before prompting for a workspace name.
