@@ -47,9 +47,8 @@
         "GOTRUE_JWT_SECRET",
         "EXE_LICENSE_KEY"
       ],
-      "optionalEnv": [
-        "EXE_LICENSE_URL"
-      ]
+      "optionalEnv": ["EXE_LICENSE_URL", "EXE_DEMO_WORKSPACE_ID"],
+      "note": "EXE_DEMO_WORKSPACE_ID is opt-in. Setting it enables public, explicit read-only DEMO admission to that exact pre-bootstrapped workspace; leave it unset to keep public DEMO admission disabled."
     },
     "breakingChanges": [],
     "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config.",
