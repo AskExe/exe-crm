@@ -1365,6 +1365,15 @@ describe('AccessTokenService', () => {
       {
         ok: true,
         json: async () => ({
+          id: expected.sub,
+          email: expected.email,
+          confirmed_at: '2026-09-22T00:00:00Z',
+          email_confirmed_at: null,
+        }),
+      },
+      {
+        ok: true,
+        json: async () => ({
           id: 'different-user',
           email: expected.email,
           email_confirmed_at: '2026-09-22T00:00:00Z',

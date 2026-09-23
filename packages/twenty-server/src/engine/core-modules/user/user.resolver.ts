@@ -9,7 +9,7 @@ import { GraphQLJSONObject } from 'graphql-type-json';
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
-import { In, IsNull, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { SupportDriver } from 'src/engine/core-modules/twenty-config/interfaces/support.interface';
 
@@ -42,6 +42,7 @@ import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
+import { canReadWorkspaceMemberDirectory } from 'src/engine/core-modules/user/utils/can-read-workspace-member-directory.util';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthApiKey } from 'src/engine/decorators/auth/auth-api-key.decorator';
@@ -77,29 +78,6 @@ const getHMACKey = (email?: string, key?: string | null) => {
   return hmac.update(email).digest('hex');
 };
 
-const DEMO_BOOTSTRAP_MARKER_KEY = 'exe.demo-workspace-bootstrap.v1';
-
-const markerHasCanonicalOwner = (value: JSON | null, userId: string) => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-
-  const ownerUserIds = (value as { ownerUserIds?: unknown }).ownerUserIds;
-
-  if (
-    !Array.isArray(ownerUserIds) ||
-    ownerUserIds.length !== 2 ||
-    ownerUserIds.some(
-      (ownerUserId) =>
-        typeof ownerUserId !== 'string' || ownerUserId.length === 0,
-    )
-  ) {
-    return false;
-  }
-
-  return new Set(ownerUserIds).size === 2 && ownerUserIds.includes(userId);
-};
-
 @MetadataResolver(() => UserEntity)
 @UseFilters(PermissionsGraphqlApiExceptionFilter)
 export class UserResolver {
@@ -128,23 +106,11 @@ export class UserResolver {
     userId: string;
     workspaceId: string;
   }): Promise<boolean> {
-    const marker = await this.keyValuePairRepository.findOne({
-      where: {
-        workspaceId,
-        userId: IsNull(),
-        key: DEMO_BOOTSTRAP_MARKER_KEY,
-        deletedAt: IsNull(),
-      },
+    return canReadWorkspaceMemberDirectory({
+      keyValuePairRepository: this.keyValuePairRepository,
+      userId,
+      workspaceId,
     });
-
-    if (marker) {
-      return markerHasCanonicalOwner(marker.value, userId);
-    }
-
-    // Keep a configured DEMO closed while bootstrap is incomplete. Once the
-    // marker exists, it remains the privacy boundary even if admission is
-    // later disabled or pointed at another workspace.
-    return workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID;
   }
 
   private async getUserWorkspacePermissions({

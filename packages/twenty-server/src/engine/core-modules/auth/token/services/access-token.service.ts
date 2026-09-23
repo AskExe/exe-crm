@@ -642,11 +642,10 @@ export class AccessTokenService {
         id?: string;
         email?: string;
         email_confirmed_at?: string | null;
-        confirmed_at?: string | null;
         banned?: boolean;
       } | null;
       const email = payload?.email?.toLowerCase().trim();
-      const confirmedAt = payload?.email_confirmed_at ?? payload?.confirmed_at;
+      const confirmedAt = payload?.email_confirmed_at;
 
       if (
         !payload?.id ||
