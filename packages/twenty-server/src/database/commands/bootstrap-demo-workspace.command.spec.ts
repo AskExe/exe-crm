@@ -87,6 +87,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     };
     const dataSource = {
       createQueryRunner: jest.fn().mockReturnValue(queryRunner),
+      query: jest.fn().mockResolvedValue([{ matchCount: 1, eligibleCount: 1 }]),
     };
     const command = new BootstrapDemoWorkspaceCommand(
       workspaceRepository as never,
@@ -113,6 +114,7 @@ describe('BootstrapDemoWorkspaceCommand', () => {
       workflowRepository,
       workflowTriggerWorkspaceService,
       queryRunner,
+      dataSource,
     };
   };
 
@@ -121,6 +123,42 @@ describe('BootstrapDemoWorkspaceCommand', () => {
     await context.command.run([], { owner: ownerOptions });
     expect(context.signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
     expect(context.workspaceRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts GoTrue-confirmed owners even when CRM verification has not synced', async () => {
+    const context = setup();
+    owners[0].isEmailVerified = false;
+    owners[1].isEmailVerified = false;
+    try {
+      await context.command.run([], { owner: ownerOptions });
+      expect(context.dataSource.query).toHaveBeenCalledTimes(2);
+      expect(context.dataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining('FROM auth.users WHERE lower(email) = $1'),
+        ['one@example.com'],
+      );
+      expect(
+        context.signInUpService.signUpOnNewWorkspace,
+      ).not.toHaveBeenCalled();
+    } finally {
+      owners[0].isEmailVerified = true;
+      owners[1].isEmailVerified = true;
+    }
+  });
+
+  it.each([
+    [{ matchCount: 0, eligibleCount: 0 }, 'missing GoTrue account'],
+    [{ matchCount: 2, eligibleCount: 2 }, 'ambiguous GoTrue account'],
+    [
+      { matchCount: 1, eligibleCount: 0 },
+      'unconfirmed or inactive GoTrue account',
+    ],
+  ])('rejects a %s owner identity', async (verification) => {
+    const context = setup();
+    context.dataSource.query.mockResolvedValue([{ ...verification }]);
+    await expect(
+      context.command.run([], { execute: true, owner: ownerOptions }),
+    ).rejects.toThrow('Owner identity validation failed');
+    expect(context.signInUpService.signUpOnNewWorkspace).not.toHaveBeenCalled();
   });
 
   it('creates once and provisions both owners as Admin', async () => {
