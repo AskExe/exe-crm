@@ -7,6 +7,7 @@ import { AppPath } from 'twenty-shared/types';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { useVerifyLogin } from '@/auth/hooks/useVerifyLogin';
+import { getDemoWorkspaceId } from '@/auth/utils/goTrueBridge';
 
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
@@ -39,6 +40,7 @@ describe('useVerifyLogin', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
 
     (useAuth as jest.Mock).mockReturnValue({
       getAuthTokensFromLoginToken: mockGetAuthTokensFromLoginToken,
@@ -57,6 +59,15 @@ describe('useVerifyLogin', () => {
     await result.current.verifyLoginToken('test-token');
 
     expect(mockGetAuthTokensFromLoginToken).toHaveBeenCalledWith('test-token');
+  });
+
+  it('marks the actual workspace on the destination origin after DEMO token exchange', async () => {
+    mockGetAuthTokensFromLoginToken.mockResolvedValueOnce('demo-workspace');
+    const { result } = renderHooks();
+
+    await result.current.verifyLoginToken('test-token', true);
+
+    expect(getDemoWorkspaceId()).toBe('demo-workspace');
   });
 
   it('should handle verification error', async () => {

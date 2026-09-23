@@ -7,7 +7,6 @@ import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
 import {
   clearDemoWorkspaceSession,
   isGoTrueDemoJoinIntent,
-  markDemoWorkspaceSession,
 } from '@/auth/utils/goTrueBridge';
 
 import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
@@ -414,11 +413,10 @@ export const SignInUpWorkspaceScopeForm = () => {
         return;
       }
 
-      if (!response.ok || !data.redirectUrl || !data.demoWorkspaceId) {
+      if (!response.ok || !data.redirectUrl) {
         throw new Error(data.error || t`The public demo is unavailable`);
       }
 
-      markDemoWorkspaceSession(data.demoWorkspaceId);
       window.location.href = data.redirectUrl;
     } catch (error) {
       setDemoError(

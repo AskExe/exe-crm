@@ -199,9 +199,8 @@ describe('GoTrueAuthController public DEMO join', () => {
     });
     expect(res.json).toHaveBeenCalledWith({
       redirectUrl: expect.stringMatching(
-        /^https:\/\/demo\.crm\.example\.com\/verify\?loginToken=/,
+        /^https:\/\/demo\.crm\.example\.com\/verify\?loginToken=.*&demo=1$/,
       ),
-      demoWorkspaceId: CANONICAL_WS_ID,
     });
     expect(userRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({ isEmailVerified: true }),
@@ -270,8 +269,29 @@ describe('GoTrueAuthController public DEMO join', () => {
       loginTokenService.generateLoginToken.mock.invocationCallOrder[0],
     );
     expect(res.json).toHaveBeenCalledWith({
-      redirectUrl: expect.stringContaining('/verify?loginToken='),
-      demoWorkspaceId: CANONICAL_WS_ID,
+      redirectUrl: expect.stringMatching(/\/verify\?loginToken=.*&demo=1$/),
+    });
+  });
+
+  it('accepts explicit join intent from the configured DEMO workspace origin', async () => {
+    const { controller, accessTokenService } = buildController({
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+    });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, {
+      headers: {
+        ...demoRequest().headers,
+        origin: 'https://demo.crm.example.com',
+      },
+    } as any);
+
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringMatching(/\/verify\?loginToken=.*&demo=1$/),
     });
   });
 

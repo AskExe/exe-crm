@@ -325,9 +325,10 @@ export const useAuth = () => {
       handleSetAuthTokens(authTokens);
       setIsAppEffectRedirectEnabled(false);
 
-      await loadCurrentUser();
+      const { workspace } = await loadCurrentUser();
 
       setIsAppEffectRedirectEnabled(true);
+      return workspace?.id;
     },
     [loadCurrentUser, handleSetAuthTokens, setIsAppEffectRedirectEnabled],
   );
@@ -350,7 +351,7 @@ export const useAuth = () => {
           throw new Error('No getAuthTokensFromLoginToken result');
         }
 
-        await handleLoadWorkspaceAfterAuthentication(
+        return await handleLoadWorkspaceAfterAuthentication(
           getAuthTokensResult.data.getAuthTokensFromLoginToken.tokens,
         );
       } catch (error) {

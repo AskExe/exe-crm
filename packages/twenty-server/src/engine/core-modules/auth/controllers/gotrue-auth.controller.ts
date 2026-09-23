@@ -1448,12 +1448,30 @@ export class GoTrueAuthController {
     const expectedOrigin = this.serverBaseUrl
       ? new URL(this.serverBaseUrl).origin
       : undefined;
+    const trustedOrigins = new Set<string>();
+    if (expectedOrigin) trustedOrigins.add(expectedOrigin);
+    const demoWorkspace = await this.workspaceRepository.findOne({
+      where: { id: this.exeDemoWorkspaceId },
+    });
+
+    if (demoWorkspace) {
+      const workspaceUrls =
+        this.workspaceDomainsService.getWorkspaceUrls(demoWorkspace);
+
+      for (const workspaceUrl of [
+        workspaceUrls.customUrl,
+        workspaceUrls.subdomainUrl,
+      ]) {
+        if (workspaceUrl) trustedOrigins.add(new URL(workspaceUrl).origin);
+      }
+    }
     const requestOrigin = req?.headers.origin;
     const intent = req?.headers['x-exe-demo-intent'];
 
     if (
       !expectedOrigin ||
-      requestOrigin !== expectedOrigin ||
+      !requestOrigin ||
+      !trustedOrigins.has(requestOrigin) ||
       intent !== 'join-read-only-demo'
     ) {
       return res.status(403).json({ error: 'Explicit demo join required' });
@@ -1501,10 +1519,7 @@ export class GoTrueAuthController {
       return res.status(outcome.statusCode).json({ error: outcome.error });
     }
 
-    return res.json({
-      redirectUrl: outcome.url,
-      demoWorkspaceId: this.exeDemoWorkspaceId,
-    });
+    return res.json({ redirectUrl: outcome.url });
   }
 
   private async resolveDemoLoginOutcome(
@@ -1634,14 +1649,16 @@ export class GoTrueAuthController {
         this.workspaceDomainsService.getWorkspaceUrls(workspace);
       const demoBaseUrl = workspaceUrls.customUrl ?? workspaceUrls.subdomainUrl;
 
-      return {
-        type: 'redirect',
-        url: await this.generateLoginTokenRedirect(
+      const redirectUrl = new URL(
+        await this.generateLoginTokenRedirect(
           user.email,
           workspace.id,
           demoBaseUrl,
         ),
-      };
+      );
+      redirectUrl.searchParams.set('demo', '1');
+
+      return { type: 'redirect', url: redirectUrl.toString() };
     } catch {
       return {
         type: 'deny',

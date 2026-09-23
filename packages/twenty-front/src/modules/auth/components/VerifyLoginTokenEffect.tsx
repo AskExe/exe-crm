@@ -12,6 +12,7 @@ import { useNavigateApp } from '~/hooks/useNavigateApp';
 export const VerifyLoginTokenEffect = () => {
   const [searchParams] = useSearchParams();
   const loginToken = searchParams.get('loginToken');
+  const isDemoLogin = searchParams.get('demo') === '1';
 
   const hasAccessTokenPair = useHasAccessTokenPair();
   const navigate = useNavigateApp();
@@ -27,7 +28,7 @@ export const VerifyLoginTokenEffect = () => {
     }
 
     if (isDefined(loginToken)) {
-      verifyLoginToken(loginToken);
+      verifyLoginToken(loginToken, isDemoLogin);
     } else if (!hasAccessTokenPair) {
       navigate(AppPath.SignInUp);
     }
