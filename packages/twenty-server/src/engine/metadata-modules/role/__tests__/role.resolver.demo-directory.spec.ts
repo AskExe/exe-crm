@@ -84,11 +84,52 @@ describe('RoleResolver DEMO member directory', () => {
     });
 
     await expect(
-      resolver.getWorkspaceMembersAssignedToRole(
-        role,
-        workspace,
-        { id: 'visitor-user' } as AuthContextUser,
-      ),
+      resolver.getWorkspaceMembersAssignedToRole(role, workspace, {
+        id: 'visitor-user',
+      } as AuthContextUser),
+    ).resolves.toEqual([]);
+    expect(getWorkspaceMembersAssignedToRole).not.toHaveBeenCalled();
+  });
+
+  it('preserves role member access for an API key in a private workspace', async () => {
+    delete process.env.EXE_DEMO_WORKSPACE_ID;
+    const members = [{ id: 'member-one' }];
+    const getWorkspaceMembersAssignedToRole = jest
+      .fn()
+      .mockResolvedValue(members);
+    const resolver = Object.create(RoleResolver.prototype) as RoleResolver;
+
+    Object.assign(resolver, {
+      keyValuePairRepository: {
+        findOne: jest.fn().mockResolvedValue(null),
+      } as unknown as Repository<KeyValuePairEntity>,
+      userRoleService: { getWorkspaceMembersAssignedToRole },
+    });
+
+    await expect(
+      resolver.getWorkspaceMembersAssignedToRole(role, workspace, undefined),
+    ).resolves.toEqual(members);
+    expect(getWorkspaceMembersAssignedToRole).toHaveBeenCalledWith(
+      role.id,
+      workspace.id,
+    );
+  });
+
+  it('hides DEMO role members from API-key callers', async () => {
+    const getWorkspaceMembersAssignedToRole = jest.fn();
+    const resolver = Object.create(RoleResolver.prototype) as RoleResolver;
+
+    Object.assign(resolver, {
+      keyValuePairRepository: {
+        findOne: jest.fn().mockResolvedValue({
+          value: { ownerUserIds: ['owner-one', 'owner-two'] },
+        }),
+      } as unknown as Repository<KeyValuePairEntity>,
+      userRoleService: { getWorkspaceMembersAssignedToRole },
+    });
+
+    await expect(
+      resolver.getWorkspaceMembersAssignedToRole(role, workspace, undefined),
     ).resolves.toEqual([]);
     expect(getWorkspaceMembersAssignedToRole).not.toHaveBeenCalled();
   });

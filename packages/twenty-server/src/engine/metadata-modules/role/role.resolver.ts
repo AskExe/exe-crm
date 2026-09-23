@@ -309,12 +309,12 @@ export class RoleResolver {
   async getWorkspaceMembersAssignedToRole(
     @Parent() role: RoleDTO,
     @AuthWorkspace() workspace: WorkspaceEntity,
-    @AuthUser() { id: userId }: AuthContextUser,
+    @AuthUser({ allowUndefined: true }) authUser: AuthContextUser | undefined,
   ): Promise<WorkspaceMemberWorkspaceEntity[]> {
     if (
       !(await canReadWorkspaceMemberDirectory({
         keyValuePairRepository: this.keyValuePairRepository,
-        userId,
+        userId: authUser?.id,
         workspaceId: workspace.id,
       }))
     ) {

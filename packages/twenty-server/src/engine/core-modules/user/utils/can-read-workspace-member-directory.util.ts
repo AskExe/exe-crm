@@ -10,7 +10,7 @@ export const canReadWorkspaceMemberDirectory = async ({
   workspaceId,
 }: {
   keyValuePairRepository: Repository<KeyValuePairEntity>;
-  userId: string;
+  userId: string | undefined;
   workspaceId: string;
 }): Promise<boolean> => {
   const marker = await keyValuePairRepository.findOne({
