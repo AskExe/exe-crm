@@ -13,7 +13,11 @@ describe('UserResolver DEMO member directory', () => {
   const previousDemoWorkspaceId = process.env.EXE_DEMO_WORKSPACE_ID;
 
   afterEach(() => {
-    process.env.EXE_DEMO_WORKSPACE_ID = previousDemoWorkspaceId;
+    if (previousDemoWorkspaceId === undefined) {
+      delete process.env.EXE_DEMO_WORKSPACE_ID;
+    } else {
+      process.env.EXE_DEMO_WORKSPACE_ID = previousDemoWorkspaceId;
+    }
   });
 
   const buildResolver = (markerValue: JSON | null) => {
@@ -111,5 +115,41 @@ describe('UserResolver DEMO member directory', () => {
 
     expect(loadWorkspaceMembers).toHaveBeenCalledWith(demoWorkspace, false);
     expect(loadDeletedWorkspaceMembersOnly).toHaveBeenCalledWith(demoWorkspace);
+  });
+
+  it.each([undefined, 'another-workspace'])(
+    'keeps both DEMO directories private when the admission env is %s',
+    async (configuredWorkspaceId) => {
+      if (configuredWorkspaceId === undefined) {
+        delete process.env.EXE_DEMO_WORKSPACE_ID;
+      } else {
+        process.env.EXE_DEMO_WORKSPACE_ID = configuredWorkspaceId;
+      }
+      const {
+        loadDeletedWorkspaceMembersOnly,
+        loadWorkspaceMembers,
+        resolver,
+      } = buildResolver({
+        ownerUserIds: ['owner-one', 'owner-two'],
+      } as unknown as JSON);
+
+      await expect(
+        resolver.workspaceMembers(user, authUser, demoWorkspace),
+      ).resolves.toEqual([]);
+      await expect(
+        resolver.deletedWorkspaceMembers(user, authUser, demoWorkspace),
+      ).resolves.toEqual([]);
+      expect(loadWorkspaceMembers).not.toHaveBeenCalled();
+      expect(loadDeletedWorkspaceMembersOnly).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps a non-DEMO directory available when no marker is present', async () => {
+    delete process.env.EXE_DEMO_WORKSPACE_ID;
+    const { loadWorkspaceMembers, resolver } = buildResolver(null);
+
+    await resolver.workspaceMembers(user, authUser, demoWorkspace);
+
+    expect(loadWorkspaceMembers).toHaveBeenCalledWith(demoWorkspace, false);
   });
 });

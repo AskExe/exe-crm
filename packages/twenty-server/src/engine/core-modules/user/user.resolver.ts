@@ -128,8 +128,6 @@ export class UserResolver {
     userId: string;
     workspaceId: string;
   }): Promise<boolean> {
-    if (workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID) return true;
-
     const marker = await this.keyValuePairRepository.findOne({
       where: {
         workspaceId,
@@ -139,7 +137,14 @@ export class UserResolver {
       },
     });
 
-    return markerHasCanonicalOwner(marker?.value ?? null, userId);
+    if (marker) {
+      return markerHasCanonicalOwner(marker.value, userId);
+    }
+
+    // Keep a configured DEMO closed while bootstrap is incomplete. Once the
+    // marker exists, it remains the privacy boundary even if admission is
+    // later disabled or pointed at another workspace.
+    return workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID;
   }
 
   private async getUserWorkspacePermissions({
