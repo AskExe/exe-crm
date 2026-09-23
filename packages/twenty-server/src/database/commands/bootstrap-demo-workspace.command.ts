@@ -216,10 +216,29 @@ export class BootstrapDemoWorkspaceCommand extends CommandRunner {
     return await Promise.all(
       owners.map(async ({ userId, email }) => {
         const user = await this.userRepository.findOneByOrFail({ id: userId });
+        if (user.disabled || user.email.toLowerCase() !== email) {
+          throw new Error(
+            `Owner identity validation failed for user ${userId}`,
+          );
+        }
+
+        // CRM's isEmailVerified projection is not updated by the existing Exe
+        // owner SSO path. Check the current GoTrue authority instead of treating
+        // that stale flag as proof that a confirmed owner is unverified.
+        const [verification] = await this.dataSource.query(
+          `SELECT COUNT(*)::int AS "matchCount",
+                  COUNT(*) FILTER (
+                    WHERE email_confirmed_at IS NOT NULL
+                      AND deleted_at IS NULL
+                      AND COALESCE(is_anonymous, false) = false
+                      AND (banned_until IS NULL OR banned_until <= now())
+                  )::int AS "eligibleCount"
+             FROM auth.users WHERE lower(email) = $1`,
+          [email],
+        );
         if (
-          !user.isEmailVerified ||
-          user.disabled ||
-          user.email.toLowerCase() !== email
+          verification?.matchCount !== 1 ||
+          verification?.eligibleCount !== 1
         ) {
           throw new Error(
             `Owner identity validation failed for user ${userId}`,
