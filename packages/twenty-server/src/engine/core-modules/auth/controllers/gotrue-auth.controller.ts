@@ -30,6 +30,7 @@ import {
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -154,6 +155,7 @@ export class GoTrueAuthController {
     private readonly workspaceService: WorkspaceService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
     private readonly roleSyncService: RoleSyncService,
+    private readonly onboardingService: OnboardingService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -1600,6 +1602,23 @@ export class GoTrueAuthController {
     });
 
     if (!roleIsSafe) {
+      return {
+        type: 'deny',
+        statusCode: 503,
+        error: 'Demo access is temporarily unavailable',
+      };
+    }
+
+    // DEMO visitors cannot write workspaceMember records to finish profile
+    // onboarding. Provisioning has already supplied a display name, so clear
+    // only this user's DEMO profile step before issuing a read-only session.
+    try {
+      await this.onboardingService.setOnboardingCreateProfilePending({
+        userId: user.id,
+        workspaceId: workspace.id,
+        value: false,
+      });
+    } catch {
       return {
         type: 'deny',
         statusCode: 503,

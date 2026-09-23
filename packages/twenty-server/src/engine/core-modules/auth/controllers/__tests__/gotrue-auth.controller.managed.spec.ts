@@ -91,6 +91,9 @@ const buildController = (
       ),
     ensureDemoViewerMembership: jest.fn().mockResolvedValue(true),
   };
+  const onboardingService = {
+    setOnboardingCreateProfilePending: jest.fn().mockResolvedValue(undefined),
+  };
   const userRepository = {
     findOne: jest
       .fn()
@@ -130,6 +133,7 @@ const buildController = (
     workspaceService as any,
     workspaceDomainsService as any,
     roleSyncService as any,
+    onboardingService as any,
     userRepository as any,
     userWorkspaceRepository as any,
     workspaceRepository as any,
@@ -142,6 +146,7 @@ const buildController = (
     loginTokenService,
     signInUpService,
     roleSyncService,
+    onboardingService,
     userRepository,
     userWorkspaceRepository,
     workspaceRepository,
@@ -202,13 +207,16 @@ describe('GoTrueAuthController public DEMO join', () => {
     );
   });
 
-  it('seats a new visitor directly on the verified read-only role', async () => {
+  it('seats a first-time visitor on the verified read-only role and completes DEMO profile onboarding before login', async () => {
     const {
       controller,
       accessTokenService,
       roleSyncService,
       signInUpService,
       userWorkspaceRepository,
+      userRepository,
+      onboardingService,
+      loginTokenService,
     } = buildController(
       { EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID },
       { existingUserWorkspace: null },
@@ -217,24 +225,74 @@ describe('GoTrueAuthController public DEMO join', () => {
       ok: true,
       claims: { sub: USER_ID, email: EMAIL },
     });
-    userWorkspaceRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        id: USER_WORKSPACE_ID,
-        userId: USER_ID,
-        workspaceId: CANONICAL_WS_ID,
-      });
+    userRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: USER_ID,
+      email: EMAIL,
+      isEmailVerified: false,
+    });
+    userWorkspaceRepository.findOne.mockResolvedValueOnce({
+      id: USER_WORKSPACE_ID,
+      userId: USER_ID,
+      workspaceId: CANONICAL_WS_ID,
+    });
     const res = makeRes();
 
     await controller.joinGoTrueDemo(res, demoRequest() as any);
 
     expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
-      expect.objectContaining({ roleId: MANAGED_ROLE_ID }),
+      expect.objectContaining({
+        roleId: MANAGED_ROLE_ID,
+        userData: {
+          type: 'newUserWithPicture',
+          newUserWithPicture: expect.objectContaining({
+            email: EMAIL,
+            firstName: 'managed',
+          }),
+        },
+      }),
     );
     expect(roleSyncService.resolveDemoViewerRoleId).toHaveBeenCalledWith(
       CANONICAL_WS_ID,
     );
     expect(roleSyncService.resolveAssignableRoleId).not.toHaveBeenCalled();
+    expect(
+      onboardingService.setOnboardingCreateProfilePending,
+    ).toHaveBeenCalledWith({
+      userId: USER_ID,
+      workspaceId: CANONICAL_WS_ID,
+      value: false,
+    });
+    expect(
+      onboardingService.setOnboardingCreateProfilePending.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(
+      loginTokenService.generateLoginToken.mock.invocationCallOrder[0],
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringContaining('/verify?loginToken='),
+    });
+  });
+
+  it('does not issue a DEMO session if profile onboarding cannot be cleared', async () => {
+    const {
+      controller,
+      accessTokenService,
+      onboardingService,
+      loginTokenService,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    onboardingService.setOnboardingCreateProfilePending.mockRejectedValue(
+      new Error('database unavailable'),
+    );
+
+    const res = makeRes();
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
   });
 
   it('requires an explicit same-origin POST intent', async () => {
