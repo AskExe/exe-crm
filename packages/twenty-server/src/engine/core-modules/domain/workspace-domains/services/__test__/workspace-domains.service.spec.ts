@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -416,6 +417,98 @@ describe('WorkspaceDomainsService', () => {
         );
 
       expect(result).toEqual(undefined);
+    });
+  });
+
+  describe('getWorkspaceForVerifiedLoginToken', () => {
+    const withManagedDemo = async (test: () => Promise<void>) => {
+      const previousOrgId = process.env.EXE_ORG_WORKSPACE_ID;
+      const previousDemoId = process.env.EXE_DEMO_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'exe-workspace';
+      process.env.EXE_DEMO_WORKSPACE_ID = 'demo-workspace';
+      try {
+        await test();
+      } finally {
+        if (previousOrgId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousOrgId;
+        }
+        if (previousDemoId === undefined) {
+          delete process.env.EXE_DEMO_WORKSPACE_ID;
+        } else {
+          process.env.EXE_DEMO_WORKSPACE_ID = previousDemoId;
+        }
+      }
+    };
+
+    const configureSharedOrigin = () => {
+      jest.spyOn(twentyConfigService, 'get').mockImplementation((key) => {
+        if (key === 'IS_MULTIWORKSPACE_ENABLED') return false;
+        if (key === 'FRONTEND_URL') return 'https://crm.example.com';
+        return undefined;
+      });
+      jest
+        .spyOn(workspaceRepository, 'findOne')
+        .mockImplementation(async (options) => {
+          if (options?.where && 'id' in options.where) {
+            if (options.where.id === 'exe-workspace') {
+              return { id: 'exe-workspace' } as WorkspaceEntity;
+            }
+            if (options.where.id === 'demo-workspace') {
+              return {
+                id: 'demo-workspace',
+                displayName: 'DEMO',
+                activationStatus: WorkspaceActivationStatus.ACTIVE,
+                isCustomDomainEnabled: false,
+              } as WorkspaceEntity;
+            }
+          }
+          return null;
+        });
+    };
+
+    it('exchanges a verified DEMO token on the shared CRM origin', async () => {
+      await withManagedDemo(async () => {
+        configureSharedOrigin();
+
+        const workspace =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://crm.example.com',
+            'demo-workspace',
+          );
+
+        expect(workspace?.id).toBe('demo-workspace');
+        expect(workspaceRepository.findOne).toHaveBeenCalledWith({
+          where: {
+            id: 'demo-workspace',
+            displayName: 'DEMO',
+            activationStatus: WorkspaceActivationStatus.ACTIVE,
+          },
+          relations: ['workspaceSSOIdentityProviders'],
+        });
+      });
+    });
+
+    it('keeps the Exe default for unrelated origins and workspace IDs', async () => {
+      await withManagedDemo(async () => {
+        configureSharedOrigin();
+
+        const foreignOrigin =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://other.example.com',
+            'demo-workspace',
+          );
+        const unrelatedWorkspace =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://crm.example.com',
+            'other-workspace',
+          );
+
+        expect(foreignOrigin?.id).toBe('exe-workspace');
+        expect(unrelatedWorkspace?.id).toBe('exe-workspace');
+      });
     });
   });
 });

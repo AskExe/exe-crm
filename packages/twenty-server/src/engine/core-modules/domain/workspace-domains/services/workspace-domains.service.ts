@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
 
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
@@ -131,6 +132,52 @@ export class WorkspaceDomainsService {
       });
 
     return publicDomainFromCustomDomain?.workspace;
+  }
+
+  // The login token has already been cryptographically verified by the caller.
+  // On the shared single-workspace origin, only the configured DEMO tenant may
+  // differ from the pinned Exe default. All other tokens keep origin binding.
+  async getWorkspaceForVerifiedLoginToken(origin: string, workspaceId: string) {
+    const defaultWorkspace =
+      await this.getWorkspaceByOriginOrDefaultWorkspace(origin);
+
+    if (
+      defaultWorkspace?.id === workspaceId ||
+      this.twentyConfigService.get('IS_MULTIWORKSPACE_ENABLED') ||
+      workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID?.trim() ||
+      workspaceId === process.env.EXE_ORG_WORKSPACE_ID?.trim()
+    ) {
+      return defaultWorkspace;
+    }
+
+    const demoWorkspace = await this.workspaceRepository.findOne({
+      where: {
+        id: workspaceId,
+        displayName: 'DEMO',
+        activationStatus: WorkspaceActivationStatus.ACTIVE,
+      },
+      relations: ['workspaceSSOIdentityProviders'],
+    });
+
+    if (!demoWorkspace) {
+      return defaultWorkspace;
+    }
+
+    try {
+      const requestOrigin = new URL(origin).origin;
+      const workspaceUrls = this.getWorkspaceUrls(demoWorkspace);
+      const allowedUrls = [workspaceUrls.customUrl, workspaceUrls.subdomainUrl];
+
+      if (
+        allowedUrls.some((url) => url && new URL(url).origin === requestOrigin)
+      ) {
+        return demoWorkspace;
+      }
+    } catch {
+      // A malformed or unrelated origin must never select the DEMO tenant.
+    }
+
+    return defaultWorkspace;
   }
 
   private getCustomWorkspaceUrl(customDomain: string) {
