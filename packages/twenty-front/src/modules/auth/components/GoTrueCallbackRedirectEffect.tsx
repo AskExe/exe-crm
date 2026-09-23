@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { getTokenPair } from '@/apollo/utils/getTokenPair';
 import {
   clearGoTrueCallbackAttempt,
+  getDemoWorkspaceId,
   GO_TRUE_CALLBACK_PATH,
   hasGoTrueSentinelCookie,
   hasRecentGoTrueCallbackAttempt,
@@ -20,6 +21,10 @@ export const GoTrueCallbackRedirectEffect = () => {
     // valid apex session through the ordinary callback here would discard the
     // DEMO intent and route the visitor into their private CRM workspace.
     if (isGoTrueDemoJoinIntent(location)) {
+      return;
+    }
+
+    if (getDemoWorkspaceId()) {
       return;
     }
 

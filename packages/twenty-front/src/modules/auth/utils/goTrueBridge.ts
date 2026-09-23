@@ -40,6 +40,34 @@ export const isGoTrueDemoJoinIntent = ({
   pathname === AppPath.SignInUp &&
   new URLSearchParams(search).get('demo') === '1';
 
+// A routing hint for reauthentication, never an access grant. The server
+// verifies the GoTrue identity and the canonical DEMO workspace on each join.
+const DEMO_WORKSPACE_ID_STORAGE_KEY = 'exe.demoWorkspaceId';
+
+export const getDemoWorkspaceId = (): string | null => {
+  try {
+    return localStorage.getItem(DEMO_WORKSPACE_ID_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const markDemoWorkspaceSession = (workspaceId: string): void => {
+  localStorage.setItem(DEMO_WORKSPACE_ID_STORAGE_KEY, workspaceId);
+};
+
+export const clearDemoWorkspaceSession = (): void => {
+  try {
+    localStorage.removeItem(DEMO_WORKSPACE_ID_STORAGE_KEY);
+  } catch {
+    // A browser that denies storage also cannot read a DEMO marker.
+  }
+};
+
+export const isDemoWorkspaceSession = (
+  workspaceId: string | null | undefined,
+) => !!workspaceId && getDemoWorkspaceId() === workspaceId;
+
 const GO_TRUE_CALLBACK_ATTEMPTED_AT_SESSION_STORAGE_KEY =
   'gotrueCallbackAttemptedAt';
 
@@ -133,6 +161,12 @@ export const hasRecentGoTrueCallbackAttempt = (
 export const isGoTrueBridgeInFlight = (now: number = Date.now()): boolean => {
   // Already exchanged. Nothing is in flight.
   if (isDefined(getTokenPair())) {
+    return false;
+  }
+
+  // An expired DEMO session must return to explicit DEMO admission. The
+  // ordinary callback would silently attempt the private workspace instead.
+  if (getDemoWorkspaceId()) {
     return false;
   }
 

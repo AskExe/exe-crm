@@ -201,6 +201,7 @@ describe('GoTrueAuthController public DEMO join', () => {
       redirectUrl: expect.stringMatching(
         /^https:\/\/demo\.crm\.example\.com\/verify\?loginToken=/,
       ),
+      demoWorkspaceId: CANONICAL_WS_ID,
     });
     expect(userRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({ isEmailVerified: true }),
@@ -270,6 +271,7 @@ describe('GoTrueAuthController public DEMO join', () => {
     );
     expect(res.json).toHaveBeenCalledWith({
       redirectUrl: expect.stringContaining('/verify?loginToken='),
+      demoWorkspaceId: CANONICAL_WS_ID,
     });
   });
 

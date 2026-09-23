@@ -6,6 +6,7 @@ import { returnToPathState } from '@/auth/states/returnToPathState';
 import {
   isGoTrueBridgeInFlight,
   isGoTrueDemoJoinIntent,
+  getDemoWorkspaceId,
 } from '@/auth/utils/goTrueBridge';
 import { calendarBookingPageIdState } from '@/client-config/states/calendarBookingPageIdState';
 import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCurrentLocationOnAWorkspace';
@@ -86,7 +87,9 @@ export const usePageChangeEffectNavigateLocation = () => {
       return;
     }
 
-    return AppPath.SignInUp;
+    return getDemoWorkspaceId()
+      ? `${AppPath.SignInUp}?demo=1`
+      : AppPath.SignInUp;
   }
 
   if (

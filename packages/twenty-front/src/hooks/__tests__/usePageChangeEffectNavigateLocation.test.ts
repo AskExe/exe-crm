@@ -4,11 +4,12 @@ import {
   GO_TRUE_SENTINEL_COOKIE_NAME,
   GO_TRUE_SENTINEL_COOKIE_VALUE,
   markGoTrueCallbackAttempt,
+  markDemoWorkspaceSession,
 } from '@/auth/utils/goTrueBridge';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useIsWorkspaceActivationStatusEqualsTo } from '@/workspace/hooks/useIsWorkspaceActivationStatusEqualsTo';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { AppPath, SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
@@ -40,6 +41,13 @@ jest.mock('~/utils/isMatchingLocation');
 const mockIsMatchingLocation = jest.mocked(isMatchingLocation);
 
 const setupMockIsMatchingLocation = (pathname: string) => {
+  jest.mocked(useLocation).mockReturnValueOnce({
+    pathname,
+    search: '',
+    hash: '',
+    state: null,
+    key: 'default',
+  });
   mockIsMatchingLocation.mockImplementation(
     (_location, path) => path === pathname,
   );
@@ -394,6 +402,7 @@ describe('usePageChangeEffectNavigateLocation', () => {
     afterEach(() => {
       document.cookie = `${GO_TRUE_SENTINEL_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       sessionStorage.clear();
+      localStorage.clear();
     });
 
     it('does not send the browser to sign-in while the exchange is in flight', () => {
@@ -416,6 +425,16 @@ describe('usePageChangeEffectNavigateLocation', () => {
       setupCase();
 
       expect(usePageChangeEffectNavigateLocation()).toEqual(AppPath.SignInUp);
+    });
+
+    it('returns an expired DEMO session to explicit DEMO admission', () => {
+      markDemoWorkspaceSession('demo-workspace');
+      document.cookie = `${GO_TRUE_SENTINEL_COOKIE_NAME}=${GO_TRUE_SENTINEL_COOKIE_VALUE}`;
+      setupCase();
+
+      expect(usePageChangeEffectNavigateLocation()).toEqual(
+        `${AppPath.SignInUp}?demo=1`,
+      );
     });
   });
 

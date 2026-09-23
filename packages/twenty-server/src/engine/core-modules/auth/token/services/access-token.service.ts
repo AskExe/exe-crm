@@ -624,8 +624,15 @@ export class AccessTokenService {
       const normalizedBase = gotrueUrl.endsWith('/')
         ? gotrueUrl
         : `${gotrueUrl}/`;
-      const response = await fetch(new URL('user', normalizedBase).toString(), {
+      const userUrl = new URL('user', normalizedBase);
+
+      // This call carries the caller's bearer credential. Reject plaintext
+      // endpoints and redirects before a credential can leave this server.
+      if (userUrl.protocol !== 'https:') return null;
+
+      const response = await fetch(userUrl.toString(), {
         headers: { Authorization: `Bearer ${token}` },
+        redirect: 'error',
         signal: AbortSignal.timeout(5000),
       });
 

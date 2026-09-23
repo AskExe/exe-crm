@@ -1338,8 +1338,22 @@ describe('AccessTokenService', () => {
         'https://auth.example.com/auth/v1/user',
         expect.objectContaining({
           headers: { Authorization: 'Bearer token' },
+          redirect: 'error',
         }),
       );
+    });
+
+    it('never sends the bearer token to a plaintext GoTrue endpoint', async () => {
+      global.fetch = jest.fn();
+
+      await expect(
+        service.requireFreshConfirmedGoTrueUser(
+          'token',
+          'http://gotrue:9999/auth/v1',
+          expected,
+        ),
+      ).resolves.toBeNull();
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it.each([

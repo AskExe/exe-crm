@@ -36,6 +36,7 @@ jest.mock(
 );
 jest.mock('@/auth/utils/goTrueBridge', () => ({
   getGoTrueBridgeFailure: jest.fn(),
+  clearDemoWorkspaceSession: jest.fn(),
 }));
 
 describe('CentralAuthRedirect', () => {

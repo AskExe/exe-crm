@@ -1501,7 +1501,10 @@ export class GoTrueAuthController {
       return res.status(outcome.statusCode).json({ error: outcome.error });
     }
 
-    return res.json({ redirectUrl: outcome.url });
+    return res.json({
+      redirectUrl: outcome.url,
+      demoWorkspaceId: this.exeDemoWorkspaceId,
+    });
   }
 
   private async resolveDemoLoginOutcome(

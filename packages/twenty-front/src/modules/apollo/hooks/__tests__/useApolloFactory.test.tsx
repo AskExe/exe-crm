@@ -5,6 +5,7 @@ import fetchMock, { enableFetchMocks } from 'jest-fetch-mock';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SnackBarComponentInstanceContext } from '@/ui/feedback/snack-bar-manager/contexts/SnackBarComponentInstanceContext';
 import { useApolloFactory } from '@/apollo/hooks/useApolloFactory';
+import { markDemoWorkspaceSession } from '@/auth/utils/goTrueBridge';
 
 enableFetchMocks();
 
@@ -33,6 +34,12 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe('useApolloFactory', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockNavigate.mockClear();
+    fetchMock.resetMocks();
+  });
+
   it('should work as expected', () => {
     const { result } = renderHook(() => useApolloFactory(), {
       wrapper: Wrapper,
@@ -96,5 +103,37 @@ describe('useApolloFactory', () => {
       expect(mockNavigate).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/welcome');
     }
+  });
+
+  it('returns an expired DEMO session to explicit DEMO admission', async () => {
+    markDemoWorkspaceSession('demo-workspace');
+    fetchMock.mockResponse(() =>
+      Promise.resolve({
+        body: JSON.stringify({
+          data: {},
+          errors: [{ extensions: { code: 'UNAUTHENTICATED' } }],
+        }),
+      }),
+    );
+
+    const { result } = renderHook(() => useApolloFactory(), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      await result.current
+        .mutate({
+          mutation: gql`
+            mutation Track($type: String!, $sessionId: String!, $data: JSON!) {
+              track(type: $type, sessionId: $sessionId, data: $data) {
+                success
+              }
+            }
+          `,
+        })
+        .catch(() => undefined);
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/welcome?demo=1');
   });
 });

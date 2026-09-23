@@ -1,9 +1,14 @@
 import { styled } from '@linaria/react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
 import { exeFoundryBold } from 'twenty-ui/theme';
 
 import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
-import { isGoTrueDemoJoinIntent } from '@/auth/utils/goTrueBridge';
+import {
+  clearDemoWorkspaceSession,
+  isGoTrueDemoJoinIntent,
+  markDemoWorkspaceSession,
+} from '@/auth/utils/goTrueBridge';
 
 import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
 
@@ -265,6 +270,7 @@ const buildExeDemoSsoUrl = () => {
 };
 
 export const SignInUpWorkspaceScopeForm = () => {
+  const { t } = useLingui();
   const isDemoJoin = isGoTrueDemoJoinIntent(window.location);
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
   const [email, setEmail] = useState('');
@@ -408,32 +414,37 @@ export const SignInUpWorkspaceScopeForm = () => {
         return;
       }
 
-      if (!response.ok || !data.redirectUrl) {
-        throw new Error(data.error || 'The public demo is unavailable');
+      if (!response.ok || !data.redirectUrl || !data.demoWorkspaceId) {
+        throw new Error(data.error || t`The public demo is unavailable`);
       }
 
+      markDemoWorkspaceSession(data.demoWorkspaceId);
       window.location.href = data.redirectUrl;
     } catch (error) {
       setDemoError(
         error instanceof Error
           ? error.message
-          : 'The public demo is unavailable',
+          : t`The public demo is unavailable`,
       );
     } finally {
       setDemoLoading(false);
     }
-  }, []);
+  }, [t]);
 
   if (isDemoJoin) {
     return (
       <StyledContentContainer>
         <StyledAdminTokenForm>
           <StyledFieldGroup>
-            <StyledLabel>Explore the CRM DEMO</StyledLabel>
+            <StyledLabel>
+              <Trans>Explore the CRM DEMO</Trans>
+            </StyledLabel>
             <StyledHelperText>
-              Join a shared workspace with synthetic records. Demo visitors can
-              browse, search, and inspect data, but cannot edit records or use
-              admin and automation tools.
+              <Trans>
+                Join a shared workspace with synthetic records. Demo visitors
+                can browse, search, and inspect data, but cannot edit records or
+                use admin and automation tools.
+              </Trans>
             </StyledHelperText>
           </StyledFieldGroup>
           {demoError && <StyledErrorMessage>{demoError}</StyledErrorMessage>}
@@ -442,9 +453,15 @@ export const SignInUpWorkspaceScopeForm = () => {
             disabled={demoLoading}
             onClick={handleDemoJoin}
           >
-            {demoLoading ? <StyledSpinner /> : 'JOIN READ-ONLY DEMO'}
+            {demoLoading ? (
+              <StyledSpinner />
+            ) : (
+              <Trans>JOIN READ-ONLY DEMO</Trans>
+            )}
           </StyledGoldButton>
-          <StyledSsoLink href="/welcome">Use a private workspace</StyledSsoLink>
+          <StyledSsoLink href="/welcome" onClick={clearDemoWorkspaceSession}>
+            <Trans>Use a private workspace</Trans>
+          </StyledSsoLink>
         </StyledAdminTokenForm>
       </StyledContentContainer>
     );
