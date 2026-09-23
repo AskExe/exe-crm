@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
@@ -21,6 +21,29 @@ export const VerifyLoginTokenEffect = () => {
   const { isSaved: clientConfigLoaded } = useAtomStateValue(
     clientConfigApiStatusState,
   );
+
+  // The one-time token arrives in a redirect URL. Remove it from the address
+  // bar and browser history before exchanging it, even if client config is
+  // still loading or the exchange later fails. Keep the captured value only in
+  // this component's memory for the exchange below.
+  useLayoutEffect(() => {
+    if (!isDefined(loginToken)) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (!url.searchParams.has('loginToken')) {
+      return;
+    }
+
+    url.searchParams.delete('loginToken');
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [loginToken]);
 
   useEffect(() => {
     if (!clientConfigLoaded) {
