@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CronRegisterAllCommand } from 'src/database/commands/cron-register-all.command';
 import { DataSeedWorkspaceCommand } from 'src/database/commands/data-seed-dev-workspace.command';
+import { BootstrapDemoWorkspaceCommand } from 'src/database/commands/bootstrap-demo-workspace.command';
 import { ListOrphanedWorkspaceEntitiesCommand } from 'src/database/commands/list-and-delete-orphaned-workspace-entities.command';
 import { ConfirmationQuestion } from 'src/database/commands/questions/confirmation.question';
 import { RunTypeormMigrationCommand } from 'src/database/commands/run-typeorm-migration.command';
@@ -12,6 +13,7 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreEngineVersionModule } from 'src/engine/core-engine-version/core-engine-version.module';
 import { CoreMigrationRunnerModule } from 'src/database/commands/core-migration-runner/core-migration-runner.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
+import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GenerateApiKeyCommand } from 'src/engine/core-modules/api-key/commands/generate-api-key.command';
 import { MarketplaceModule } from 'src/engine/core-modules/application/application-marketplace/marketplace.module';
 import { StaleRegistrationCleanupModule } from 'src/engine/core-modules/application/application-oauth/stale-registration-cleanup/stale-registration-cleanup.module';
@@ -24,6 +26,11 @@ import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { UserEntity } from 'src/engine/core-modules/user/user.entity';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
+import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
+import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
+import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
@@ -39,11 +46,17 @@ import { CalendarEventImportManagerModule } from 'src/modules/calendar/calendar-
 import { MessagingImportManagerModule } from 'src/modules/messaging/message-import-manager/messaging-import-manager.module';
 import { WorkflowRunQueueModule } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workflow-run-queue.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
+import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/workflow-trigger.module';
 
 @Module({
   imports: [
     UpgradeVersionCommandModule,
-    TypeOrmModule.forFeature([WorkspaceEntity]),
+    TypeOrmModule.forFeature([
+      WorkspaceEntity,
+      UserEntity,
+      KeyValuePairEntity,
+      RoleEntity,
+    ]),
     WorkspaceExportModule,
     // Cron command dependencies
     MessagingImportManagerModule,
@@ -58,6 +71,10 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
     ObjectMetadataModule,
     DevSeederModule,
     WorkspaceManagerModule,
+    UserRoleModule,
+    UserWorkspaceModule,
+    AuthModule,
+    WorkflowTriggerModule,
     DataSourceModule,
     WorkspaceCacheStorageModule,
     ApiKeyModule,
@@ -77,6 +94,7 @@ import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/au
     WorkspaceVersionModule,
   ],
   providers: [
+    BootstrapDemoWorkspaceCommand,
     DataSeedWorkspaceCommand,
     ConfirmationQuestion,
     CronRegisterAllCommand,

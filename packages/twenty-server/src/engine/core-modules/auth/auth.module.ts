@@ -163,6 +163,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     RoleSyncService,
   ],
   exports: [
+    SignInUpService,
     AccessTokenService,
     LoginTokenService,
     RefreshTokenService,
