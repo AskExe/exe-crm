@@ -191,6 +191,63 @@ describe('WorkspaceDomainsService', () => {
   });
 
   describe('getWorkspaceByOriginOrDefaultWorkspace', () => {
+    it('keeps the managed Exe workspace as default when a newer DEMO exists', async () => {
+      const previousManagedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'exe-workspace';
+      try {
+        jest.spyOn(twentyConfigService, 'get').mockReturnValue(false);
+        const findOne = jest.spyOn(workspaceRepository, 'findOne');
+
+        findOne.mockResolvedValueOnce({
+          id: 'exe-workspace',
+        } as WorkspaceEntity);
+        const find = jest.spyOn(workspaceRepository, 'find');
+
+        const result =
+          await workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+            'https://crm.example.com',
+          );
+
+        expect(result?.id).toBe('exe-workspace');
+        expect(findOne).toHaveBeenCalledWith({
+          where: { id: 'exe-workspace' },
+          relations: ['workspaceSSOIdentityProviders'],
+        });
+        expect(find).not.toHaveBeenCalled();
+      } finally {
+        if (previousManagedWorkspaceId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousManagedWorkspaceId;
+        }
+      }
+    });
+
+    it('fails closed when the configured managed Exe workspace is missing', async () => {
+      const previousManagedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'missing-workspace';
+      try {
+        jest.spyOn(twentyConfigService, 'get').mockReturnValue(false);
+        jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce(null);
+        const find = jest.spyOn(workspaceRepository, 'find');
+
+        await expect(
+          workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+            'https://crm.example.com',
+          ),
+        ).rejects.toThrow();
+        expect(find).not.toHaveBeenCalled();
+      } finally {
+        if (previousManagedWorkspaceId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousManagedWorkspaceId;
+        }
+      }
+    });
+
     it('should return default workspace if IS_MULTIWORKSPACE_ENABLED=false', async () => {
       jest
         .spyOn(twentyConfigService, 'get')

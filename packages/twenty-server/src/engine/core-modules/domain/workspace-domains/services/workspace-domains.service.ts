@@ -64,6 +64,22 @@ export class WorkspaceDomainsService {
       );
     }
 
+    // Managed Exe installations can contain an explicitly joined DEMO tenant
+    // while keeping public workspace creation disabled. Bind the shared origin
+    // to its configured organization; a newer DEMO must never become default.
+    const managedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID?.trim();
+
+    if (managedWorkspaceId) {
+      const managedWorkspace = await this.workspaceRepository.findOne({
+        where: { id: managedWorkspaceId },
+        relations: ['workspaceSSOIdentityProviders'],
+      });
+
+      assertIsDefinedOrThrow(managedWorkspace, WorkspaceNotFoundDefaultError);
+
+      return managedWorkspace;
+    }
+
     const workspaces = await this.workspaceRepository.find({
       order: {
         createdAt: 'DESC',
