@@ -1303,6 +1303,13 @@ describe('AccessTokenService', () => {
       expect(result).not.toBeNull();
       expect(result?.email).toBe(EMAIL);
       expect(result?.sub).toBe(USER_ID);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://auth.example.com/user',
+        expect.objectContaining({
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: 'error',
+        }),
+      );
     });
 
     it.each([

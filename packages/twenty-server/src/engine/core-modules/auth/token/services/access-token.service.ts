@@ -818,6 +818,7 @@ export class AccessTokenService {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
+        redirect: 'error',
         signal: AbortSignal.timeout(5000), // 5s timeout to avoid hanging requests
       });
 

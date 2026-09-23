@@ -1483,6 +1483,19 @@ export class GoTrueAuthController {
       return res.status(401).json({ error: 'Sign in with Exe first' });
     }
 
+    // verifyGoTrueTokenDetailed may perform an authenticated GoTrue user
+    // lookup before the later fresh-confirmation check. Reject unsafe
+    // transport before either service can receive the session credential.
+    try {
+      if (new URL(this.gotrueUrl).protocol !== 'https:') {
+        return res
+          .status(503)
+          .json({ error: 'The public demo is unavailable' });
+      }
+    } catch {
+      return res.status(503).json({ error: 'The public demo is unavailable' });
+    }
+
     const verification =
       await this.accessTokenService.verifyGoTrueTokenDetailed(
         token,

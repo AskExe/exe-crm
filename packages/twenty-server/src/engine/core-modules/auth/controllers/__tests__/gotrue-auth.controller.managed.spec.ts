@@ -46,7 +46,7 @@ const buildController = (
   process.env.EXE_ORG_ID = env.EXE_ORG_ID;
   process.env.EXE_ORG_WORKSPACE_ID = env.EXE_ORG_WORKSPACE_ID;
   process.env.EXE_DEMO_WORKSPACE_ID = env.EXE_DEMO_WORKSPACE_ID;
-  process.env.GOTRUE_URL = 'https://auth.example.com';
+  process.env.GOTRUE_URL = env.GOTRUE_URL ?? 'https://auth.example.com';
   process.env.SERVER_URL = 'https://crm.example.com';
 
   const workspace =
@@ -170,6 +170,22 @@ const demoRequest = () => ({
 });
 
 describe('GoTrueAuthController public DEMO join', () => {
+  it('rejects plaintext GoTrue transport before token verification', async () => {
+    const { controller, accessTokenService } = buildController({
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+      GOTRUE_URL: 'http://gotrue:9999/auth/v1',
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(accessTokenService.verifyGoTrueTokenDetailed).not.toHaveBeenCalled();
+    expect(
+      accessTokenService.requireFreshConfirmedGoTrueUser,
+    ).not.toHaveBeenCalled();
+  });
+
   it('binds only to EXE_DEMO_WORKSPACE_ID and preserves an existing owner role', async () => {
     const {
       controller,
