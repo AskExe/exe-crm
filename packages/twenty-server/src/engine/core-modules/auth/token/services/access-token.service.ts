@@ -9,7 +9,7 @@ import ms from 'ms';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { assertIsDefinedOrThrow, isValidUuid } from 'twenty-shared/utils';
 import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import * as jwt from 'jsonwebtoken';
 
@@ -30,6 +30,7 @@ import {
 } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceNotFoundDefaultError } from 'src/engine/core-modules/user-workspace/user-workspace.exception';
@@ -172,6 +173,8 @@ export class AccessTokenService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
   ) {}
 
   async generateAccessToken({
@@ -385,6 +388,26 @@ export class AccessTokenService {
     const workspace = await this.resolveWorkspaceForGoTrueRequest(request);
 
     if (!workspace) {
+      return null;
+    }
+
+    // DEMO admission runs only through gotrue-demo-join, which confirms the
+    // current email and seats the restricted viewer role. Raw bearer fallback
+    // otherwise auto-provisions the workspace's default writable role.
+    if (workspace.id === process.env.EXE_DEMO_WORKSPACE_ID) {
+      return null;
+    }
+
+    const demoMarker = await this.keyValuePairRepository.findOne({
+      where: {
+        workspaceId: workspace.id,
+        userId: IsNull(),
+        key: 'exe.demo-workspace-bootstrap.v1',
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (demoMarker) {
       return null;
     }
 

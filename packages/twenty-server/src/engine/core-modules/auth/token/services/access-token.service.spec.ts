@@ -14,6 +14,7 @@ import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.aut
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
@@ -34,6 +35,7 @@ describe('AccessTokenService', () => {
   let workspaceRepository: Repository<WorkspaceEntity>;
   let globalWorkspaceOrmManager: GlobalWorkspaceOrmManager;
   let userWorkspaceRepository: Repository<UserWorkspaceEntity>;
+  let keyValuePairRepository: Repository<KeyValuePairEntity>;
   let workspaceDomainsService: WorkspaceDomainsService;
   let userWorkspaceService: UserWorkspaceService;
   let coreEntityCacheService: CoreEntityCacheService;
@@ -126,6 +128,10 @@ describe('AccessTokenService', () => {
           useClass: Repository,
         },
         {
+          provide: getRepositoryToken(KeyValuePairEntity),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
+        },
+        {
           provide: EmailService,
           useValue: {},
         },
@@ -155,6 +161,9 @@ describe('AccessTokenService', () => {
     );
     userWorkspaceRepository = module.get<Repository<UserWorkspaceEntity>>(
       getRepositoryToken(UserWorkspaceEntity),
+    );
+    keyValuePairRepository = module.get<Repository<KeyValuePairEntity>>(
+      getRepositoryToken(KeyValuePairEntity),
     );
     workspaceDomainsService = module.get<WorkspaceDomainsService>(
       WorkspaceDomainsService,
@@ -553,6 +562,79 @@ describe('AccessTokenService', () => {
         ['flatWorkspaceMemberMaps'],
       );
     });
+
+    it.each([
+      { configured: true, marked: false },
+      { configured: false, marked: true },
+    ])(
+      'never provisions a DEMO workspace through raw GoTrue bearer fallback (%o)',
+      async ({ configured, marked }) => {
+        const previousDemoWorkspaceId = process.env.EXE_DEMO_WORKSPACE_ID;
+        const previousOrgId = process.env.EXE_ORG_ID;
+        const workspace = { id: randomUUID() } as WorkspaceEntity;
+        const token = 'raw-gotrue-token';
+
+        try {
+          delete process.env.EXE_ORG_ID;
+          if (configured) {
+            process.env.EXE_DEMO_WORKSPACE_ID = workspace.id;
+          } else {
+            delete process.env.EXE_DEMO_WORKSPACE_ID;
+          }
+
+          jest
+            .spyOn(jwtWrapperService, 'extractJwtFromRequest')
+            .mockReturnValue(() => token);
+          jest
+            .spyOn(jwtWrapperService, 'verifyJwtToken')
+            .mockRejectedValue(new Error('Token invalid'));
+          jest.spyOn(service, 'verifyGoTrueToken').mockResolvedValue({
+            sub: randomUUID(),
+            email: 'visitor@example.com',
+          } as any);
+          mockConfig({ GOTRUE_URL: 'https://auth.example.com' });
+          jest
+            .spyOn(
+              workspaceDomainsService,
+              'getWorkspaceByOriginOrDefaultWorkspace',
+            )
+            .mockResolvedValue(workspace);
+          jest
+            .spyOn(keyValuePairRepository, 'findOne')
+            .mockResolvedValue(
+              marked ? ({ value: {} } as KeyValuePairEntity) : null,
+            );
+          const findUser = jest.spyOn(userRepository, 'findOne');
+
+          await expect(
+            service.validateTokenByRequest({
+              headers: { origin: 'https://demo.example.com' },
+              protocol: 'https',
+            } as ExpressRequest),
+          ).rejects.toThrow('Token invalid');
+          expect(findUser).not.toHaveBeenCalled();
+          if (marked) {
+            expect(keyValuePairRepository.findOne).toHaveBeenCalledWith({
+              where: expect.objectContaining({
+                workspaceId: workspace.id,
+                key: 'exe.demo-workspace-bootstrap.v1',
+              }),
+            });
+          }
+        } finally {
+          if (previousDemoWorkspaceId === undefined) {
+            delete process.env.EXE_DEMO_WORKSPACE_ID;
+          } else {
+            process.env.EXE_DEMO_WORKSPACE_ID = previousDemoWorkspaceId;
+          }
+          if (previousOrgId === undefined) {
+            delete process.env.EXE_ORG_ID;
+          } else {
+            process.env.EXE_ORG_ID = previousOrgId;
+          }
+        }
+      },
+    );
 
     it('rejects GoTrue JWTs with an unexpected audience', async () => {
       const { publicKey, privateKey } = generateKeyPairSync('rsa', {

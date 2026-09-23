@@ -12,6 +12,7 @@ import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services
 import { RenewTokenService } from 'src/engine/core-modules/auth/token/services/renew-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -32,6 +33,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
       AppTokenEntity,
       WorkspaceEntity,
       UserWorkspaceEntity,
+      KeyValuePairEntity,
       ApplicationEntity,
     ]),
     TypeORMModule,
