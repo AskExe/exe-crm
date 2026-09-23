@@ -1,5 +1,5 @@
 import { InMemoryCache } from '@apollo/client';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApolloFactory, type Options } from '@/apollo/services/apollo.factory';
@@ -9,6 +9,11 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { returnToPathState } from '@/auth/states/returnToPathState';
 import { isValidReturnToPath } from '@/auth/utils/isValidReturnToPath';
+import {
+  clearDemoWorkspaceSession,
+  getDemoWorkspaceId,
+  isDemoWorkspaceSession,
+} from '@/auth/utils/goTrueBridge';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { appVersionState } from '@/client-config/states/appVersionState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -42,6 +47,16 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
 
   const { enqueueErrorSnackBar } = useSnackBar();
 
+  useEffect(() => {
+    if (
+      currentWorkspace?.id &&
+      getDemoWorkspaceId() &&
+      !isDemoWorkspaceSession(currentWorkspace.id)
+    ) {
+      clearDemoWorkspaceSession();
+    }
+  }, [currentWorkspace?.id]);
+
   const apolloClient = useMemo(() => {
     apolloRef.current = new ApolloFactory({
       uri: `${REACT_APP_SERVER_BASE_URL}/graphql`,
@@ -66,6 +81,7 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        const wasDemoSession = getDemoWorkspaceId() !== null;
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);
@@ -82,7 +98,9 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
           if (isValidReturnToPath(path)) {
             setReturnToPath(path);
           }
-          navigate(AppPath.SignInUp);
+          navigate(
+            wasDemoSession ? `${AppPath.SignInUp}?demo=1` : AppPath.SignInUp,
+          );
         }
       },
       onAppVersionMismatch: (message) => {

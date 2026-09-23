@@ -1,5 +1,7 @@
 import {
   clearGoTrueCallbackAttempt,
+  clearDemoWorkspaceSession,
+  getDemoWorkspaceId,
   getGoTrueBridgeFailure,
   GO_TRUE_BRIDGE_IN_FLIGHT_MS,
   GO_TRUE_CALLBACK_ATTEMPT_TTL_MS,
@@ -8,10 +10,27 @@ import {
   hasGoTrueSentinelCookie,
   hasRecentGoTrueCallbackAttempt,
   isGoTrueBridgeInFlight,
+  isGoTrueDemoJoinIntent,
+  isDemoWorkspaceSession,
+  markDemoWorkspaceSession,
   markGoTrueCallbackAttempt,
   readGoTrueCallbackAttemptedAt,
   resetGoTrueBridgeFailureCaptureForTesting,
 } from '@/auth/utils/goTrueBridge';
+
+describe('isGoTrueDemoJoinIntent', () => {
+  it('accepts only the active welcome route with explicit demo intent', () => {
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/welcome', search: '?demo=1' }),
+    ).toBe(true);
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/welcome', search: '?demo=0' }),
+    ).toBe(false);
+    expect(
+      isGoTrueDemoJoinIntent({ pathname: '/other', search: '?demo=1' }),
+    ).toBe(false);
+  });
+});
 
 const setCookie = (name: string, value: string) => {
   document.cookie = `${name}=${value}`;
@@ -54,7 +73,19 @@ describe('goTrueBridge', () => {
   beforeEach(() => {
     clearCookies();
     sessionStorage.clear();
+    localStorage.clear();
     setSearch('');
+  });
+
+  it('keeps explicit DEMO scope until a private workspace is chosen', () => {
+    markDemoWorkspaceSession('demo-workspace');
+
+    expect(getDemoWorkspaceId()).toBe('demo-workspace');
+    expect(isDemoWorkspaceSession('demo-workspace')).toBe(true);
+    expect(isDemoWorkspaceSession('private-workspace')).toBe(false);
+
+    clearDemoWorkspaceSession();
+    expect(getDemoWorkspaceId()).toBeNull();
   });
 
   it('reads the apex sentinel only when it carries the agreed value', () => {
@@ -97,6 +128,13 @@ describe('goTrueBridge', () => {
 
   describe('isGoTrueBridgeInFlight', () => {
     it('is false for a visitor with no apex session', () => {
+      expect(isGoTrueBridgeInFlight(NOW)).toBe(false);
+    });
+
+    it('does not start the private bridge after a DEMO session expires', () => {
+      giveApexSessionWithoutCrmSession();
+      markDemoWorkspaceSession('demo-workspace');
+
       expect(isGoTrueBridgeInFlight(NOW)).toBe(false);
     });
 

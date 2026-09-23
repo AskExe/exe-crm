@@ -39,6 +39,8 @@ services:
       GOTRUE_JWT_ISSUER: ${GOTRUE_JWT_ISSUER:-}
       GOTRUE_JWT_AUDIENCE: ${GOTRUE_JWT_AUDIENCE:-}
       GOTRUE_JWT_SECRET: ${GOTRUE_JWT_SECRET:-}
+      # Bind public DEMO admission to the pre-bootstrapped workspace only.
+      EXE_DEMO_WORKSPACE_ID: ${EXE_DEMO_WORKSPACE_ID:-}
 
       APP_SECRET: '${APP_SECRET:?APP_SECRET is required - generate with openssl rand -base64 32}'
       EXE_LICENSE_KEY: '${EXE_LICENSE_KEY:?EXE_LICENSE_KEY is required - purchase at https://askexe.com}'

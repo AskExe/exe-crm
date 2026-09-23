@@ -111,6 +111,10 @@ packages/twenty-ui/src/theme/constants/exe-theme/tokens.ts
 # internal package path; this is not customer-facing upstream branding.
 packages/twenty-server/src/engine/core-modules/auth/__tests__/service-switcher-logout.spec.ts
 
+# Permission regression tests import the repository guard through its canonical
+# internal path. The literal is a source directory name, not product branding.
+packages/twenty-server/src/engine/twenty-orm/repository/__tests__/permissions.utils.spec.ts
+
 # Operator bootstrap uses established internal package/module paths. These are
 # source identifiers and are never displayed as customer-facing branding.
 packages/twenty-server/src/database/commands/bootstrap-demo-workspace.command.ts

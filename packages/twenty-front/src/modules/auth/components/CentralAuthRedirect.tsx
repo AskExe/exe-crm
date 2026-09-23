@@ -6,7 +6,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Logo } from '@/auth/components/Logo';
 import { GoTrueSignInError } from '@/auth/components/GoTrueSignInError';
 import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
-import { getGoTrueBridgeFailure } from '@/auth/utils/goTrueBridge';
+import {
+  clearDemoWorkspaceSession,
+  getGoTrueBridgeFailure,
+} from '@/auth/utils/goTrueBridge';
 
 const StyledContainer = styled.main`
   align-items: center;
@@ -62,6 +65,7 @@ export const CentralAuthRedirect = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    clearDemoWorkspaceSession();
     if (failure === null) window.location.replace(authUrl);
   }, [authUrl, failure]);
 

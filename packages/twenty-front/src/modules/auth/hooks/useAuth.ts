@@ -36,6 +36,7 @@ import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceSta
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { clearDemoWorkspaceSession } from '@/auth/utils/goTrueBridge';
 import { useSignUpInNewWorkspace } from '@/auth/sign-in-up/hooks/useSignUpInNewWorkspace';
 import { useLoadMockedMetadata } from '@/metadata-store/hooks/useLoadMockedMetadata';
 import { preloadMockedMetadata } from '@/metadata-store/utils/preloadMockedMetadata';
@@ -164,6 +165,7 @@ export const useAuth = () => {
 
     sessionStorage.clear();
     clearSessionLocalStorageKeys();
+    clearDemoWorkspaceSession();
 
     store.set(workspaceAuthProvidersState.atom, authProvidersValue);
     store.set(workspacePublicDataState.atom, workspacePublicDataValue);
@@ -323,9 +325,10 @@ export const useAuth = () => {
       handleSetAuthTokens(authTokens);
       setIsAppEffectRedirectEnabled(false);
 
-      await loadCurrentUser();
+      const { workspace } = await loadCurrentUser();
 
       setIsAppEffectRedirectEnabled(true);
+      return workspace?.id;
     },
     [loadCurrentUser, handleSetAuthTokens, setIsAppEffectRedirectEnabled],
   );
@@ -348,7 +351,7 @@ export const useAuth = () => {
           throw new Error('No getAuthTokensFromLoginToken result');
         }
 
-        await handleLoadWorkspaceAfterAuthentication(
+        return await handleLoadWorkspaceAfterAuthentication(
           getAuthTokensResult.data.getAuthTokensFromLoginToken.tokens,
         );
       } catch (error) {

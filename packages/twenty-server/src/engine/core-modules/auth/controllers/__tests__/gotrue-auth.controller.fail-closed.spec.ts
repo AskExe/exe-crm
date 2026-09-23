@@ -100,6 +100,7 @@ const buildController = (orgId: string | undefined) => {
     d.workspaceService as any,
     d.workspaceDomainsService as any,
     d.roleSyncService as any,
+    { setOnboardingCreateProfilePending: jest.fn() } as any,
     d.userRepository as any,
     d.userWorkspaceRepository as any,
     d.workspaceRepository as any,

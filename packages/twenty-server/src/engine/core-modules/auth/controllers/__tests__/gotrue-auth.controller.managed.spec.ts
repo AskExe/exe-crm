@@ -45,12 +45,20 @@ const buildController = (
 
   process.env.EXE_ORG_ID = env.EXE_ORG_ID;
   process.env.EXE_ORG_WORKSPACE_ID = env.EXE_ORG_WORKSPACE_ID;
+  process.env.EXE_DEMO_WORKSPACE_ID = env.EXE_DEMO_WORKSPACE_ID;
+  process.env.GOTRUE_URL = env.GOTRUE_URL ?? 'https://auth.example.com';
   process.env.SERVER_URL = 'https://crm.example.com';
 
   const workspace =
     'workspace' in overrides
       ? overrides.workspace
-      : { id: CANONICAL_WS_ID, defaultRoleId: DEFAULT_ROLE_ID };
+      : {
+          id: CANONICAL_WS_ID,
+          defaultRoleId: DEFAULT_ROLE_ID,
+          subdomain: 'demo',
+          customDomain: null,
+          isCustomDomainEnabled: false,
+        };
 
   const loginTokenService = {
     generateLoginToken: jest.fn().mockResolvedValue({ token: 'login-token' }),
@@ -62,6 +70,10 @@ const buildController = (
   const workspaceService = { activateWorkspace: jest.fn() };
   const workspaceDomainsService = {
     getWorkspaceByOriginOrDefaultWorkspace: jest.fn(),
+    getWorkspaceUrls: jest.fn().mockReturnValue({
+      customUrl: undefined,
+      subdomainUrl: 'https://demo.crm.example.com',
+    }),
   };
   const roleSyncService = {
     applyCrmTier: jest
@@ -72,9 +84,21 @@ const buildController = (
       .mockResolvedValue(
         'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
       ),
+    resolveDemoViewerRoleId: jest
+      .fn()
+      .mockResolvedValue(
+        'seatRoleId' in overrides ? overrides.seatRoleId : MANAGED_ROLE_ID,
+      ),
+    ensureDemoViewerMembership: jest.fn().mockResolvedValue(true),
+  };
+  const onboardingService = {
+    setOnboardingCreateProfilePending: jest.fn().mockResolvedValue(undefined),
   };
   const userRepository = {
-    findOne: jest.fn().mockResolvedValue({ id: USER_ID, email: EMAIL }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ id: USER_ID, email: EMAIL, isEmailVerified: false }),
+    save: jest.fn().mockImplementation(async (user) => user),
   };
   const userWorkspaceRepository = {
     findOne: jest.fn().mockResolvedValue(
@@ -96,6 +120,10 @@ const buildController = (
     verifyGoTrueToken: jest.fn(),
     verifyGoTrueTokenDetailed: jest.fn(),
     describeGoTrueSigning: jest.fn().mockResolvedValue('symmetric'),
+    requireFreshConfirmedGoTrueUser: jest.fn().mockResolvedValue({
+      id: USER_ID,
+      email: EMAIL,
+    }),
   };
 
   const controller = new GoTrueAuthController(
@@ -105,6 +133,7 @@ const buildController = (
     workspaceService as any,
     workspaceDomainsService as any,
     roleSyncService as any,
+    onboardingService as any,
     userRepository as any,
     userWorkspaceRepository as any,
     workspaceRepository as any,
@@ -117,9 +146,11 @@ const buildController = (
     loginTokenService,
     signInUpService,
     roleSyncService,
+    onboardingService,
     userRepository,
     userWorkspaceRepository,
     workspaceRepository,
+    accessTokenService,
   };
 };
 
@@ -129,6 +160,266 @@ const callManaged = (
   tier: string,
   existingUser: unknown = { id: USER_ID, email: EMAIL },
 ) => (controller as any).handleManagedLogin(res, EMAIL, existingUser, tier);
+
+const demoRequest = () => ({
+  headers: {
+    origin: 'https://crm.example.com',
+    'x-exe-demo-intent': 'join-read-only-demo',
+    cookie: 'exe_sess=session-token',
+  },
+});
+
+describe('GoTrueAuthController public DEMO join', () => {
+  it('rejects plaintext GoTrue transport before token verification', async () => {
+    const { controller, accessTokenService } = buildController({
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+      GOTRUE_URL: 'http://gotrue:9999/auth/v1',
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(accessTokenService.verifyGoTrueTokenDetailed).not.toHaveBeenCalled();
+    expect(
+      accessTokenService.requireFreshConfirmedGoTrueUser,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('binds only to EXE_DEMO_WORKSPACE_ID and preserves an existing owner role', async () => {
+    const {
+      controller,
+      accessTokenService,
+      roleSyncService,
+      signInUpService,
+      userRepository,
+    } = buildController({
+      EXE_ORG_ID: ORG_ID,
+      EXE_ORG_WORKSPACE_ID: 'ws-exe-private',
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+    });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
+    expect(roleSyncService.applyCrmTier).not.toHaveBeenCalled();
+    expect(roleSyncService.ensureDemoViewerMembership).toHaveBeenCalledWith({
+      userId: USER_ID,
+      userWorkspaceId: USER_WORKSPACE_ID,
+      workspaceId: CANONICAL_WS_ID,
+    });
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringMatching(
+        /^https:\/\/demo\.crm\.example\.com\/verify\?loginToken=.*&demo=1$/,
+      ),
+    });
+    expect(userRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ isEmailVerified: true }),
+    );
+  });
+
+  it('seats a first-time visitor on the verified read-only role and completes DEMO profile onboarding before login', async () => {
+    const {
+      controller,
+      accessTokenService,
+      roleSyncService,
+      signInUpService,
+      userWorkspaceRepository,
+      userRepository,
+      onboardingService,
+      loginTokenService,
+    } = buildController(
+      { EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID },
+      { existingUserWorkspace: null },
+    );
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    userRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: USER_ID,
+      email: EMAIL,
+      isEmailVerified: false,
+    });
+    userWorkspaceRepository.findOne.mockResolvedValueOnce({
+      id: USER_WORKSPACE_ID,
+      userId: USER_ID,
+      workspaceId: CANONICAL_WS_ID,
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(signInUpService.signInUpOnExistingWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roleId: MANAGED_ROLE_ID,
+        userData: {
+          type: 'newUserWithPicture',
+          newUserWithPicture: expect.objectContaining({
+            email: EMAIL,
+            firstName: 'managed',
+          }),
+        },
+      }),
+    );
+    expect(roleSyncService.resolveDemoViewerRoleId).toHaveBeenCalledWith(
+      CANONICAL_WS_ID,
+    );
+    expect(roleSyncService.resolveAssignableRoleId).not.toHaveBeenCalled();
+    expect(
+      onboardingService.setOnboardingCreateProfilePending,
+    ).toHaveBeenCalledWith({
+      userId: USER_ID,
+      workspaceId: CANONICAL_WS_ID,
+      value: false,
+    });
+    expect(
+      onboardingService.setOnboardingCreateProfilePending.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(
+      loginTokenService.generateLoginToken.mock.invocationCallOrder[0],
+    );
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringMatching(/\/verify\?loginToken=.*&demo=1$/),
+    });
+  });
+
+  it('accepts explicit join intent from the configured DEMO workspace origin', async () => {
+    const { controller, accessTokenService } = buildController({
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+    });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, {
+      headers: {
+        ...demoRequest().headers,
+        origin: 'https://demo.crm.example.com',
+      },
+    } as any);
+
+    expect(res.json).toHaveBeenCalledWith({
+      redirectUrl: expect.stringMatching(/\/verify\?loginToken=.*&demo=1$/),
+    });
+  });
+
+  it('does not issue a DEMO session if profile onboarding cannot be cleared', async () => {
+    const {
+      controller,
+      accessTokenService,
+      onboardingService,
+      loginTokenService,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    onboardingService.setOnboardingCreateProfilePending.mockRejectedValue(
+      new Error('database unavailable'),
+    );
+
+    const res = makeRes();
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+  });
+
+  it('requires an explicit same-origin POST intent', async () => {
+    const { controller, accessTokenService } = buildController({
+      EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, {
+      headers: { origin: 'https://attacker.example', cookie: 'exe_sess=x' },
+    } as any);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(accessTokenService.verifyGoTrueTokenDetailed).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when an existing member role cannot be secured', async () => {
+    const {
+      controller,
+      accessTokenService,
+      roleSyncService,
+      loginTokenService,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    roleSyncService.ensureDemoViewerMembership.mockResolvedValue(false);
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when the freshly confirmed email cannot be persisted', async () => {
+    const {
+      controller,
+      accessTokenService,
+      loginTokenService,
+      userRepository,
+    } = buildController({ EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID });
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    userRepository.save.mockRejectedValue(new Error('database unavailable'));
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when fresh GoTrue confirmation cannot be proven', async () => {
+    const { controller, accessTokenService, signInUpService } = buildController(
+      {
+        EXE_DEMO_WORKSPACE_ID: CANONICAL_WS_ID,
+      },
+    );
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    accessTokenService.requireFreshConfirmedGoTrueUser.mockResolvedValue(null);
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('never falls back to the private Exe workspace when DEMO is unset', async () => {
+    const { controller, workspaceRepository } = buildController({
+      EXE_ORG_ID: ORG_ID,
+      EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID,
+      EXE_DEMO_WORKSPACE_ID: undefined,
+    });
+    const res = makeRes();
+
+    await controller.joinGoTrueDemo(res, demoRequest() as any);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(workspaceRepository.findOne).not.toHaveBeenCalled();
+  });
+});
 
 describe('GoTrueAuthController.handleManagedLogin — canonical workspace binding (Fix #2)', () => {
   it('applies caps to the canonical workspace and mints a token for an existing member', async () => {

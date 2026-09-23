@@ -5,22 +5,28 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { Args, Mutation, Parent, Query, ResolveField } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import { msg } from '@lingui/core/macro';
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { FeatureFlagKey } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { Repository } from 'typeorm';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-key-role.service';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
+import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { PreventNestToAutoLogGraphqlErrorsFilter } from 'src/engine/core-modules/graphql/filters/prevent-nest-to-auto-log-graphql-errors.filter';
 import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { WorkspaceMemberDTO } from 'src/engine/core-modules/user/dtos/workspace-member.dto';
+import { canReadWorkspaceMemberDirectory } from 'src/engine/core-modules/user/utils/can-read-workspace-member-directory.util';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
+import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { RequireFeatureFlag } from 'src/engine/guards/feature-flag.guard';
 import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
@@ -95,6 +101,8 @@ export class RoleResolver {
     private readonly rowLevelPermissionPredicateService: RowLevelPermissionPredicateService,
     private readonly rowLevelPermissionPredicateGroupService: RowLevelPermissionPredicateGroupService,
     private readonly workspaceCacheService: WorkspaceCacheService,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
   ) {}
 
   @Query(() => [RoleDTO])
@@ -301,7 +309,18 @@ export class RoleResolver {
   async getWorkspaceMembersAssignedToRole(
     @Parent() role: RoleDTO,
     @AuthWorkspace() workspace: WorkspaceEntity,
+    @AuthUser({ allowUndefined: true }) authUser: AuthContextUser | undefined,
   ): Promise<WorkspaceMemberWorkspaceEntity[]> {
+    if (
+      !(await canReadWorkspaceMemberDirectory({
+        keyValuePairRepository: this.keyValuePairRepository,
+        userId: authUser?.id,
+        workspaceId: workspace.id,
+      }))
+    ) {
+      return [];
+    }
+
     const workspaceMembers =
       await this.userRoleService.getWorkspaceMembersAssignedToRole(
         role.id,

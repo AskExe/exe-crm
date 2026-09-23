@@ -8,6 +8,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { RoleSyncService } from 'src/engine/core-modules/auth/services/role-sync.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
+import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
@@ -113,6 +114,12 @@ describe('GoTrueAuthController', () => {
         {
           provide: WorkspaceDomainsService,
           useValue: workspaceDomainsService,
+        },
+        {
+          provide: OnboardingService,
+          useValue: {
+            setOnboardingCreateProfilePending: jest.fn(),
+          },
         },
         {
           // Unmanaged path (EXE_ORG_ID unset) never invokes role sync, but the

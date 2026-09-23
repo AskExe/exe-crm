@@ -15,6 +15,7 @@ import { SupportDriver } from 'src/engine/core-modules/twenty-config/interfaces/
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import {
   AuthException,
   AuthExceptionCode,
@@ -41,6 +42,7 @@ import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
+import { canReadWorkspaceMemberDirectory } from 'src/engine/core-modules/user/utils/can-read-workspace-member-directory.util';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthApiKey } from 'src/engine/decorators/auth/auth-api-key.decorator';
@@ -88,12 +90,28 @@ export class UserResolver {
     private readonly userVarService: UserVarsService,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
     private readonly userRoleService: UserRoleService,
     private readonly permissionsService: PermissionsService,
     private readonly workspaceMemberTranspiler: WorkspaceMemberTranspiler,
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
+
+  private async canReadWorkspaceMemberDirectory({
+    userId,
+    workspaceId,
+  }: {
+    userId: string;
+    workspaceId: string;
+  }): Promise<boolean> {
+    return canReadWorkspaceMemberDirectory({
+      keyValuePairRepository: this.keyValuePairRepository,
+      userId,
+      workspaceId,
+    });
+  }
 
   private async getUserWorkspacePermissions({
     currentUserWorkspace,
@@ -255,10 +273,19 @@ export class UserResolver {
   })
   async workspaceMembers(
     @Parent() _user: UserEntity,
+    @AuthUser() { id: userId }: AuthContextUser,
     @AuthWorkspace({ allowUndefined: true })
     workspace: WorkspaceEntity | undefined,
   ): Promise<WorkspaceMemberDTO[]> {
     if (!workspace) return [];
+    if (
+      !(await this.canReadWorkspaceMemberDirectory({
+        userId,
+        workspaceId: workspace.id,
+      }))
+    ) {
+      return [];
+    }
 
     const workspaceMemberEntities = await this.userService.loadWorkspaceMembers(
       workspace,
@@ -324,10 +351,19 @@ export class UserResolver {
   })
   async deletedWorkspaceMembers(
     @Parent() _user: UserEntity,
+    @AuthUser() { id: userId }: AuthContextUser,
     @AuthWorkspace({ allowUndefined: true })
     workspace: WorkspaceEntity | undefined,
   ): Promise<DeletedWorkspaceMemberDTO[]> {
     if (!workspace) return [];
+    if (
+      !(await this.canReadWorkspaceMemberDirectory({
+        userId,
+        workspaceId: workspace.id,
+      }))
+    ) {
+      return [];
+    }
 
     const workspaceMemberEntities =
       await this.userService.loadDeletedWorkspaceMembersOnly(workspace);

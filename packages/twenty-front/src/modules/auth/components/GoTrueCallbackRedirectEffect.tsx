@@ -4,9 +4,11 @@ import { useLocation } from 'react-router-dom';
 import { getTokenPair } from '@/apollo/utils/getTokenPair';
 import {
   clearGoTrueCallbackAttempt,
+  getDemoWorkspaceId,
   GO_TRUE_CALLBACK_PATH,
   hasGoTrueSentinelCookie,
   hasRecentGoTrueCallbackAttempt,
+  isGoTrueDemoJoinIntent,
   markGoTrueCallbackAttempt,
 } from '@/auth/utils/goTrueBridge';
 import { AppPath } from 'twenty-shared/types';
@@ -15,6 +17,17 @@ export const GoTrueCallbackRedirectEffect = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // A DEMO return must reach the explicit POST-intent screen. Redirecting a
+    // valid apex session through the ordinary callback here would discard the
+    // DEMO intent and route the visitor into their private CRM workspace.
+    if (isGoTrueDemoJoinIntent(location)) {
+      return;
+    }
+
+    if (getDemoWorkspaceId()) {
+      return;
+    }
+
     if (location.pathname === AppPath.Verify) {
       return;
     }
@@ -50,7 +63,7 @@ export const GoTrueCallbackRedirectEffect = () => {
     // YET" while that navigation is in the air (bug 88f4f6f3).
     markGoTrueCallbackAttempt();
     window.location.assign(GO_TRUE_CALLBACK_PATH);
-  }, [location.pathname]);
+  }, [location]);
 
   return <></>;
 };

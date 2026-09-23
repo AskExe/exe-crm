@@ -1,13 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, type Repository } from 'typeorm';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import {
+  EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+  EXE_DEMO_VIEWER_ROLE,
   EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
   EXE_MANAGED_MEMBER_ROLE,
   EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
   EXE_MANAGED_VIEWER_ROLE,
 } from 'src/engine/core-modules/auth/constants/exe-managed-roles.constant';
 import { type CrmRoleTier } from 'src/engine/core-modules/auth/services/exe-perms.util';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { type RoleDTO } from 'src/engine/metadata-modules/role/dtos/role.dto';
 import {
   PermissionsException,
@@ -32,10 +37,41 @@ const VIEWER_SPEC: ManagedRoleSpec = {
   flags: EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
 };
 
+const DEMO_VIEWER_SPEC: ManagedRoleSpec = {
+  ...EXE_DEMO_VIEWER_ROLE,
+  icon: 'IconEye',
+  flags: EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+};
+
 const MEMBER_SPEC: ManagedRoleSpec = {
   ...EXE_MANAGED_MEMBER_ROLE,
   icon: 'IconUser',
   flags: EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
+};
+
+const DEMO_BOOTSTRAP_MARKER_KEY = 'exe.demo-workspace-bootstrap.v1';
+
+const getCanonicalDemoOwnerIds = (value: JSON | null): Set<string> | null => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const ownerUserIds = (value as { ownerUserIds?: unknown }).ownerUserIds;
+
+  if (
+    !Array.isArray(ownerUserIds) ||
+    ownerUserIds.length !== 2 ||
+    ownerUserIds.some(
+      (ownerUserId) =>
+        typeof ownerUserId !== 'string' || ownerUserId.length === 0,
+    )
+  ) {
+    return null;
+  }
+
+  const canonicalOwnerIds = new Set(ownerUserIds);
+
+  return canonicalOwnerIds.size === 2 ? canonicalOwnerIds : null;
 };
 
 /**
@@ -80,6 +116,8 @@ export class RoleSyncService {
     private readonly roleService: RoleService,
     private readonly userRoleService: UserRoleService,
     private readonly applicationService: ApplicationService,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
   ) {}
 
   /**
@@ -181,6 +219,75 @@ export class RoleSyncService {
     if (tier === 'none') return null;
 
     return this.resolveTargetRoleId({ tier, workspaceId });
+  }
+
+  /** Resolve the dedicated public DEMO role without touching a membership. */
+  async resolveDemoViewerRoleId(workspaceId: string): Promise<string | null> {
+    return this.ensureManagedRoleId(DEMO_VIEWER_SPEC, workspaceId);
+  }
+
+  /** Preserve a canonical DEMO Admin owner and secure every other member. */
+  async ensureDemoViewerMembership({
+    userId,
+    userWorkspaceId,
+    workspaceId,
+  }: {
+    userId: string;
+    userWorkspaceId: string;
+    workspaceId: string;
+  }): Promise<boolean> {
+    const currentRoles = await this.userRoleService
+      .getRolesByUserWorkspaces({
+        userWorkspaceIds: [userWorkspaceId],
+        workspaceId,
+      })
+      .then((map) => map.get(userWorkspaceId));
+
+    if (currentRoles?.length !== 1) return false;
+
+    const currentRole = currentRoles[0];
+
+    if (
+      currentRole?.universalIdentifier ===
+      STANDARD_ROLE.admin.universalIdentifier
+    ) {
+      const marker = await this.keyValuePairRepository.findOne({
+        where: {
+          workspaceId,
+          userId: IsNull(),
+          key: DEMO_BOOTSTRAP_MARKER_KEY,
+          deletedAt: IsNull(),
+        },
+      });
+      const canonicalOwnerIds = getCanonicalDemoOwnerIds(marker?.value ?? null);
+
+      if (!canonicalOwnerIds) return false;
+      if (canonicalOwnerIds.has(userId)) return true;
+    }
+
+    const viewerRoleId = await this.ensureManagedRoleId(
+      DEMO_VIEWER_SPEC,
+      workspaceId,
+    );
+
+    if (!viewerRoleId) return false;
+    if (currentRole?.id === viewerRoleId) return true;
+
+    try {
+      await this.userRoleService.assignRoleToManyUserWorkspace({
+        workspaceId,
+        userWorkspaceIds: [userWorkspaceId],
+        roleId: viewerRoleId,
+      });
+
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `RoleSync: failed to secure DEMO Viewer for userWorkspace ${userWorkspaceId}: ${err}`,
+      );
+
+      return false;
+    }
   }
 
   private async resolveTargetRoleId({

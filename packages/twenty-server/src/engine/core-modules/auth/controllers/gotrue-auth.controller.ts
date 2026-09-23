@@ -30,6 +30,7 @@ import {
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -144,6 +145,8 @@ export class GoTrueAuthController {
    * unset while enforcement is on, managed logins fail closed.
    */
   private readonly exeOrgWorkspaceId: string | undefined;
+  /** Public demo admission is deliberately separate from the managed Exe org. */
+  private readonly exeDemoWorkspaceId: string | undefined;
 
   constructor(
     private readonly accessTokenService: AccessTokenService,
@@ -152,6 +155,7 @@ export class GoTrueAuthController {
     private readonly workspaceService: WorkspaceService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
     private readonly roleSyncService: RoleSyncService,
+    private readonly onboardingService: OnboardingService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserWorkspaceEntity)
@@ -162,6 +166,7 @@ export class GoTrueAuthController {
     this.gotrueUrl = process.env.GOTRUE_URL || process.env.EXE_GOTRUE_URL;
     this.exeOrgId = process.env.EXE_ORG_ID;
     this.exeOrgWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+    this.exeDemoWorkspaceId = process.env.EXE_DEMO_WORKSPACE_ID;
     const rawToken = process.env.EXE_CRM_ADMIN_TOKEN;
 
     this.adminTokenHash = rawToken
@@ -384,6 +389,7 @@ export class GoTrueAuthController {
   private async generateLoginTokenRedirect(
     email: string,
     workspaceId: string,
+    baseUrlOverride?: string,
   ): Promise<string> {
     const loginToken = await this.loginTokenService.generateLoginToken(
       email,
@@ -391,16 +397,16 @@ export class GoTrueAuthController {
       AuthProviderEnum.SSO,
     );
 
-    if (!this.serverBaseUrl) {
+    const baseUrl = baseUrlOverride ?? this.serverBaseUrl;
+
+    if (!baseUrl) {
       throw new Error(
         'SERVER_URL (or REACT_APP_SERVER_BASE_URL) must be set. ' +
           'Cannot generate login redirect without a configured base URL.',
       );
     }
 
-    const baseUrl = this.serverBaseUrl;
-
-    return `${baseUrl}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
+    return `${baseUrl.replace(/\/$/, '')}/verify?loginToken=${encodeURIComponent(loginToken.token)}`;
   }
 
   private generateSignInRedirect(): string {
@@ -1420,6 +1426,253 @@ export class GoTrueAuthController {
     } catch (err) {
       this.logger.error(`Login token generation failed for ${email}: ${err}`);
 
+      return {
+        type: 'deny',
+        statusCode: 500,
+        error: 'Failed to generate session token',
+      };
+    }
+  }
+
+  /**
+   * Explicit, same-origin admission to the configured read-only DEMO workspace.
+   * The request carries no workspace or role selector by design.
+   */
+  @Post('gotrue-demo-join')
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
+  async joinGoTrueDemo(@Res() res: Response, @Req() req?: Request) {
+    if (!this.exeDemoWorkspaceId || !this.gotrueUrl) {
+      return res.status(404).json({ error: 'The public demo is unavailable' });
+    }
+
+    const expectedOrigin = this.serverBaseUrl
+      ? new URL(this.serverBaseUrl).origin
+      : undefined;
+    const trustedOrigins = new Set<string>();
+    if (expectedOrigin) trustedOrigins.add(expectedOrigin);
+    const demoWorkspace = await this.workspaceRepository.findOne({
+      where: { id: this.exeDemoWorkspaceId },
+    });
+
+    if (demoWorkspace) {
+      const workspaceUrls =
+        this.workspaceDomainsService.getWorkspaceUrls(demoWorkspace);
+
+      for (const workspaceUrl of [
+        workspaceUrls.customUrl,
+        workspaceUrls.subdomainUrl,
+      ]) {
+        if (workspaceUrl) trustedOrigins.add(new URL(workspaceUrl).origin);
+      }
+    }
+    const requestOrigin = req?.headers.origin;
+    const intent = req?.headers['x-exe-demo-intent'];
+
+    if (
+      !expectedOrigin ||
+      !requestOrigin ||
+      !trustedOrigins.has(requestOrigin) ||
+      intent !== 'join-read-only-demo'
+    ) {
+      return res.status(403).json({ error: 'Explicit demo join required' });
+    }
+
+    const token = this.getRequestCookie(req, 'exe_sess');
+
+    if (!token) {
+      return res.status(401).json({ error: 'Sign in with Exe first' });
+    }
+
+    // verifyGoTrueTokenDetailed may perform an authenticated GoTrue user
+    // lookup before the later fresh-confirmation check. Reject unsafe
+    // transport before either service can receive the session credential.
+    try {
+      if (new URL(this.gotrueUrl).protocol !== 'https:') {
+        return res
+          .status(503)
+          .json({ error: 'The public demo is unavailable' });
+      }
+    } catch {
+      return res.status(503).json({ error: 'The public demo is unavailable' });
+    }
+
+    const verification =
+      await this.accessTokenService.verifyGoTrueTokenDetailed(
+        token,
+        this.gotrueUrl,
+      );
+
+    if (!verification.ok) {
+      return res.status(401).json({ error: 'Your Exe session is not valid' });
+    }
+
+    const email = verification.claims.email;
+    const subject = verification.claims.sub;
+
+    if (!email || !subject) {
+      return res.status(401).json({ error: 'Your Exe identity is incomplete' });
+    }
+
+    const confirmed =
+      await this.accessTokenService.requireFreshConfirmedGoTrueUser(
+        token,
+        this.gotrueUrl,
+        { sub: subject, email },
+      );
+
+    if (!confirmed) {
+      return res.status(403).json({
+        error: 'Confirm your email before joining the public demo',
+      });
+    }
+
+    const outcome = await this.resolveDemoLoginOutcome(confirmed.email);
+
+    if (outcome.type === 'deny') {
+      return res.status(outcome.statusCode).json({ error: outcome.error });
+    }
+
+    return res.json({ redirectUrl: outcome.url });
+  }
+
+  private async resolveDemoLoginOutcome(
+    email: string,
+  ): Promise<ManagedLoginOutcome> {
+    if (!this.exeDemoWorkspaceId) {
+      return { type: 'deny', statusCode: 404, error: 'Demo unavailable' };
+    }
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: this.exeDemoWorkspaceId },
+    });
+
+    if (!workspace) {
+      return { type: 'deny', statusCode: 503, error: 'Demo unavailable' };
+    }
+
+    let user = await this.findUser(email);
+    let membership = user
+      ? await this.userWorkspaceRepository.findOne({
+          where: { userId: user.id, workspaceId: workspace.id },
+        })
+      : null;
+
+    if (!membership) {
+      const viewerRoleId = await this.roleSyncService.resolveDemoViewerRoleId(
+        workspace.id,
+      );
+
+      if (!viewerRoleId) {
+        return {
+          type: 'deny',
+          statusCode: 503,
+          error: 'Demo access is temporarily unavailable',
+        };
+      }
+
+      try {
+        await this.signInUpService.signInUpOnExistingWorkspace({
+          workspace,
+          roleId: viewerRoleId,
+          userData: user
+            ? { type: 'existingUser', existingUser: user }
+            : {
+                type: 'newUserWithPicture',
+                newUserWithPicture: {
+                  email,
+                  firstName: email.split('@')[0] ?? 'Visitor',
+                  lastName: '',
+                  picture: undefined,
+                },
+              },
+        });
+      } catch {
+        // A concurrent replay may have created the same membership. Re-read
+        // below and accept only if the canonical DEMO membership now exists.
+      }
+
+      user = await this.findUser(email);
+      membership = user
+        ? await this.userWorkspaceRepository.findOne({
+            where: { userId: user.id, workspaceId: workspace.id },
+          })
+        : null;
+    }
+
+    if (!user || !membership) {
+      return {
+        type: 'deny',
+        statusCode: 503,
+        error: 'Demo access could not be created',
+      };
+    }
+
+    // Fresh GoTrue confirmation is the authority for public DEMO admission.
+    // Persist that result on the CRM user before token exchange, otherwise a
+    // newly provisioned visitor is rejected when CRM email verification is
+    // required even though GoTrue has just proved the address is confirmed.
+    if (!user.isEmailVerified) {
+      try {
+        user.isEmailVerified = true;
+        user = await this.userRepository.save(user);
+      } catch {
+        return {
+          type: 'deny',
+          statusCode: 503,
+          error: 'Demo access is temporarily unavailable',
+        };
+      }
+    }
+
+    // Preserve canonical Admin owners, while reconciling every other existing
+    // or concurrently-created membership to the dedicated DEMO Viewer role.
+    const roleIsSafe = await this.roleSyncService.ensureDemoViewerMembership({
+      userId: user.id,
+      userWorkspaceId: membership.id,
+      workspaceId: workspace.id,
+    });
+
+    if (!roleIsSafe) {
+      return {
+        type: 'deny',
+        statusCode: 503,
+        error: 'Demo access is temporarily unavailable',
+      };
+    }
+
+    // DEMO visitors cannot write workspaceMember records to finish profile
+    // onboarding. Provisioning has already supplied a display name, so clear
+    // only this user's DEMO profile step before issuing a read-only session.
+    try {
+      await this.onboardingService.setOnboardingCreateProfilePending({
+        userId: user.id,
+        workspaceId: workspace.id,
+        value: false,
+      });
+    } catch {
+      return {
+        type: 'deny',
+        statusCode: 503,
+        error: 'Demo access is temporarily unavailable',
+      };
+    }
+
+    try {
+      const workspaceUrls =
+        this.workspaceDomainsService.getWorkspaceUrls(workspace);
+      const demoBaseUrl = workspaceUrls.customUrl ?? workspaceUrls.subdomainUrl;
+
+      const redirectUrl = new URL(
+        await this.generateLoginTokenRedirect(
+          user.email,
+          workspace.id,
+          demoBaseUrl,
+        ),
+      );
+      redirectUrl.searchParams.set('demo', '1');
+
+      return { type: 'redirect', url: redirectUrl.toString() };
+    } catch {
       return {
         type: 'deny',
         statusCode: 500,

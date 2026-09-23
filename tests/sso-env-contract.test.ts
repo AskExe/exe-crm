@@ -27,9 +27,14 @@ function read(relPath: string): string {
  */
 describe('exe-crm SSO env contract', () => {
   const stackRelease = JSON.parse(read('stack.release.json')) as {
-    stackParticipation: { config: { requiredEnv: string[] } };
+    stackParticipation: {
+      config: { requiredEnv: string[]; optionalEnv: string[] };
+    };
   };
   const compose = read('packages/twenty-docker/docker-compose.yml');
+  const serverEnvironment = compose
+    .split('  server:', 2)[1]
+    ?.split('  worker:', 1)[0];
 
   // The minimum env the GoTrue SSO bridge needs to verify ANY apex session.
   const SSO_REQUIRED_ENV = ['GOTRUE_URL', 'GOTRUE_JWT_SECRET'];
@@ -49,4 +54,13 @@ describe('exe-crm SSO env contract', () => {
       expect(compose).toContain(`${envVar}: \${${envVar}:-}`);
     },
   );
+
+  it('passes the optional DEMO workspace ID to the server container', () => {
+    expect(stackRelease.stackParticipation.config.optionalEnv).toContain(
+      'EXE_DEMO_WORKSPACE_ID',
+    );
+    expect(serverEnvironment).toContain(
+      'EXE_DEMO_WORKSPACE_ID: ${EXE_DEMO_WORKSPACE_ID:-}',
+    );
+  });
 });

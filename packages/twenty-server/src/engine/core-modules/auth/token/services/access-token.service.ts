@@ -9,7 +9,7 @@ import ms from 'ms';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { assertIsDefinedOrThrow, isValidUuid } from 'twenty-shared/utils';
 import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import * as jwt from 'jsonwebtoken';
 
@@ -30,6 +30,7 @@ import {
 } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceNotFoundDefaultError } from 'src/engine/core-modules/user-workspace/user-workspace.exception';
@@ -87,6 +88,11 @@ export type GoTrueVerificationFailure =
 export type GoTrueVerificationResult =
   | { ok: true; claims: GoTrueJwtPayload }
   | { ok: false; failure: GoTrueVerificationFailure };
+
+export type GoTrueConfirmedUser = {
+  id: string;
+  email: string;
+};
 
 /** How the configured GoTrue signs its tokens, as observed from its JWKS. */
 export type GoTrueSigningMode =
@@ -167,6 +173,8 @@ export class AccessTokenService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    @InjectRepository(KeyValuePairEntity)
+    private readonly keyValuePairRepository: Repository<KeyValuePairEntity>,
   ) {}
 
   async generateAccessToken({
@@ -380,6 +388,26 @@ export class AccessTokenService {
     const workspace = await this.resolveWorkspaceForGoTrueRequest(request);
 
     if (!workspace) {
+      return null;
+    }
+
+    // DEMO admission runs only through gotrue-demo-join, which confirms the
+    // current email and seats the restricted viewer role. Raw bearer fallback
+    // otherwise auto-provisions the workspace's default writable role.
+    if (workspace.id === process.env.EXE_DEMO_WORKSPACE_ID) {
+      return null;
+    }
+
+    const demoMarker = await this.keyValuePairRepository.findOne({
+      where: {
+        workspaceId: workspace.id,
+        userId: IsNull(),
+        key: 'exe.demo-workspace-bootstrap.v1',
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (demoMarker) {
       return null;
     }
 
@@ -606,6 +634,60 @@ export class AccessTokenService {
   }
 
   /**
+   * Re-read the authenticated GoTrue user before granting public demo access.
+   * Unlike the ordinary session health check, every uncertainty fails closed:
+   * demo admission must prove current identity, confirmation and revocation.
+   */
+  async requireFreshConfirmedGoTrueUser(
+    token: string,
+    gotrueUrl: string,
+    expected: { sub: string; email: string },
+  ): Promise<GoTrueConfirmedUser | null> {
+    try {
+      const normalizedBase = gotrueUrl.endsWith('/')
+        ? gotrueUrl
+        : `${gotrueUrl}/`;
+      const userUrl = new URL('user', normalizedBase);
+
+      // This call carries the caller's bearer credential. Reject plaintext
+      // endpoints and redirects before a credential can leave this server.
+      if (userUrl.protocol !== 'https:') return null;
+
+      const response = await fetch(userUrl.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+        redirect: 'error',
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!response.ok) return null;
+
+      const payload = (await response.json()) as {
+        id?: string;
+        email?: string;
+        email_confirmed_at?: string | null;
+        banned?: boolean;
+      } | null;
+      const email = payload?.email?.toLowerCase().trim();
+      const confirmedAt = payload?.email_confirmed_at;
+
+      if (
+        !payload?.id ||
+        payload.id !== expected.sub ||
+        !email ||
+        email !== expected.email.toLowerCase().trim() ||
+        !confirmedAt ||
+        payload.banned === true
+      ) {
+        return null;
+      }
+
+      return { id: payload.id, email };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Ask the configured GoTrue how it signs, by reading its JWKS.
    *
    * GoTrue deliberately omits HMAC keys from JWKS (internal/api/jwks.go skips
@@ -736,6 +818,7 @@ export class AccessTokenService {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
+        redirect: 'error',
         signal: AbortSignal.timeout(5000), // 5s timeout to avoid hanging requests
       });
 

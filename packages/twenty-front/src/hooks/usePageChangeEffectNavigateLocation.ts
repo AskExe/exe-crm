@@ -3,7 +3,11 @@ import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import { returnToPathState } from '@/auth/states/returnToPathState';
-import { isGoTrueBridgeInFlight } from '@/auth/utils/goTrueBridge';
+import {
+  isGoTrueBridgeInFlight,
+  isGoTrueDemoJoinIntent,
+  getDemoWorkspaceId,
+} from '@/auth/utils/goTrueBridge';
 import { calendarBookingPageIdState } from '@/client-config/states/calendarBookingPageIdState';
 import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCurrentLocationOnAWorkspace';
 import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
@@ -54,6 +58,13 @@ export const usePageChangeEffectNavigateLocation = () => {
     ? returnToPath
     : readReturnToPathFromUrlSearchParams();
 
+  // Preserve the explicit DEMO entry route for signed-in users as well. The
+  // normal completed-onboarding redirect below would otherwise replace it
+  // with the user's private workspace before they can choose to join.
+  if (isGoTrueDemoJoinIntent(location)) {
+    return;
+  }
+
   if (
     (!hasAccessTokenPair || (hasAccessTokenPair && !isOnAWorkspace)) &&
     !someMatchingLocationOf([
@@ -76,7 +87,9 @@ export const usePageChangeEffectNavigateLocation = () => {
       return;
     }
 
-    return AppPath.SignInUp;
+    return getDemoWorkspaceId()
+      ? `${AppPath.SignInUp}?demo=1`
+      : AppPath.SignInUp;
   }
 
   if (

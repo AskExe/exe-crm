@@ -1,4 +1,6 @@
 import {
+  EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+  EXE_DEMO_VIEWER_ROLE,
   EXE_MANAGED_MEMBER_PERMISSION_FLAGS,
   EXE_MANAGED_MEMBER_ROLE,
   EXE_MANAGED_VIEWER_PERMISSION_FLAGS,
@@ -13,9 +15,11 @@ import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-appl
 
 const WORKSPACE_ID = 'ws-1';
 const USER_WORKSPACE_ID = 'uw-1';
+const USER_ID = 'user-1';
 const ADMIN_ROLE_ID = 'role-admin';
 const MEMBER_ROLE_ID = 'role-member';
 const VIEWER_ROLE_ID = 'role-viewer';
+const DEMO_VIEWER_ROLE_ID = 'role-demo-viewer';
 
 // A managed role that is already fully secured (locked + canonical flags) so
 // the drift-repair path is a no-op unless a test deliberately drifts it.
@@ -45,15 +49,178 @@ const createService = () => {
         },
       }),
   };
+  const keyValuePairRepository = {
+    findOne: jest.fn().mockResolvedValue(null),
+  };
 
   const service = new RoleSyncService(
     roleService as any,
     userRoleService as any,
     applicationService as any,
+    keyValuePairRepository as any,
   );
 
-  return { service, roleService, userRoleService, applicationService };
+  return {
+    service,
+    roleService,
+    userRoleService,
+    applicationService,
+    keyValuePairRepository,
+  };
 };
+
+describe('RoleSyncService.ensureDemoViewerMembership', () => {
+  it('preserves a canonical Admin owner', async () => {
+    const { service, roleService, userRoleService, keyValuePairRepository } =
+      createService();
+    keyValuePairRepository.findOne.mockResolvedValue({
+      value: { ownerUserIds: [USER_ID, 'user-2'] },
+    });
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([
+        [
+          USER_WORKSPACE_ID,
+          [
+            {
+              id: ADMIN_ROLE_ID,
+              universalIdentifier: STANDARD_ROLE.admin.universalIdentifier,
+            },
+          ],
+        ],
+      ]),
+    );
+
+    await expect(
+      service.ensureDemoViewerMembership({
+        userId: USER_ID,
+        userWorkspaceId: USER_WORKSPACE_ID,
+        workspaceId: WORKSPACE_ID,
+      }),
+    ).resolves.toBe(true);
+    expect(roleService.getRoleByUniversalIdentifier).not.toHaveBeenCalled();
+    expect(
+      userRoleService.assignRoleToManyUserWorkspace,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('demotes a non-owner Admin to the DEMO Viewer role', async () => {
+    const { service, roleService, userRoleService, keyValuePairRepository } =
+      createService();
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([
+        [
+          USER_WORKSPACE_ID,
+          [
+            {
+              id: ADMIN_ROLE_ID,
+              universalIdentifier: STANDARD_ROLE.admin.universalIdentifier,
+            },
+          ],
+        ],
+      ]),
+    );
+    keyValuePairRepository.findOne.mockResolvedValue({
+      value: { ownerUserIds: ['owner-1', 'owner-2'] },
+    });
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      ...securedManagedRole(
+        DEMO_VIEWER_ROLE_ID,
+        EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+      ),
+      universalIdentifier: EXE_DEMO_VIEWER_ROLE.universalIdentifier,
+    });
+
+    await expect(
+      service.ensureDemoViewerMembership({
+        userId: USER_ID,
+        userWorkspaceId: USER_WORKSPACE_ID,
+        workspaceId: WORKSPACE_ID,
+      }),
+    ).resolves.toBe(true);
+    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      userWorkspaceIds: [USER_WORKSPACE_ID],
+      roleId: DEMO_VIEWER_ROLE_ID,
+    });
+  });
+
+  it('fails closed for an Admin when the canonical owner marker is missing', async () => {
+    const { service, userRoleService } = createService();
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([
+        [
+          USER_WORKSPACE_ID,
+          [
+            {
+              id: ADMIN_ROLE_ID,
+              universalIdentifier: STANDARD_ROLE.admin.universalIdentifier,
+            },
+          ],
+        ],
+      ]),
+    );
+
+    await expect(
+      service.ensureDemoViewerMembership({
+        userId: USER_ID,
+        userWorkspaceId: USER_WORKSPACE_ID,
+        workspaceId: WORKSPACE_ID,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('reconciles an elevated non-Admin member to the DEMO Viewer role', async () => {
+    const { service, roleService, userRoleService } = createService();
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([[USER_WORKSPACE_ID, [{ id: MEMBER_ROLE_ID }]]]),
+    );
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      ...securedManagedRole(
+        DEMO_VIEWER_ROLE_ID,
+        EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+      ),
+      universalIdentifier: EXE_DEMO_VIEWER_ROLE.universalIdentifier,
+    });
+
+    await expect(
+      service.ensureDemoViewerMembership({
+        userId: USER_ID,
+        userWorkspaceId: USER_WORKSPACE_ID,
+        workspaceId: WORKSPACE_ID,
+      }),
+    ).resolves.toBe(true);
+    expect(userRoleService.assignRoleToManyUserWorkspace).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      userWorkspaceIds: [USER_WORKSPACE_ID],
+      roleId: DEMO_VIEWER_ROLE_ID,
+    });
+  });
+
+  it('fails closed when the DEMO Viewer assignment fails', async () => {
+    const { service, roleService, userRoleService } = createService();
+    userRoleService.getRolesByUserWorkspaces.mockResolvedValue(
+      new Map([[USER_WORKSPACE_ID, [{ id: MEMBER_ROLE_ID }]]]),
+    );
+    roleService.getRoleByUniversalIdentifier.mockResolvedValue({
+      ...securedManagedRole(
+        DEMO_VIEWER_ROLE_ID,
+        EXE_DEMO_VIEWER_PERMISSION_FLAGS,
+      ),
+      universalIdentifier: EXE_DEMO_VIEWER_ROLE.universalIdentifier,
+    });
+    userRoleService.assignRoleToManyUserWorkspace.mockRejectedValue(
+      new Error('write failed'),
+    );
+
+    await expect(
+      service.ensureDemoViewerMembership({
+        userId: USER_ID,
+        userWorkspaceId: USER_WORKSPACE_ID,
+        workspaceId: WORKSPACE_ID,
+      }),
+    ).resolves.toBe(false);
+  });
+});
 
 describe('RoleSyncService.applyCrmTier — resolves + assigns the mapped role', () => {
   it('admin tier → seeded Admin role (by universalIdentifier)', async () => {

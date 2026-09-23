@@ -1,8 +1,13 @@
 import { styled } from '@linaria/react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
 import { exeFoundryBold } from 'twenty-ui/theme';
 
 import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
+import {
+  clearDemoWorkspaceSession,
+  isGoTrueDemoJoinIntent,
+} from '@/auth/utils/goTrueBridge';
 
 import { REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN } from '~/config';
 
@@ -256,7 +261,16 @@ const buildExeSsoUrl = () => {
   return `https://${authHost}/login?product=CRM&redirect=${encodeURIComponent(redirect)}`;
 };
 
+const buildExeDemoSsoUrl = () => {
+  const authHost = `auth.${getRegistrableDomain(window.location.hostname)}`;
+  const redirect = `${window.location.origin}/welcome?demo=1`;
+
+  return `https://${authHost}/login?product=CRM%20DEMO&redirect=${encodeURIComponent(redirect)}`;
+};
+
 export const SignInUpWorkspaceScopeForm = () => {
+  const { t } = useLingui();
+  const isDemoJoin = isGoTrueDemoJoinIntent(window.location);
   const [activeTab, setActiveTab] = useState<AuthTab>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -265,6 +279,8 @@ export const SignInUpWorkspaceScopeForm = () => {
   const [adminToken, setAdminToken] = useState('');
   const [adminTokenError, setAdminTokenError] = useState('');
   const [adminTokenLoading, setAdminTokenLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState('');
   // Setup wizard state
   const [showSetup, setShowSetup] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
@@ -379,6 +395,75 @@ export const SignInUpWorkspaceScopeForm = () => {
     },
     [adminToken],
   );
+
+  const handleDemoJoin = useCallback(async () => {
+    setDemoError('');
+    setDemoLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/gotrue-demo-join', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-Exe-Demo-Intent': 'join-read-only-demo' },
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        window.location.href = buildExeDemoSsoUrl();
+        return;
+      }
+
+      if (!response.ok || !data.redirectUrl) {
+        throw new Error(data.error || t`The public demo is unavailable`);
+      }
+
+      window.location.href = data.redirectUrl;
+    } catch (error) {
+      setDemoError(
+        error instanceof Error
+          ? error.message
+          : t`The public demo is unavailable`,
+      );
+    } finally {
+      setDemoLoading(false);
+    }
+  }, [t]);
+
+  if (isDemoJoin) {
+    return (
+      <StyledContentContainer>
+        <StyledAdminTokenForm>
+          <StyledFieldGroup>
+            <StyledLabel>
+              <Trans>Explore the CRM DEMO</Trans>
+            </StyledLabel>
+            <StyledHelperText>
+              <Trans>
+                Join a shared workspace with synthetic records. Demo visitors
+                can browse, search, and inspect data, but cannot edit records or
+                use admin and automation tools.
+              </Trans>
+            </StyledHelperText>
+          </StyledFieldGroup>
+          {demoError && <StyledErrorMessage>{demoError}</StyledErrorMessage>}
+          <StyledGoldButton
+            type="button"
+            disabled={demoLoading}
+            onClick={handleDemoJoin}
+          >
+            {demoLoading ? (
+              <StyledSpinner />
+            ) : (
+              <Trans>JOIN READ-ONLY DEMO</Trans>
+            )}
+          </StyledGoldButton>
+          <StyledSsoLink href="/welcome" onClick={clearDemoWorkspaceSession}>
+            <Trans>Use a private workspace</Trans>
+          </StyledSsoLink>
+        </StyledAdminTokenForm>
+      </StyledContentContainer>
+    );
+  }
 
   // Setup wizard — shown after first login when backend returns needsSetup
   if (showSetup) {
