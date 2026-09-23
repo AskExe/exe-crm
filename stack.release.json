@@ -4,8 +4,8 @@
   "repo": "AskExe/exe-crm",
   "service": "exe-crm",
   "packageName": "twenty",
-  "version": "0.9.66",
-  "image": "ghcr.io/askexe/exe-crm:v0.9.66",
+  "version": "0.9.67",
+  "image": "ghcr.io/askexe/exe-crm:v0.9.67",
   "imageDigest": "sha256:38bbae74ddd33dbbd62175a46ad0d3f99ef6c671b0c2187e35398ca9c504c3eb",
   "imageRef": "ghcr.io/askexe/exe-crm:v0.9.66@sha256:38bbae74ddd33dbbd62175a46ad0d3f99ef6c671b0c2187e35398ca9c504c3eb",
   "distributionImage": "update.askexe.com/askexe/exe-crm:v0.9.66@sha256:38bbae74ddd33dbbd62175a46ad0d3f99ef6c671b0c2187e35398ca9c504c3eb",
@@ -54,5 +54,5 @@
     "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config.",
     "releaseLine": "v0.9 private/customer pilot; v1.0 is public-beta stable."
   },
-  "sourceVersion": "0.9.66"
+  "sourceVersion": "0.9.67"
 }
