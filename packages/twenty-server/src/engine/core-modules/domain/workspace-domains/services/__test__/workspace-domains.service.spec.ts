@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
@@ -36,7 +37,13 @@ describe('WorkspaceDomainsService', () => {
         {
           provide: TwentyConfigService,
           useValue: {
-            get: jest.fn(),
+            get: jest.fn(
+              (key: string) =>
+                ({
+                  FRONTEND_URL: 'https://crm.example.com',
+                  IS_MULTIWORKSPACE_ENABLED: false,
+                })[key],
+            ),
           },
         },
       ],
@@ -191,6 +198,61 @@ describe('WorkspaceDomainsService', () => {
   });
 
   describe('getWorkspaceByOriginOrDefaultWorkspace', () => {
+    it('keeps the managed Exe workspace as default when a newer DEMO exists', async () => {
+      const previousManagedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'exe-workspace';
+      try {
+        const findOne = jest.spyOn(workspaceRepository, 'findOne');
+
+        findOne.mockResolvedValueOnce({
+          id: 'exe-workspace',
+        } as WorkspaceEntity);
+        const find = jest.spyOn(workspaceRepository, 'find');
+
+        const result =
+          await workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+            'https://crm.example.com',
+          );
+
+        expect(result?.id).toBe('exe-workspace');
+        expect(findOne).toHaveBeenCalledWith({
+          where: { id: 'exe-workspace' },
+          relations: ['workspaceSSOIdentityProviders'],
+        });
+        expect(find).not.toHaveBeenCalled();
+      } finally {
+        if (previousManagedWorkspaceId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousManagedWorkspaceId;
+        }
+      }
+    });
+
+    it('fails closed when the configured managed Exe workspace is missing', async () => {
+      const previousManagedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'missing-workspace';
+      try {
+        jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce(null);
+        const find = jest.spyOn(workspaceRepository, 'find');
+
+        await expect(
+          workspaceDomainsService.getWorkspaceByOriginOrDefaultWorkspace(
+            'https://crm.example.com',
+          ),
+        ).rejects.toThrow();
+        expect(find).not.toHaveBeenCalled();
+      } finally {
+        if (previousManagedWorkspaceId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousManagedWorkspaceId;
+        }
+      }
+    });
+
     it('should return default workspace if IS_MULTIWORKSPACE_ENABLED=false', async () => {
       jest
         .spyOn(twentyConfigService, 'get')
@@ -359,6 +421,93 @@ describe('WorkspaceDomainsService', () => {
         );
 
       expect(result).toEqual(undefined);
+    });
+  });
+
+  describe('getWorkspaceForVerifiedLoginToken', () => {
+    const withManagedDemo = async (test: () => Promise<void>) => {
+      const previousOrgId = process.env.EXE_ORG_WORKSPACE_ID;
+      const previousDemoId = process.env.EXE_DEMO_WORKSPACE_ID;
+
+      process.env.EXE_ORG_WORKSPACE_ID = 'exe-workspace';
+      process.env.EXE_DEMO_WORKSPACE_ID = 'demo-workspace';
+      try {
+        await test();
+      } finally {
+        if (previousOrgId === undefined) {
+          delete process.env.EXE_ORG_WORKSPACE_ID;
+        } else {
+          process.env.EXE_ORG_WORKSPACE_ID = previousOrgId;
+        }
+        if (previousDemoId === undefined) {
+          delete process.env.EXE_DEMO_WORKSPACE_ID;
+        } else {
+          process.env.EXE_DEMO_WORKSPACE_ID = previousDemoId;
+        }
+      }
+    };
+
+    const configureSharedOrigin = () => {
+      jest
+        .spyOn(workspaceRepository, 'findOne')
+        .mockImplementation(async (options) => {
+          if (options?.where && 'id' in options.where) {
+            if (options.where.id === 'exe-workspace') {
+              return { id: 'exe-workspace' } as WorkspaceEntity;
+            }
+            if (options.where.id === 'demo-workspace') {
+              return {
+                id: 'demo-workspace',
+                displayName: 'DEMO',
+                activationStatus: WorkspaceActivationStatus.ACTIVE,
+                isCustomDomainEnabled: false,
+              } as WorkspaceEntity;
+            }
+          }
+          return null;
+        });
+    };
+
+    it('exchanges a verified DEMO token on the shared CRM origin', async () => {
+      await withManagedDemo(async () => {
+        configureSharedOrigin();
+
+        const workspace =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://crm.example.com',
+            'demo-workspace',
+          );
+
+        expect(workspace?.id).toBe('demo-workspace');
+        expect(workspaceRepository.findOne).toHaveBeenCalledWith({
+          where: {
+            id: 'demo-workspace',
+            displayName: 'DEMO',
+            activationStatus: WorkspaceActivationStatus.ACTIVE,
+          },
+          relations: ['workspaceSSOIdentityProviders'],
+        });
+      });
+    });
+
+    it('keeps the Exe default for unrelated origins and workspace IDs', async () => {
+      await withManagedDemo(async () => {
+        configureSharedOrigin();
+
+        const foreignOrigin =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://other.example.com',
+            'demo-workspace',
+          );
+        const unrelatedWorkspace =
+          await workspaceDomainsService.getWorkspaceForVerifiedLoginToken(
+            'https://crm.example.com',
+            'other-workspace',
+          );
+
+        expect(foreignOrigin?.id).toBe('exe-workspace');
+        expect(unrelatedWorkspace?.id).toBe('exe-workspace');
+      });
     });
   });
 });

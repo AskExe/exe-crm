@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Repository } from 'typeorm';
 
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
@@ -64,6 +65,22 @@ export class WorkspaceDomainsService {
       );
     }
 
+    // Managed Exe installations can contain an explicitly joined DEMO tenant
+    // while keeping public workspace creation disabled. Bind the shared origin
+    // to its configured organization; a newer DEMO must never become default.
+    const managedWorkspaceId = process.env.EXE_ORG_WORKSPACE_ID?.trim();
+
+    if (managedWorkspaceId) {
+      const managedWorkspace = await this.workspaceRepository.findOne({
+        where: { id: managedWorkspaceId },
+        relations: ['workspaceSSOIdentityProviders'],
+      });
+
+      assertIsDefinedOrThrow(managedWorkspace, WorkspaceNotFoundDefaultError);
+
+      return managedWorkspace;
+    }
+
     const workspaces = await this.workspaceRepository.find({
       order: {
         createdAt: 'DESC',
@@ -115,6 +132,51 @@ export class WorkspaceDomainsService {
       });
 
     return publicDomainFromCustomDomain?.workspace;
+  }
+
+  // The login token has already been cryptographically verified by the caller.
+  // On the shared single-workspace origin, only the configured DEMO tenant may
+  // differ from the pinned Exe default. All other tokens keep origin binding.
+  async getWorkspaceForVerifiedLoginToken(origin: string, workspaceId: string) {
+    const defaultWorkspace =
+      await this.getWorkspaceByOriginOrDefaultWorkspace(origin);
+
+    if (
+      defaultWorkspace?.id === workspaceId ||
+      workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID?.trim() ||
+      workspaceId === process.env.EXE_ORG_WORKSPACE_ID?.trim()
+    ) {
+      return defaultWorkspace;
+    }
+
+    const demoWorkspace = await this.workspaceRepository.findOne({
+      where: {
+        id: workspaceId,
+        displayName: 'DEMO',
+        activationStatus: WorkspaceActivationStatus.ACTIVE,
+      },
+      relations: ['workspaceSSOIdentityProviders'],
+    });
+
+    if (!demoWorkspace) {
+      return defaultWorkspace;
+    }
+
+    try {
+      const requestOrigin = new URL(origin).origin;
+      const workspaceUrls = this.getWorkspaceUrls(demoWorkspace);
+      const allowedUrls = [workspaceUrls.customUrl, workspaceUrls.subdomainUrl];
+
+      if (
+        allowedUrls.some((url) => url && new URL(url).origin === requestOrigin)
+      ) {
+        return demoWorkspace;
+      }
+    } catch {
+      // A malformed or unrelated origin must never select the DEMO tenant.
+    }
+
+    return defaultWorkspace;
   }
 
   private getCustomWorkspaceUrl(customDomain: string) {
