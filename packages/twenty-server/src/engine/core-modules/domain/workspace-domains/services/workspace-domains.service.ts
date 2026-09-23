@@ -143,7 +143,6 @@ export class WorkspaceDomainsService {
 
     if (
       defaultWorkspace?.id === workspaceId ||
-      this.twentyConfigService.get('IS_MULTIWORKSPACE_ENABLED') ||
       workspaceId !== process.env.EXE_DEMO_WORKSPACE_ID?.trim() ||
       workspaceId === process.env.EXE_ORG_WORKSPACE_ID?.trim()
     ) {

@@ -37,7 +37,13 @@ describe('WorkspaceDomainsService', () => {
         {
           provide: TwentyConfigService,
           useValue: {
-            get: jest.fn(),
+            get: jest.fn(
+              (key: string) =>
+                ({
+                  FRONTEND_URL: 'https://crm.example.com',
+                  IS_MULTIWORKSPACE_ENABLED: false,
+                })[key],
+            ),
           },
         },
       ],
@@ -197,7 +203,6 @@ describe('WorkspaceDomainsService', () => {
 
       process.env.EXE_ORG_WORKSPACE_ID = 'exe-workspace';
       try {
-        jest.spyOn(twentyConfigService, 'get').mockReturnValue(false);
         const findOne = jest.spyOn(workspaceRepository, 'findOne');
 
         findOne.mockResolvedValueOnce({
@@ -230,7 +235,6 @@ describe('WorkspaceDomainsService', () => {
 
       process.env.EXE_ORG_WORKSPACE_ID = 'missing-workspace';
       try {
-        jest.spyOn(twentyConfigService, 'get').mockReturnValue(false);
         jest.spyOn(workspaceRepository, 'findOne').mockResolvedValueOnce(null);
         const find = jest.spyOn(workspaceRepository, 'find');
 
@@ -444,11 +448,6 @@ describe('WorkspaceDomainsService', () => {
     };
 
     const configureSharedOrigin = () => {
-      jest.spyOn(twentyConfigService, 'get').mockImplementation((key) => {
-        if (key === 'IS_MULTIWORKSPACE_ENABLED') return false;
-        if (key === 'FRONTEND_URL') return 'https://crm.example.com';
-        return undefined;
-      });
       jest
         .spyOn(workspaceRepository, 'findOne')
         .mockImplementation(async (options) => {
