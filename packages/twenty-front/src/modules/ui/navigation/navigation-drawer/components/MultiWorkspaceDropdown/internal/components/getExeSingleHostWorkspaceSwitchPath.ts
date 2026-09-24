@@ -1,4 +1,4 @@
-// Exe serves both CRM workspaces on crm.askexe.com. Twenty's normal switch
+// Exe serves both CRM workspaces on crm.askexe.com. The normal switch
 // needs wildcard workspace subdomains, which this deployment does not have.
 // These routes rebind the session after checking GoTrue identity and roles.
 export const getExeSingleHostWorkspaceSwitchPath = ({
