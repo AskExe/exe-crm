@@ -54,6 +54,7 @@ import {
   SignUpInNewWorkspaceDocument,
 } from '~/generated-metadata/graphql';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
+import { getExeSingleHostWorkspaceSwitchPath } from './components/getExeSingleHostWorkspaceSwitchPath';
 
 const StyledDescription = styled.div`
   color: ${themeCssVariables.font.color.light};
@@ -179,31 +180,45 @@ export const MultiWorkspaceDropdownDefaultComponents = () => {
             ]
               .filter(({ id }) => id !== currentWorkspace?.id)
               .slice(0, 3)
-              .map((availableWorkspace) => (
-                <UndecoratedLink
-                  key={availableWorkspace.id}
-                  to={buildWorkspaceUrl(
-                    getWorkspaceUrl(availableWorkspace.workspaceUrls),
-                  )}
-                  onClick={(event) => {
-                    event?.preventDefault();
-                    handleChange(availableWorkspace);
-                  }}
-                >
-                  <MenuItemSelectAvatar
-                    text={availableWorkspace.displayName ?? t`(No name)`}
-                    avatar={
-                      <Avatar
-                        placeholder={availableWorkspace.displayName || ''}
-                        avatarUrl={
-                          availableWorkspace.logo ?? DEFAULT_WORKSPACE_LOGO
-                        }
-                      />
+              .map((availableWorkspace) => {
+                const exeSingleHostPath = getExeSingleHostWorkspaceSwitchPath({
+                  hostname: window.location.hostname,
+                  workspaceName: availableWorkspace.displayName,
+                });
+
+                return (
+                  <UndecoratedLink
+                    key={availableWorkspace.id}
+                    to={
+                      exeSingleHostPath ??
+                      buildWorkspaceUrl(
+                        getWorkspaceUrl(availableWorkspace.workspaceUrls),
+                      )
                     }
-                    selected={false}
-                  />
-                </UndecoratedLink>
-              ))}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (exeSingleHostPath) {
+                        window.location.assign(exeSingleHostPath);
+                        return;
+                      }
+                      handleChange(availableWorkspace);
+                    }}
+                  >
+                    <MenuItemSelectAvatar
+                      text={availableWorkspace.displayName ?? t`(No name)`}
+                      avatar={
+                        <Avatar
+                          placeholder={availableWorkspace.displayName || ''}
+                          avatarUrl={
+                            availableWorkspace.logo ?? DEFAULT_WORKSPACE_LOGO
+                          }
+                        />
+                      }
+                      selected={false}
+                    />
+                  </UndecoratedLink>
+                );
+              })}
             {availableWorkspacesCount > 4 && (
               <MenuItem
                 LeftIcon={IconSwitchHorizontal}
