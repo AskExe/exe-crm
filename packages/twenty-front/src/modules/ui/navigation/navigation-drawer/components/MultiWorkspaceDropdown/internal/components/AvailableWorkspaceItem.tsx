@@ -8,8 +8,6 @@ import { getAvailableWorkspacePathAndSearchParams } from '@/auth/utils/available
 import { t } from '@lingui/core/macro';
 import React from 'react';
 import { useBuildWorkspaceUrl } from '@/domain-manager/hooks/useBuildWorkspaceUrl';
-import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { getExeSingleHostWorkspaceSwitchPath } from './getExeSingleHostWorkspaceSwitchPath';
 
 export const AvailableWorkspaceItem = ({
@@ -20,17 +18,12 @@ export const AvailableWorkspaceItem = ({
   isSelected: boolean;
 }) => {
   const { buildWorkspaceUrl } = useBuildWorkspaceUrl();
-  const isMultiWorkspaceEnabled = useAtomStateValue(
-    isMultiWorkspaceEnabledState,
-  );
-
   const { redirectToWorkspaceDomain } = useRedirectToWorkspaceDomain();
 
   const { pathname, searchParams } =
     getAvailableWorkspacePathAndSearchParams(availableWorkspace);
   const exeSingleHostPath = getExeSingleHostWorkspaceSwitchPath({
     hostname: window.location.hostname,
-    isMultiWorkspaceEnabled,
     workspaceName: availableWorkspace.displayName,
   });
 
