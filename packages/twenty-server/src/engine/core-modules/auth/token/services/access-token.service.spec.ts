@@ -803,6 +803,62 @@ describe('AccessTokenService', () => {
       expect(claims).toEqual(expect.objectContaining({ email: EMAIL }));
     });
 
+    it.each(['https://auth.example.com/api', 'https://auth.example.com/api/'])(
+      'preserves the GoTrue base path for JWKS and HS256 verification (%s)',
+      async (gotrueUrl) => {
+        const subject = randomUUID();
+        const token = jwt.sign({ sub: subject, email: EMAIL }, SHARED_SECRET, {
+          algorithm: 'HS256',
+          audience: 'authenticated',
+          expiresIn: '1h',
+          issuer: 'https://auth.example.com',
+        });
+
+        mockConfig({
+          FRONTEND_URL: 'https://crm.example.com',
+          GOTRUE_URL: gotrueUrl,
+          GOTRUE_JWT_ISSUER: 'https://auth.example.com',
+          GOTRUE_JWT_SECRET: SHARED_SECRET,
+        });
+        global.fetch = jest.fn().mockImplementation(async (input) => {
+          const requestUrl = fetchRequestUrl(input);
+
+          if (
+            requestUrl === 'https://auth.example.com/api/.well-known/jwks.json'
+          ) {
+            return { ok: true, json: async () => ({ keys: [] }) } as Response;
+          }
+
+          if (requestUrl === 'https://auth.example.com/api/user') {
+            return {
+              ok: true,
+              json: async () => ({ id: subject, banned: false }),
+            } as Response;
+          }
+
+          throw new Error(`Unexpected GoTrue endpoint: ${requestUrl}`);
+        }) as typeof fetch;
+
+        const result = await service.verifyGoTrueTokenDetailed(
+          token,
+          gotrueUrl,
+        );
+
+        expect(result).toEqual({
+          ok: true,
+          claims: expect.objectContaining({ sub: subject, email: EMAIL }),
+        });
+        expect(
+          (global.fetch as jest.Mock).mock.calls.map(([input]) =>
+            fetchRequestUrl(input),
+          ),
+        ).toEqual([
+          'https://auth.example.com/api/.well-known/jwks.json',
+          'https://auth.example.com/api/user',
+        ]);
+      },
+    );
+
     it('rejects an HS256 token signed with the wrong secret', async () => {
       expect(await verifyOrNull(signHs256('a-different-secret'))).toBeNull();
     });

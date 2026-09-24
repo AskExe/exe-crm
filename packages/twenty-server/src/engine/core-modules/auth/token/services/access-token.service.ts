@@ -744,7 +744,12 @@ export class AccessTokenService {
     fetchedAt: number;
     keys: GoTrueJwk[];
   }> {
-    const jwksUrl = new URL('/.well-known/jwks.json', gotrueUrl);
+    // GoTrue may be exposed behind a path such as /api. A leading slash would
+    // discard that path and fetch the site's HTML shell instead of its JWKS.
+    const normalizedBase = gotrueUrl.endsWith('/')
+      ? gotrueUrl
+      : `${gotrueUrl}/`;
+    const jwksUrl = new URL('.well-known/jwks.json', normalizedBase);
     const response = await fetch(jwksUrl);
 
     if (!response.ok) {
