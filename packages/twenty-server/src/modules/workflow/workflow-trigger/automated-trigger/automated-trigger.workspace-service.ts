@@ -68,6 +68,7 @@ export class AutomatedTriggerWorkspaceService {
       await this.globalWorkspaceOrmManager.getRepository<WorkflowAutomatedTriggerWorkspaceEntity>(
         workspaceId,
         'workflowAutomatedTrigger',
+        { shouldBypassPermissionChecks: true },
       );
 
     if (isDefined(entityManager)) {
