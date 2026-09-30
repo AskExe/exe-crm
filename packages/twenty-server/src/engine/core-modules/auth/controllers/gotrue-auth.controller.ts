@@ -1147,6 +1147,12 @@ export class GoTrueAuthController {
       });
 
       if (contextResult.type !== 'success') {
+        const demoReentryUrl = await this.getExistingDemoReentryUrl(email, req);
+
+        if (demoReentryUrl) {
+          return res.redirect(demoReentryUrl);
+        }
+
         this.logger.warn(
           `GoTrue callback denied for ${email} — no CRM account could be bound (${
             contextResult.type === 'error'
@@ -1190,6 +1196,49 @@ export class GoTrueAuthController {
         ),
       );
     }
+  }
+
+  /**
+   * Reopen DEMO for an existing member arriving at the shared CRM origin.
+   * Admission still goes through the explicit, freshly confirmed demo flow;
+   * this callback never creates a membership or grants private workspace access.
+   */
+  private async getExistingDemoReentryUrl(
+    email: string,
+    req: Request | undefined,
+  ): Promise<string | null> {
+    if (
+      !this.exeDemoWorkspaceId ||
+      !this.exeOrgWorkspaceId ||
+      !this.serverBaseUrl
+    ) {
+      return null;
+    }
+
+    const context = await this.getUserContext(email, req);
+
+    if (
+      !context ||
+      context.workspace.id !== this.exeOrgWorkspaceId ||
+      context.userWorkspace
+    ) {
+      return null;
+    }
+
+    const demoMembership = await this.userWorkspaceRepository.findOne({
+      where: {
+        userId: context.user.id,
+        workspaceId: this.exeDemoWorkspaceId,
+      },
+    });
+
+    if (!demoMembership) return null;
+
+    const url = new URL('/welcome', this.serverBaseUrl);
+
+    url.searchParams.set('demo', '1');
+
+    return url.toString();
   }
 
   /**

@@ -685,3 +685,93 @@ describe('GoTrueAuthController.handleManagedLogin — non-admin never keeps Admi
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });
+
+describe('existing DEMO member re-entry', () => {
+  const setup = () => {
+    const built = buildController({
+      EXE_ORG_WORKSPACE_ID: CANONICAL_WS_ID,
+      EXE_DEMO_WORKSPACE_ID: 'ws-demo',
+    });
+    const context = {
+      user: { id: USER_ID, email: EMAIL },
+      workspace: { id: CANONICAL_WS_ID },
+      userWorkspace: null,
+    };
+    jest
+      .spyOn(built.controller as any, 'getUserContext')
+      .mockResolvedValue(context);
+    built.userWorkspaceRepository.findOne.mockResolvedValue({
+      userId: USER_ID,
+      workspaceId: 'ws-demo',
+    });
+    return { ...built, context };
+  };
+
+  it('reopens only an existing DEMO membership through fresh admission', async () => {
+    const {
+      controller,
+      userWorkspaceRepository,
+      loginTokenService,
+      signInUpService,
+    } = setup();
+    expect(await (controller as any).getExistingDemoReentryUrl(EMAIL, {})).toBe(
+      'https://crm.example.com/welcome?demo=1',
+    );
+    expect(userWorkspaceRepository.findOne).toHaveBeenCalledWith({
+      where: { userId: USER_ID, workspaceId: 'ws-demo' },
+    });
+    expect(loginTokenService.generateLoginToken).not.toHaveBeenCalled();
+    expect(signInUpService.signInUpOnExistingWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('does not admit an account without DEMO membership', async () => {
+    const { controller, userWorkspaceRepository } = setup();
+    userWorkspaceRepository.findOne.mockResolvedValue(null);
+    expect(
+      await (controller as any).getExistingDemoReentryUrl(EMAIL, {}),
+    ).toBeNull();
+  });
+
+  it.each(['unknown', 'another-tenant'])(
+    'does not reroute the %s tenant',
+    async (id) => {
+      const { controller, context, userWorkspaceRepository } = setup();
+      context.workspace.id = id;
+      expect(
+        await (controller as any).getExistingDemoReentryUrl(EMAIL, {}),
+      ).toBeNull();
+      expect(userWorkspaceRepository.findOne).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves the private workspace route for its members', async () => {
+    const { controller, context, userWorkspaceRepository } = setup();
+    (context as any).userWorkspace = { id: 'private-membership' };
+    expect(
+      await (controller as any).getExistingDemoReentryUrl(EMAIL, {}),
+    ).toBeNull();
+    expect(userWorkspaceRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('re-enters DEMO after a verified unmanaged callback cannot bind the private workspace', async () => {
+    const { controller, accessTokenService } = setup();
+    accessTokenService.verifyGoTrueTokenDetailed.mockResolvedValue({
+      ok: true,
+      claims: { sub: USER_ID, email: EMAIL },
+    });
+    jest
+      .spyOn(controller as any, 'resolveGoTrueLoginContext')
+      .mockResolvedValue({
+        type: 'error',
+        statusCode: 403,
+        error: 'You do not have access to this workspace',
+      });
+    const res: any = { redirect: jest.fn() };
+    await controller.gotrueCallback(res, {
+      headers: { cookie: 'exe_sess=verified-session' },
+    } as any);
+    expect(res.redirect).toHaveBeenCalledWith(
+      'https://crm.example.com/welcome?demo=1',
+    );
+  });
+});

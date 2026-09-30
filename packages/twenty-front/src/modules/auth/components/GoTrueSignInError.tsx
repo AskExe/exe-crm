@@ -1,15 +1,16 @@
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
+import { exeFoundryBold } from 'twenty-ui/theme';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { getGoTrueBridgeFailure } from '@/auth/utils/goTrueBridge';
 
 const StyledNotice = styled.div`
-  background: ${themeCssVariables.background.danger};
-  border: 1px solid ${themeCssVariables.border.color.danger};
+  background: ${exeFoundryBold.dark.background.danger};
+  border: 1px solid ${exeFoundryBold.dark.border.color.danger};
   border-radius: ${themeCssVariables.border.radius.md};
   box-sizing: border-box;
-  color: ${themeCssVariables.font.color.primary};
+  color: ${exeFoundryBold.dark.font.color.primary};
   font-size: 14px;
   line-height: 1.5;
   margin-bottom: 24px;
