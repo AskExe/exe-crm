@@ -15,8 +15,9 @@ import { type ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { enUS } from 'date-fns/locale';
 import { useStore } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { type APP_LOCALES, SOURCE_LOCALE } from 'twenty-shared/translations';
-import { type ObjectPermissions } from 'twenty-shared/types';
+import { AppPath, type ObjectPermissions } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { useQuery } from '@apollo/client/react';
 import {
@@ -28,6 +29,7 @@ import { dynamicActivate } from '~/utils/i18n/dynamicActivate';
 
 export const UserMetadataProviderInitialEffect = () => {
   const hasAccessTokenPair = useHasAccessTokenPair();
+  const { pathname } = useLocation();
   const currentUser = useAtomStateValue(currentUserState);
   const store = useStore();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -65,7 +67,12 @@ export const UserMetadataProviderInitialEffect = () => {
     [store],
   );
 
-  const shouldSkipUserQuery = !hasAccessTokenPair || isDefined(currentUser);
+  // The callback owns authentication until it replaces the document. Booting
+  // with the previous cookie here races the new workspace's user query.
+  const shouldSkipUserQuery =
+    pathname === AppPath.Verify ||
+    !hasAccessTokenPair ||
+    isDefined(currentUser);
 
   const { data: userQueryData, loading: userQueryLoading } = useQuery(
     GetCurrentUserDocument,
