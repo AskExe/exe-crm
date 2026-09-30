@@ -48,6 +48,8 @@ export const useLoadCurrentUser = () => {
     const currentUserResult = await client.query({
       query: GetCurrentUserDocument,
       fetchPolicy: 'network-only',
+      // A token exchange must not reuse an in-flight query from the old workspace.
+      context: { queryDeduplication: false },
     });
 
     if (isDefined(currentUserResult.error)) {

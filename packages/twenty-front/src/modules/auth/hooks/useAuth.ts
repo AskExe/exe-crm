@@ -322,13 +322,15 @@ export const useAuth = () => {
 
   const handleLoadWorkspaceAfterAuthentication = useCallback(
     async (authTokens: AuthTokenPair) => {
-      handleSetAuthTokens(authTokens);
       setIsAppEffectRedirectEnabled(false);
+      handleSetAuthTokens(authTokens);
 
-      const { workspace } = await loadCurrentUser();
-
-      setIsAppEffectRedirectEnabled(true);
-      return workspace?.id;
+      try {
+        const { workspace } = await loadCurrentUser();
+        return workspace?.id;
+      } finally {
+        setIsAppEffectRedirectEnabled(true);
+      }
     },
     [loadCurrentUser, handleSetAuthTokens, setIsAppEffectRedirectEnabled],
   );
@@ -363,6 +365,7 @@ export const useAuth = () => {
           handleSetLoginToken(loginToken);
           navigate(AppPath.SignInUp);
           setSignInUpStep(SignInUpStep.TwoFactorAuthenticationProvision);
+          return;
         }
 
         if (
@@ -373,7 +376,9 @@ export const useAuth = () => {
           handleSetLoginToken(loginToken);
           navigate(AppPath.SignInUp);
           setSignInUpStep(SignInUpStep.TwoFactorAuthenticationVerification);
+          return;
         }
+        throw error;
       }
     },
     [
