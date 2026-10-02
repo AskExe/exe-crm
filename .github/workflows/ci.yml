@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # Shared runners can inherit a developer's loopback registry. Resolve the
+  # committed lockfile and hardened metadata against the public registry in CI.
+  YARN_NPM_REGISTRY_SERVER: https://registry.npmjs.org
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
