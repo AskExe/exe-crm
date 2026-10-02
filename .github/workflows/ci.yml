@@ -459,8 +459,34 @@ jobs:
       # scan stays scoped to code we actually own even if this ever runs on a
       # tree that already has dependencies installed.
       - name: Secret scan (gitleaks)
+        timeout-minutes: 5
+        shell: bash
         run: |
-          docker run --rm -v "$PWD:/repo" \
+          set -euo pipefail
+          # Public pinned image: never invoke the shared Desktop credential helper.
+          # Capture this runner's existing endpoint before isolating CLI config.
+          if [ -n "${DOCKER_CONTEXT:-}" ]; then
+            task_docker_endpoint="$(docker context inspect "$DOCKER_CONTEXT" --format '{{.Endpoints.docker.Host}}')"
+          elif [ -n "${DOCKER_HOST:-}" ]; then
+            task_docker_endpoint="$DOCKER_HOST"
+          else
+            task_docker_endpoint="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+          fi
+          case "$task_docker_endpoint" in
+            unix://*) ;;
+            *) echo "::error::Security scan requires this runner's local Docker socket."; exit 1 ;;
+          esac
+          task_docker_config="$(mktemp -d "${RUNNER_TEMP}/crm-gitleaks-docker.XXXXXX")"
+          task_scan_container="crm-gitleaks-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          trap 'docker rm -f "$task_scan_container" >/dev/null 2>&1 || true; rm -rf "$task_docker_config"' EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          chmod 700 "$task_docker_config"
+          (umask 077; printf '{}\n' > "$task_docker_config/config.json")
+          unset DOCKER_CONTEXT
+          export DOCKER_CONFIG="$task_docker_config"
+          export DOCKER_HOST="$task_docker_endpoint"
+          docker run --rm --name "$task_scan_container" --network none --read-only -v "$PWD:/repo:ro" \
             ghcr.io/gitleaks/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
             detect --source=/repo --no-git --redact --no-banner --verbose \
             --config=/repo/.gitleaks.toml
