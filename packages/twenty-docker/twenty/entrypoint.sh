@@ -56,7 +56,18 @@ register_background_jobs() {
     fi
 }
 
-assert_exe_license_key
+case "${CRM_COMPANY_MODE:-false}" in
+    true)
+        # Nest validates the fixed company configuration; no legacy license authority.
+        ;;
+    false)
+        assert_exe_license_key
+        ;;
+    *)
+        echo "CRM_COMPANY_MODE must be true or false."
+        exit 1
+        ;;
+esac
 setup_and_migrate_db
 register_background_jobs
 

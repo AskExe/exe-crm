@@ -1,3 +1,8 @@
+import { CompanyRestReadService } from 'src/engine/core-modules/company-auth/company-rest-read.service';
+import { CompanyAuthModule } from 'src/engine/core-modules/company-auth/company-auth.module';
+import { CompanyMcpController } from 'src/engine/core-modules/company-mcp/company-mcp.controller';
+import { CompanyMcpService } from 'src/engine/core-modules/company-mcp/company-mcp.service';
+
 import { Module } from '@nestjs/common';
 
 import { CoreCommonApiModule } from 'src/engine/api/common/core-common-api.module';
@@ -55,6 +60,7 @@ const restApiCoreResolvers = [
 @Module({
   imports: [
     WorkspaceCacheStorageModule,
+    CompanyAuthModule,
     AuthModule,
     ApiKeyModule,
     UserRoleModule,
@@ -68,10 +74,12 @@ const restApiCoreResolvers = [
     WorkspaceCacheModule,
     SecureHttpClientModule,
   ],
-  controllers: [RestApiCoreController],
+  controllers: [RestApiCoreController, CompanyMcpController],
   providers: [
     RestApiService,
     RestApiCoreService,
+    CompanyMcpService,
+    CompanyRestReadService,
     ...restApiCoreResolvers,
     ...restToCommonArgsHandlers,
   ],

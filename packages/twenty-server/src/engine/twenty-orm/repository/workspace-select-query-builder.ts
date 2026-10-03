@@ -1,3 +1,4 @@
+import { assertCompanyRowPredicateFlag } from 'src/engine/core-modules/company-mcp/company-read-lease';
 import { FeatureFlagKey, type ObjectsPermissions } from 'twenty-shared/types';
 import {
   type EntityTarget,
@@ -366,6 +367,9 @@ export class WorkspaceSelectQueryBuilder<
   }
 
   private applyRowLevelPermissionPredicates(): void {
+    assertCompanyRowPredicateFlag(this.featureFlagMap[
+      FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED
+    ]);
     if (
       this.featureFlagMap[
         FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED

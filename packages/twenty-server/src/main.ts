@@ -1,7 +1,15 @@
 import { NestFactory } from '@nestjs/core';
+
+import { CompanyBrowserService, companyBrowserIngress } from 'src/engine/core-modules/company-auth/company-browser.service';
+import { readCompanyBrowserConfiguration } from 'src/engine/core-modules/company-auth/company-browser.config';
+import { readCompanyAuthConfiguration } from 'src/engine/core-modules/company-auth/company-auth.config';
+import { companyMcpEnabled } from 'src/engine/core-modules/company-mcp/company-mcp.config';
+import { companyAuthIngress } from 'src/engine/core-modules/company-auth/company-auth.ingress';
 import { type NestExpressApplication } from '@nestjs/platform-express';
 
 import fs from 'fs';
+import { type IncomingMessage } from 'node:http';
+import { type Duplex } from 'node:stream';
 
 import bytes from 'bytes';
 import { useContainer } from 'class-validator';
@@ -62,7 +70,11 @@ const assertExeLicenseKey = () => {
 // Trigger
 const bootstrap = async () => {
   assertAppSecret();
-  assertExeLicenseKey();
+  const companyConfiguration = readCompanyAuthConfiguration();
+  companyMcpEnabled();
+  readCompanyBrowserConfiguration(companyConfiguration);
+
+  if (!companyConfiguration) assertExeLicenseKey();
 
   setPgDateTypeParser();
 
@@ -80,6 +92,12 @@ const bootstrap = async () => {
         }
       : {}),
   });
+  if (companyConfiguration) {
+    const browser = app.get(CompanyBrowserService);
+    app.use(companyBrowserIngress(browser));
+    app.use(companyAuthIngress(companyConfiguration));
+  }
+
   const logger = app.get(LoggerService);
   const twentyConfigService = app.get(TwentyConfigService);
   const workspaceDomainsService = app.get(WorkspaceDomainsService);
@@ -196,6 +214,18 @@ const bootstrap = async () => {
   // on SIGTERM/SIGINT (Docker sends SIGTERM on container stop)
   app.enableShutdownHooks();
 
+  if (companyConfiguration) {
+    // Native GraphQL/realtime adapters may register during initialization.
+    // None are admitted by the staged company REST read policy.
+    await app.init();
+    app.getHttpServer().removeAllListeners('upgrade');
+    app
+      .getHttpServer()
+      .on('upgrade', (_request: IncomingMessage, socket: Duplex) => {
+        socket.on('error', () => undefined);
+        socket.destroy();
+      });
+  }
   await app.listen(twentyConfigService.get('NODE_PORT'));
 };
 
