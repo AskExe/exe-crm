@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  assertCompanyReadShape,
+  withCompanyReadLease,
+  type CompanyReadLease,
+} from 'src/engine/core-modules/company-mcp/company-read-lease';
 
 import { msg } from '@lingui/core/macro';
 import { QUERY_MAX_RECORDS_FROM_RELATION } from 'twenty-shared/constants';
@@ -39,6 +44,22 @@ export class CommonFindOneQueryRunnerService extends CommonBaseQueryRunnerServic
     args: CommonExtendedInput<FindOneQueryArgs>,
     queryRunnerContext: CommonExtendedQueryRunnerContext,
   ): Promise<ObjectRecord> {
+    assertCompanyReadShape(
+      'one',
+      queryRunnerContext.flatObjectMetadata.namePlural,
+      args,
+    );
+    return withCompanyReadLease(
+      queryRunnerContext.workspaceDataSource,
+      (lease) => this.runRead(args, queryRunnerContext, lease),
+    );
+  }
+
+  private async runRead(
+    args: CommonExtendedInput<FindOneQueryArgs>,
+    queryRunnerContext: CommonExtendedQueryRunnerContext,
+    lease?: CompanyReadLease,
+  ): Promise<ObjectRecord> {
     const {
       repository,
       authContext,
@@ -52,6 +73,7 @@ export class CommonFindOneQueryRunnerService extends CommonBaseQueryRunnerServic
 
     const queryBuilder = repository.createQueryBuilder(
       flatObjectMetadata.nameSingular,
+      lease?.runner,
     );
 
     commonQueryParser.applyFilterToBuilder(
@@ -73,11 +95,11 @@ export class CommonFindOneQueryRunnerService extends CommonBaseQueryRunnerServic
       flatFieldMetadataMaps,
     });
 
-    const objectRecord = await queryBuilder
-      .setFindOptions({
-        select: columnsToSelect,
-      })
-      .getOne();
+    const readRecord = () =>
+      queryBuilder.setFindOptions({ select: columnsToSelect }).getOne();
+    const objectRecord = await (lease
+      ? lease.terminal(readRecord)
+      : readRecord());
 
     if (!objectRecord) {
       throw new CommonQueryRunnerException(
@@ -91,7 +113,7 @@ export class CommonFindOneQueryRunnerService extends CommonBaseQueryRunnerServic
 
     const objectRecords = [objectRecord] as ObjectRecord[];
 
-    if (isDefined(args.selectedFieldsResult.relations)) {
+    if (!lease && isDefined(args.selectedFieldsResult.relations)) {
       await this.processNestedRelationsHelper.processNestedRelations({
         flatObjectMetadataMaps,
         flatFieldMetadataMaps,

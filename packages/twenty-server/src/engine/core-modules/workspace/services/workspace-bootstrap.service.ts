@@ -1,7 +1,11 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import { v4 } from 'uuid';
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
+
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectDataSource } from '@nestjs/typeorm';
 
 /**
@@ -90,6 +94,26 @@ export class WorkspaceBootstrapService implements OnModuleInit {
   }
 
   private async bootstrapIfEmpty(): Promise<void> {
+    if (companyAuthEnabled()) {
+      const workspace = await this.dataSource
+        .getRepository(WorkspaceEntity)
+        .find({
+          where: { deletedAt: IsNull() },
+        });
+
+      if (
+        workspace.length !== 1 ||
+        workspace[0].id !== process.env.CRM_COMPANY_WORKSPACE_ID ||
+        workspace[0].activationStatus !== 'ACTIVE'
+      ) {
+        throw new Error(
+          'Company mode requires one operator-provisioned active workspace',
+        );
+      }
+
+      return;
+    }
+
     const [{ count }] = await this.dataSource.query(
       `SELECT COUNT(*)::int AS count FROM core.workspace WHERE "deletedAt" IS NULL`,
     );

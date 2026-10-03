@@ -1,5 +1,7 @@
 import { createPublicKey, type JsonWebKey as CryptoJsonWebKey } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
+
+import { CompanyAuthService } from 'src/engine/core-modules/company-auth/company-auth.service';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { msg } from '@lingui/core/macro';
@@ -159,6 +161,7 @@ export class AccessTokenService {
   > = new Map();
 
   constructor(
+    private readonly companyAuthService: CompanyAuthService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly jwtStrategy: JwtAuthStrategy,
     private readonly twentyConfigService: TwentyConfigService,
@@ -304,6 +307,10 @@ export class AccessTokenService {
   }
 
   async validateTokenByRequest(request: Request): Promise<AuthContext> {
+    if (this.companyAuthService.configuration) {
+      return this.companyAuthService.authenticate(request);
+    }
+
     const token = this.jwtWrapperService.extractJwtFromRequest()(request);
 
     if (!token) {
