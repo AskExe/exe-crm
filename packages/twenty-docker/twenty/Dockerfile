@@ -21,7 +21,15 @@ COPY ./packages/twenty-front/package.json /app/packages/twenty-front/
 COPY ./packages/twenty-sdk/package.json /app/packages/twenty-sdk/
 COPY ./packages/twenty-client-sdk/package.json /app/packages/twenty-client-sdk/
 
-RUN yarn && yarn cache clean && npx nx reset
+COPY ./packages/twenty-utils/package.json /app/packages/twenty-utils/
+COPY ./packages/twenty-zapier/package.json /app/packages/twenty-zapier/
+COPY ./packages/twenty-e2e-testing/package.json /app/packages/twenty-e2e-testing/
+COPY ./packages/twenty-cli/package.json /app/packages/twenty-cli/
+COPY ./packages/create-twenty-app/package.json /app/packages/create-twenty-app/
+COPY ./packages/twenty-oxlint-rules/package.json /app/packages/twenty-oxlint-rules/
+COPY ./packages/twenty-companion/package.json /app/packages/twenty-companion/
+
+RUN yarn --immutable && yarn cache clean && npx nx reset
 
 
 FROM common-deps AS twenty-server-build
