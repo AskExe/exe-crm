@@ -4,10 +4,15 @@ import { performance } from 'node:perf_hooks';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { type DataSource, type QueryRunner } from 'typeorm';
 
-import { companyAuthEnabled, COMPANY_UUID } from '../company-auth/company-auth.config';
+import {
+  companyAuthEnabled,
+  COMPANY_UUID,
+} from '../company-auth/company-auth.config';
 
 import { companyMcpEnabled } from './company-mcp.config';
 import { type CompanyRead } from './company-mcp.protocol';
+
+export const COMPANY_READ_CONTROL_MAX_MS = 9000;
 
 const MAX_STATEMENT_MS = 3000;
 const CLEANUP_GRACE_MS = 5000;
@@ -35,7 +40,7 @@ const fatal = (): never => {
   process.exit(1);
 };
 
-export const withCompanyReadControl = <T>(
+export const withCompanyReadControl = async <T>(
   control: Omit<CompanyReadControl, 'fatal'>,
   operation: () => Promise<T>,
   testFatal?: () => never,
@@ -46,7 +51,7 @@ export const withCompanyReadControl = <T>(
 };
 
 // REST uses the same native lease while MCP remains independently default-off.
-export const withCompanyRestReadControl = <Result>(
+export const withCompanyRestReadControl = async <Result>(
   control: Omit<CompanyReadControl, 'fatal'>,
   operation: () => Promise<Result>,
 ): Promise<Result> => {
@@ -60,24 +65,58 @@ const runCapturedControl = <Result>(
   fatalPolicy: () => never,
 ): Promise<Result> => {
   const descriptors = Object.getOwnPropertyDescriptors(control);
-  if (Object.getPrototypeOf(control) !== Object.prototype || Reflect.ownKeys(control).length !== 4 ||
-    ['signal','monotonicDeadline','absoluteDeadline','read'].some(key => !descriptors[key] || !('value' in descriptors[key]))) throw unavailable();
+  if (
+    Object.getPrototypeOf(control) !== Object.prototype ||
+    Reflect.ownKeys(control).length !== 4 ||
+    ['signal', 'monotonicDeadline', 'absoluteDeadline', 'read'].some(
+      (key) => !descriptors[key] || !('value' in descriptors[key]),
+    )
+  )
+    throw unavailable();
   const signal: unknown = descriptors.signal.value;
   const monotonicDeadline: unknown = descriptors.monotonicDeadline.value;
   const absoluteDeadline: unknown = descriptors.absoluteDeadline.value;
   const read: unknown = descriptors.read.value;
-  if (!(signal instanceof AbortSignal) || typeof monotonicDeadline !== 'number' || !Number.isFinite(monotonicDeadline) ||
-    typeof absoluteDeadline !== 'number' || !Number.isFinite(absoluteDeadline) ||
-    monotonicDeadline - performance.now() > 9000 || absoluteDeadline - Date.now() > 9000 ||
-    !read || typeof read !== 'object' || Object.getPrototypeOf(read) !== Object.prototype) throw unavailable();
+  if (
+    !(signal instanceof AbortSignal) ||
+    typeof monotonicDeadline !== 'number' ||
+    !Number.isFinite(monotonicDeadline) ||
+    typeof absoluteDeadline !== 'number' ||
+    !Number.isFinite(absoluteDeadline) ||
+    monotonicDeadline - performance.now() > COMPANY_READ_CONTROL_MAX_MS ||
+    absoluteDeadline - Date.now() > COMPANY_READ_CONTROL_MAX_MS ||
+    !read ||
+    typeof read !== 'object' ||
+    Object.getPrototypeOf(read) !== Object.prototype
+  )
+    throw unavailable();
   const fields = Object.getOwnPropertyDescriptors(read);
-  if (Reflect.ownKeys(read).some(key => typeof key !== 'string' || !['object','id','limit'].includes(key)) ||
-    Object.values(fields).some(field => !('value' in field)) ||
-    !['people','companies'].includes(fields.object?.value) ||
-    !Number.isSafeInteger(fields.limit?.value) || fields.limit.value < 1 || fields.limit.value > 100 ||
-    (fields.id?.value !== undefined && (typeof fields.id.value !== 'string' || !COMPANY_UUID.test(fields.id.value)))) throw unavailable();
-  const captured = Object.freeze({ signal, monotonicDeadline, absoluteDeadline,
-    read: Object.freeze({ object: fields.object.value, id: fields.id?.value, limit: fields.limit.value }), fatal: fatalPolicy });
+  if (
+    Reflect.ownKeys(read).some(
+      (key) =>
+        typeof key !== 'string' || !['object', 'id', 'limit'].includes(key),
+    ) ||
+    Object.values(fields).some((field) => !('value' in field)) ||
+    !['people', 'companies'].includes(fields.object?.value) ||
+    !Number.isSafeInteger(fields.limit?.value) ||
+    fields.limit.value < 1 ||
+    fields.limit.value > 100 ||
+    (fields.id?.value !== undefined &&
+      (typeof fields.id.value !== 'string' ||
+        !COMPANY_UUID.test(fields.id.value)))
+  )
+    throw unavailable();
+  const captured = Object.freeze({
+    signal,
+    monotonicDeadline,
+    absoluteDeadline,
+    read: Object.freeze({
+      object: fields.object.value,
+      id: fields.id?.value,
+      limit: fields.limit.value,
+    }),
+    fatal: fatalPolicy,
+  });
   remaining(captured);
   return controls.run(captured, operation);
 };
@@ -93,7 +132,14 @@ const remaining = (control: CompanyReadControl): number => {
       control.absoluteDeadline - Date.now(),
     ),
   );
-  if (Object.getOwnPropertyDescriptor(AbortSignal.prototype, 'aborted')!.get!.call(control.signal) || milliseconds < 1) throw unavailable();
+  if (
+    Object.getOwnPropertyDescriptor(
+      AbortSignal.prototype,
+      'aborted',
+    )!.get!.call(control.signal) ||
+    milliseconds < 1
+  )
+    throw unavailable();
   return Math.min(MAX_STATEMENT_MS, milliseconds);
 };
 

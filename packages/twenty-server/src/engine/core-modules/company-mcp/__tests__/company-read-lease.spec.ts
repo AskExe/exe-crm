@@ -336,14 +336,16 @@ it('abort while connecting waits for connect then safely releases before any BEG
   expect(runner.startTransaction).not.toHaveBeenCalled();
   expect(runner.release).toHaveBeenCalledTimes(1);
 });
-it('rejects test fatal injection outside test mode before any operation', () => {
+it('rejects test fatal injection outside test mode before any operation', async () => {
   const { control } = setup();
   const original = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
+  const operation = jest.fn(async () => true);
   try {
-    expect(() =>
-      withCompanyReadControl(control, async () => true, fatal),
-    ).toThrow();
+    await expect(
+      withCompanyReadControl(control, operation, fatal),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(operation).not.toHaveBeenCalled();
   } finally {
     process.env.NODE_ENV = original;
   }

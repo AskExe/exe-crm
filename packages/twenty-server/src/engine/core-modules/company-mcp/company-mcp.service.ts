@@ -18,7 +18,10 @@ import { withWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/w
 import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-user-auth-context.util';
 
 import { companyMcpEnabled } from './company-mcp.config';
-import { withCompanyReadControl } from './company-read-lease';
+import {
+  COMPANY_READ_CONTROL_MAX_MS,
+  withCompanyReadControl,
+} from './company-read-lease';
 import {
   COMPANY_MCP_DEADLINE_MS,
   COMPANY_MCP_RESULT_BYTES,
@@ -195,8 +198,19 @@ export class CompanyMcpService {
               {
                 signal: combined,
                 read,
-                monotonicDeadline: received + COMPANY_MCP_DEADLINE_MS,
-                absoluteDeadline: absolute,
+                // Native leases retain their stricter nine-second request budget.
+                monotonicDeadline:
+                  received +
+                  Math.min(
+                    COMPANY_MCP_DEADLINE_MS,
+                    COMPANY_READ_CONTROL_MAX_MS,
+                  ),
+                absoluteDeadline: Math.min(
+                  absolute,
+                  absolute -
+                    COMPANY_MCP_DEADLINE_MS +
+                    COMPANY_READ_CONTROL_MAX_MS,
+                ),
               },
               () => this.reads.get(nativeRequest),
             ),

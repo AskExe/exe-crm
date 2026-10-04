@@ -94,17 +94,25 @@ export class CompanyAuthService {
     }
   }
 
-  async authenticateSessionToken(token: string, signal: AbortSignal): Promise<RawAuthContext> {
+  async authenticateSessionToken(
+    token: string,
+    signal: AbortSignal,
+  ): Promise<RawAuthContext> {
     if (!/^exs_[A-Za-z0-9_-]{43}$/.test(token))
       throw new UnauthorizedException('Company authorization denied');
     try {
       signal.throwIfAborted();
-      const context = await this.currentCredentialContext({ kind: 'session', value: token }, signal);
+      const context = await this.currentCredentialContext(
+        { kind: 'session', value: token },
+        signal,
+      );
       signal.throwIfAborted();
       return context;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new ServiceUnavailableException('Company authorization unavailable');
+      throw new ServiceUnavailableException(
+        'Company authorization unavailable',
+      );
     }
   }
 
@@ -130,7 +138,8 @@ export class CompanyAuthService {
     signal?: AbortSignal,
   ): Promise<RawAuthContext> {
     const config = this.configuration;
-    if (!config) throw new UnauthorizedException('Company authorization denied');
+    if (!config)
+      throw new UnauthorizedException('Company authorization denied');
     const response = await fetch(
       credential.kind === 'key'
         ? config.authorityUrl + '/internal/company-authority/key-introspect'
@@ -239,7 +248,7 @@ export class CompanyAuthService {
       throw new UnauthorizedException('Company authorization denied');
     }
     // This fixed-schema query reads ONLY the already operator-bound identity.
-    // Business records continue through native REST/TwentyORM user ACLs.
+    // Business records continue through native REST/ORM user ACLs.
     const member = await this.dataSource
       .createQueryBuilder()
       .select('member.*')

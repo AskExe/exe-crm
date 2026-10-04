@@ -84,6 +84,22 @@ it('calls only native get with explicit user ALS, server-fixed object/depth/limi
     data: { people: [{ id: 'permitted', name: 'visible' }] },
   });
 });
+it('does not refresh the native lease budget after delayed authorization', async () => {
+  const received = Date.now();
+  const wallClock = jest.spyOn(Date, 'now');
+  auth.currentRead.mockImplementationOnce(async () => {
+    wallClock.mockReturnValue(received + 9001);
+    return { context, fingerprint: 'current' };
+  });
+  try {
+    await expect(service().handle(request(), signal())).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(reads.get).not.toHaveBeenCalled();
+  } finally {
+    wallClock.mockRestore();
+  }
+});
 it.each([
   'Bearer eyJ.jwt.signature',
   'Bearer native-key',
@@ -194,6 +210,8 @@ it('scopes cancellation to the same owned key and cannot clear another duplicate
   );
   const endpoint = service(),
     pending = endpoint.handle(request(), signal());
+  // Attach the rejection assertion before cancellation can settle the promise.
+  const rejected = expect(pending).rejects.toThrow();
   await Promise.resolve();
   await Promise.resolve();
   await expect(endpoint.handle(request(), signal())).rejects.toMatchObject({
@@ -217,7 +235,7 @@ it('scopes cancellation to the same owned key and cannot clear another duplicate
     ),
   ).toEqual({ status: 202 });
   release({ data: { people: [] } });
-  await expect(pending).rejects.toThrow();
+  await rejected;
 });
 it('supports only pinned initialization and static read catalog', async () => {
   const endpoint = service();
