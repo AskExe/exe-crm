@@ -11,6 +11,7 @@ import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/l
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
 import { RenewTokenService } from 'src/engine/core-modules/auth/token/services/renew-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
+import { CompanyAuthModule } from 'src/engine/core-modules/company-auth/company-auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -27,6 +28,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
 @Global()
 @Module({
   imports: [
+    CompanyAuthModule,
     JwtModule,
     TypeOrmModule.forFeature([
       UserEntity,
