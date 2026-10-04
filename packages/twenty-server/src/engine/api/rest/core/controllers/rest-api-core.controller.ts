@@ -94,11 +94,21 @@ export class RestApiCoreController {
       const controller = new AbortController();
       const abort = () => controller.abort();
       request.once('aborted', abort);
-      const close = () => { if (!res.writableEnded) abort(); };
+      const close = () => {
+        if (!res.writableEnded) abort();
+      };
       res.once('close', close);
       if (request.aborted || res.destroyed) abort();
-      try { await this.companyRestReadService.handle(request, res, controller.signal); }
-      finally { request.off('aborted', abort); res.off('close', close); }
+      try {
+        await this.companyRestReadService.handle(
+          request,
+          res,
+          controller.signal,
+        );
+      } finally {
+        request.off('aborted', abort);
+        res.off('close', close);
+      }
       return;
     }
     this.logger.log(

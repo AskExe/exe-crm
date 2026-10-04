@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 
-import { CompanyBrowserService, companyBrowserIngress } from 'src/engine/core-modules/company-auth/company-browser.service';
+import {
+  CompanyBrowserService,
+  companyBrowserIngress,
+} from 'src/engine/core-modules/company-auth/company-browser.service';
 import { readCompanyBrowserConfiguration } from 'src/engine/core-modules/company-auth/company-browser.config';
 import { readCompanyAuthConfiguration } from 'src/engine/core-modules/company-auth/company-auth.config';
 import { companyMcpEnabled } from 'src/engine/core-modules/company-mcp/company-mcp.config';

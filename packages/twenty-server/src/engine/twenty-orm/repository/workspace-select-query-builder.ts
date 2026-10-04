@@ -367,9 +367,11 @@ export class WorkspaceSelectQueryBuilder<
   }
 
   private applyRowLevelPermissionPredicates(): void {
-    assertCompanyRowPredicateFlag(this.featureFlagMap[
-      FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED
-    ]);
+    assertCompanyRowPredicateFlag(
+      this.featureFlagMap[
+        FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED
+      ],
+    );
     if (
       this.featureFlagMap[
         FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED
