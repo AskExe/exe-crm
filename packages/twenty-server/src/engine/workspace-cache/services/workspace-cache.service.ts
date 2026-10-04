@@ -139,14 +139,17 @@ export class WorkspaceCacheService implements OnModuleInit {
       if (currentKeys.length > 0) {
         const current: Partial<WorkspaceCacheDataMap> = {};
 
-        await Promise.all(
-          currentKeys.map(async (key) => {
-            const data =
-              await this.getProviderOrThrow(key).computeForCache(workspaceId);
-
-            Object.assign(current, { [key]: data });
-          }),
+        const completed = await Promise.all(
+          currentKeys.map(async (key) => ({
+            key,
+            data: await this.getProviderOrThrow(key).computeForCache(
+              workspaceId,
+            ),
+          })),
         );
+        // Preserve requested key order independently of provider completion order.
+        for (const { key, data } of completed)
+          Object.assign(current, { [key]: data });
         const remainingKeys = cacheKeyNames.filter(
           (key) => !COMPANY_CURRENT_KEYS.has(key),
         );
