@@ -11,6 +11,10 @@ import { type Request, type Response } from 'express';
 
 import { RestApiCoreService } from 'src/engine/api/rest/core/services/rest-api-core.service';
 import { type AuthenticatedRequest } from 'src/engine/api/rest/types/authenticated-request';
+import {
+  PermissionsException,
+  PermissionsExceptionCode,
+} from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { withWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
 import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-user-auth-context.util';
 import { withCompanyRestReadControl } from '../company-mcp/company-read-lease';
@@ -144,6 +148,11 @@ export class CompanyRestReadService {
           ),
         );
       } catch (error) {
+        if (
+          error instanceof PermissionsException &&
+          error.code === PermissionsExceptionCode.PERMISSION_DENIED
+        )
+          throw new NotFoundException('Record unavailable');
         if (
           error instanceof HttpException &&
           [403, 404].includes(error.getStatus())
