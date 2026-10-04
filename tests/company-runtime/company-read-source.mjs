@@ -152,7 +152,29 @@ export const fixtureDockerfile = (original, lockDigest) => {
     !server.includes(focus)
   )
     throw Error('Unexpected native server build');
-  const checkedServer = server.replace(
+  const dependencyInstall = 'RUN yarn && yarn cache clean && npx nx reset';
+  if (server.split(dependencyInstall).length !== 2)
+    throw Error('Unexpected native dependency install');
+  const additionalWorkspaces = [
+    'twenty-utils',
+    'twenty-zapier',
+    'twenty-e2e-testing',
+    'twenty-cli',
+    'create-twenty-app',
+    'twenty-oxlint-rules',
+    'twenty-companion',
+  ];
+  const completeServer = server.replace(
+    dependencyInstall,
+    additionalWorkspaces
+      .map(
+        (name) => `COPY ./packages/${name}/package.json /app/packages/${name}/`,
+      )
+      .join('\n') +
+      '\n\n' +
+      dependencyInstall,
+  );
+  const checkedServer = completeServer.replace(
     'FROM common-deps AS twenty-server-build',
     `RUN node -e 'const fs=require("fs"),crypto=require("crypto");if(crypto.createHash("sha256").update(fs.readFileSync("/app/yarn.lock")).digest("hex")!=="${lockDigest}")throw Error("Fixture lock changed during dependency install")'\n\nFROM common-deps AS twenty-server-build`,
   );

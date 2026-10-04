@@ -186,6 +186,28 @@ test('requires the exact bounded native recipe and labels retained dev tooling v
   assert.ok(recipe.includes(lockDigest));
   assert.match(recipe, /Fixture lock changed during dependency install/);
   assert.throws(() => fixtureDockerfile(original), /lock digest/);
+  for (const name of [
+    'twenty-utils',
+    'twenty-zapier',
+    'twenty-e2e-testing',
+    'twenty-cli',
+    'create-twenty-app',
+    'twenty-oxlint-rules',
+    'twenty-companion',
+  ]) {
+    const copy = `COPY ./packages/${name}/package.json /app/packages/${name}/`;
+    assert.equal(recipe.split(copy).length, 2);
+    assert.ok(
+      recipe.indexOf(copy) <
+        recipe.indexOf('RUN yarn && yarn cache clean && npx nx reset'),
+    );
+    assert.ok(
+      readFileSync(
+        new URL(`../../packages/${name}/package.json`, import.meta.url),
+      ).length > 0,
+    );
+  }
+  assert.doesNotMatch(recipe, /COPY .*twenty-apps\/package\.json/);
   assert.match(recipe, /RUN npx nx run twenty-server:build/);
   assert.match(recipe, /USER 1000/);
   assert.match(recipe, /ENTRYPOINT \["\/app\/entrypoint.sh"\]/);
@@ -198,6 +220,10 @@ test('requires the exact bounded native recipe and labels retained dev tooling v
       'RUN changed focus --production',
     ),
     original.replace('AS common-deps', 'AS foreign-base'),
+    original.replace(
+      'RUN yarn && yarn cache clean && npx nx reset',
+      'RUN changed install',
+    ),
   ])
     assert.throws(() => fixtureDockerfile(changed, lockDigest), /Unexpected/);
 });

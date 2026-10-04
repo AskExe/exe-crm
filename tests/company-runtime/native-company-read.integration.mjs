@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 // Actual native ORM ACL fixture with private synthetic company authority; no production admission.
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
-import {
-  readFileSync,
-  writeFileSync,
-  mkdtempSync,
-  rmSync,
-  statfsSync,
-} from 'node:fs';
+import { OwnedContainers } from './owned-containers.mjs';
+import { readFileSync, writeFileSync, mkdtempSync, statfsSync } from 'node:fs';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,24 +18,123 @@ const manifest = JSON.parse(
     'utf8',
   ),
 );
-const runtimeSource = '2c16f65860d70fcca2f0bfa16130004da6387794';
+const runtimeSource = process.argv[3];
+assert.match(
+  runtimeSource ?? '',
+  /^[a-f0-9]{40}$/,
+  'Explicit exact runtime source SHA required',
+);
 const image = manifest.images.find(
   (x) => x.kind === 'crm' && x.source_sha === runtimeSource,
 )?.image;
 if (!image || !/^sha256:[a-f0-9]{64}$/.test(image))
   throw Error('Reviewed CRM image required');
 let cleaning = false;
-const docker = (args, input) => {
+const wholeEnd = Date.now() + 30 * 60000;
+let phaseEnd = wholeEnd - 60000,
+  primary = null;
+const secondary = [],
+  records = [],
+  ownedIds = [];
+let rawBytes = 0;
+const record = (stdout, stderr, status, signal = null) => {
+  const ordinal = records.length + 1;
+  const out = Buffer.from(stdout ?? ''),
+    err = Buffer.from(stderr ?? '');
+  writeFileSync(join(root, ordinal + '.stdout'), out, { mode: 0o600 });
+  writeFileSync(join(root, ordinal + '.stderr'), err, { mode: 0o600 });
+  rawBytes += out.length + err.length;
+  records.push({
+    ordinal,
+    status,
+    signal,
+    stdout: out.length,
+    stderr: err.length,
+  });
+  if (!cleaning && rawBytes > 64 * 1024 ** 2)
+    throw Error('Fixture raw output bound');
+};
+const commandTimeout = (maximum) => {
+  const remaining = phaseEnd - Date.now();
+  if (remaining <= 0) throw Error('Owned fixture phase deadline');
+  return Math.min(maximum, remaining);
+};
+const dockerResult = (args, input, allowFailure = false, timeout = 180000) => {
   const space = statfsSync(root);
   if (!cleaning && space.bavail * space.bsize < 20 * 1024 ** 3)
     throw Error('Owned fixture disk floor');
-  return execFileSync('docker', args, {
+  const result = spawnSync('docker', args, {
     encoding: 'utf8',
     input,
     stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: 180000,
+    timeout: commandTimeout(timeout),
     maxBuffer: 8 * 1024 * 1024,
-  }).trim();
+  });
+  record(result.stdout, result.stderr, result.status, result.signal);
+  if (result.error || (!allowFailure && result.status !== 0)) {
+    const error =
+      result.error ?? Error('Owned Docker command failed at ' + records.length);
+    error.stdout = result.stdout;
+    error.stderr = result.stderr;
+    error.status = result.status;
+    error.signal = result.signal;
+    throw error;
+  }
+  return result;
+};
+const docker = (args, input) => dockerResult(args, input).stdout.trim();
+const owned = new OwnedContainers(docker);
+const anonymousVolumes = new Set();
+const create = (args) => {
+  const id = owned.create(args);
+  ownedIds.push(id);
+  // Only this successful returned ID supplies ownership of its anonymous mounts.
+  const inspected = JSON.parse(docker(['inspect', id]))[0];
+  assert.equal(inspected.Id, id);
+  for (const mount of inspected.Mounts ?? []) {
+    if (mount.Type === 'volume' && !volumes.includes(mount.Name)) {
+      assert.match(mount.Name, /^[a-f0-9]{64}$/);
+      anonymousVolumes.add(mount.Name);
+    }
+  }
+  return id;
+};
+const foreground = (args, input, allowFailure = false) => {
+  const id = create([
+    'create',
+    '--name',
+    'native-crm-probe-' + ownedIds.length + '-' + idSuffix,
+    '--memory',
+    '1g',
+    '--pids-limit',
+    '128',
+    ...args,
+  ]);
+  return dockerResult(
+    [
+      'start',
+      '--attach',
+      ...(input === undefined ? [] : ['--interactive']),
+      id,
+    ],
+    input,
+    allowFailure,
+    60000,
+  );
+};
+const idSuffix = id;
+const foregroundText = (args, input) => foreground(args, input).stdout.trim();
+// Stock node:http preserves an explicitly supplied Host; global fetch may replace it.
+const nativeHttpScript =
+  "const fs=require('fs'),http=require('http');const x=JSON.parse(fs.readFileSync(0,'utf8'));let timer;const req=http.request({hostname:'127.0.0.1',port:3000,path:x.path,method:x.method??'GET',headers:x.headers},res=>{let bytes=0,body='';res.setEncoding('utf8');res.on('data',part=>{bytes+=Buffer.byteLength(part);if(bytes>262144){req.destroy(Error('Native response bound'));return}body+=part});res.on('error',()=>req.destroy(Error('Native response unavailable')));res.on('end',()=>{clearTimeout(timer);try{console.log(JSON.stringify({status:res.statusCode,body:JSON.parse(body)}))}catch{process.exitCode=1}})});req.on('error',()=>{clearTimeout(timer);process.exitCode=1});timer=setTimeout(()=>req.destroy(Error('Native request deadline')),15000);req.end()";
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextRateWindow = async () => {
+  if (Date.now() + 60050 >= phaseEnd)
+    throw Error('Fixture rate-window deadline');
+  console.log(
+    'Pacing independent assertion group across unchanged 60s credential rate window',
+  );
+  await pause(60050);
 };
 const wait = async (f) => {
   for (let i = 0; i < 180; i++) {
@@ -63,7 +157,7 @@ try {
       '{{index .Config.Labels "org.exe.fixture_source_sha"}}',
       image,
     ]),
-    '2c16f65860d70fcca2f0bfa16130004da6387794',
+    runtimeSource,
   );
   assert.equal(
     docker([
@@ -116,7 +210,7 @@ try {
       'show',
       runtimeSource + ':yarn.lock',
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
   );
   const sourcePackage = execFileSync(
     'git',
@@ -163,10 +257,8 @@ try {
     assert.match(expectedVersions[name], /^\d+\.\d+\.\d+/);
   }
   const versions = JSON.parse(
-    docker(
+    foregroundText(
       [
-        'run',
-        '--rm',
         '-i',
         '--network',
         'none',
@@ -190,11 +282,8 @@ try {
   );
   const free = statfsSync(root);
   assert.ok(free.bavail * free.bsize >= 20 * 1024 ** 3);
-  const workerRefusal = spawnSync(
-    'docker',
+  const workerRefusal = foreground(
     [
-      'run',
-      '--rm',
       '--network',
       'none',
       '-e',
@@ -207,7 +296,8 @@ try {
       'yarn',
       'worker:prod',
     ],
-    { encoding: 'utf8', timeout: 60000 },
+    undefined,
+    true,
   );
   assert.notEqual(workerRefusal.status, 0);
   assert.match(
@@ -227,7 +317,7 @@ try {
     const start = (label, args) => {
       const n = name(label);
       names.push(n);
-      docker([
+      create([
         'run',
         '-d',
         '--name',
@@ -330,9 +420,7 @@ try {
       { mode: 0o600 },
     );
     // Native uid1000 owns this fixture's file volume.
-    docker([
-      'run',
-      '--rm',
+    foregroundText([
       '--network',
       'none',
       '--user',
@@ -428,7 +516,17 @@ try {
         const captured = spawnSync(
           'docker',
           ['logs', '--tail', '350', container],
-          { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
+          {
+            encoding: 'utf8',
+            maxBuffer: 4 * 1024 * 1024,
+            timeout: commandTimeout(10000),
+          },
+        );
+        record(
+          captured.stdout,
+          captured.stderr,
+          captured.status,
+          captured.signal,
         );
         resetToken = (captured.stdout + '\n' + captured.stderr).match(
           /reset-password\/([a-f0-9]{64})/,
@@ -598,6 +696,22 @@ try {
       worker,
       pg,
       redis,
+      flushOwnedFeatureFlagCache: () =>
+        docker([
+          'exec',
+          '-e',
+          'REDISCLI_AUTH=' + redisPassword,
+          redis,
+          'redis-cli',
+          '--no-auth-warning',
+          'DEL',
+          'engine:workspace:feature-flag:feature-flags-map:' +
+            workspace.id +
+            ':data',
+          'engine:workspace:feature-flag:feature-flags-map:' +
+            workspace.id +
+            ':hash',
+        ]),
       network,
       storage,
       workspace,
@@ -610,6 +724,7 @@ try {
     });
   }
   stage = 'company-authority-native-acl';
+  phaseEnd = Math.min(wholeEnd - 60000, Date.now() + 10 * 60000);
   for (const x of companies) {
     docker(['stop', x.worker, x.server]);
     const sql = (text) =>
@@ -629,6 +744,20 @@ try {
         ],
         text,
       );
+    // Actual prerequisite, not a substituted feature map. Both bootstrap
+    // processes are stopped above; a new hosted process has no local cache.
+    sql(
+      `INSERT INTO core."featureFlag"(id,"workspaceId",key,value) VALUES('${randomUUID()}','${x.workspace.id}','IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED',true) ON CONFLICT ("key","workspaceId") DO UPDATE SET value=true,"updatedAt"=now();`,
+    );
+    assert.equal(
+      sql(
+        `SELECT value FROM core."featureFlag" WHERE "workspaceId"='${x.workspace.id}' AND key='IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED';`,
+      ),
+      't',
+    );
+    // Exact two Redis keys used by WorkspaceCacheService.flush('featureFlagsMap')
+    // → CacheStorageService.mdel; no wildcard/FLUSHDB or other workspace/cache.
+    assert.match(x.flushOwnedFeatureFlagCache(), /^[012]$/);
     const identity = JSON.parse(
       sql(
         `SELECT row_to_json(t) FROM (SELECT u.id AS user_id,uw.id AS user_workspace_id,w.id AS workspace_id,w."databaseSchema" AS schema,rt."roleId" AS role_id,rt."applicationId" AS application_id FROM core."user" u JOIN core."userWorkspace" uw ON uw."userId"=u.id JOIN core.workspace w ON w.id=uw."workspaceId" JOIN core."roleTarget" rt ON rt."userWorkspaceId"=uw.id WHERE u.email='bootstrap-${x.company}@example.test') t;`,
@@ -673,10 +802,8 @@ try {
     const privateVolume = 'native-crm-private-' + x.company + '-' + id;
     docker(['volume', 'create', privateVolume]);
     volumes.push(privateVolume);
-    docker(
+    foregroundText(
       [
-        'run',
-        '--rm',
         '-i',
         '--network',
         'none',
@@ -699,7 +826,7 @@ try {
     const authorityScript = join(root, 'authority-' + x.company + '.mjs');
     writeFileSync(
       authorityScript,
-      `import http from 'node:http';import fs from 'node:fs';import {createHash} from 'node:crypto';const keys={api_key:'${createHash('sha256').update(key).digest('hex')}',session_token:'${createHash('sha256').update(session).digest('hex')}'};let envelope=JSON.parse(fs.readFileSync('/private/envelope'));let status=200,blocked=false,pending=[],raw=null,redirectHits=0;const expected='Basic '+Buffer.from('${clientId}:'+fs.readFileSync('/private/client','utf8')).toString('base64');const send=res=>{if(res.destroyed)return;res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...(status===302?{Location:'http://authority:8095/redirect-trap'}:{})});res.end(raw??JSON.stringify(status===200?envelope:{error:{code:'unavailable'}}))};http.createServer(async(req,res)=>{let body='';for await(const part of req)body+=part;const data=JSON.parse(body||'{}');if(req.url==='/redirect-trap'){redirectHits++;res.end('{}');return}if(req.url==='/fixture/control'){if(Object.hasOwn(data,'envelope'))envelope=data.envelope;if(Object.hasOwn(data,'raw'))raw=data.raw;if(data.status)status=data.status;blocked=!!data.blocked;if(!blocked){for(const response of pending)send(response);pending=[]}res.end(JSON.stringify({pending:pending.length,redirect_hits:redirectHits}));return}if(req.headers.authorization!==expected||!['/internal/company-authority/key-introspect','/internal/session-broker/introspect'].includes(req.url)){res.writeHead(401);res.end('{}');return}const field=req.url==='/internal/company-authority/key-introspect'?'api_key':'session_token';const credential=data[field];const pattern=field==='api_key'?/^exk_[A-Za-z0-9_-]{43}$/:/^exs_[A-Za-z0-9_-]{43}$/;if(Object.keys(data).length!==1||typeof credential!=='string'||!pattern.test(credential)||keys[field]!==createHash('sha256').update(credential).digest('hex')){res.writeHead(401);res.end('{}');return}if(blocked){pending.push(res);return}send(res)}).listen(8095,'0.0.0.0')`,
+      `import http from 'node:http';import fs from 'node:fs';import {createHash} from 'node:crypto';const keys={api_key:'${createHash('sha256').update(key).digest('hex')}',session_token:'${createHash('sha256').update(session).digest('hex')}'};let envelope=JSON.parse(fs.readFileSync('/private/envelope'));let status=200,blocked=false,pending=[],raw=null,redirectHits=0,calls=0,blockAt=null;const expected='Basic '+Buffer.from('${clientId}:'+fs.readFileSync('/private/client','utf8')).toString('base64');const send=res=>{if(res.destroyed)return;res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...(status===302?{Location:'http://authority:8095/redirect-trap'}:{})});res.end(raw??JSON.stringify(status===200?envelope:{error:{code:'unavailable'}}))};http.createServer(async(req,res)=>{let body='';for await(const part of req)body+=part;const data=JSON.parse(body||'{}');if(req.url==='/redirect-trap'){redirectHits++;res.end('{}');return}if(req.url==='/fixture/control'){if(data.reset_calls===true){if(pending.length)throw Error('Pending request prevents counter reset');calls=0}if(Object.hasOwn(data,'block_at')){if(data.block_at!==null&&data.block_at!==5)throw Error('Fixed final ordinal required');blockAt=data.block_at}if(Object.hasOwn(data,'envelope'))envelope=data.envelope;if(Object.hasOwn(data,'raw'))raw=data.raw;if(data.status)status=data.status;blocked=!!data.blocked;if(!blocked&&blockAt===null){for(const response of pending)send(response);pending=[]}res.end(JSON.stringify({pending:pending.length,redirect_hits:redirectHits,calls}));return}if(req.headers.authorization!==expected||!['/internal/company-authority/key-introspect','/internal/session-broker/introspect'].includes(req.url)){res.writeHead(401);res.end('{}');return}const field=req.url==='/internal/company-authority/key-introspect'?'api_key':'session_token';const credential=data[field];const pattern=field==='api_key'?/^exk_[A-Za-z0-9_-]{43}$/:/^exs_[A-Za-z0-9_-]{43}$/;if(Object.keys(data).length!==1||typeof credential!=='string'||!pattern.test(credential)||keys[field]!==createHash('sha256').update(credential).digest('hex')){res.writeHead(401);res.end('{}');return}calls++;if(blocked||calls===blockAt){pending.push(res);return}send(res)}).listen(8095,'0.0.0.0')`,
     );
     const authority = x.start('authority', [
       '--network-alias',
@@ -767,14 +894,7 @@ try {
     ) =>
       JSON.parse(
         docker(
-          [
-            'exec',
-            '-i',
-            hosted,
-            'node',
-            '-e',
-            "const fs=require('fs');const x=JSON.parse(fs.readFileSync(0,'utf8'));fetch('http://127.0.0.1:3000'+x.path,{method:x.method,headers:x.headers,signal:AbortSignal.timeout(15000)}).then(async r=>console.log(JSON.stringify({status:r.status,body:await r.json()}))).catch(()=>process.exit(1))",
-          ],
+          ['exec', '-i', hosted, 'node', '-e', nativeHttpScript],
           JSON.stringify({
             path,
             method,
@@ -795,7 +915,13 @@ try {
       JSON.stringify({ host: new URL(origin).host, session }),
     );
     assert.equal(upgradeClosed, 'denied');
+    control({ reset_calls: true });
     const own = get();
+    assert.equal(
+      control({}).calls,
+      5,
+      'Successful current list request must traverse exact five authority calls',
+    );
     assert.equal(own.status, 200);
     assert.equal(
       own.body.data.people.find((row) => row.id === x.contact.id)?.jobTitle,
@@ -885,6 +1011,7 @@ try {
       get('/rest/people?depth=0&limit=100', undefined, 'POST').status,
       403,
     );
+    await nextRateWindow();
     for (const invalid of [
       { version: 2 },
       { company_id: randomUUID() },
@@ -914,19 +1041,36 @@ try {
       control({ envelope: invalid });
       assert.ok([401, 403].includes(get().status));
     }
+    const assertInitialAuthorityError = (response, status) => {
+      assert.equal(response.status, status);
+      assert.deepEqual(response.body, {
+        statusCode: status,
+        messages: [
+          status === 401
+            ? 'Company authorization denied'
+            : 'Company authorization unavailable',
+        ],
+        error: 'INTERNAL_SERVER_ERROR',
+      });
+      assert.equal(Object.hasOwn(response.body, 'data'), false);
+    };
     for (const status of [401, 403, 404, 503]) {
       control({ envelope, status });
-      assert.ok([401, 403].includes(get().status));
+      assertInitialAuthorityError(
+        get(),
+        status === 401 || status === 403 ? 401 : 503,
+      );
     }
     control({ status: 200, raw: '{malformed' });
-    assert.ok([401, 403].includes(get().status));
+    assertInitialAuthorityError(get(), 503);
     control({ raw: null, status: 302 });
-    assert.ok([401, 403].includes(get().status));
+    assertInitialAuthorityError(get(), 503);
     assert.equal(control({ status: 200 }).redirect_hits, 0);
     control({ blocked: true });
-    assert.ok([401, 403].includes(get().status));
+    assertInitialAuthorityError(get(), 503);
     control({ blocked: false });
     assert.equal(get().status, 200);
+    await nextRateWindow();
     sql(`UPDATE core."user" SET disabled=true WHERE id='${identity.user_id}';`);
     assert.ok([401, 403].includes(get().status));
     sql(
@@ -954,6 +1098,15 @@ try {
       `UPDATE core.workspace SET "suspendedAt"=NULL WHERE id='${x.workspace.id}';`,
     );
     assert.equal(get().status, 200);
+    const assertNativeObjectDenied = (response) => {
+      assert.equal(response.status, 404);
+      assert.deepEqual(response.body, {
+        statusCode: 404,
+        error: 'NotFoundException',
+        messages: ['Record unavailable'],
+      });
+      assert.equal(Object.hasOwn(response.body, 'data'), false);
+    };
     const companyObject = JSON.parse(
       sql(
         `SELECT row_to_json(t) FROM (SELECT id,"applicationId" AS application_id FROM core."objectMetadata" WHERE "workspaceId"='${x.workspace.id}' AND "nameSingular"='company') t;`,
@@ -962,13 +1115,9 @@ try {
     sql(
       `INSERT INTO core."objectPermission"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","canReadObjectRecords") VALUES('${randomUUID()}','${randomUUID()}','${companyObject.application_id}','${x.workspace.id}','${identity.role_id}','${companyObject.id}',false);`,
     );
-    assert.ok(
-      [401, 403].includes(get('/rest/companies?depth=0&limit=100').status),
-    );
-    assert.ok(
-      [401, 403].includes(
-        get('/rest/companies/' + x.info.id + '?depth=0&limit=100').status,
-      ),
+    assertNativeObjectDenied(get('/rest/companies?depth=0&limit=100'));
+    assertNativeObjectDenied(
+      get('/rest/companies/' + x.info.id + '?depth=0&limit=100'),
     );
     sql(
       `DELETE FROM core."objectPermission" WHERE "roleId"='${identity.role_id}' AND "objectMetadataId"='${companyObject.id}';`,
@@ -1006,7 +1155,7 @@ try {
       ),
     );
     sql(
-      `INSERT INTO core."rowLevelPermissionPredicate"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","fieldMetadataId",operand,value) VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}','${jobField}','IS','"no-native-record-has-this-value"');`,
+      `INSERT INTO core."rowLevelPermissionPredicate"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","fieldMetadataId",operand,value) VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}','${jobField}','CONTAINS','"no-native-record-has-this-value"');`,
     );
     const rowDenied = get();
     assert.equal(rowDenied.status, 200);
@@ -1017,48 +1166,88 @@ try {
     sql(
       `INSERT INTO core."objectPermission"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","canReadObjectRecords") VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}',false);`,
     );
-    assert.ok([401, 403].includes(get().status));
+    assertNativeObjectDenied(get());
     sql(
       `DELETE FROM core."objectPermission" WHERE "roleId"='${role}' AND "objectMetadataId"='${personObject.id}';`,
     );
-    const whileAuthorityBlocked = async (change) => {
-      control({ blocked: true });
+    const whileAuthorityBlocked = async (change, final = false) => {
+      control(final ? { reset_calls: true, block_at: 5 } : { blocked: true });
       const pending = spawn(
         'docker',
-        [
-          'exec',
-          '-i',
-          hosted,
-          'node',
-          '-e',
-          "const fs=require('fs');const x=JSON.parse(fs.readFileSync(0,'utf8'));fetch('http://127.0.0.1:3000/rest/people?depth=0&limit=100',{headers:x.headers,signal:AbortSignal.timeout(15000)}).then(async r=>console.log(JSON.stringify({status:r.status,body:await r.json()})))",
-        ],
+        ['exec', '-i', hosted, 'node', '-e', nativeHttpScript],
         { stdio: ['pipe', 'pipe', 'pipe'] },
       );
       pending.stdin.end(
         JSON.stringify({
+          path: '/rest/people?depth=0&limit=100',
+          method: 'GET',
           headers: {
             Host: new URL(origin).host,
             Authorization: 'Bearer ' + key,
           },
         }),
       );
-      let pendingResult = '';
+      let pendingResult = '',
+        pendingError = '';
       pending.stdout.on('data', (chunk) => (pendingResult += chunk));
-      const pendingFinished = new Promise((resolve, reject) => {
-        pending.on('error', reject);
-        pending.on('exit', (code) =>
-          code === 0
-            ? resolve()
-            : reject(Error('pending native request failed')),
-        );
+      pending.stderr.on('data', (chunk) => (pendingError += chunk));
+      const pendingDeadline = setTimeout(
+        () => pending.kill('SIGTERM'),
+        Math.min(16000, phaseEnd - Date.now()),
+      );
+      const pendingFinished = new Promise((resolve) => {
+        pending.on('error', (error) => resolve(error));
+        pending.on('close', (code, signal) => {
+          clearTimeout(pendingDeadline);
+          try {
+            record(pendingResult, pendingError, code, signal);
+            resolve(code === 0 ? null : Error('pending native request failed'));
+          } catch (error) {
+            resolve(error);
+          }
+        });
       });
-      await wait(() => control({ blocked: true }).pending > 0);
-      change();
-      control({ blocked: false });
-      await pendingFinished;
+      // Poll only the bounded controlled authority; the app's real 5s authority
+      // timeout and 9s request deadline stay unchanged.
+      const blockedEnd = Date.now() + 4000;
+      let first = null;
+      try {
+        let state;
+        do {
+          state = control(final ? {} : { blocked: true });
+          if (state.pending) break;
+          await pause(50);
+        } while (Date.now() < blockedEnd);
+        assert.equal(state.pending, 1);
+        if (final) assert.equal(state.calls, 5);
+        change();
+      } catch (error) {
+        first = error;
+      } finally {
+        try {
+          control({ blocked: false, block_at: null });
+        } catch (error) {
+          if (!first) first = error;
+          else
+            secondary.push({
+              stage: 'authority-unblock',
+              message: error.message,
+            });
+        }
+        const completionError = await pendingFinished;
+        if (completionError) {
+          if (!first) first = completionError;
+          else
+            secondary.push({
+              stage: 'pending-request',
+              message: completionError.message,
+            });
+        }
+      }
+      if (first) throw first;
       return JSON.parse(pendingResult.trim());
     };
+    await nextRateWindow();
     sql(
       `UPDATE core."fieldPermission" SET "canReadFieldValue"=true WHERE "roleId"='${role}' AND "fieldMetadataId"='${jobField}';`,
     );
@@ -1081,7 +1270,7 @@ try {
     );
     const blockedRow = await whileAuthorityBlocked(() =>
       sql(
-        `INSERT INTO core."rowLevelPermissionPredicate"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","fieldMetadataId",operand,value) VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}','${jobField}','IS','"no-native-record-has-this-value"');`,
+        `INSERT INTO core."rowLevelPermissionPredicate"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","fieldMetadataId",operand,value) VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}','${jobField}','CONTAINS','"no-native-record-has-this-value"');`,
       ),
     );
     assert.equal(blockedRow.status, 200);
@@ -1095,7 +1284,7 @@ try {
         `INSERT INTO core."objectPermission"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","canReadObjectRecords") VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}',false);`,
       ),
     );
-    assert.ok([401, 403].includes(blockedDowngrade.status));
+    assertNativeObjectDenied(blockedDowngrade);
     sql(
       `DELETE FROM core."objectPermission" WHERE "roleId"='${role}' AND "objectMetadataId"='${personObject.id}';`,
     );
@@ -1110,6 +1299,101 @@ try {
       `INSERT INTO core."roleTarget"(id,"universalIdentifier","applicationId","workspaceId","roleId","userWorkspaceId") VALUES('${randomUUID()}','${randomUUID()}','${identity.application_id}','${x.workspace.id}','${role}','${identity.user_workspace_id}');`,
     );
     assert.equal(get().status, 200);
+    await nextRateWindow();
+    const finalDenied = (
+      response,
+      message = 'Company permissions changed',
+      error = 'HttpException',
+      status = 401,
+    ) => {
+      assert.equal(response.status, status);
+      assert.deepEqual(response.body, {
+        statusCode: status,
+        error,
+        messages: [message],
+      });
+      assert.equal(Object.hasOwn(response.body, 'data'), false);
+    };
+    // Each mutation commits through the actual PG connection after native read
+    // terminal/release, while only the fifth private authority call is pending.
+    sql(
+      `UPDATE core."fieldPermission" SET "canReadFieldValue"=true WHERE "roleId"='${role}' AND "fieldMetadataId"='${jobField}';`,
+    );
+    finalDenied(
+      await whileAuthorityBlocked(
+        () =>
+          sql(
+            `UPDATE core."fieldPermission" SET "canReadFieldValue"=false WHERE "roleId"='${role}' AND "fieldMetadataId"='${jobField}';`,
+          ),
+        true,
+      ),
+    );
+    sql(
+      `UPDATE core."fieldPermission" SET "canReadFieldValue"=true WHERE "roleId"='${role}' AND "fieldMetadataId"='${jobField}';`,
+    );
+    finalDenied(
+      await whileAuthorityBlocked(
+        () =>
+          sql(
+            `INSERT INTO core."rowLevelPermissionPredicate"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","fieldMetadataId",operand,value) VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}','${jobField}','CONTAINS','"no-native-record-has-this-value"');`,
+          ),
+        true,
+      ),
+    );
+    sql(
+      `DELETE FROM core."rowLevelPermissionPredicate" WHERE "roleId"='${role}';`,
+    );
+    finalDenied(
+      await whileAuthorityBlocked(
+        () =>
+          sql(
+            `INSERT INTO core."objectPermission"(id,"universalIdentifier","applicationId","workspaceId","roleId","objectMetadataId","canReadObjectRecords") VALUES('${randomUUID()}','${randomUUID()}','${personObject.application_id}','${x.workspace.id}','${role}','${personObject.id}',false);`,
+          ),
+        true,
+      ),
+    );
+    sql(
+      `DELETE FROM core."objectPermission" WHERE "roleId"='${role}' AND "objectMetadataId"='${personObject.id}';`,
+    );
+    finalDenied(
+      await whileAuthorityBlocked(
+        () =>
+          sql(
+            `DELETE FROM core."roleTarget" WHERE "userWorkspaceId"='${identity.user_workspace_id}';`,
+          ),
+        true,
+      ),
+      'Company authorization denied',
+      'UnauthorizedException',
+    );
+    sql(
+      `INSERT INTO core."roleTarget"(id,"universalIdentifier","applicationId","workspaceId","roleId","userWorkspaceId") VALUES('${randomUUID()}','${randomUUID()}','${identity.application_id}','${x.workspace.id}','${role}','${identity.user_workspace_id}');`,
+    );
+    finalDenied(
+      await whileAuthorityBlocked(
+        () => control({ status: 403, block_at: 5 }),
+        true,
+      ),
+      'Company authorization denied',
+      'UnauthorizedException',
+    );
+    control({ status: 200 });
+    finalDenied(
+      await whileAuthorityBlocked(
+        () => control({ status: 503, block_at: 5 }),
+        true,
+      ),
+      'Company authorization unavailable',
+      'ServiceUnavailableException',
+      503,
+    );
+    control({ status: 200 });
+    assert.equal(get().status, 200);
+    console.log(
+      'PASS final post-native-read publication negatives ' +
+        x.company +
+        ': field/row/object/native-role/current-authority revoke/unavailable; exact error only, no data',
+    );
     x.hosted = hosted;
     x.get = get;
     x.control = control;
@@ -1174,12 +1458,25 @@ try {
     'PASS: two independent actual native CRM company read fixtures. Private synthetic company authority only; company issuance/UI SSO/commercial acceptance/capacity remain closed/unproved.',
   );
 } catch (error) {
+  primary = {
+    stage,
+    class: error.constructor.name,
+    status: error.status ?? null,
+    message: error.message,
+  };
   for (const name of names.filter((x) => x.includes('-server-'))) {
     try {
       const captured = spawnSync('docker', ['logs', '--tail', '180', name], {
         encoding: 'utf8',
         maxBuffer: 4 * 1024 * 1024,
+        timeout: commandTimeout(10000),
       });
+      record(
+        captured.stdout,
+        captured.stderr,
+        captured.status,
+        captured.signal,
+      );
       const logs = captured.stdout + '\n' + captured.stderr;
       for (const line of logs.split('\n')) {
         try {
@@ -1216,17 +1513,112 @@ try {
   process.exitCode = 1;
 } finally {
   cleaning = true;
-  for (const name of names.reverse())
+  phaseEnd = Date.now() + 60000;
+  try {
+    owned.removeAll();
+  } catch (error) {
+    secondary.push({ stage: 'container-cleanup', message: error.message });
+  }
+  const absent = (args, expected) => {
     try {
-      docker(['rm', '-f', name]);
-    } catch {}
-  for (const volume of volumes)
+      docker(args);
+      throw Error('Owned resource remains');
+    } catch (error) {
+      if (
+        !Number.isInteger(error.status) ||
+        error.status <= 0 ||
+        !String(error.stderr).includes(expected)
+      )
+        throw error;
+    }
+  };
+  for (const id of ownedIds) {
+    try {
+      absent(['inspect', id], 'No such object');
+    } catch (error) {
+      secondary.push({
+        stage: 'container-absence',
+        id,
+        message: error.message,
+      });
+    }
+  }
+  for (const volume of anonymousVolumes) {
+    try {
+      absent(['volume', 'inspect', volume], ': no such volume');
+    } catch (error) {
+      secondary.push({
+        stage: 'anonymous-volume-absence',
+        volume,
+        message: error.message,
+      });
+    }
+  }
+  for (const volume of volumes) {
     try {
       docker(['volume', 'rm', volume]);
-    } catch {}
-  for (const network of networks)
+      absent(['volume', 'inspect', volume], ': no such volume');
+    } catch (error) {
+      secondary.push({
+        stage: 'volume-cleanup',
+        volume,
+        message: error.message,
+      });
+    }
+  }
+  for (const network of networks) {
     try {
       docker(['network', 'rm', network]);
-    } catch {}
-  rmSync(root, { recursive: true, force: true });
+      absent(
+        ['network', 'inspect', network],
+        'network ' + network + ' not found',
+      );
+    } catch (error) {
+      secondary.push({
+        stage: 'network-cleanup',
+        network,
+        message: error.message,
+      });
+    }
+  }
+  if (secondary.length) process.exitCode = 1;
+  writeFileSync(
+    join(root, 'result.json'),
+    JSON.stringify(
+      {
+        scope:
+          'actual current server-only REST/native ORM ACL; controlled central authority',
+        runtimeSource,
+        primary,
+        secondary,
+        ownedIds,
+        networks,
+        volumes,
+        anonymousVolumes: [...anonymousVolumes],
+        rawBytes,
+        records,
+      },
+      null,
+      2,
+    ),
+    { mode: 0o600 },
+  );
+  console.log(
+    JSON.stringify({
+      passed: !primary && !secondary.length,
+      output: root,
+      primary: primary
+        ? {
+            stage: primary.stage,
+            class: primary.class,
+            status: primary.status ?? null,
+          }
+        : null,
+      cleanupStages: secondary.reduce((counts, error) => {
+        counts[error.stage] = (counts[error.stage] ?? 0) + 1;
+        return counts;
+      }, {}),
+    }),
+  );
+  // Private raw/setup/error/cleanup files intentionally survive every outcome.
 }
