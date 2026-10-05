@@ -5,6 +5,8 @@ import crypto from 'crypto';
 
 import { isDefined, isValidUuid } from 'twenty-shared/utils';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import { WorkspaceCacheProvider } from 'src/engine/workspace-cache/interfaces/workspace-cache-provider.service';
 
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
@@ -35,6 +37,22 @@ const STALE_VERSION_TTL_MS = 5_000; // 5 seconds
 const MAX_LOCAL_STALE_VERSIONS = 5; // 5 stale versions
 const MAX_LOCAL_CACHE_ENTRIES = 1_000;
 const MIN_EVICT_KEYS = 100;
+
+// Company read authorization must not reuse permissions written by another request.
+const COMPANY_CURRENT_KEYS = new Set<WorkspaceCacheKeyName>([
+  'rolesPermissions',
+  'userWorkspaceRoleMap',
+  'flatRoleMaps',
+  'flatRoleTargetMaps',
+  'flatPermissionFlagMaps',
+  'flatObjectPermissionMaps',
+  'flatFieldPermissionMaps',
+  'flatObjectMetadataMaps',
+  'flatFieldMetadataMaps',
+  'flatRowLevelPermissionPredicateMaps',
+  'flatRowLevelPermissionPredicateGroupMaps',
+  'ORMEntityMetadatas',
+]);
 
 type CacheDataType = WorkspaceCacheDataMap[WorkspaceCacheKeyName];
 
@@ -111,6 +129,37 @@ export class WorkspaceCacheService implements OnModuleInit {
         'Invalid parameters: workspace ID and cache key names are required',
         WorkspaceCacheExceptionCode.INVALID_PARAMETERS,
       );
+    }
+
+    if (companyAuthEnabled()) {
+      const currentKeys = cacheKeyNames.filter((key) =>
+        COMPANY_CURRENT_KEYS.has(key),
+      );
+
+      if (currentKeys.length > 0) {
+        const current: Partial<WorkspaceCacheDataMap> = {};
+
+        const completed = await Promise.all(
+          currentKeys.map(async (key) => ({
+            key,
+            data: await this.getProviderOrThrow(key).computeForCache(
+              workspaceId,
+            ),
+          })),
+        );
+        // Preserve requested key order independently of provider completion order.
+        for (const { key, data } of completed)
+          Object.assign(current, { [key]: data });
+        const remainingKeys = cacheKeyNames.filter(
+          (key) => !COMPANY_CURRENT_KEYS.has(key),
+        );
+        const remaining =
+          remainingKeys.length > 0
+            ? await this.getOrRecompute(workspaceId, remainingKeys)
+            : {};
+
+        return { ...remaining, ...current } as WorkspaceCacheResult<K>;
+      }
     }
 
     const memoKey =

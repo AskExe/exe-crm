@@ -118,3 +118,11 @@ packages/twenty-server/src/engine/twenty-orm/repository/__tests__/permissions.ut
 # Operator bootstrap uses established internal package/module paths. These are
 # source identifiers and are never displayed as customer-facing branding.
 packages/twenty-server/src/database/commands/bootstrap-demo-workspace.command.ts
+
+# Company entrypoint regression names the exact established internal Docker path;
+# this is a source fixture path, not customer-facing branding.
+packages/twenty-server/src/engine/core-modules/company-auth/__tests__/company-auth.entrypoint.spec.ts
+
+# Company REST freshness regression executes canonical native ORM source and
+# mocks its established exported exception identifiers; no user-facing branding.
+packages/twenty-server/test/company-contact-preview/company-rest-freshness.test.mjs
