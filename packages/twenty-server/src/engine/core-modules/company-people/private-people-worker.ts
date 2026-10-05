@@ -1,6 +1,7 @@
 import { capturePrivatePeople } from './private-people-contract';
 import {
   createWorkerAdapter,
+  assertPrivatePeopleWorkerResources,
   loadPrivatePeopleWorkerPackage,
   type PrivatePeopleWorkerResources,
 } from './private-people-worker-package';
@@ -12,6 +13,8 @@ import {
 } from './private-people-protocol';
 import { type PrivatePeopleAdapter } from './private-people-adapter';
 import { WorkerDeadline } from './private-people-worker-deadline';
+
+import { type PrivatePeopleAssemblyLifecycle } from './private-people-assembly-lifecycle';
 
 type Handle = ReturnType<PrivatePeopleAdapter['createHandle']>;
 export { WorkerDeadline } from './private-people-worker-deadline';
@@ -27,16 +30,22 @@ export const runPrivatePeopleWorker = () => {
     'new';
   let resources: PrivatePeopleWorkerResources | undefined;
   let handle: Handle | undefined;
+  let lifecycle: PrivatePeopleAssemblyLifecycle | undefined;
   let work: WorkerDeadline | undefined;
   let cleanup: WorkerDeadline | undefined;
   let request = '';
   let digest = '';
   const uncertainExit = () => {
     uncertain = true;
+    lifecycle?.abort(new Error('Private people uncertain channel'));
     process.exitCode = 1;
     process.disconnect();
     work?.close();
     cleanup?.close();
+  };
+  const assertSuccess = () => {
+    if (uncertain || !process.connected)
+      throw new Error('Private people sticky uncertainty');
   };
   const reply = (
     command: PeopleCommand,
@@ -97,9 +106,14 @@ export const runPrivatePeopleWorker = () => {
         );
         work.remaining();
         // Fixed package import is inside this same original preparation budget.
-        resources = loadPrivatePeopleWorkerPackage();
+        lifecycle = loadPrivatePeopleWorkerPackage(); // Owned handle before prepare awaits.
         work.remaining();
+        resources = await lifecycle.prepare(work);
+        assertSuccess();
+        work.remaining();
+        assertPrivatePeopleWorkerResources(resources);
         const writer = await resources.orm.getGlobalWorkspaceDataSource();
+        assertSuccess();
         work.remaining();
         if (
           writer !== resources.writer ||
@@ -113,6 +127,7 @@ export const runPrivatePeopleWorker = () => {
         );
         await handle.prepare();
         work.remaining();
+        assertSuccess();
         state = 'prepared';
       } else if (command.phase === 'commit') {
         if (state !== 'prepared' || !handle || !work)
@@ -123,11 +138,13 @@ export const runPrivatePeopleWorker = () => {
         if (ack.request_id !== request || ack.commit !== 'acknowledged')
           throw new Error('Private people commit identity unavailable');
         ids = [...ack.native_record_ids];
+        assertSuccess();
         state = 'committed';
       } else if (command.phase === 'rollback' || command.phase === 'dispose') {
         if (
           !handle ||
           !resources ||
+          !lifecycle ||
           state === 'disposed' ||
           state === 'published'
         )
@@ -141,13 +158,9 @@ export const runPrivatePeopleWorker = () => {
         } else {
           await handle.dispose(cleanup);
           cleanup.remaining();
-          // Exact dedicated pools only; destroy may hang, parent owns the hard end.
-          for (const source of [resources.writer, resources.core]) {
-            if (source.isInitialized) {
-              await source.destroy();
-              cleanup.remaining();
-            }
-          }
+          await lifecycle.disposeIO(cleanup);
+          cleanup.remaining();
+          assertSuccess();
           state = 'disposed';
         }
       } else {
@@ -156,6 +169,7 @@ export const runPrivatePeopleWorker = () => {
           !handle ||
           !work ||
           !resources ||
+          !lifecycle ||
           resources.core.isInitialized ||
           resources.writer.isInitialized
         )
@@ -164,17 +178,46 @@ export const runPrivatePeopleWorker = () => {
         work.remaining();
         await handle.postCommit(work);
         work.remaining();
+        assertSuccess();
+        await lifecycle.finalize(work);
+        work.remaining();
+        assertSuccess();
         state = 'published';
       }
+      assertSuccess();
       await reply(command, ids, 'ok');
+      assertSuccess();
       active = false;
       if (state === 'published') {
         work?.close();
         cleanup?.close();
         process.disconnect();
       }
-    } catch {
+    } catch (error) {
+      lifecycle?.abort(error);
       uncertain = true;
+      // Connected refusal may attempt only already-admitted cleanup. Hung,
+      // expired or disconnected settlement stays uncertain; parent fail-stop.
+      if (process.connected && lifecycle) {
+        const refusalSecondary: unknown[] = [];
+        if (handle && work) {
+          try {
+            await handle.rollback(work);
+          } catch (cleanupError) {
+            refusalSecondary.push(cleanupError);
+          }
+          try {
+            await handle.dispose(work);
+          } catch (cleanupError) {
+            refusalSecondary.push(cleanupError);
+          }
+        }
+        try {
+          await lifecycle.refuse(error, refusalSecondary);
+        } catch {
+          /* Refusal preserves primary + secondary in owned lifecycle. */
+        }
+      }
       if (command)
         try {
           await reply(command, null, 'uncertain');
@@ -188,7 +231,10 @@ export const runPrivatePeopleWorker = () => {
     void receive(raw);
   });
   process.on('disconnect', () => {
-    if (state !== 'published') uncertain = true;
+    if (state !== 'published') {
+      uncertain = true;
+      lifecycle?.abort(new Error('Private people parent disconnected'));
+    }
     work?.close();
     cleanup?.close();
     if (uncertain) process.exitCode = 1;

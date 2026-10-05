@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 
 import crypto from 'crypto';
@@ -29,6 +35,14 @@ import {
   type WorkspaceCacheResult,
 } from 'src/engine/workspace-cache/types/workspace-cache-key.type';
 import { type WorkspaceLocalCacheEntry } from 'src/engine/workspace-cache/types/workspace-local-cache-entry.type';
+
+// Only the unregistered private assembly supplies this token. It never changes a public flag.
+export const PRIVATE_PEOPLE_CURRENT_CACHE = Symbol(
+  'private-people-current-cache',
+);
+export interface PrivatePeopleCurrentCache {
+  assertCurrent(): Promise<void>;
+}
 
 const LOCAL_TTL_MS = 100; // 100ms
 const LOCAL_ENTRY_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -78,6 +92,9 @@ export class WorkspaceCacheService implements OnModuleInit {
     private readonly cacheStorage: CacheStorageService,
     private readonly discoveryService: DiscoveryService,
     private readonly reflector: Reflector,
+    @Optional()
+    @Inject(PRIVATE_PEOPLE_CURRENT_CACHE)
+    private readonly privatePeopleCurrent?: PrivatePeopleCurrentCache,
   ) {}
 
   async onModuleInit() {
@@ -129,6 +146,23 @@ export class WorkspaceCacheService implements OnModuleInit {
         'Invalid parameters: workspace ID and cache key names are required',
         WorkspaceCacheExceptionCode.INVALID_PARAMETERS,
       );
+    }
+
+    if (this.privatePeopleCurrent) {
+      await this.privatePeopleCurrent.assertCurrent();
+      // Recompute every requested real provider, including dependency requests.
+      // No memoized/local/Redis value is authority for this private transaction.
+      const completed = await Promise.all(
+        cacheKeyNames.map(async (key) => ({
+          key,
+          data: await this.getProviderOrThrow(key).computeForCache(workspaceId),
+        })),
+      );
+      const current: Partial<WorkspaceCacheDataMap> = {};
+      for (const { key, data } of completed)
+        Object.assign(current, { [key]: data });
+      await this.privatePeopleCurrent.assertCurrent();
+      return current as WorkspaceCacheResult<K>;
     }
 
     if (companyAuthEnabled()) {

@@ -17,6 +17,7 @@ import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/works
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { type CompanyAuthConfiguration } from 'src/engine/core-modules/company-auth/company-auth.config';
 import { PrivatePeopleAdapter } from './private-people-adapter';
+import { type PrivatePeopleAssemblyLifecycle } from './private-people-assembly-lifecycle';
 import { closedPeopleMessage } from './private-people-protocol';
 
 class PrivatePeoplePackageSettlement extends Error {
@@ -34,7 +35,11 @@ const fingerprint = (s: Stats) =>
   [s.dev, s.ino, s.uid, s.mode, s.nlink, s.size, s.mtimeMs, s.ctimeMs].join(
     ':',
   );
-const protectedBytes = (path: string, uid: number, maximum: number) => {
+export const readPrivatePeopleProtectedBytes = (
+  path: string,
+  uid: number,
+  maximum: number,
+) => {
   const before = lstatSync(path);
   if (
     !before.isFile() ||
@@ -42,6 +47,7 @@ const protectedBytes = (path: string, uid: number, maximum: number) => {
     before.uid !== uid ||
     before.nlink !== 1 ||
     before.mode & 0o222 ||
+    (uid === 1000 && (before.mode & 0o7777) !== 0o400) ||
     before.size < 1 ||
     before.size > maximum ||
     realpathSync(path) !== path
@@ -86,7 +92,7 @@ export type PrivatePeopleWorkerResources = {
 // Fixed operator package module, never a caller/environment module selector.
 // Its actual Source/provider/import closure must be separately reviewed/pinned.
 export const loadPrivatePeopleWorkerPackage =
-  (): PrivatePeopleWorkerResources => {
+  (): PrivatePeopleAssemblyLifecycle => {
     if (process.platform !== 'linux' || process.getuid?.() !== 1000)
       throw new Error('Private people package host unavailable');
     for (const path of [
@@ -106,7 +112,7 @@ export const loadPrivatePeopleWorkerPackage =
       )
         throw new Error('Private people package parent unavailable');
     }
-    const trustBytes = protectedBytes(
+    const trustBytes = readPrivatePeopleProtectedBytes(
       ROOT + '/assembly-trust.json',
       1000,
       4096,
@@ -121,7 +127,7 @@ export const loadPrivatePeopleWorkerPackage =
       JSON.stringify(trust) !== trustBytes.toString('utf8')
     )
       throw new Error('Private people package admission unavailable');
-    const bytes = protectedBytes(ASSEMBLY, 0, 1048576);
+    const bytes = readPrivatePeopleProtectedBytes(ASSEMBLY, 0, 1048576);
     if (
       createHash('sha256').update(bytes).digest('hex') !== trust.assembly_sha256
     )
@@ -130,24 +136,29 @@ export const loadPrivatePeopleWorkerPackage =
     // PREPARE projection was captured. No AppModule/HTTP/tenant entry is imported.
     const value: unknown = require(ASSEMBLY);
     if (
-      !closedPeopleMessage(value, [
-        'configuration',
-        'core',
-        'writer',
-        'orm',
-        'cache',
-        'emitter',
-      ]) ||
-      !(value.core instanceof DataSource) ||
-      !(value.writer instanceof DataSource) ||
-      value.core === value.writer ||
-      !(value.orm instanceof GlobalWorkspaceOrmManager) ||
-      !(value.cache instanceof WorkspaceCacheService) ||
-      !(value.emitter instanceof WorkspaceEventEmitter)
+      !closedPeopleMessage(value, ['version', 'createOwnedLifecycle']) ||
+      value.version !== 1 ||
+      typeof value.createOwnedLifecycle !== 'function'
     )
-      throw new Error('Private people real service graph unavailable');
-    protectedBytes(ASSEMBLY, 0, 1048576); // Recheck immutable name/fd; package graph remains a qualification gate.
-    return value as PrivatePeopleWorkerResources;
+      throw new Error('Private people owned factory unavailable');
+    readPrivatePeopleProtectedBytes(ASSEMBLY, 0, 1048576);
+    const lifecycle: unknown = value.createOwnedLifecycle();
+    if (
+      !lifecycle ||
+      typeof lifecycle !== 'object' ||
+      !('prepare' in lifecycle) ||
+      typeof lifecycle.prepare !== 'function' ||
+      !('disposeIO' in lifecycle) ||
+      typeof lifecycle.disposeIO !== 'function' ||
+      !('finalize' in lifecycle) ||
+      typeof lifecycle.finalize !== 'function' ||
+      !('abort' in lifecycle) ||
+      typeof lifecycle.abort !== 'function' ||
+      !('refuse' in lifecycle) ||
+      typeof lifecycle.refuse !== 'function'
+    )
+      throw new Error('Private people lifecycle unavailable');
+    return lifecycle as PrivatePeopleAssemblyLifecycle;
   };
 
 export const createWorkerAdapter = (resources: PrivatePeopleWorkerResources) =>
@@ -159,3 +170,17 @@ export const createWorkerAdapter = (resources: PrivatePeopleWorkerResources) =>
     cache: resources.cache,
     emitter: resources.emitter,
   });
+
+export const assertPrivatePeopleWorkerResources = (
+  value: PrivatePeopleWorkerResources,
+) => {
+  if (
+    !(value.core instanceof DataSource) ||
+    !(value.writer instanceof DataSource) ||
+    value.core === value.writer ||
+    !(value.orm instanceof GlobalWorkspaceOrmManager) ||
+    !(value.cache instanceof WorkspaceCacheService) ||
+    !(value.emitter instanceof WorkspaceEventEmitter)
+  )
+    throw new Error('Private people real service graph unavailable');
+};
