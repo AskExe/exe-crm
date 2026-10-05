@@ -6,6 +6,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { type QueryRunner, type Repository } from 'typeorm';
 
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
+import { createTransactionalCustomApplication } from 'src/engine/core-modules/application/create-transactional-custom-application';
 import {
   ApplicationException,
   ApplicationExceptionCode,
@@ -302,6 +303,13 @@ export class ApplicationService {
     },
     queryRunner?: QueryRunner,
   ) {
+    if (queryRunner) {
+      return createTransactionalCustomApplication(
+        { workspaceId, applicationId, workspaceDisplayName },
+        queryRunner,
+        this.fileStorageService,
+      );
+    }
     const defaultPackageFields = await getDefaultApplicationPackageFields();
 
     const workspaceCustomApplication = await this.create(

@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import path, { dirname, join } from 'path';
 import { type Readable } from 'stream';
 
+import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
+
 import { type StorageDriver } from 'src/engine/core-modules/file-storage/drivers/interfaces/storage-driver.interface';
 import {
   FileStorageException,
@@ -16,7 +18,10 @@ export interface LocalDriverOptions {
 export class LocalDriver implements StorageDriver {
   private options: LocalDriverOptions;
 
-  constructor(options: LocalDriverOptions) {
+  constructor(
+    options: LocalDriverOptions,
+    private readonly privateFence?: PrivateNativeMutationFence,
+  ) {
     this.options = options;
   }
 
@@ -72,7 +77,10 @@ export class LocalDriver implements StorageDriver {
     const filePath = path.resolve(this.options.storagePath, params.filePath);
     const folderPath = dirname(filePath);
 
+    if (this.privateFence) await this.privateFence.assertCurrent();
+    this.privateFence?.assertOriginalDeadline();
     await this.createFolder(folderPath);
+    if (this.privateFence) await this.privateFence.assertCurrent();
 
     const realFolderPath = realpathSync(folderPath);
     const realFilePath = path.join(realFolderPath, path.basename(filePath));
@@ -81,6 +89,7 @@ export class LocalDriver implements StorageDriver {
 
     try {
       const stats = await fs.lstat(realFilePath);
+      if (this.privateFence) await this.privateFence.assertCurrent();
 
       if (stats.isSymbolicLink()) {
         throw new FileStorageException(
@@ -94,7 +103,10 @@ export class LocalDriver implements StorageDriver {
       }
     }
 
+    if (this.privateFence) await this.privateFence.assertCurrent();
+    this.privateFence?.assertOriginalDeadline();
     await fs.writeFile(realFilePath, params.sourceFile);
+    if (this.privateFence) await this.privateFence.assertCurrent();
   }
 
   async downloadFile(params: {
