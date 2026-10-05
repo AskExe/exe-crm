@@ -199,7 +199,9 @@ export class PrivateNativeActionReader {
     const projection = value as Record<string, unknown>;
     refuseUnless(
       Object.keys(projection).length === OWNER_KEYS.length &&
-        OWNER_KEYS.every((key) => Object.hasOwn(projection, key)),
+        OWNER_KEYS.every((key) =>
+          Object.prototype.hasOwnProperty.call(projection, key),
+        ),
     );
     for (const key of OWNER_KEYS) {
       const descriptor = Object.getOwnPropertyDescriptor(projection, key);

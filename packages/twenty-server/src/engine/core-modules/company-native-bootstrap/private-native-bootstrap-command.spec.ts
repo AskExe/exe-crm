@@ -9,6 +9,13 @@ import {
   runPrivateNativeBootstrap,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-command';
 
+// Compile-time ES2018 shape only; calls still use Node's native constructor.
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
+
 jest.mock('node:fs/promises', () => ({
   open: jest.fn(),
   realpath: jest.fn(),
@@ -170,10 +177,10 @@ describe('private one-shot command admission', () => {
     jest.mocked(open).mockResolvedValue({
       stat: jest.fn().mockResolvedValue({
         isFile: () => true,
-        uid: 1000n,
-        nlink: 1n,
-        mode: 0o100400n,
-        size: 2n,
+        uid: BigInt(1000),
+        nlink: BigInt(1),
+        mode: BigInt(0o100400),
+        size: BigInt(2),
       }),
       read: jest.fn().mockRejectedValue(primary),
       close,

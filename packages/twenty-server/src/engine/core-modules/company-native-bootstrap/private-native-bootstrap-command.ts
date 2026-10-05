@@ -20,6 +20,13 @@ import {
 import { PrivateNativeWorkspaceAllocator } from 'src/engine/core-modules/company-native-bootstrap/private-native-workspace-allocator';
 import { PrivateNativeWorkspaceObserver } from 'src/engine/core-modules/company-native-bootstrap/private-native-workspace-observer';
 
+// Compile-time ES2018 shape only; calls still use Node's native constructor.
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
+
 // This module is not registered in Nest/HTTP/worker. Only a reviewed one-shot
 // private process may call it. These exact operator mounts are not tenant input.
 const INPUT_ROOT = '/run/secrets/crm-native-bootstrap';
@@ -75,10 +82,10 @@ export async function readPrivateOperatorBytes(name: string): Promise<Buffer> {
     refuse(
       before.isFile() &&
         before.uid === BigInt(OWNER_UID) &&
-        before.nlink === 1n &&
-        (before.mode & 0o177777n) === 0o100400n &&
-        before.size > 0n &&
-        before.size <= 65536n,
+        before.nlink === BigInt(1) &&
+        (before.mode & BigInt(0o177777)) === BigInt(0o100400) &&
+        before.size > BigInt(0) &&
+        before.size <= BigInt(65536),
     );
     const bytes = Buffer.alloc(Number(before.size));
     const read = await handle.read(bytes, 0, bytes.length, 0);

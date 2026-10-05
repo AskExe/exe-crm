@@ -19,6 +19,13 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
+// Compile-time ES2018 shape only; calls still use Node's native constructor.
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
+
 export type PendingPrivateNativeWorkspace = Readonly<{
   actionId: string;
   workspaceId: string;

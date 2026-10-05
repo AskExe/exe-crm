@@ -11,6 +11,13 @@ import {
 
 import { PrivateNativeDatabaseGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-database-guard';
 
+// Compile-time ES2018 shape only; calls still use Node's native constructor.
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
+
 // A separate read-only native connection, not an initializer return value.
 // This observes only database identity. Image/storage/UID/quota qualification
 // and ACTIVE native readiness require separate independently bound evidence.
