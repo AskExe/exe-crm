@@ -1,3 +1,7 @@
+import {
+  capturePrivatePeopleCurrentPair,
+  type PrivatePeopleCurrentPair,
+} from './private-people-role-binding';
 import { Module, type INestApplicationContext } from '@nestjs/common';
 import { DiscoveryModule, NestFactory } from '@nestjs/core';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
@@ -68,19 +72,27 @@ class OwnedPrivatePeopleAssembly implements PrivatePeopleAssemblyLifecycle {
   abort(reason: unknown) {
     this.custody.abort(reason);
   }
-  prepare(work: PrivatePeopleDeadline): Promise<PrivatePeopleWorkerResources> {
+  prepare(
+    work: PrivatePeopleDeadline,
+    currentPair: PrivatePeopleCurrentPair,
+  ): Promise<PrivatePeopleWorkerResources> {
     if (this.state !== 'new')
       return Promise.reject(new Error('Private assembly one-shot unavailable'));
+    const capturedPair = capturePrivatePeopleCurrentPair(currentPair);
     this.custody.admit(work);
     this.state = 'preparing';
-    this.preparation = this.prepareOwned().catch((error: unknown) => {
-      this.abort(error);
-      throw error;
-    });
+    this.preparation = this.prepareOwned(capturedPair).catch(
+      (error: unknown) => {
+        this.abort(error);
+        throw error;
+      },
+    );
     return this.preparation;
   }
-  private async prepareOwned(): Promise<PrivatePeopleWorkerResources> {
-    const fixed = readPrivatePeopleAssemblyConfiguration();
+  private async prepareOwned(
+    currentPair: PrivatePeopleCurrentPair,
+  ): Promise<PrivatePeopleWorkerResources> {
+    const fixed = readPrivatePeopleAssemblyConfiguration(currentPair);
     this.custody.assertCurrent();
     const metadata = new DataSource({
       type: 'postgres',

@@ -108,7 +108,13 @@ export const runPrivatePeopleWorker = () => {
         // Fixed package import is inside this same original preparation budget.
         lifecycle = loadPrivatePeopleWorkerPackage(); // Owned handle before prepare awaits.
         work.remaining();
-        resources = await lifecycle.prepare(work);
+        resources = await lifecycle.prepare(
+          work,
+          Object.freeze({
+            companyId: captured.source.company_id,
+            workspaceId: captured.source.native_id,
+          }),
+        );
         assertSuccess();
         work.remaining();
         assertPrivatePeopleWorkerResources(resources);
