@@ -24,6 +24,7 @@ import {
 import { FilesFieldSync } from 'src/engine/twenty-orm/field-operations/files-field-sync/files-field-sync';
 import { RelationNestedQueries } from 'src/engine/twenty-orm/field-operations/relation-nested-queries/relation-nested-queries';
 import { validateQueryIsPermittedOrThrow } from 'src/engine/twenty-orm/repository/permissions.utils';
+import { PrivateInsertEvents } from 'src/engine/twenty-orm/repository/private-insert-events';
 import { type WorkspaceDeleteQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-delete-query-builder';
 import { WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
 import { type WorkspaceSoftDeleteQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-soft-delete-query-builder';
@@ -48,6 +49,19 @@ export class WorkspaceInsertQueryBuilder<
 
   private _relationNestedQueries?: RelationNestedQueries;
   private _filesFieldSync?: FilesFieldSync;
+  private privateInsertEvents?: PrivateInsertEvents;
+
+  usePrivateTransaction(events: PrivateInsertEvents): this {
+    events.assertActive();
+    if (
+      this.shouldBypassPermissionChecks ||
+      events.workspaceId !== this.internalContext.workspaceId
+    )
+      throw new Error('Private insert permission context unavailable');
+    this.privateInsertEvents = events;
+    this.setQueryRunner(events.queryRunner);
+    return this;
+  }
 
   private get relationNestedQueries(): RelationNestedQueries {
     return (this._relationNestedQueries ??= new RelationNestedQueries(
@@ -78,7 +92,7 @@ export class WorkspaceInsertQueryBuilder<
   override clone(): this {
     const clonedQueryBuilder = super.clone();
 
-    return new WorkspaceInsertQueryBuilder(
+    const result = new WorkspaceInsertQueryBuilder(
       clonedQueryBuilder,
       this.objectRecordsPermissions,
       this.internalContext,
@@ -86,6 +100,9 @@ export class WorkspaceInsertQueryBuilder<
       this.authContext,
       this.featureFlagMap,
     ) as this;
+    if (this.privateInsertEvents)
+      result.usePrivateTransaction(this.privateInsertEvents);
+    return result;
   }
 
   override values(
@@ -117,6 +134,17 @@ export class WorkspaceInsertQueryBuilder<
 
   override async execute(): Promise<InsertResult> {
     try {
+      if (this.privateInsertEvents) {
+        this.privateInsertEvents.assertActive();
+        if (
+          this.expressionMap.onUpdate ||
+          this.expressionMap.onIgnore ||
+          (this.relationNestedConfig &&
+            (this.relationNestedConfig[0].length > 0 ||
+              Object.keys(this.relationNestedConfig[1]).length > 0))
+        )
+          throw new Error('Private insert must be fresh and scalar');
+      }
       validateQueryIsPermittedOrThrow({
         expressionMap: this.expressionMap,
         objectsPermissions: this.objectRecordsPermissions,
@@ -180,6 +208,8 @@ export class WorkspaceInsertQueryBuilder<
         );
 
       if (isDefined(filesFieldDiffByEntityIndex)) {
+        if (this.privateInsertEvents)
+          throw new Error('Private contact files unavailable');
         const result = await this.filesFieldSync.enrichFilesFields({
           entities:
             entities as QueryDeepPartialEntityWithNestedRelationFields<T>[],
@@ -197,7 +227,7 @@ export class WorkspaceInsertQueryBuilder<
           : result.entities[0];
       }
 
-      if (isDefined(this.relationNestedConfig)) {
+      if (isDefined(this.relationNestedConfig) && !this.privateInsertEvents) {
         const nestedRelationQueryBuilder = new WorkspaceSelectQueryBuilder(
           this as unknown as WorkspaceSelectQueryBuilder<T>,
           this.objectRecordsPermissions,
@@ -221,7 +251,9 @@ export class WorkspaceInsertQueryBuilder<
 
       this.validateRLSPredicatesForInsert();
 
+      this.privateInsertEvents?.assertActive();
       const result = await super.execute();
+      this.privateInsertEvents?.assertActive();
 
       if (isDefined(filesFieldFileIds)) {
         await this.filesFieldSync.updateFileEntityRecords(filesFieldFileIds);
@@ -231,9 +263,12 @@ export class WorkspaceInsertQueryBuilder<
       ).createQueryBuilder(
         mainAliasTarget,
         this.expressionMap.mainAlias?.metadata.name ?? '',
-        undefined,
+        this.privateInsertEvents?.queryRunner,
         {
-          shouldBypassPermissionChecks: true,
+          shouldBypassPermissionChecks: this.privateInsertEvents ? false : true,
+          ...(this.privateInsertEvents
+            ? { objectRecordsPermissions: this.objectRecordsPermissions }
+            : {}),
         },
       ) as WorkspaceSelectQueryBuilder<T>;
 
@@ -241,7 +276,9 @@ export class WorkspaceInsertQueryBuilder<
         result.identifiers.map((identifier) => identifier.id),
       );
 
+      this.privateInsertEvents?.assertActive();
       const afterResult = await eventSelectQueryBuilder.getMany();
+      this.privateInsertEvents?.assertActive();
 
       const formattedResultForEvent = formatResult<T[]>(
         afterResult,
@@ -250,7 +287,16 @@ export class WorkspaceInsertQueryBuilder<
         this.internalContext.flatFieldMetadataMaps,
       );
 
-      this.internalContext.eventEmitterService.emitDatabaseBatchEvent(
+      const emitEvent = (
+        event: ReturnType<typeof formatTwentyOrmEventToDatabaseBatchEvent<T>>,
+      ) => {
+        if (this.privateInsertEvents) this.privateInsertEvents.retain(event);
+        else
+          this.internalContext.eventEmitterService.emitDatabaseBatchEvent(
+            event,
+          );
+      };
+      emitEvent(
         formatTwentyOrmEventToDatabaseBatchEvent({
           action: DatabaseEventAction.CREATED,
           objectMetadataItem: objectMetadata,
@@ -261,7 +307,7 @@ export class WorkspaceInsertQueryBuilder<
         }),
       );
 
-      this.internalContext.eventEmitterService.emitDatabaseBatchEvent(
+      emitEvent(
         formatTwentyOrmEventToDatabaseBatchEvent({
           action: DatabaseEventAction.UPSERTED,
           objectMetadataItem: objectMetadata,
