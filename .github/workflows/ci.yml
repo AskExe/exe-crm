@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, codex/crm-company-producer-integration]
+    branches: [main, codex/crm-company-producer-integration, 'codex/**']
   push:
     branches: [main]
   merge_group:
