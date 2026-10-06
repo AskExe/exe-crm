@@ -659,3 +659,5 @@ jobs:
           format: table
           exit-code: '1'
           severity: CRITICAL,HIGH
+          # Avoid the optional cache transfer that consumed the setup deadline.
+          cache: false
