@@ -355,6 +355,7 @@ jobs:
         # ONLY difference from the full command below is `--changedSince`, which
         # narrows jest to the specs that transitively import a changed file.
         run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
           export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
           npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }} --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
@@ -363,6 +364,7 @@ jobs:
         # KEEP IN SYNC with the main-lane `server-tests` command apart from
         # --maxWorkers.
         run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
           export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
           npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
