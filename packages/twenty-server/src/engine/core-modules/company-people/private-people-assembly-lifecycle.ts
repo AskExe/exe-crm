@@ -1,5 +1,7 @@
 import { type DataSource } from 'typeorm';
 
+import { type PrivatePeopleCurrentPair } from './private-people-role-binding';
+
 import { type PrivatePeopleDeadline } from './private-people-contract';
 import { privatePeoplePoolBounds } from './private-people-pool-options';
 import { type PrivatePeoplePoolCustody } from './private-people-io-custody';
@@ -7,7 +9,10 @@ import { peopleMonotonicNow } from './private-people-protocol';
 import { type PrivatePeopleWorkerResources } from './private-people-worker-package';
 
 export interface PrivatePeopleAssemblyLifecycle {
-  prepare(work: PrivatePeopleDeadline): Promise<PrivatePeopleWorkerResources>;
+  prepare(
+    work: PrivatePeopleDeadline,
+    currentPair: PrivatePeopleCurrentPair,
+  ): Promise<PrivatePeopleWorkerResources>;
   disposeIO(cleanup: PrivatePeopleDeadline): Promise<void>;
   finalize(cleanup: PrivatePeopleDeadline): Promise<void>;
   abort(reason: unknown): void;
