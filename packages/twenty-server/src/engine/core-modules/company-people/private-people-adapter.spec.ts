@@ -13,6 +13,10 @@ import {
   PrivatePeopleAdapter,
   PrivatePeopleUncertain,
 } from './private-people-adapter';
+import {
+  privatePeopleConnectionUrl,
+  privatePeoplePoolBounds,
+} from './private-people-pool-options';
 import { type PrivatePeopleSource } from './private-people-contract';
 
 const id = (n: number) =>
@@ -257,6 +261,46 @@ const fixture = () => {
 };
 
 describe('private people retained transaction (controlled IO, no SQL qualification)', () => {
+  it('assembly options use canonical URL-only metadata and admit the actual endpoint guard', async () => {
+    const f = fixture();
+    const connection = {
+      host: 'native-test',
+      port: 5432,
+      database: 'db',
+      username: 'crm_people_metadata',
+      password: 'controlled',
+    };
+    const metadataOptions = {
+      type: 'postgres' as const,
+      url: privatePeopleConnectionUrl(connection),
+    };
+    expect(Object.keys(metadataOptions).sort()).toEqual(['type', 'url']);
+    f.composition.core.options.url = metadataOptions.url;
+    f.dataSource.options.url = privatePeopleConnectionUrl({
+      ...connection,
+      username: 'crm_people_writer',
+    });
+    const h = f.adapter.createHandle(f.source, f.bytes, f.end);
+    await h.prepare();
+    expect(f.runner.connect).toHaveBeenCalledTimes(1);
+    await h.rollback(f.cleanup);
+    await h.dispose(f.cleanup);
+  });
+  it('assembly options retain the real writer at-most250 connection bound', async () => {
+    const f = fixture();
+    const bounds = privatePeoplePoolBounds({
+      type: 'postgres',
+      url: f.dataSource.options.url,
+      extra: { connectionTimeoutMillis: 1000 },
+    });
+    expect(bounds.connectTimeoutMS).toBe(250);
+    f.dataSource.options.extra = bounds.extra;
+    const h = f.adapter.createHandle(f.source, f.bytes, f.end);
+    await h.prepare();
+    expect(f.runner.connect).toHaveBeenCalledTimes(1);
+    await h.rollback(f.cleanup);
+    await h.dispose(f.cleanup);
+  });
   it('createHandle is synchronous and side-effect-free', () => {
     const f = fixture();
     const handle = f.adapter.createHandle(f.source, f.bytes, f.end);
