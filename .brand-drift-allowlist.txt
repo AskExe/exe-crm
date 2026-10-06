@@ -126,3 +126,19 @@ packages/twenty-server/src/engine/core-modules/company-auth/__tests__/company-au
 # Company REST freshness regression executes canonical native ORM source and
 # mocks its established exported exception identifiers; no user-facing branding.
 packages/twenty-server/test/company-contact-preview/company-rest-freshness.test.mjs
+
+# Private people transaction uses canonical framework imports and fixed package slots.
+# Canonical native ORM context and event-queue imports in controlled adapter tests.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-adapter.spec.ts
+# Canonical twenty-shared and native ORM imports; no customer-facing branding.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-adapter.ts
+# Immutable private worker slot under the existing native package directory.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-protocol.ts
+# Regression binds the same immutable native worker package slot.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-supervisor.spec.ts
+# Fixed private worker cwd is the existing native package directory.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-supervisor.ts
+# Canonical native ORM import and protected assembly slot; no public brand text.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-worker-package.ts
+# Canonical native ORM event helper and its established type identifier.
+packages/twenty-server/src/engine/twenty-orm/repository/workspace-insert-query-builder.ts

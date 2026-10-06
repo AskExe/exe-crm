@@ -35,16 +35,25 @@ describe('protected same-kernel IPC clock (controlled, no physical channel proof
     expect(() => validatePeopleCommand(proxy)).toThrow();
     expect(traps).not.toHaveBeenCalled();
   });
-  it('delayed delivery consumes the absolute budget rather than renewing receive time', async () => {
-    const end = peopleMonotonicNow() + 150;
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
-    const received = validatePeopleCommand(command(end));
-    const deadline = new WorkerDeadline(received.monotonic_end);
-    expect(deadline.remaining()).toBeLessThan(100);
-    deadline.close();
-    expect(() =>
-      validatePeopleCommand(command(peopleMonotonicNow() - 1)),
-    ).toThrow();
+  it('delayed delivery consumes the absolute budget rather than renewing receive time', () => {
+    let now = 1000;
+    const clock = jest
+      .spyOn(process.hrtime, 'bigint')
+      .mockImplementation(() => BigInt(now) * BigInt(1_000_000));
+    try {
+      const end = peopleMonotonicNow() + 150;
+      now += 100;
+      const received = validatePeopleCommand(command(end));
+      const deadline = new WorkerDeadline(received.monotonic_end);
+      expect(deadline.remaining()).toBeLessThan(100);
+      expect(deadline.remaining()).toBe(50);
+      deadline.close();
+      expect(() =>
+        validatePeopleCommand(command(peopleMonotonicNow() - 1)),
+      ).toThrow();
+    } finally {
+      clock.mockRestore();
+    }
   });
   it('earlier work or cleanup absolute end cannot be renewed by a later command', () => {
     const end = peopleMonotonicNow() + 100;
