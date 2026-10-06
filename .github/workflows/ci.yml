@@ -354,13 +354,25 @@ jobs:
         # comment for the coverage-threshold / continue-on-error history) — the
         # ONLY difference from the full command below is `--changedSince`, which
         # narrows jest to the specs that transitively import a changed file.
-        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }}
+        run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
+          export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
+          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }} --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
       - name: Run server tests (full suite)
         if: steps.scope.outputs.scope == 'full'
         # KEEP IN SYNC with the main-lane `server-tests` command apart from
         # --maxWorkers.
-        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests
+        run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
+          export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
+          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
+
+      - name: Report server test termination and result
+        if: always() && (steps.scope.outputs.scope == 'changed' || steps.scope.outputs.scope == 'full')
+        # The test step keeps its original Nx exit code. This separate report
+        # refuses a missing result and projects bounded failures, not coverageMap.
+        run: node scripts/ci-observe-child-exits.cjs
 
   # Runs on the repo's dedicated macOS runner (mac-m4-exe-crm), NOT on the
   # shared Linux build-my host.
