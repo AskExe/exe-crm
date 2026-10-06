@@ -142,3 +142,9 @@ packages/twenty-server/src/engine/core-modules/company-people/private-people-sup
 packages/twenty-server/src/engine/core-modules/company-people/private-people-worker-package.ts
 # Canonical native ORM event helper and its established type identifier.
 packages/twenty-server/src/engine/twenty-orm/repository/workspace-insert-query-builder.ts
+
+# Private assembly binds canonical configuration, ORM metadata and real providers.
+# These fixed internal identifiers are not customer-facing product branding.
+packages/twenty-server/src/engine/core-modules/company-people/private-people-assembly-config.ts
+packages/twenty-server/src/engine/core-modules/company-people/private-people-assembly-graph.ts
+packages/twenty-server/src/engine/core-modules/company-people/private-people-runtime.factory.ts
