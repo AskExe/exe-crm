@@ -1,3 +1,7 @@
+import {
+  capturePrivatePeopleCurrentPair,
+  type PrivatePeopleCurrentPair,
+} from './private-people-role-binding';
 import { ConfigService } from '@nestjs/config';
 
 import { ConfigVariables } from 'src/engine/core-modules/twenty-config/config-variables';
@@ -64,7 +68,10 @@ const connection = (
 };
 
 // Only fixed protected files, never process configuration/envfiles/public flags.
-export const readPrivatePeopleAssemblyConfiguration = () => {
+export const readPrivatePeopleAssemblyConfiguration = (
+  currentPair: PrivatePeopleCurrentPair,
+) => {
+  const expected = capturePrivatePeopleCurrentPair(currentPair);
   if (
     process.platform !== 'linux' ||
     process.getuid?.() !== 1000 ||
@@ -100,6 +107,11 @@ export const readPrivatePeopleAssemblyConfiguration = () => {
   for (const key of ['companyId', 'workspaceId', 'bindingId', 'generationId'])
     if (typeof profile[key] !== 'string' || !COMPANY_UUID.test(profile[key]))
       throw new Error('Private assembly binding unavailable');
+  if (
+    profile.companyId !== expected.companyId ||
+    profile.workspaceId !== expected.workspaceId
+  )
+    throw new Error('Private assembly current Core pair unavailable');
   for (const key of ['audience', 'clientId'])
     if (
       typeof profile[key] !== 'string' ||

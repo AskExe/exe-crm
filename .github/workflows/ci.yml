@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, codex/crm-company-producer-integration]
+    branches: [main, codex/crm-company-producer-integration, 'codex/**']
   push:
     branches: [main]
   merge_group:
@@ -96,8 +96,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          fetch-tags: false
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch exact PR comparison history
+        timeout-minutes: 5
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -euo pipefail
+          [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" = "${HEAD_SHA}" ]]
+          if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+            git fetch --no-tags --filter=blob:none --unshallow --refmap= \
+              --recurse-submodules=no --no-auto-maintenance \
+              origin "${BASE_SHA}" "${HEAD_SHA}"
+          else
+            git fetch --no-tags --filter=blob:none --refmap= \
+              --recurse-submodules=no --no-auto-maintenance \
+              origin "${BASE_SHA}" "${HEAD_SHA}"
+          fi
+          [[ "$(git rev-parse --is-shallow-repository)" = false ]]
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          MERGE_BASE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          # Materialize every scoped diff blob with checked status before the
+          # unchanged scanner's suppressed per-file diff calls can run.
+          git diff -U0 "${MERGE_BASE}" "${HEAD_SHA}" -- \
+            packages/ README.md NOTICE >/dev/null
 
       # Fails closed if any self-hosted job's timeout-minutes drops to or below
       # the limiter's BUILD_MY_CI_MAXWAIT ceiling, which would let that job be
