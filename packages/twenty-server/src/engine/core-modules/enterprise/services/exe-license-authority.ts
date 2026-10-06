@@ -1,5 +1,7 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 type ExeLicense = {
   plan: 'free' | 'pro' | 'team' | 'agency' | 'enterprise';
   expiresAt: string | null;
@@ -9,6 +11,8 @@ const PLANS = new Set(['free', 'pro', 'team', 'agency', 'enterprise']);
 
 /** Resolve the installation key through the gateway's fresh GoTrue authority. */
 export const readExeLicense = async (): Promise<ExeLicense | null> => {
+  if (companyAuthEnabled()) return null;
+
   const apiKey =
     process.env.EXE_LICENSE_KEY?.trim() || process.env.ENTERPRISE_KEY?.trim();
   const endpoint =

@@ -1,5 +1,7 @@
 import { Injectable, Logger, type NestMiddleware } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import { createHash, timingSafeEqual } from 'crypto';
 import { type NextFunction, type Request, type Response } from 'express';
 
@@ -131,6 +133,12 @@ export class AdminTokenMiddleware implements NestMiddleware {
   }
 
   async use(req: Request, res: Response, next: NextFunction) {
+    if (companyAuthEnabled()) {
+      next();
+
+      return;
+    }
+
     if (!this.adminTokenHash) {
       next();
 
