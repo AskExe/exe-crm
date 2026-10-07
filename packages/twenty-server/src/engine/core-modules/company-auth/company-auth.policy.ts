@@ -1,5 +1,7 @@
 import { type Request } from 'express';
 
+import { companyAccess } from './company-access.contract';
+
 import {
   COMPANY_UUID,
   type CompanyAuthConfiguration,
@@ -61,49 +63,16 @@ export const companySubject = (
   value: unknown,
   config: CompanyAuthConfiguration,
 ): string => {
-  if (!value || typeof value !== 'object')
-    throw new Error('Company authorization denied');
-  const envelope = value as Record<string, unknown>;
-  const fields = [
-    'version',
-    'subject_id',
-    'company_id',
-    'product',
-    'resource_kind',
-    'binding_id',
-    'native_id',
-    'generation_id',
-    'authz_epoch',
-    'audience',
-    'scopes',
-    'current_role',
-    'technical_status',
-    'subscription_entitled',
-  ];
+  const authority = companyAccess(value, {
+    company_id: config.companyId,
+    product: 'crm',
+    binding_id: config.bindingId,
+    native_id: config.workspaceId,
+    generation_id: config.generationId,
+    audience: config.audience,
+  });
 
-  if (
-    Object.keys(envelope).sort().join(',') !== fields.sort().join(',') ||
-    envelope.version !== 1 ||
-    typeof envelope.subject_id !== 'string' ||
-    !COMPANY_UUID.test(envelope.subject_id) ||
-    envelope.company_id !== config.companyId ||
-    envelope.product !== 'crm' ||
-    envelope.resource_kind !== 'crm-workspace' ||
-    envelope.binding_id !== config.bindingId ||
-    envelope.native_id !== config.workspaceId ||
-    envelope.generation_id !== config.generationId ||
-    envelope.audience !== config.audience ||
-    typeof envelope.authz_epoch !== 'string' ||
-    !/^[1-9][0-9]{0,18}$/.test(envelope.authz_epoch) ||
-    envelope.technical_status !== 'accepted' ||
-    envelope.subscription_entitled !== true ||
-    (envelope.current_role !== 'owner' && envelope.current_role !== 'member') ||
-    !Array.isArray(envelope.scopes) ||
-    envelope.scopes.length !== 1 ||
-    envelope.scopes[0] !== 'crm:read'
-  ) {
-    throw new Error('Company authorization denied');
-  }
+  if (!authority) throw new Error('Company authorization denied');
 
-  return envelope.subject_id;
+  return authority.subject_id;
 };
