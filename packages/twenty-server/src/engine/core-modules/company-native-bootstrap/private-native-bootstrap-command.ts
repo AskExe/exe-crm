@@ -14,6 +14,7 @@ import {
 import { PrivateNativeDatabaseGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-database-guard';
 import {
   PrivateNativeActionReader,
+  type PrivateNativeActionTuple,
   PrivateNativeActionUnavailable,
   snapshotPrivateNativeActionTuple,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
@@ -59,6 +60,114 @@ function closed(value: unknown, keys: string[]): Record<string, unknown> {
     out[key] = field.value;
   }
   return out;
+}
+
+// This checks signed selected-profile bytes only; it cannot authorize a start.
+// The unchanged operator trust and original Core action reader remain authority.
+export function assertSelectedPrivateNativeProfile(
+  value: unknown,
+  configBytes: Buffer,
+  initializerBytes: Buffer,
+  tuple: PrivateNativeActionTuple,
+  packageSha256: string,
+): void {
+  const profileKeys = [
+    'version',
+    'company_id',
+    'job_id',
+    'project',
+    'package_sha256',
+    'initializer_sha256',
+    'configuration',
+    'native_intent',
+  ];
+  const profile = closed(value, profileKeys);
+  refuse(
+    JSON.stringify(Object.keys(value as object)) ===
+      JSON.stringify(profileKeys),
+  );
+  refuse(
+    profile.version === 'company-selected-native-v1' &&
+      profile.company_id === tuple.company_id &&
+      profile.job_id === tuple.job_id &&
+      profile.project === 'company-' + tuple.company_id &&
+      profile.package_sha256 === packageSha256 &&
+      HASH.test(packageSha256) &&
+      profile.initializer_sha256 === tuple.initializer_sha256 &&
+      tuple.product === 'crm-workspace',
+  );
+  const configKeys = [
+    'version',
+    'product',
+    'image',
+    'image_id',
+    'source_sha256',
+    'package_sha256',
+    'entrypoint',
+    'command',
+    'uid',
+    'memory_bytes',
+    'pids_limit',
+    'cpus',
+    'storage_target',
+  ];
+  const config = closed(profile.configuration, configKeys);
+  refuse(
+    JSON.stringify(Object.keys(profile.configuration as object)) ===
+      JSON.stringify(configKeys),
+  );
+  refuse(
+    config.version === 'private-native-initializer-v1' &&
+      config.product === 'crm-workspace' &&
+      config.package_sha256 === packageSha256 &&
+      typeof config.source_sha256 === 'string' &&
+      HASH.test(config.source_sha256) &&
+      typeof config.image === 'string' &&
+      (/^[a-z0-9][a-z0-9./_-]{0,180}@sha256:[0-9a-f]{64}$/.test(config.image) ||
+        /^sha256:[0-9a-f]{64}$/.test(config.image)) &&
+      typeof config.image_id === 'string' &&
+      /^sha256:[0-9a-f]{64}$/.test(config.image_id) &&
+      config.entrypoint === '/usr/local/bin/node' &&
+      JSON.stringify(config.command) ===
+        JSON.stringify([
+          'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
+        ]) &&
+      config.uid === OWNER_UID &&
+      config.memory_bytes === 1073741824 &&
+      config.pids_limit === 128 &&
+      config.cpus === 1 &&
+      config.storage_target === STORAGE_ROOT,
+  );
+  const canonical = Buffer.from(JSON.stringify(config), 'utf8');
+  refuse(
+    canonical.equals(configBytes) &&
+      canonical.equals(initializerBytes) &&
+      sha(canonical) === tuple.config_sha256 &&
+      tuple.config_sha256 === tuple.initializer_sha256,
+  );
+  const intentKeys = [
+    'version',
+    'company_id',
+    'job_id',
+    'deployment_id',
+    'product',
+    'request_key',
+    'initializer_sha256',
+  ];
+  const intent = closed(profile.native_intent, intentKeys);
+  refuse(
+    JSON.stringify(Object.keys(profile.native_intent as object)) ===
+      JSON.stringify(intentKeys),
+  );
+  refuse(
+    intent.version === 1 &&
+      intent.company_id === tuple.company_id &&
+      intent.job_id === tuple.job_id &&
+      intent.deployment_id === tuple.deployment_id &&
+      intent.product === tuple.product &&
+      intent.request_key === tuple.request_key &&
+      intent.initializer_sha256 === tuple.initializer_sha256,
+  );
 }
 
 export async function readPrivateOperatorBytes(name: string): Promise<Buffer> {
@@ -205,50 +314,65 @@ export async function runPrivateNativeBootstrap(enabled = false) {
       sha(configBytes) === trust.config_sha256 &&
       verify(null, profileBytes, key, signature),
   );
-  const profileIdentity = closed(JSON.parse(profileBytes.toString('utf8')), [
-    'version',
-    'company_id',
-    'job_id',
-    'project',
-    'artifact_root',
-    'artifacts',
-    'services',
-    'volumes',
-    'networks',
-    'wiki',
-    'package_sha256',
-    'quota_sha256',
-    'native_intent',
-  ]);
-  const serviceNames = [
-    'postgres',
-    'redis',
-    'crm',
-    'crm-worker',
-    'erp',
-    'erp-queue',
-    'erp-scheduler',
-    'erp-socket',
-    'erp-nginx',
-    'wiki',
-    'database-init',
-    'erp-configurator',
-  ];
-  const services = closed(profileIdentity.services, serviceNames);
-  // Exact Core runtime-profile configuration digest projection, not a new
-  // interpretation of its configuration hash or whole structural validator.
-  const configuration = serviceNames.map((name) => {
-    const service = services[name] as Record<string, unknown>;
-    return [
-      name,
-      service.environment,
-      service.depends_on,
-      service.healthcheck,
-      service.tmpfs,
-      service.image_volumes,
+  const profileInput = JSON.parse(profileBytes.toString('utf8'));
+  const selected = profileInput?.version === 'company-selected-native-v1';
+  const profileIdentity = selected
+    ? closed(profileInput, [
+        'version',
+        'company_id',
+        'job_id',
+        'project',
+        'package_sha256',
+        'initializer_sha256',
+        'configuration',
+        'native_intent',
+      ])
+    : closed(profileInput, [
+        'version',
+        'company_id',
+        'job_id',
+        'project',
+        'artifact_root',
+        'artifacts',
+        'services',
+        'volumes',
+        'networks',
+        'wiki',
+        'package_sha256',
+        'quota_sha256',
+        'native_intent',
+      ]);
+  if (!selected) {
+    const serviceNames = [
+      'postgres',
+      'redis',
+      'crm',
+      'crm-worker',
+      'erp',
+      'erp-queue',
+      'erp-scheduler',
+      'erp-socket',
+      'erp-nginx',
+      'wiki',
+      'database-init',
+      'erp-configurator',
     ];
-  });
-  refuse(Buffer.from(JSON.stringify(configuration)).equals(configBytes));
+    const services = closed(profileIdentity.services, serviceNames);
+    // Exact Core runtime-profile configuration digest projection, not a new
+    // interpretation of its configuration hash or whole structural validator.
+    const configuration = serviceNames.map((name) => {
+      const service = services[name] as Record<string, unknown>;
+      return [
+        name,
+        service.environment,
+        service.depends_on,
+        service.healthcheck,
+        service.tmpfs,
+        service.image_volumes,
+      ];
+    });
+    refuse(Buffer.from(JSON.stringify(configuration)).equals(configBytes));
+  }
   const contextBytes = await readPrivateOperatorBytes('command-context.json');
   refuse(sha(contextBytes) === trust.command_context_sha256);
   // This command consumes exact operator-reviewed bytes; it does not replace
@@ -272,38 +396,49 @@ export async function runPrivateNativeBootstrap(enabled = false) {
       config.package_sha256 === trust.package_sha256 &&
       profileIdentity?.company_id === tuple.company_id &&
       profileIdentity?.job_id === tuple.job_id &&
-      profileIdentity.version === 'company-isolated-v2' &&
+      (selected || profileIdentity.version === 'company-isolated-v2') &&
       profileIdentity.project === 'company-' + tuple.company_id &&
       profileIdentity.package_sha256 === trust.package_sha256 &&
       tuple.profile_sha256 === trust.profile_sha256 &&
       tuple.config_sha256 === trust.config_sha256 &&
       tuple.initializer_sha256 === trust.initializer_sha256,
   );
-  const intent = closed(profileIdentity.native_intent, [
-    'version',
-    'company_id',
-    'job_id',
-    'products',
-  ]);
-  refuse(
-    intent.version === 2 &&
-      intent.company_id === tuple.company_id &&
-      intent.job_id === tuple.job_id &&
-      Array.isArray(intent.products) &&
-      intent.products.length === 3,
-  );
-  const crm = closed(intent.products[0], [
-    'kind',
-    'request_key',
-    'initializer_sha256',
-  ]);
-  refuse(
-    crm.kind === tuple.product &&
-      crm.request_key === tuple.request_key &&
-      crm.initializer_sha256 === tuple.initializer_sha256,
-  );
+  if (!selected) {
+    const intent = closed(profileIdentity.native_intent, [
+      'version',
+      'company_id',
+      'job_id',
+      'products',
+    ]);
+    refuse(
+      intent.version === 2 &&
+        intent.company_id === tuple.company_id &&
+        intent.job_id === tuple.job_id &&
+        Array.isArray(intent.products) &&
+        intent.products.length === 3,
+    );
+    const crm = closed(intent.products[0], [
+      'kind',
+      'request_key',
+      'initializer_sha256',
+    ]);
+    refuse(
+      crm.kind === tuple.product &&
+        crm.request_key === tuple.request_key &&
+        crm.initializer_sha256 === tuple.initializer_sha256,
+    );
+  }
   const initializerBytes = await readPrivateOperatorBytes('initializer.json');
   refuse(sha(initializerBytes) === tuple.initializer_sha256);
+  if (selected) {
+    assertSelectedPrivateNativeProfile(
+      profileInput,
+      configBytes,
+      initializerBytes,
+      tuple,
+      trust.package_sha256 as string,
+    );
+  }
   const roles = [
     trust.core_worker_role,
     trust.native_writer_role,
