@@ -1,10 +1,16 @@
+import { createHash } from 'node:crypto';
+
 import { open, realpath, stat } from 'node:fs/promises';
 
 import { type DataSource } from 'typeorm';
 
-import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
+import {
+  type PrivateNativeActionTuple,
+  PrivateNativeActionUnavailable,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 import {
   assertPrivateNativeRole,
+  assertSelectedPrivateNativeProfile,
   readPrivateOperatorBytes,
   runPrivateNativeBootstrap,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-command';
@@ -15,6 +21,14 @@ declare const AggregateError: new (
   errors: Iterable<unknown>,
   message?: string,
 ) => AggregateError;
+
+// Admission controls never invoke allocation; avoid loading its entity graph.
+jest.mock(
+  'src/engine/core-modules/company-native-bootstrap/private-native-workspace-allocator',
+  () => ({
+    PrivateNativeWorkspaceAllocator: jest.fn(),
+  }),
+);
 
 jest.mock('node:fs/promises', () => ({
   open: jest.fn(),
@@ -194,5 +208,209 @@ describe('private one-shot command admission', () => {
     expect(observed).toBeInstanceOf(AggregateError);
     expect((observed as AggregateError).errors).toEqual([primary, secondary]);
     expect(close).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Parser controls only. Signed mount admission and SQL authority remain separate.
+describe('selected native CRM profile bytes', () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  const packageSha = 'a'.repeat(64);
+  const build = () => {
+    const configuration = {
+      version: 'private-native-initializer-v1',
+      product: 'crm-workspace',
+      image: 'sha256:' + 'b'.repeat(64),
+      image_id: 'sha256:' + 'b'.repeat(64),
+      source_sha256: 'c'.repeat(64),
+      package_sha256: packageSha,
+      entrypoint: '/usr/local/bin/node',
+      command: [
+        'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
+      ],
+      uid: 1000,
+      memory_bytes: 1073741824,
+      pids_limit: 128,
+      cpus: 1,
+      storage_target: '/app/.local-storage',
+    };
+    const bytes = Buffer.from(JSON.stringify(configuration));
+    const digest = createHash('sha256').update(bytes).digest('hex');
+    const tuple: PrivateNativeActionTuple = {
+      company_id: id,
+      job_id: id,
+      deployment_id: id,
+      product: 'crm-workspace',
+      request_key: id,
+      intent_id: id,
+      action_id: id,
+      lease_token: id,
+      attempt: 1,
+      worker_id: 'controlled',
+      profile_sha256: 'd'.repeat(64),
+      config_sha256: digest,
+      initializer_sha256: digest,
+    };
+    const profile = {
+      version: 'company-selected-native-v1',
+      company_id: id,
+      job_id: id,
+      project: 'company-' + id,
+      package_sha256: packageSha,
+      initializer_sha256: digest,
+      configuration,
+      native_intent: {
+        version: 1,
+        company_id: id,
+        job_id: id,
+        deployment_id: id,
+        product: 'crm-workspace',
+        request_key: id,
+        initializer_sha256: digest,
+      },
+    };
+    return { profile, bytes, tuple };
+  };
+  it('admits exact selected CRM bytes without full-stack declarations', () => {
+    const { profile, bytes, tuple } = build();
+    expect(() =>
+      assertSelectedPrivateNativeProfile(
+        profile,
+        bytes,
+        bytes,
+        tuple,
+        packageSha,
+      ),
+    ).not.toThrow();
+  });
+  it.each(['configuration', 'initializer'])(
+    'refuses changed %s bytes even with the same parsed value',
+    (which) => {
+      const { profile, bytes, tuple } = build();
+      const changed = Buffer.concat([bytes, Buffer.from('\n')]);
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          which === 'configuration' ? changed : bytes,
+          which === 'initializer' ? changed : bytes,
+          tuple,
+          packageSha,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    },
+  );
+  it.each(['deployment_id', 'request_key', 'company_id', 'job_id'])(
+    'refuses a foreign signed intent %s',
+    (field) => {
+      const { profile, bytes, tuple } = build();
+      Object.assign(profile.native_intent, {
+        [field]: '22222222-2222-4222-8222-222222222222',
+      });
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          bytes,
+          bytes,
+          tuple,
+          packageSha,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    },
+  );
+  it.each([
+    'uid',
+    'memory_bytes',
+    'pids_limit',
+    'cpus',
+    'entrypoint',
+    'storage_target',
+    'command',
+    'version',
+    'product',
+    'image',
+    'image_id',
+    'package_sha256',
+  ])('refuses changed fixed recipe %s before any connection', (field) => {
+    const { profile, tuple } = build();
+    const changes: Record<string, unknown> = {
+      uid: 1001,
+      memory_bytes: 2147483648,
+      pids_limit: 129,
+      cpus: 2,
+      entrypoint: '/usr/bin/node',
+      storage_target: '/other-storage',
+      command: ['dist/main'],
+      version: 'private-erp-three-phase-initializer-v2',
+      product: 'erp-site',
+      image: 'crm:latest',
+      image_id: 'crm:latest',
+      package_sha256: 'e'.repeat(64),
+    };
+    Object.assign(profile.configuration, { [field]: changes[field] });
+    const changedBytes = Buffer.from(JSON.stringify(profile.configuration));
+    const changedHash = createHash('sha256').update(changedBytes).digest('hex');
+    tuple.config_sha256 = tuple.initializer_sha256 = changedHash;
+    profile.initializer_sha256 = profile.native_intent.initializer_sha256 =
+      changedHash;
+    expect(() =>
+      assertSelectedPrivateNativeProfile(
+        profile,
+        changedBytes,
+        changedBytes,
+        tuple,
+        packageSha,
+      ),
+    ).toThrow(PrivateNativeActionUnavailable);
+  });
+  it.each(['profile', 'configuration', 'intent'])(
+    'refuses extra %s keys',
+    (where) => {
+      const { profile, bytes, tuple } = build();
+      const target =
+        where === 'profile'
+          ? profile
+          : where === 'configuration'
+            ? profile.configuration
+            : profile.native_intent;
+      Object.assign(target, { extra: true });
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          bytes,
+          bytes,
+          tuple,
+          packageSha,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    },
+  );
+  it('refuses reordered configuration rather than silently canonicalizing it', () => {
+    const { profile, bytes, tuple } = build();
+    profile.configuration = Object.fromEntries(
+      Object.entries(profile.configuration).reverse(),
+    ) as typeof profile.configuration;
+    expect(() =>
+      assertSelectedPrivateNativeProfile(
+        profile,
+        bytes,
+        bytes,
+        tuple,
+        packageSha,
+      ),
+    ).toThrow(PrivateNativeActionUnavailable);
+  });
+  it('refuses an ERP or unknown profile without a legacy fallback', () => {
+    for (const version of ['company-erp-bootstrap-v1', 'unknown']) {
+      const { profile, bytes, tuple } = build();
+      profile.version = version;
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          bytes,
+          bytes,
+          tuple,
+          packageSha,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    }
   });
 });
