@@ -508,8 +508,16 @@ export async function runPrivateNativeBootstrap(enabled = false) {
     url: urls[1],
     schema: 'core',
     entities,
+    // Keep fresh native guards outside the retained allocation transaction.
+    extra: { ...common.extra, max: 2 },
   });
-  const observer = new DataSource({ ...common, url: urls[2], schema: 'core' });
+  const observer = new DataSource({
+    ...common,
+    url: urls[2],
+    schema: 'core',
+    // Observer freshness must not share its repeatable-read snapshot.
+    extra: { ...common.extra, max: 2 },
+  });
   const opened: DataSource[] = [];
   let primary: unknown;
   try {
