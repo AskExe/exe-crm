@@ -79,6 +79,13 @@ export class PrivateNativeStockSdkService {
       input.applicationUniversalIdentifier !== application.universalIdentifier
     )
       throw new PrivateNativeActionUnavailable();
+    const snapshot = await this.checkpoint.readOriginalStockApplications();
+    if (
+      snapshot.standardApplicationId !== standard.id ||
+      snapshot.customApplicationId !== custom.id
+    )
+      throw new PrivateNativeActionUnavailable();
+    await this.channel.bindApplications(snapshot);
     const schema = await this.schemaFactory.createGraphQLSchema(
       { id: original.workspaceId } as FlatWorkspace,
       application.id,

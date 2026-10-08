@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import * as fileSystem from 'node:fs';
+import * as frameModule from 'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-frame';
 
 import { open, realpath, stat } from 'node:fs/promises';
 
@@ -13,7 +15,22 @@ import {
   assertSelectedPrivateNativeProfile,
   readPrivateOperatorBytes,
   runPrivateNativeBootstrap,
+  runPrivateNativeStockBootstrap,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-command';
+
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
+  fstatSync: jest.fn(),
+}));
+jest.mock(
+  'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-frame',
+  () => ({
+    ...jest.requireActual(
+      'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-frame',
+    ),
+    readPrivateFirstWriterFrame: jest.fn(),
+  }),
+);
 
 // Compile-time ES2018 shape only; calls still use Node's native constructor.
 type AggregateError = Error & { errors: unknown[] };
@@ -412,5 +429,76 @@ describe('selected native CRM profile bytes', () => {
         ),
       ).toThrow(PrivateNativeActionUnavailable);
     }
+  });
+});
+
+// Descriptor models exercise entry admission only; actual Linux transport has a
+// separately retained owned-container proof. No authority frame is accepted here.
+describe('separate stock transport admission', () => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+  const environment = process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED;
+  const stop = new Error('frame-boundary-control');
+  beforeEach(() => {
+    Object.defineProperty(process, 'platform', { ...platform, value: 'linux' });
+    process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED = 'true';
+    jest.spyOn(process, 'getuid').mockReturnValue(1000);
+    jest
+      .mocked(frameModule.readPrivateFirstWriterFrame)
+      .mockReset()
+      .mockRejectedValue(stop);
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    Object.defineProperty(process, 'platform', platform);
+    if (environment === undefined)
+      delete process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED;
+    else process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED = environment;
+  });
+  function descriptor(socket: boolean, fifo: boolean, uid: number) {
+    jest.mocked(fileSystem.fstatSync).mockReturnValue({
+      isSocket: () => socket,
+      isFIFO: () => fifo,
+      uid,
+    } as ReturnType<typeof fileSystem.fstatSync>);
+  }
+  it('keeps the stock entry default off before reading descriptors', async () => {
+    const inspected = jest.mocked(fileSystem.fstatSync).mockClear();
+    await expect(runPrivateNativeStockBootstrap()).rejects.toBeInstanceOf(
+      PrivateNativeActionUnavailable,
+    );
+    expect(inspected).not.toHaveBeenCalled();
+  });
+  it('admits measured stock socket shape only to the unchanged frame boundary', async () => {
+    descriptor(true, false, 1000);
+    await expect(runPrivateNativeStockBootstrap(true)).rejects.toBe(stop);
+    expect(frameModule.readPrivateFirstWriterFrame).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    [false, true, 1000],
+    [true, false, 0],
+    [false, false, 1000],
+  ])(
+    'refuses stock FIFO, foreign-owned socket or regular file',
+    async (socket, fifo, uid) => {
+      descriptor(socket as boolean, fifo as boolean, uid as number);
+      await expect(runPrivateNativeStockBootstrap(true)).rejects.toBeInstanceOf(
+        PrivateNativeActionUnavailable,
+      );
+      expect(frameModule.readPrivateFirstWriterFrame).not.toHaveBeenCalled();
+    },
+  );
+  it('legacy entry still refuses sockets and admits FIFO only to its frame boundary', async () => {
+    descriptor(true, false, 1000);
+    await expect(runPrivateNativeBootstrap(true)).rejects.toBeInstanceOf(
+      PrivateNativeActionUnavailable,
+    );
+    jest.restoreAllMocks();
+    jest.spyOn(process, 'getuid').mockReturnValue(1000);
+    jest
+      .mocked(frameModule.readPrivateFirstWriterFrame)
+      .mockReset()
+      .mockRejectedValue(stop);
+    descriptor(false, true, 1000);
+    await expect(runPrivateNativeBootstrap(true)).rejects.toBe(stop);
   });
 });

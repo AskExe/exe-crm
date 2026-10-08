@@ -259,7 +259,7 @@ BEGIN
      w."workspaceCustomApplicationId" IS DISTINCT FROM a."plannedApplicationId" OR
      NOT EXISTS(SELECT 1 FROM core."privateNativeWorkspaceBinding" WHERE "actionId"=a."actionId" AND "workspaceId"=w.id AND "userId"=a."plannedUserId" AND "userWorkspaceId"=a."plannedUserWorkspaceId") OR
      (SELECT count(*) FROM core."dataSource")<>1 OR
-     NOT EXISTS(SELECT 1 FROM core."dataSource" WHERE "workspaceId"=w.id AND "schema"=w."databaseSchema") OR
+     NOT EXISTS(SELECT 1 FROM core."dataSource" WHERE "workspaceId"=w.id AND "schema"=w."databaseSchema" AND "url" IS NULL) OR
      EXISTS(SELECT 1 FROM pg_roles WHERE rolname='${PRIVATE_NATIVE_STOCK_ROLE}') THEN
     RAISE EXCEPTION 'Stock observation unavailable' USING ERRCODE='55000';
   END IF;
