@@ -1,3 +1,11 @@
+import { useNavigateApp } from '~/hooks/useNavigateApp';
+let mockCompanyEditorEnabled = false;
+jest.mock('~/config', () => ({
+  ...jest.requireActual('~/config'),
+  get REACT_APP_COMPANY_EDITOR_ENABLED() {
+    return mockCompanyEditorEnabled;
+  },
+}));
 import { render, waitFor } from '@testing-library/react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -41,3 +49,29 @@ it('passes the server-marked DEMO token exchange to the destination-origin verif
   );
   expect(window.location.search).toBe('?demo=1');
 });
+
+it.each([false, true])(
+  'hosted editor never exchanges native loginToken or redirects to legacy sign-in (ready=%s)',
+  (ready) => {
+    mockCompanyEditorEnabled = true;
+    const verifyLoginToken = jest.fn();
+    const navigate = jest.fn();
+    jest
+      .mocked(useSearchParams)
+      .mockReturnValue([
+        new URLSearchParams('loginToken=foreign-native-token'),
+        jest.fn(),
+      ]);
+    jest.mocked(useHasAccessTokenPair).mockReturnValue(ready);
+    jest.mocked(useVerifyLogin).mockReturnValue({ verifyLoginToken });
+    jest.mocked(useAtomStateValue).mockReturnValue({ isSaved: true });
+    jest.mocked(useNavigateApp).mockReturnValue(navigate);
+    try {
+      render(<VerifyLoginTokenEffect />);
+      expect(verifyLoginToken).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    } finally {
+      mockCompanyEditorEnabled = false;
+    }
+  },
+);

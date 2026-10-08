@@ -1,3 +1,6 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { isMinimalMetadataReadyState } from '@/metadata-store/states/isMinimalMetadataReadyState';
 import { verifyEmailRedirectPathState } from '@/app/states/verifyEmailRedirectPathState';
 import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
 import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
@@ -54,9 +57,24 @@ export const usePageChangeEffectNavigateLocation = () => {
   );
 
   const returnToPath = useAtomStateValue(returnToPathState);
+  const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const isMinimalMetadataReady = useAtomStateValue(isMinimalMetadataReadyState);
   const resolvedReturnToPath = isNonEmptyString(returnToPath)
     ? returnToPath
     : readReturnToPathFromUrlSearchParams();
+
+  // A current opaque proof is not a native JWT. Withhold navigation until
+  // both authority and the bound native workspace metadata have loaded.
+  if (
+    REACT_APP_COMPANY_EDITOR_ENABLED &&
+    (!hasAccessTokenPair ||
+      !isOnAWorkspace ||
+      !currentWorkspace ||
+      !isMinimalMetadataReady ||
+      onboardingStatus !== OnboardingStatus.COMPLETED)
+  ) {
+    return;
+  }
 
   // Preserve the explicit DEMO entry route for signed-in users as well. The
   // normal completed-onboarding redirect below would otherwise replace it
