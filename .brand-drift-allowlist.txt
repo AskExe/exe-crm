@@ -148,3 +148,6 @@ packages/twenty-server/src/engine/twenty-orm/repository/workspace-insert-query-b
 packages/twenty-server/src/engine/core-modules/company-people/private-people-assembly-config.ts
 packages/twenty-server/src/engine/core-modules/company-people/private-people-assembly-graph.ts
 packages/twenty-server/src/engine/core-modules/company-people/private-people-runtime.factory.ts
+
+# Private structural migration validation references the existing internal standard application identifier; no customer branding.
+packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/services/twenty-standard-application.service.ts

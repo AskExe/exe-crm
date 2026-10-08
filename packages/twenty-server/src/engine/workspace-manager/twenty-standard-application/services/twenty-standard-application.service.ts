@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
+import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
@@ -26,21 +28,30 @@ export class TwentyStandardApplicationService {
 
   async synchronizeTwentyStandardApplicationOrThrow({
     workspaceId,
+    privateFence,
   }: {
     workspaceId: string;
+    privateFence?: PrivateNativeMutationFence;
   }) {
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const { twentyStandardFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
         {
           workspaceId,
         },
       );
+    if (privateFence) {
+      const original = await privateFence.readOriginalWorkspace();
+      if (twentyStandardFlatApplication.id !== original.standardApplicationId)
+        throw new PrivateNativeActionUnavailable();
+    }
     const { featureFlagsMap, ...fromTwentyStandardAllFlatEntityMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         ...TWENTY_STANDARD_ALL_METADATA_NAME.map(getMetadataFlatEntityMapsKey),
         'featureFlagsMap',
       ]);
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const shouldIncludeRecordPageLayouts = this.twentyConfigService.get(
       'SHOULD_SEED_STANDARD_RECORD_PAGE_LAYOUTS',
     );
@@ -54,6 +65,7 @@ export class TwentyStandardApplicationService {
       twentyStandardApplicationId: twentyStandardFlatApplication.id,
       shouldIncludeRecordPageLayouts,
     });
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
 
     const fromToAllFlatEntityMaps: FromToAllUniversalFlatEntityMaps = {};
 
@@ -86,6 +98,7 @@ export class TwentyStandardApplicationService {
           },
           fromToAllFlatEntityMaps,
           workspaceId,
+          privateFence,
           additionalCacheDataMaps: {
             featureFlagsMap,
           },
@@ -93,6 +106,7 @@ export class TwentyStandardApplicationService {
         },
       );
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     if (validateAndBuildResult.status === 'fail') {
       throw new WorkspaceMigrationBuilderException(
         validateAndBuildResult,

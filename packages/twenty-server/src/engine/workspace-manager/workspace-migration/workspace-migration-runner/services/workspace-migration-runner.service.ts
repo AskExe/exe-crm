@@ -5,7 +5,10 @@ import { type AllMetadataName } from 'twenty-shared/metadata';
 import { isDefined } from 'twenty-shared/utils';
 import { DataSource } from 'typeorm';
 
+import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
+import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
+import { fencePrivateWorkspaceQueries } from 'src/engine/core-modules/company-native-bootstrap/private-native-workspace-query-fence';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { AllFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/all-flat-entity-maps.type';
 import { getMetadataFlatEntityMapsKey } from 'src/engine/metadata-modules/flat-entity/utils/get-metadata-flat-entity-maps-key.util';
@@ -17,12 +20,19 @@ import { WorkspaceMetadataVersionService } from 'src/engine/metadata-modules/wor
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceMigration } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/types/workspace-migration.type';
+
 import {
   WorkspaceMigrationRunnerException,
   WorkspaceMigrationRunnerExceptionCode,
 } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/exceptions/workspace-migration-runner.exception';
 import { WorkspaceMigrationRunnerActionHandlerRegistryService } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/registry/workspace-migration-runner-action-handler-registry.service';
 import { type MetadataEvent } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/types/metadata-event';
+
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
 
 @Injectable()
 export class WorkspaceMigrationRunnerService {
@@ -40,11 +50,18 @@ export class WorkspaceMigrationRunnerService {
   private getLegacyCacheInvalidationPromises({
     allFlatEntityMapsKeys,
     workspaceId,
+    privateFence,
   }: {
     allFlatEntityMapsKeys: (keyof AllFlatEntityMaps)[];
     workspaceId: string;
+    privateFence?: PrivateNativeMutationFence;
   }): Promise<void>[] {
     const asyncOperations: Promise<void>[] = [];
+    const guarded = async (operation: () => Promise<void>): Promise<void> => {
+      if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
+      await operation();
+      if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
+    };
     const flatMapsKeysSet = new Set(allFlatEntityMapsKeys);
 
     const shouldIncrementMetadataGraphqlSchemaVersion =
@@ -53,8 +70,11 @@ export class WorkspaceMigrationRunnerService {
 
     if (shouldIncrementMetadataGraphqlSchemaVersion) {
       asyncOperations.push(
-        this.workspaceMetadataVersionService.incrementMetadataVersion(
-          workspaceId,
+        guarded(() =>
+          this.workspaceMetadataVersionService.incrementMetadataVersion(
+            workspaceId,
+            privateFence,
+          ),
         ),
       );
     }
@@ -74,10 +94,12 @@ export class WorkspaceMigrationRunnerService {
       shouldIncrementMetadataGraphqlSchemaVersion
     ) {
       asyncOperations.push(
-        this.workspaceCacheStorageService.flushGraphQLOperation({
-          operationName: FIND_ALL_VIEWS_GRAPHQL_OPERATION,
-          workspaceId,
-        }),
+        guarded(() =>
+          this.workspaceCacheStorageService.flushGraphQLOperation({
+            operationName: FIND_ALL_VIEWS_GRAPHQL_OPERATION,
+            workspaceId,
+          }),
+        ),
       );
     }
 
@@ -96,15 +118,17 @@ export class WorkspaceMigrationRunnerService {
       shouldInvalidateRolesPermissionsCache
     ) {
       asyncOperations.push(
-        this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
-          'rolesPermissions',
-          'userWorkspaceRoleMap',
-          'flatRoleTargetMaps',
-          'apiKeyRoleMap',
-          'ORMEntityMetadatas',
-          'flatRoleTargetByAgentIdMaps',
-          'graphQLResolverNameMap',
-        ]),
+        guarded(() =>
+          this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
+            'rolesPermissions',
+            'userWorkspaceRoleMap',
+            'flatRoleTargetMaps',
+            'apiKeyRoleMap',
+            'ORMEntityMetadatas',
+            'flatRoleTargetByAgentIdMaps',
+            'graphQLResolverNameMap',
+          ]),
+        ),
       );
     }
 
@@ -114,24 +138,29 @@ export class WorkspaceMigrationRunnerService {
   async invalidateCache({
     allFlatEntityMapsKeys,
     workspaceId,
+    privateFence,
   }: {
     allFlatEntityMapsKeys: (keyof AllFlatEntityMaps)[];
     workspaceId: string;
+    privateFence?: PrivateNativeMutationFence;
   }): Promise<void> {
     this.logger.time(
       'Runner',
       `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
     );
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     await this.flatEntityMapsCacheService.invalidateFlatEntityMaps({
       workspaceId,
       flatMapsKeys: allFlatEntityMapsKeys,
     });
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const invalidationResults = await Promise.allSettled(
       this.getLegacyCacheInvalidationPromises({
         allFlatEntityMapsKeys,
         workspaceId,
+        privateFence,
       }),
     );
 
@@ -140,6 +169,11 @@ export class WorkspaceMigrationRunnerService {
     );
 
     if (invalidationFailures.length > 0) {
+      if (privateFence)
+        throw new AggregateError(
+          invalidationFailures.map((result) => result.reason),
+          'Private workspace cache requires reconciliation',
+        );
       invalidationFailures.forEach((err) =>
         this.logger.error(
           `Failed to invalidate a legacy cache ${err.reason}`,
@@ -160,14 +194,17 @@ export class WorkspaceMigrationRunnerService {
   run = async ({
     workspaceMigration: { actions, applicationUniversalIdentifier },
     workspaceId,
+    privateFence,
   }: {
     workspaceMigration: WorkspaceMigration;
     workspaceId: string;
+    privateFence?: PrivateNativeMutationFence;
   }): Promise<{
     allFlatEntityMaps: AllFlatEntityMaps;
     metadataEvents: MetadataEvent[];
     hasSchemaMetadataChanged: boolean;
   }> => {
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     this.logger.time('Runner', 'Total execution');
     this.logger.time('Runner', 'Initial cache retrieval');
 
@@ -198,6 +235,7 @@ export class WorkspaceMigrationRunnerService {
         flatMapsKeys: allFlatEntityMapsKeys,
       });
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     this.logger.timeEnd('Runner', 'Initial cache retrieval');
 
     const { flatApplicationMaps } =
@@ -205,6 +243,7 @@ export class WorkspaceMigrationRunnerService {
         'flatApplicationMaps',
       ]);
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const applicationId =
       flatApplicationMaps.idByUniversalIdentifier[
         applicationUniversalIdentifier
@@ -220,14 +259,32 @@ export class WorkspaceMigrationRunnerService {
       });
     }
 
+    if (privateFence) {
+      const original = await privateFence.readOriginalWorkspace();
+      if (applicationId !== original.standardApplicationId)
+        throw new PrivateNativeActionUnavailable();
+    }
     this.logger.time('Runner', 'Transaction execution');
 
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    if (!privateFence) {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+    }
 
     const allMetadataEvents: MetadataEvent[] = [];
+    let restorePrivateQueries: (() => void) | undefined;
+    let privatePrimary: unknown;
 
     try {
+      if (privateFence) {
+        restorePrivateQueries = await fencePrivateWorkspaceQueries(
+          queryRunner,
+          privateFence,
+          workspaceId,
+        );
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+      }
       for (const action of actions) {
         const { partialOptimisticCache, metadataEvents } =
           await this.workspaceMigrationRunnerActionHandlerRegistry.executeActionHandler(
@@ -255,6 +312,12 @@ export class WorkspaceMigrationRunnerService {
 
       this.logger.timeEnd('Runner', 'Transaction execution');
     } catch (error) {
+      if (privateFence) {
+        // Revoked/private failures quarantine the original action. Do not run
+        // compensating schema mutations outside the owned transaction.
+        privatePrimary = error;
+        throw error;
+      }
       await queryRunner.rollbackTransaction().catch((rollbackError) =>
         // oxlint-disable-next-line no-console
         console.trace(
@@ -287,15 +350,45 @@ export class WorkspaceMigrationRunnerService {
         code: WorkspaceMigrationRunnerExceptionCode.INTERNAL_SERVER_ERROR,
       });
     } finally {
-      await queryRunner.release();
+      if (privateFence) {
+        const secondary: unknown[] = [];
+        try {
+          restorePrivateQueries?.();
+        } catch (error) {
+          secondary.push(error);
+        }
+        if (queryRunner.isTransactionActive) {
+          try {
+            await queryRunner.rollbackTransaction();
+          } catch (error) {
+            secondary.push(error);
+          }
+        }
+        try {
+          await queryRunner.release();
+        } catch (error) {
+          secondary.push(error);
+        }
+        if (secondary.length)
+          throw new AggregateError(
+            privatePrimary === undefined
+              ? secondary
+              : [privatePrimary, ...secondary],
+            'Private workspace migration requires reconciliation',
+          );
+      } else await queryRunner.release();
     }
 
     try {
+      if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
       await this.invalidateCache({
         allFlatEntityMapsKeys,
         workspaceId,
+        privateFence,
       });
+      if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     } catch (cacheError) {
+      if (privateFence) throw cacheError;
       this.logger.error(
         `Cache invalidation failed after committed transaction: ${cacheError}`,
         'Runner',
