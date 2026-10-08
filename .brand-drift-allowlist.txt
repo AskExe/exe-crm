@@ -151,3 +151,11 @@ packages/twenty-server/src/engine/core-modules/company-people/private-people-run
 
 # Private structural migration validation references the existing internal standard application identifier; no customer branding.
 packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/services/twenty-standard-application.service.ts
+
+# Shared stock activation retains the existing internal TwentyConfigService
+# identifier and provider field; no customer-facing branding is introduced.
+packages/twenty-server/src/engine/core-modules/workspace/services/workspace.service.ts
+# The extracted native lifecycle uses the same internal configuration type.
+packages/twenty-server/src/engine/core-modules/workspace/services/stock-workspace-activation.ts
+# The ordinary/refusal controls mock that exact internal provider field.
+packages/twenty-server/src/engine/core-modules/workspace/services/__tests__/stock-workspace-activation.spec.ts
