@@ -12,6 +12,7 @@ import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/re
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
@@ -38,6 +39,7 @@ export class PageLayoutResolver {
 
   @Query(() => [PageLayoutDTO])
   @UseGuards(NoPermissionGuard)
+  @CompanyEditorRead()
   async getPageLayouts(
     @AuthWorkspace() workspace: WorkspaceEntity,
     @Args('objectMetadataId', { type: () => String, nullable: true })
@@ -60,6 +62,7 @@ export class PageLayoutResolver {
 
   @Query(() => PageLayoutDTO, { nullable: true })
   @UseGuards(NoPermissionGuard)
+  @CompanyEditorRead()
   async getPageLayout(
     @Args('id', { type: () => String }) id: string,
     @AuthWorkspace() workspace: WorkspaceEntity,

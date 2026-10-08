@@ -1,3 +1,10 @@
+import { companyEditorContextDigest } from '../company-editor.csrf';
+import { type UserWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import {
+  OnboardingStepKeys,
+  type OnboardingKeyValueTypeMap,
+} from 'src/engine/core-modules/onboarding/onboarding.service';
+import { type UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { type DiscoveryService, type Reflector } from '@nestjs/core';
 import { type CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { WorkspaceCacheProvider } from 'src/engine/workspace-cache/interfaces/workspace-cache-provider.service';
@@ -17,6 +24,16 @@ import { CompanyAuthService } from '../company-auth.service';
 
 const uuid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const readConfig = jest.fn();
+let mockEditorEnabled = false;
+jest.mock('../company-editor.config', () => ({
+  companyEditorEnabled: () => mockEditorEnabled,
+}));
+jest.mock('../company-browser.config', () => ({
+  readCompanyBrowserConfiguration: () => null,
+}));
+const userVars = { getAll: jest.fn() };
+const userVarsService = () =>
+  userVars as unknown as UserVarsService<OnboardingKeyValueTypeMap>;
 
 jest.mock('../company-auth.config', () => ({
   ...jest.requireActual('../company-auth.config'),
@@ -48,6 +65,8 @@ const cache = { invalidateAndRecompute: jest.fn(), getOrRecompute: jest.fn() };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockEditorEnabled = false;
+  userVars.getAll.mockResolvedValue(new Map());
   readConfig.mockReturnValue({
     companyId: uuid,
     workspaceId: uuid,
@@ -78,6 +97,7 @@ const service = () =>
   new CompanyAuthService(
     dataSource as unknown as DataSource,
     cache as unknown as WorkspaceCacheService,
+    userVarsService(),
   );
 const request = {
   headers: { authorization: 'Bearer exk_' + 'A'.repeat(43) },
@@ -251,6 +271,7 @@ const fingerprintFromCache = async (
   const current = new CompanyAuthService(
     dataSource as unknown as DataSource,
     nativeCache,
+    userVarsService(),
   );
   jest
     .spyOn(current, 'authenticate')
@@ -333,3 +354,166 @@ it('documents that nested object insertion order remains significant', async () 
   };
   expect(await fingerprintFromCache(data, true)).not.toBe(before);
 });
+
+const editorNativeSetup = (writer = false) => {
+  mockEditorEnabled = true;
+  readConfig.mockReturnValue({
+    ...readConfig(),
+    nativeSchema: 'workspace_fixture',
+  });
+  const { subscription_entitled: _ignored, ...base } = envelope;
+  global.fetch = jest.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          ...base,
+          version: 2,
+          access_entitled: true,
+          entitlement_kind: 'beta',
+          scopes: writer ? ['crm:read', 'crm:write'] : ['crm:read'],
+        }),
+        { status: 200 },
+      ),
+  );
+  const date = new Date('2026-10-08T00:00:00Z');
+  const entity = {
+    id: uuid,
+    createdAt: date,
+    updatedAt: date,
+    deletedAt: null,
+  };
+  repository.findOne
+    .mockReset()
+    .mockResolvedValueOnce({
+      ...entity,
+      activationStatus: 'ACTIVE',
+      databaseSchema: 'workspace_fixture',
+      suspendedAt: null,
+    })
+    .mockResolvedValueOnce({
+      ...entity,
+      isEmailVerified: true,
+      disabled: false,
+    })
+    .mockResolvedValueOnce({ ...entity, userId: uuid, workspaceId: uuid })
+    .mockResolvedValueOnce({ roleId: uuid, role: { workspaceId: uuid } });
+  const member = {
+    ...entity,
+    userId: uuid,
+    colorScheme: 'Light',
+    locale: 'en',
+    timeZone: 'UTC',
+    dateFormat: 'SYSTEM',
+    timeFormat: 'SYSTEM',
+    numberFormat: 'SYSTEM',
+    avatarUrl: null,
+    userEmail: null,
+    searchVector: null,
+    nameFirstName: 'Owned',
+    nameLastName: 'Editor',
+    position: 1,
+    calendarStartDay: 1,
+  };
+  const builder = {
+    select: jest.fn(),
+    from: jest.fn(),
+    where: jest.fn(),
+    getRawOne: jest.fn(async () => member),
+  };
+  builder.select.mockReturnValue(builder);
+  builder.from.mockReturnValue(builder);
+  builder.where.mockReturnValue(builder);
+  dataSource.createQueryBuilder.mockReturnValue(builder);
+  cache.getOrRecompute.mockResolvedValue({
+    userWorkspaceRoleMap: { [uuid]: uuid },
+  });
+  return {
+    current: service(),
+    request: {
+      headers: { cookie: '__Host-exe_crm_session=exs_' + 'A'.repeat(43) },
+    } as Request,
+    builder,
+  };
+};
+it('admits completed native editor onboarding using only the original bound identity', async () => {
+  const { current, request } = editorNativeSetup();
+  await expect(current.authenticate(request)).resolves.toMatchObject({
+    userWorkspaceId: uuid,
+  });
+  expect(userVars.getAll).toHaveBeenCalledWith({
+    userId: uuid,
+    workspaceId: uuid,
+  });
+});
+it.each(Object.values(OnboardingStepKeys))(
+  'refuses native editor bootstrap while %s remains pending',
+  async (key) => {
+    const { current, request, builder } = editorNativeSetup();
+    userVars.getAll.mockResolvedValue(new Map([[key, true]]));
+    await expect(current.authenticate(request)).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(builder.getRawOne).not.toHaveBeenCalled();
+  },
+);
+it('refuses cancellation during the native onboarding read before exposing the member', async () => {
+  const { current, request, builder } = editorNativeSetup();
+  const controller = new AbortController();
+  userVars.getAll.mockImplementation(async () => {
+    controller.abort();
+    return new Map();
+  });
+  await expect(
+    current.authenticate(request, controller.signal),
+  ).rejects.toMatchObject({ status: 503 });
+  expect(builder.getRawOne).not.toHaveBeenCalled();
+});
+
+it.each([
+  'original',
+  'foreign-workspace',
+  'foreign-member',
+  'fingerprint-drift',
+  'reader-grant',
+])(
+  'uses the actual request fence and captured native actor identity: %s',
+  async (mode) => {
+    const { current, request } = editorNativeSetup(mode !== 'reader-grant');
+    const prepared = await current.currentRead(
+      request,
+      new AbortController().signal,
+    );
+    const authority = current.editorAuthority(request)!;
+    request.headers['x-exe-company-context'] =
+      companyEditorContextDigest(authority);
+    const read = jest.spyOn(current, 'currentRead').mockResolvedValue(prepared);
+    jest
+      .spyOn(current, 'assertEditorWrite')
+      .mockResolvedValue({
+        context: prepared.context,
+        authority,
+        contextDigest: companyEditorContextDigest(authority),
+      });
+    const auth = {
+      ...prepared.context,
+      type: 'user',
+    } as UserWorkspaceAuthContext;
+    const operation = new Promise<void>((resolve, reject) => {
+      void current
+        .withEditorRequest(request, () => {
+          if (mode === 'fingerprint-drift')
+            read.mockResolvedValue({ ...prepared, fingerprint: 'changed' });
+          const supplied =
+            mode === 'foreign-workspace'
+              ? { ...auth, workspace: { ...auth.workspace, id: 'foreign' } }
+              : mode === 'foreign-member'
+                ? { ...auth, workspaceMemberId: 'foreign' }
+                : auth;
+          void current.assertEditorActor(supplied).then(resolve, reject);
+        })
+        .catch(reject);
+    });
+    if (mode === 'original') await expect(operation).resolves.toBeUndefined();
+    else await expect(operation).rejects.toMatchObject({ status: 401 });
+  },
+);

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { v4 } from 'uuid';
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { useMutation } from '@apollo/client/react';
 import {
   AnalyticsType,
@@ -18,6 +19,7 @@ export const getSessionId = (): string => {
 };
 
 export const setSessionId = (domain?: string): void => {
+  if (REACT_APP_COMPANY_EDITOR_ENABLED) return;
   const sessionId = getSessionId() || v4();
   const baseCookie = `${ANALYTICS_COOKIE_NAME}=${sessionId}; Max-Age=1800; path=/; secure`;
   const cookie = domain ? baseCookie + `; domain=${domain}` : baseCookie;
@@ -33,6 +35,8 @@ export const useEventTracker = () => {
       type: AnalyticsType,
       payload: Omit<MutationTrackAnalyticsArgs, 'type'>,
     ) => {
+      // Hosted editor authority does not include native analytics mutations.
+      if (REACT_APP_COMPANY_EDITOR_ENABLED) return;
       createEventMutation({
         variables: {
           type,

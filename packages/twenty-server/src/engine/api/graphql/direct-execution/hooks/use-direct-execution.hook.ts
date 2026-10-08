@@ -13,6 +13,7 @@ import { findOperationDefinition } from 'src/engine/api/graphql/direct-execution
 import { hasOnlyGeneratedWorkspaceResolvers } from 'src/engine/api/graphql/direct-execution/utils/has-only-generated-workspace-resolvers.util';
 import { isSubscriptionOperation } from 'src/engine/api/graphql/direct-execution/utils/is-subscription-operation.util';
 import { type FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
 
 const logger = new Logger('GraphQLQueryTiming');
 
@@ -26,6 +27,7 @@ export function useDirectExecution(
 ): Plugin {
   return {
     onRequest: async ({ endResponse, serverContext }) => {
+      if (companyEditorEnabled()) return;
       const req = (serverContext as unknown as { req: Request }).req;
 
       if (!req.workspace?.id || !req.body?.query) {

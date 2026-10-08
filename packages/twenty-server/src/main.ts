@@ -11,6 +11,9 @@ import { companyAuthIngress } from 'src/engine/core-modules/company-auth/company
 import { type NestExpressApplication } from '@nestjs/platform-express';
 
 import fs from 'fs';
+import { join } from 'node:path';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
+import { companyEditorIngress } from 'src/engine/core-modules/company-auth/company-editor.ingress';
 import { type IncomingMessage } from 'node:http';
 import { type Duplex } from 'node:stream';
 
@@ -98,7 +101,11 @@ const bootstrap = async () => {
   if (companyConfiguration) {
     const browser = app.get(CompanyBrowserService);
     app.use(companyBrowserIngress(browser));
-    app.use(companyAuthIngress(companyConfiguration));
+    app.use(
+      companyEditorEnabled()
+        ? companyEditorIngress(companyConfiguration, join(__dirname, 'front'))
+        : companyAuthIngress(companyConfiguration),
+    );
   }
 
   const logger = app.get(LoggerService);

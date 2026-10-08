@@ -16,6 +16,7 @@ interface WorkspaceQueryHookData<T> {
   instance: T;
   host: Module;
   isRequestScoped: boolean;
+  registrationKey?: WorkspaceQueryHookKey;
 }
 
 @Injectable()
@@ -37,7 +38,7 @@ export class WorkspaceQueryHookStorage {
       this.preHookInstances.set(key, []);
     }
 
-    this.preHookInstances.get(key)?.push(data);
+    this.preHookInstances.get(key)?.push({ ...data, registrationKey: key });
   }
 
   getWorkspaceQueryPreHookInstances(
@@ -73,7 +74,7 @@ export class WorkspaceQueryHookStorage {
       this.postHookInstances.set(key, []);
     }
 
-    this.postHookInstances.get(key)?.push(data);
+    this.postHookInstances.get(key)?.push({ ...data, registrationKey: key });
   }
 
   getWorkspacePostQueryHookInstances(

@@ -37,6 +37,7 @@ import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat
 import { DataloaderService } from 'src/engine/dataloaders/dataloader.service';
 import { handleExceptionAndConvertToGraphQLError } from 'src/engine/utils/global-exception-handler.util';
 import { renderApolloPlayground } from 'src/engine/utils/render-apollo-playground.util';
+import { useCompanyEditorBoundary } from 'src/engine/core-modules/company-auth/company-editor.graphql';
 
 export interface GraphQLContext extends YogaDriverServerContext<'express'> {
   user?: FlatAuthContextUser;
@@ -60,6 +61,7 @@ export class GraphQLConfigService implements GqlOptionsFactory<
 
   createGqlOptions(): YogaDriverConfig {
     const plugins = [
+      useCompanyEditorBoundary('records'),
       useGraphQLQueryTiming({
         featureFlagService: this.featureFlagService,
       }),

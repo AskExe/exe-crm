@@ -6,8 +6,17 @@ import { type ReactNode } from 'react';
 import {
   ANALYTICS_COOKIE_NAME,
   useEventTracker,
+  setSessionId,
 } from '@/analytics/hooks/useEventTracker';
 import { AnalyticsType } from '~/generated-metadata/graphql';
+
+let mockEditorEnabled = false;
+jest.mock('~/config', () => ({
+  ...jest.requireActual('~/config'),
+  get REACT_APP_COMPANY_EDITOR_ENABLED() {
+    return mockEditorEnabled;
+  },
+}));
 
 // Mock document.cookie
 Object.defineProperty(document, 'cookie', {
@@ -99,6 +108,31 @@ const Wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 describe('useEventTracker', () => {
+  afterEach(() => {
+    mockEditorEnabled = false;
+  });
+  it('leaves the hosted session cookie and native analytics authority untouched', async () => {
+    mockEditorEnabled = true;
+    document.cookie = '__Host-exe_crm_session=owned-opaque-cookie';
+    const originalCookie = document.cookie;
+    const originalCalls = (mocks[0].result as jest.Mock).mock.calls.length;
+    const { result } = renderHook(() => useEventTracker(), {
+      wrapper: Wrapper,
+    });
+    act(() => {
+      setSessionId();
+      result.current(AnalyticsType['TRACK'], {
+        event: 'Example Event',
+        properties: { foo: 'bar' },
+      });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(document.cookie).toBe(originalCookie);
+    expect(mocks[0].result).toHaveBeenCalledTimes(originalCalls);
+    document.cookie = `${ANALYTICS_COOKIE_NAME}=exampleId`;
+  });
   it('should make the call to track the event', async () => {
     const payload = {
       event: 'Example Event',

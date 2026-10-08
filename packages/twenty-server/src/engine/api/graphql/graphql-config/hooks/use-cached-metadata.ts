@@ -5,6 +5,7 @@ import { type Plugin } from 'graphql-yoga';
 import { isDefined } from 'twenty-shared/utils';
 
 import { InternalServerError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
 
 export type CacheMetadataPluginConfig = {
   // oxlint-disable-next-line @typescripttypescript/no-explicit-any
@@ -47,6 +48,7 @@ export function useCachedMetadata(config: CacheMetadataPluginConfig): Plugin {
 
   return {
     onRequest: async ({ endResponse, serverContext }) => {
+      if (companyEditorEnabled()) return;
       // TODO: we should probably override the graphql-yoga request type to include the workspace and locale
       const request = (serverContext as unknown as { req: Request }).req;
 
@@ -71,6 +73,7 @@ export function useCachedMetadata(config: CacheMetadataPluginConfig): Plugin {
       }
     },
     onResponse: async ({ response, serverContext }) => {
+      if (companyEditorEnabled()) return;
       const request = (serverContext as unknown as { req: Request }).req;
 
       if (!request.workspace?.id) {

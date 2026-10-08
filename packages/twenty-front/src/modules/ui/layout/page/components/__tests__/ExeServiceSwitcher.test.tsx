@@ -1,3 +1,10 @@
+let mockEditorEnabled = false;
+jest.mock('~/config', () => ({
+  ...jest.requireActual('~/config'),
+  get REACT_APP_COMPANY_EDITOR_ENABLED() {
+    return mockEditorEnabled;
+  },
+}));
 import { act, render } from '@testing-library/react';
 
 import { ExeServiceSwitcher } from '@/ui/layout/page/components/ExeServiceSwitcher';
@@ -33,4 +40,22 @@ it('cancels direct navigation and delegates switcher logout to native CRM cleanu
     element.dispatchEvent(new CustomEvent('exe-logout', { cancelable: true }));
   });
   expect(signOutViaCentralPage).toHaveBeenCalledTimes(1);
+});
+
+it('uses the editor hook central logout exactly once instead of wrapping it twice', () => {
+  jest.clearAllMocks();
+  mockEditorEnabled = true;
+  try {
+    const { container } = render(<ExeServiceSwitcher />);
+    const element = container.querySelector('exe-service-switcher')!;
+    act(() => {
+      element.dispatchEvent(
+        new CustomEvent('exe-logout', { cancelable: true }),
+      );
+    });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOutViaCentralPage).not.toHaveBeenCalled();
+  } finally {
+    mockEditorEnabled = false;
+  }
 });

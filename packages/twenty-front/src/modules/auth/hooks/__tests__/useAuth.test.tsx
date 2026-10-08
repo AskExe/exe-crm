@@ -1,3 +1,20 @@
+import { TextDecoder, TextEncoder } from 'node:util';
+import { ReadableStream } from 'node:stream/web';
+import {
+  initializeCompanyEditorSession,
+  companyEditorSessionReady,
+  subscribeCompanyEditorSession,
+} from '@/auth/company-editor/company-editor-session';
+import { SignOutOnOtherTabSignOutEffect } from '@/auth/effect-components/SignOutOnOtherTabSignOutEffect';
+import type * as Undici from 'undici';
+
+let mockEditorEnabled = false;
+jest.mock('~/config', () => ({
+  ...jest.requireActual('~/config'),
+  get REACT_APP_COMPANY_EDITOR_ENABLED() {
+    return mockEditorEnabled;
+  },
+}));
 import { useAuth } from '@/auth/hooks/useAuth';
 import { billingState } from '@/client-config/states/billingState';
 import { isDeveloperDefaultSignInPrefilledState } from '@/client-config/states/isDeveloperDefaultSignInPrefilledState';
@@ -19,9 +36,17 @@ import {
 } from '@/auth/hooks/__mocks__/useAuth';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { SnackBarComponentInstanceContext } from '@/ui/feedback/snack-bar-manager/contexts/SnackBarComponentInstanceContext';
-import { renderHook } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import { SupportDriver } from '~/generated-metadata/graphql';
 
+const mockCentralNavigation = jest.fn();
+jest.mock('@/auth/utils/signOutViaCentralPage', () => {
+  const original = jest.requireActual('@/auth/utils/signOutViaCentralPage');
+  return {
+    signOutViaCentralPage: (signOut: () => Promise<void>) =>
+      original.signOutViaCentralPage(signOut, mockCentralNavigation),
+  };
+});
 const redirectSpy = jest.fn();
 
 jest.mock('@/domain-manager/hooks/useRedirect', () => ({
@@ -93,6 +118,7 @@ const renderHooks = () => {
 describe('useAuth', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEditorEnabled = false;
   });
 
   afterEach(() => {
@@ -232,5 +258,112 @@ describe('useAuth', () => {
     });
 
     expect(mocks.signUpInWorkspace.result).toHaveBeenCalled();
+  });
+});
+
+describe('company editor UI sign-out boundary', () => {
+  let fetchMock: jest.Mock;
+  let channel: { onmessage: ((event: MessageEvent) => void) | null };
+  beforeAll(() => {
+    Object.defineProperty(globalThis, 'TextDecoder', {
+      value: TextDecoder,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'TextEncoder', {
+      value: TextEncoder,
+      configurable: true,
+    });
+    const { Headers } = require('undici') as typeof Undici;
+    Object.defineProperty(globalThis, 'Headers', {
+      value: Headers,
+      configurable: true,
+    });
+    Object.defineProperty(AbortSignal, 'timeout', {
+      value: () => new AbortController().signal,
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'BroadcastChannel', {
+      value: class {
+        onmessage: ((event: MessageEvent) => void) | null = null;
+        constructor() {
+          channel = this;
+        }
+        postMessage() {}
+      },
+      configurable: true,
+    });
+  });
+  beforeEach(() => {
+    mockEditorEnabled = true;
+    fetchMock = jest.fn();
+    Object.defineProperty(globalThis, 'fetch', {
+      value: fetchMock,
+      configurable: true,
+    });
+  });
+  afterEach(() => {
+    mockEditorEnabled = false;
+  });
+  const jsonResponse = (value: object) =>
+    ({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(JSON.stringify(value)));
+          controller.close();
+        },
+      }),
+    }) as unknown as Response;
+  it('invalidates immediately and recovers unconfirmed child revocation through real central logout', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        context: 'a'.repeat(64),
+        csrf: 'a'.repeat(43) + '.1999999999.' + 'b'.repeat(43),
+      }),
+    );
+    await initializeCompanyEditorSession();
+    expect(companyEditorSessionReady()).toBe(true);
+    let rejectLogout!: (error: Error) => void;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectLogout = reject;
+        }),
+    );
+    const { result } = renderHooks();
+    let signOut!: Promise<void>;
+    act(() => {
+      signOut = result.current.signOut();
+    });
+    expect(companyEditorSessionReady()).toBe(false);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/company-session/logout',
+      expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
+    );
+    await act(async () => {
+      rejectLogout(new Error('Core unavailable'));
+      await expect(signOut).resolves.toBeUndefined();
+      expect(mockCentralNavigation).toHaveBeenCalledWith(
+        expect.stringMatching(/^https:\/\/auth\..*\/logout$/),
+      );
+    });
+  });
+  it('cross-tab sign-out invokes real clearSession and keeps the editor terminal', async () => {
+    const invalidated = jest.fn();
+    const unsubscribe = subscribeCompanyEditorSession(invalidated);
+    render(
+      <Wrapper>
+        <SignOutOnOtherTabSignOutEffect />
+      </Wrapper>,
+    );
+    await act(async () => {
+      channel.onmessage?.({ data: { type: 'sign-out' } } as MessageEvent);
+    });
+    expect(companyEditorSessionReady()).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(invalidated).toHaveBeenCalledTimes(1);
+    unsubscribe();
   });
 });

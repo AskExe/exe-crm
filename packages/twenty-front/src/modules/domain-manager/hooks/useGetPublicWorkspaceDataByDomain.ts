@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { workspacePublicDataState } from '@/auth/states/workspacePublicDataState';
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
@@ -38,6 +39,7 @@ export const useGetPublicWorkspaceDataByDomain = () => {
         origin,
       },
       skip:
+        REACT_APP_COMPANY_EDITOR_ENABLED ||
         !clientConfigApiStatus.isSaved ||
         (isMultiWorkspaceEnabled && isDefaultDomain) ||
         isDefined(workspacePublicData),

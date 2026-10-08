@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { isCurrentUserLoadedState } from '@/auth/states/isCurrentUserLoadedState';
@@ -62,6 +63,7 @@ export const MinimalMetadataLoadEffect = () => {
 
     const performLoad = async () => {
       if (desiredLoadState === 'mocked') {
+        if (REACT_APP_COMPANY_EDITOR_ENABLED) return;
         await loadMockedMetadataAtomic();
         return;
       }

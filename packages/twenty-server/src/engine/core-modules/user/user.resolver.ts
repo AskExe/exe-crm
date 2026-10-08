@@ -14,6 +14,9 @@ import { In, Repository } from 'typeorm';
 import { SupportDriver } from 'src/engine/core-modules/twenty-config/interfaces/support.interface';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
+import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
 import { KeyValuePairEntity } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
 import {
@@ -97,6 +100,7 @@ export class UserResolver {
     private readonly workspaceMemberTranspiler: WorkspaceMemberTranspiler,
     private readonly userWorkspaceService: UserWorkspaceService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly workspaceDomainsService: WorkspaceDomainsService,
   ) {}
 
   private async canReadWorkspaceMemberDirectory({
@@ -136,11 +140,14 @@ export class UserResolver {
   }
 
   @Query(() => UserEntity)
+  @CompanyEditorRead()
   @UseGuards(UserAuthGuard, NoPermissionGuard)
   async currentUser(
     @AuthUser() { id: userId }: AuthContextUser,
     @AuthWorkspace({ allowUndefined: true }) workspace: WorkspaceEntity,
   ): Promise<UserEntity> {
+    if (companyEditorEnabled() && !workspace)
+      throw new BadRequestException('Company authorization denied');
     const user = await this.userRepository.findOne({
       where: {
         id: userId,
@@ -187,6 +194,13 @@ export class UserResolver {
 
     return {
       ...user,
+      ...(companyEditorEnabled()
+        ? {
+            userWorkspaces: [currentUserWorkspace],
+            canImpersonate: false,
+            canAccessFullAdminPanel: false,
+          }
+        : {}),
       currentUserWorkspace: {
         ...currentUserWorkspace,
         ...userWorkspacePermissions,
@@ -385,6 +399,7 @@ export class UserResolver {
     nullable: true,
   })
   supportUserHash(@Parent() parent: UserEntity): string | null {
+    if (companyEditorEnabled()) return null;
     if (
       this.twentyConfigService.get('SUPPORT_DRIVER') !== SupportDriver.FRONT
     ) {
@@ -499,7 +514,18 @@ export class UserResolver {
   @ResolveField(() => [UserWorkspaceEntity], {
     nullable: false,
   })
-  async workspaces(@Parent() user: UserEntity) {
+  async workspaces(
+    @Parent() user: UserEntity,
+    @AuthWorkspace({ allowUndefined: true })
+    workspace: WorkspaceEntity | undefined,
+  ) {
+    if (companyEditorEnabled()) {
+      if (!workspace)
+        throw new BadRequestException('Company authorization denied');
+      return user.userWorkspaces.filter(
+        (member) => member.workspaceId === workspace.id,
+      );
+    }
     return user.userWorkspaces;
   }
 
@@ -507,7 +533,25 @@ export class UserResolver {
   async availableWorkspaces(
     @AuthUser() user: AuthContextUser,
     @AuthProvider() authProvider: AuthProviderEnum,
+    @AuthWorkspace({ allowUndefined: true })
+    workspace: WorkspaceEntity | undefined,
   ): Promise<AvailableWorkspaces> {
+    if (companyEditorEnabled()) {
+      if (!workspace)
+        throw new BadRequestException('Company authorization denied');
+      return {
+        availableWorkspacesForSignIn: [
+          {
+            id: workspace.id,
+            displayName: workspace.displayName ?? undefined,
+            workspaceUrls:
+              this.workspaceDomainsService.getWorkspaceUrls(workspace),
+            sso: [],
+          },
+        ],
+        availableWorkspacesForSignUp: [],
+      };
+    }
     return this.userWorkspaceService.setLoginTokenToAvailableWorkspacesWhenAuthProviderMatch(
       await this.userWorkspaceService.findAvailableWorkspacesByEmail(
         user.email,

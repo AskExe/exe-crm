@@ -1,4 +1,5 @@
 import { useAuth } from '@/auth/hooks/useAuth';
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { signOutViaCentralPage } from '@/auth/utils/signOutViaCentralPage';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { useShowAuthModal } from '@/ui/layout/hooks/useShowAuthModal';
@@ -25,7 +26,9 @@ export const ExeServiceSwitcher = () => {
       event.preventDefault();
       if (signingOut) return;
       signingOut = true;
-      void signOutViaCentralPage(signOut);
+      void (REACT_APP_COMPANY_EDITOR_ENABLED
+        ? signOut()
+        : signOutViaCentralPage(signOut));
     };
     element.addEventListener('exe-logout', handleLogout);
     return () => element.removeEventListener('exe-logout', handleLogout);

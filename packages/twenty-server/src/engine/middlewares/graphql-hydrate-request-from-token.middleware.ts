@@ -17,6 +17,10 @@ export class GraphQLHydrateRequestFromTokenMiddleware implements NestMiddleware 
 
     try {
       await this.middlewareService.hydrateGraphqlRequest(req);
+      if (this.middlewareService.isCompanyEditorEnabled()) {
+        await this.middlewareService.runGraphqlRequest(req, next);
+        return;
+      }
     } catch (error) {
       this.middlewareService.writeGraphqlResponseOnExceptionCaught(res, error);
 
