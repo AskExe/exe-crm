@@ -10,11 +10,19 @@ import {
   type PrivateNativeActionTuple,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 import { PrivateNativeDatabaseGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-database-guard';
+import { PrivateNativeStructuralDatabaseGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-database-guard';
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
 import { PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 import { fencePrivateWorkspaceQueries } from 'src/engine/core-modules/company-native-bootstrap/private-native-workspace-query-fence';
 import { WorkspaceMigrationRunnerService } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/services/workspace-migration-runner.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 
+jest.mock('src/engine/core-modules/application/application.entity', () => ({
+  ApplicationEntity: class {},
+}));
+jest.mock('src/engine/metadata-modules/data-source/data-source.entity', () => ({
+  DataSourceEntity: class {},
+}));
 jest.mock('@nestjs/common', () => ({ Injectable: () => () => undefined }), {
   virtual: true,
 });
@@ -219,6 +227,207 @@ describe('original-action workspace query fencing', () => {
       queries,
     };
   }
+  it.each(['database', 'address', 'port'])(
+    'refuses a structural %s endpoint mismatch before mutation',
+    async (key) => {
+      const fence = await issued();
+      const endpoint = { database: 'native', address: '10.0.0.2', port: 5432 };
+      nativeQuery.mockImplementation(async (sql: string) =>
+        sql.includes('inet_server_addr')
+          ? [endpoint]
+          : [{ actionId: tuple.action_id }],
+      );
+      const other = { ...endpoint, [key]: key === 'port' ? 5433 : 'foreign' };
+      const target = {
+        query: jest.fn(async () => [other]),
+      } as unknown as DataSource;
+      await expect(
+        fence.assertOriginalNativeDatabase(target),
+      ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+      expect(target.query).toHaveBeenCalledTimes(1);
+    },
+  );
+  it('refuses revocation after the structural endpoint async read', async () => {
+    const fence = await issued();
+    const endpoint = { database: 'native', address: '10.0.0.2', port: 5432 };
+    nativeQuery.mockImplementation(async (sql: string) =>
+      sql.includes('inet_server_addr')
+        ? [endpoint]
+        : [{ actionId: tuple.action_id }],
+    );
+    const target = {
+      query: jest.fn(async () => {
+        revoked = true;
+        return [endpoint];
+      }),
+    } as unknown as DataSource;
+    await expect(
+      fence.assertOriginalNativeDatabase(target),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+  });
+  it('refuses a forged structural adapter before its callback or any runner work', async () => {
+    const m = migrationService(id('c'));
+    const forged = { assertComposition: jest.fn(), assertFence: jest.fn() };
+    await expect(
+      m.service.run({ ...m.args, privateStructuralAdapter: forged } as never),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(forged.assertComposition).not.toHaveBeenCalled();
+    expect(m.runner.connect).not.toHaveBeenCalled();
+    expect(m.queries).toEqual([]);
+  });
+  it('the source-disabled real catalog boundary never issues an adapter from endpoint-only evidence', async () => {
+    const fence = await issued();
+    const endpoint = { database: 'native', address: '10.0.0.2', port: 5432 };
+    nativeQuery.mockImplementation(async (sql: string) =>
+      sql.includes('inet_server_addr')
+        ? [endpoint]
+        : [{ actionId: tuple.action_id }],
+    );
+    const database = new DataSource({
+      type: 'postgres',
+      extra: {
+        max: 2,
+        connectionTimeoutMillis: 3000,
+        statement_timeout: 10000,
+        query_timeout: 10000,
+      },
+    });
+    database.isInitialized = true;
+    const query = jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
+    const runner = jest.spyOn(database, 'createQueryRunner');
+    await expect(
+      PrivateNativeStructuralAdapter.bind(database, fence),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(runner).not.toHaveBeenCalled();
+    database.isInitialized = false;
+  });
+  // Test-only catalog substitution exercises transaction behavior, not grants.
+  // The production guard above remains source-fixed and always refuses issuance.
+  it.each([
+    'success',
+    'foreign-result',
+    'commit-error',
+    'query-revocation',
+    'post-commit-revocation',
+    'closure-errors',
+  ])(
+    'fixed structural operation retains original fencing and closure: %s',
+    async (phase) => {
+      const fence = await issued();
+      const endpoint = { database: 'native', address: '10.0.0.2', port: 5432 };
+      nativeQuery.mockImplementation(async (sql: string) =>
+        sql.includes('inet_server_addr')
+          ? [endpoint]
+          : sql.includes('JOIN core.')
+            ? [row]
+            : [{ actionId: tuple.action_id }],
+      );
+      const database = new DataSource({
+        type: 'postgres',
+        extra: {
+          max: 2,
+          connectionTimeoutMillis: 3000,
+          statement_timeout: 10000,
+          query_timeout: 10000,
+        },
+      });
+      database.isInitialized = true;
+      jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
+      jest
+        .spyOn(PrivateNativeStructuralDatabaseGuard.prototype, 'assertCurrent')
+        .mockResolvedValue();
+      let active = false;
+      const primary = new Error('inert commit failure');
+      const rollbackError = new Error('inert rollback failure');
+      const releaseError = new Error('inert release failure');
+      const runner = {
+        get isTransactionActive() {
+          return active;
+        },
+        connect: jest.fn(async () => undefined),
+        startTransaction: jest.fn(async () => {
+          active = true;
+        }),
+        query: jest.fn(async () => {
+          if (phase === 'query-revocation') revoked = true;
+          return [
+            {
+              result: {
+                actionId:
+                  phase === 'foreign-result' ? id('a') : tuple.action_id,
+                workspaceId,
+                oldVersion: 1,
+                newVersion: 2,
+              },
+            },
+          ];
+        }),
+        commitTransaction: jest.fn(async () => {
+          if (phase === 'commit-error' || phase === 'closure-errors')
+            throw primary;
+          active = false;
+          if (phase === 'post-commit-revocation') revoked = true;
+        }),
+        rollbackTransaction: jest.fn(async () => {
+          active = false;
+          if (phase === 'closure-errors') throw rollbackError;
+        }),
+        release: jest.fn(async () => {
+          if (phase === 'closure-errors') throw releaseError;
+        }),
+      };
+      jest
+        .spyOn(database, 'createQueryRunner')
+        .mockReturnValue(
+          runner as unknown as ReturnType<DataSource['createQueryRunner']>,
+        );
+      const adapter = await PrivateNativeStructuralAdapter.bind(
+        database,
+        fence,
+      );
+      expect(() => adapter.assertComposition(database, fence)).not.toThrow();
+      expect(() =>
+        adapter.assertComposition(new DataSource({ type: 'postgres' }), fence),
+      ).toThrow(PrivateNativeActionUnavailable);
+      if (phase === 'success')
+        await expect(
+          adapter.incrementMetadataVersion(workspaceId),
+        ).resolves.toBe(2);
+      else if (phase === 'closure-errors') {
+        let failure: unknown;
+        try {
+          await adapter.incrementMetadataVersion(workspaceId);
+        } catch (error) {
+          failure = error;
+        }
+        expect((failure as { errors: unknown[] }).errors).toEqual([
+          primary,
+          rollbackError,
+          releaseError,
+        ]);
+      } else if (phase === 'commit-error')
+        await expect(
+          adapter.incrementMetadataVersion(workspaceId),
+        ).rejects.toBe(primary);
+      else
+        await expect(
+          adapter.incrementMetadataVersion(workspaceId),
+        ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+      expect(runner.query).toHaveBeenCalledWith(
+        'SELECT core.increment_original_metadata_version() AS result',
+      );
+      expect(runner.query).toHaveBeenCalledTimes(1);
+      expect(runner.release).toHaveBeenCalledTimes(1);
+      const committed =
+        phase === 'success' || phase === 'post-commit-revocation';
+      expect(runner.rollbackTransaction).toHaveBeenCalledTimes(
+        committed ? 0 : 1,
+      );
+      expect(active).toBe(false);
+      database.isInitialized = false;
+    },
+  );
   it('ordinary migration keeps the original transaction and compensating action path', async () => {
     const m = migrationService(id('c'));
     const primary = new Error('controlled action');

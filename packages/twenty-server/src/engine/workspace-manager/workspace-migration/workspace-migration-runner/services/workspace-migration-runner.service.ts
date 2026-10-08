@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 
 import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
 import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 import { fencePrivateWorkspaceQueries } from 'src/engine/core-modules/company-native-bootstrap/private-native-workspace-query-fence';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
@@ -51,12 +52,18 @@ export class WorkspaceMigrationRunnerService {
     allFlatEntityMapsKeys,
     workspaceId,
     privateFence,
+    privateStructuralAdapter,
   }: {
     allFlatEntityMapsKeys: (keyof AllFlatEntityMaps)[];
     workspaceId: string;
     privateFence?: PrivateNativeMutationFence;
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter;
   }): Promise<void>[] {
     const asyncOperations: Promise<void>[] = [];
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      privateStructuralAdapter.assertFence(privateFence);
+    }
     const guarded = async (operation: () => Promise<void>): Promise<void> => {
       if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
       await operation();
@@ -74,6 +81,7 @@ export class WorkspaceMigrationRunnerService {
           this.workspaceMetadataVersionService.incrementMetadataVersion(
             workspaceId,
             privateFence,
+            privateStructuralAdapter,
           ),
         ),
       );
@@ -139,11 +147,17 @@ export class WorkspaceMigrationRunnerService {
     allFlatEntityMapsKeys,
     workspaceId,
     privateFence,
+    privateStructuralAdapter,
   }: {
     allFlatEntityMapsKeys: (keyof AllFlatEntityMaps)[];
     workspaceId: string;
     privateFence?: PrivateNativeMutationFence;
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter;
   }): Promise<void> {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      privateStructuralAdapter.assertFence(privateFence);
+    }
     this.logger.time(
       'Runner',
       `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
@@ -161,6 +175,7 @@ export class WorkspaceMigrationRunnerService {
         allFlatEntityMapsKeys,
         workspaceId,
         privateFence,
+        privateStructuralAdapter,
       }),
     );
 
@@ -195,15 +210,24 @@ export class WorkspaceMigrationRunnerService {
     workspaceMigration: { actions, applicationUniversalIdentifier },
     workspaceId,
     privateFence,
+    privateStructuralAdapter,
   }: {
     workspaceMigration: WorkspaceMigration;
     workspaceId: string;
     privateFence?: PrivateNativeMutationFence;
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter;
   }): Promise<{
     allFlatEntityMaps: AllFlatEntityMaps;
     metadataEvents: MetadataEvent[];
     hasSchemaMetadataChanged: boolean;
   }> => {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      privateStructuralAdapter.assertComposition(
+        this.coreDataSource,
+        privateFence,
+      );
+    }
     if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     this.logger.time('Runner', 'Total execution');
     this.logger.time('Runner', 'Initial cache retrieval');
@@ -385,6 +409,7 @@ export class WorkspaceMigrationRunnerService {
         allFlatEntityMapsKeys,
         workspaceId,
         privateFence,
+        privateStructuralAdapter,
       });
       if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     } catch (cacheError) {

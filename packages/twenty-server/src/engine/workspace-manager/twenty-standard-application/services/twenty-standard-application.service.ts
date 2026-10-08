@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
 import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
@@ -29,10 +30,16 @@ export class TwentyStandardApplicationService {
   async synchronizeTwentyStandardApplicationOrThrow({
     workspaceId,
     privateFence,
+    privateStructuralAdapter,
   }: {
     workspaceId: string;
     privateFence?: PrivateNativeMutationFence;
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter;
   }) {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      privateStructuralAdapter.assertFence(privateFence);
+    }
     if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const { twentyStandardFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
@@ -99,6 +106,7 @@ export class TwentyStandardApplicationService {
           fromToAllFlatEntityMaps,
           workspaceId,
           privateFence,
+          privateStructuralAdapter,
           additionalCacheDataMaps: {
             featureFlagsMap,
           },

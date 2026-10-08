@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
 
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
 import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
@@ -25,7 +26,21 @@ export class WorkspaceMetadataVersionService {
   async incrementMetadataVersion(
     workspaceId: string,
     privateFence?: PrivateNativeMutationFence,
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter,
   ): Promise<void> {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      if (privateFence) privateStructuralAdapter.assertFence(privateFence);
+      const newMetadataVersion =
+        await privateStructuralAdapter.incrementMetadataVersion(workspaceId);
+      await privateStructuralAdapter.assertWorkspaceCurrent(workspaceId);
+      await this.workspaceCacheStorageService.setMetadataVersion(
+        workspaceId,
+        newMetadataVersion,
+      );
+      await privateStructuralAdapter.assertWorkspaceCurrent(workspaceId);
+      return;
+    }
     if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },

@@ -197,6 +197,37 @@ export class PrivateNativeMutationFence {
     return original;
   }
 
+  async assertOriginalNativeDatabase(database: DataSource): Promise<void> {
+    await this.assertCurrent();
+    const query = `SELECT inet_server_addr()::text AS address,
+      inet_server_port() AS port,current_database() AS database`;
+    const original: unknown = await this.nativeDatabase.query(query);
+    await this.assertCurrent();
+    const structural: unknown = await database.query(query);
+    await this.assertCurrent();
+    const endpoint = (value: unknown): string => {
+      if (
+        !Array.isArray(value) ||
+        value.length !== 1 ||
+        typeof value[0]?.address !== 'string' ||
+        value[0].address.length > 64 ||
+        !Number.isInteger(value[0].port) ||
+        value[0].port < 1 ||
+        value[0].port > 65535 ||
+        typeof value[0].database !== 'string' ||
+        value[0].database.length > 63
+      )
+        throw new PrivateNativeActionUnavailable();
+      return JSON.stringify([
+        value[0].address,
+        value[0].port,
+        value[0].database,
+      ]);
+    };
+    if (endpoint(original) !== endpoint(structural))
+      throw new PrivateNativeActionUnavailable();
+  }
+
   async assertWorkspaceCurrent(workspaceId: string): Promise<void> {
     const original = await this.readOriginalWorkspace();
     if (workspaceId !== original.workspaceId)

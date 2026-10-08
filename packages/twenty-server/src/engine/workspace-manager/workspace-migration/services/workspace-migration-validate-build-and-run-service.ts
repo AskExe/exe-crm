@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
 import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 
 import {
@@ -360,6 +361,7 @@ export class WorkspaceMigrationValidateBuildAndRunService {
     args: WorkspaceMigrationOrchestratorBuildArgs & {
       idByUniversalIdentifierByMetadataName?: IdByUniversalIdentifierByMetadataName;
       privateFence?: PrivateNativeMutationFence;
+      privateStructuralAdapter?: PrivateNativeStructuralAdapter;
     },
   ): Promise<
     | WorkspaceMigrationOrchestratorFailedResult
@@ -370,8 +372,13 @@ export class WorkspaceMigrationValidateBuildAndRunService {
     const {
       idByUniversalIdentifierByMetadataName,
       privateFence,
+      privateStructuralAdapter,
       ...buildArgs
     } = args;
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      privateStructuralAdapter.assertFence(privateFence);
+    }
     if (privateFence)
       await privateFence.assertWorkspaceCurrent(args.workspaceId);
 
@@ -418,6 +425,7 @@ export class WorkspaceMigrationValidateBuildAndRunService {
         workspaceId: args.workspaceId,
         workspaceMigration,
         privateFence,
+        privateStructuralAdapter,
       });
 
     if (privateFence)
