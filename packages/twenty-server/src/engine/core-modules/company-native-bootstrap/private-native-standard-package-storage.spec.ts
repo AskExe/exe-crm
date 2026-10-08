@@ -13,6 +13,12 @@ import { PrivateNativeDatabaseGuard } from 'src/engine/core-modules/company-nati
 import { PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 import { writeOriginalStandardPackageFiles } from 'src/engine/core-modules/company-native-bootstrap/private-native-standard-package-storage';
 
+type AggregateError = Error & { errors: unknown[] };
+declare const AggregateError: new (
+  errors: Iterable<unknown>,
+  message?: string,
+) => AggregateError;
+
 jest.mock('node:fs/promises', () => ({
   lstat: jest.fn(),
   mkdir: jest.fn(),
@@ -59,12 +65,6 @@ const directory = `${root}/${workspaceId}/20202020-64aa-4b6f-b003-9c74b97cee20/d
 
 // Inert Linux FD API model; actual kernel semantics require the separate Linux plan.
 describe('fixed original standard package storage with held directory FDs', () => {
-  type AggregateError = Error & { errors: unknown[] };
-  declare const AggregateError: new (
-    errors: Iterable<unknown>,
-    message?: string,
-  ) => AggregateError;
-
   type Node = {
     ino: number;
     uid: number;

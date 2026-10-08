@@ -292,15 +292,18 @@ describe('original-action workspace query fencing', () => {
         query_timeout: 10000,
       },
     });
-    database.isInitialized = true;
-    const query = jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
-    const runner = jest.spyOn(database, 'createQueryRunner');
-    await expect(
-      PrivateNativeStructuralAdapter.bind(database, fence),
-    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
-    expect(query).toHaveBeenCalledTimes(1);
-    expect(runner).not.toHaveBeenCalled();
-    database.isInitialized = false;
+    const initialized = jest.replaceProperty(database, 'isInitialized', true);
+    try {
+      const query = jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
+      const runner = jest.spyOn(database, 'createQueryRunner');
+      await expect(
+        PrivateNativeStructuralAdapter.bind(database, fence),
+      ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+      expect(query).toHaveBeenCalledTimes(1);
+      expect(runner).not.toHaveBeenCalled();
+    } finally {
+      initialized.restore();
+    }
   });
   // Test-only catalog substitution exercises transaction behavior, not grants.
   // The production guard above remains source-fixed and always refuses issuance.
@@ -332,100 +335,109 @@ describe('original-action workspace query fencing', () => {
           query_timeout: 10000,
         },
       });
-      database.isInitialized = true;
-      jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
-      jest
-        .spyOn(PrivateNativeStructuralDatabaseGuard.prototype, 'assertCurrent')
-        .mockResolvedValue();
-      let active = false;
-      const primary = new Error('inert commit failure');
-      const rollbackError = new Error('inert rollback failure');
-      const releaseError = new Error('inert release failure');
-      const runner = {
-        get isTransactionActive() {
-          return active;
-        },
-        connect: jest.fn(async () => undefined),
-        startTransaction: jest.fn(async () => {
-          active = true;
-        }),
-        query: jest.fn(async () => {
-          if (phase === 'query-revocation') revoked = true;
-          return [
-            {
-              result: {
-                actionId:
-                  phase === 'foreign-result' ? id('a') : tuple.action_id,
-                workspaceId,
-                oldVersion: 1,
-                newVersion: 2,
+      const initialized = jest.replaceProperty(database, 'isInitialized', true);
+      try {
+        jest.spyOn(database, 'query').mockResolvedValue([endpoint]);
+        jest
+          .spyOn(
+            PrivateNativeStructuralDatabaseGuard.prototype,
+            'assertCurrent',
+          )
+          .mockResolvedValue();
+        let active = false;
+        const primary = new Error('inert commit failure');
+        const rollbackError = new Error('inert rollback failure');
+        const releaseError = new Error('inert release failure');
+        const runner = {
+          get isTransactionActive() {
+            return active;
+          },
+          connect: jest.fn(async () => undefined),
+          startTransaction: jest.fn(async () => {
+            active = true;
+          }),
+          query: jest.fn(async () => {
+            if (phase === 'query-revocation') revoked = true;
+            return [
+              {
+                result: {
+                  actionId:
+                    phase === 'foreign-result' ? id('a') : tuple.action_id,
+                  workspaceId,
+                  oldVersion: 1,
+                  newVersion: 2,
+                },
               },
-            },
-          ];
-        }),
-        commitTransaction: jest.fn(async () => {
-          if (phase === 'commit-error' || phase === 'closure-errors')
-            throw primary;
-          active = false;
-          if (phase === 'post-commit-revocation') revoked = true;
-        }),
-        rollbackTransaction: jest.fn(async () => {
-          active = false;
-          if (phase === 'closure-errors') throw rollbackError;
-        }),
-        release: jest.fn(async () => {
-          if (phase === 'closure-errors') throw releaseError;
-        }),
-      };
-      jest
-        .spyOn(database, 'createQueryRunner')
-        .mockReturnValue(
-          runner as unknown as ReturnType<DataSource['createQueryRunner']>,
+            ];
+          }),
+          commitTransaction: jest.fn(async () => {
+            if (phase === 'commit-error' || phase === 'closure-errors')
+              throw primary;
+            active = false;
+            if (phase === 'post-commit-revocation') revoked = true;
+          }),
+          rollbackTransaction: jest.fn(async () => {
+            active = false;
+            if (phase === 'closure-errors') throw rollbackError;
+          }),
+          release: jest.fn(async () => {
+            if (phase === 'closure-errors') throw releaseError;
+          }),
+        };
+        jest
+          .spyOn(database, 'createQueryRunner')
+          .mockReturnValue(
+            runner as unknown as ReturnType<DataSource['createQueryRunner']>,
+          );
+        const adapter = await PrivateNativeStructuralAdapter.bind(
+          database,
+          fence,
         );
-      const adapter = await PrivateNativeStructuralAdapter.bind(
-        database,
-        fence,
-      );
-      expect(() => adapter.assertComposition(database, fence)).not.toThrow();
-      expect(() =>
-        adapter.assertComposition(new DataSource({ type: 'postgres' }), fence),
-      ).toThrow(PrivateNativeActionUnavailable);
-      if (phase === 'success')
-        await expect(
-          adapter.incrementMetadataVersion(workspaceId),
-        ).resolves.toBe(2);
-      else if (phase === 'closure-errors') {
-        let failure: unknown;
-        try {
-          await adapter.incrementMetadataVersion(workspaceId);
-        } catch (error) {
-          failure = error;
-        }
-        expect((failure as { errors: unknown[] }).errors).toEqual([
-          primary,
-          rollbackError,
-          releaseError,
-        ]);
-      } else if (phase === 'commit-error')
-        await expect(
-          adapter.incrementMetadataVersion(workspaceId),
-        ).rejects.toBe(primary);
-      else
-        await expect(
-          adapter.incrementMetadataVersion(workspaceId),
-        ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
-      expect(runner.query).toHaveBeenCalledWith(
-        'SELECT core.increment_original_metadata_version() AS result',
-      );
-      expect(runner.query).toHaveBeenCalledTimes(1);
-      expect(runner.release).toHaveBeenCalledTimes(1);
-      const committed =
-        phase === 'success' || phase === 'post-commit-revocation';
-      expect(runner.rollbackTransaction).toHaveBeenCalledTimes(
-        committed ? 0 : 1,
-      );
-      expect(active).toBe(false);
-      database.isInitialized = false;
+        expect(() => adapter.assertComposition(database, fence)).not.toThrow();
+        expect(() =>
+          adapter.assertComposition(
+            new DataSource({ type: 'postgres' }),
+            fence,
+          ),
+        ).toThrow(PrivateNativeActionUnavailable);
+        if (phase === 'success')
+          await expect(
+            adapter.incrementMetadataVersion(workspaceId),
+          ).resolves.toBe(2);
+        else if (phase === 'closure-errors') {
+          let failure: unknown;
+          try {
+            await adapter.incrementMetadataVersion(workspaceId);
+          } catch (error) {
+            failure = error;
+          }
+          expect((failure as { errors: unknown[] }).errors).toEqual([
+            primary,
+            rollbackError,
+            releaseError,
+          ]);
+        } else if (phase === 'commit-error')
+          await expect(
+            adapter.incrementMetadataVersion(workspaceId),
+          ).rejects.toBe(primary);
+        else
+          await expect(
+            adapter.incrementMetadataVersion(workspaceId),
+          ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+        expect(runner.query).toHaveBeenCalledWith(
+          'SELECT core.increment_original_metadata_version() AS result',
+        );
+        expect(runner.query).toHaveBeenCalledTimes(1);
+        expect(runner.release).toHaveBeenCalledTimes(1);
+        const committed =
+          phase === 'success' || phase === 'post-commit-revocation';
+        expect(runner.rollbackTransaction).toHaveBeenCalledTimes(
+          committed ? 0 : 1,
+        );
+        expect(active).toBe(false);
+      } finally {
+        initialized.restore();
+      }
     },
   );
   it('ordinary migration keeps the original transaction and compensating action path', async () => {
