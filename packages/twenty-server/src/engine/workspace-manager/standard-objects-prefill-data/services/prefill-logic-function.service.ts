@@ -1,16 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
 
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
+import { StockLogicFunctionCreationService } from 'src/engine/metadata-modules/logic-function/services/stock-logic-function-creation.service';
 import { LogicFunctionFromSourceService } from 'src/engine/metadata-modules/logic-function/services/logic-function-from-source.service';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
 @Injectable()
 export class PrefillLogicFunctionService {
   constructor(
-    private readonly logicFunctionFromSourceService: LogicFunctionFromSourceService,
+    @Inject(LogicFunctionFromSourceService)
+    private readonly logicFunctionFromSourceService:
+      | LogicFunctionFromSourceService
+      | StockLogicFunctionCreationService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
   ) {}
 

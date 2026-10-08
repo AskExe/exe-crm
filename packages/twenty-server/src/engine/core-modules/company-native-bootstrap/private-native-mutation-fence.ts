@@ -234,6 +234,17 @@ export class PrivateNativeMutationFence {
       throw new PrivateNativeActionUnavailable();
   }
 
+  remainingOriginalWorkMilliseconds(): number {
+    PrivateNativeMutationFence.assertIssued(this);
+    this.assertOriginalDeadline();
+    return Math.floor(
+      Math.min(
+        this.workDeadline,
+        this.originalLeaseDeadline - this.reserveMilliseconds,
+      ) - performance.now(),
+    );
+  }
+
   assertOriginalDeadline(): void {
     const now = performance.now();
     if (

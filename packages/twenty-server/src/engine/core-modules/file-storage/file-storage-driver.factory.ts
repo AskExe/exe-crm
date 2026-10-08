@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+
+import {
+  PrivateNativeStockStorage,
+  PRIVATE_NATIVE_STOCK_STORAGE,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-storage';
 
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 
@@ -15,8 +20,21 @@ import { resolveAbsolutePath } from 'src/utils/resolve-absolute-path';
 
 @Injectable()
 export class FileStorageDriverFactory extends DriverFactoryBase<StorageDriver> {
-  constructor(twentyConfigService: TwentyConfigService) {
+  constructor(
+    twentyConfigService: TwentyConfigService,
+    @Optional()
+    @Inject(PRIVATE_NATIVE_STOCK_STORAGE)
+    private readonly privateStockStorage?: PrivateNativeStockStorage,
+  ) {
     super(twentyConfigService);
+  }
+
+  getCurrentDriver(): StorageDriver {
+    if (this.privateStockStorage) {
+      PrivateNativeStockStorage.assertIssued(this.privateStockStorage);
+      return new ValidatedStorageDriver(this.privateStockStorage);
+    }
+    return super.getCurrentDriver();
   }
 
   protected buildConfigKey(): string {

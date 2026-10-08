@@ -159,3 +159,57 @@ packages/twenty-server/src/engine/core-modules/workspace/services/workspace.serv
 packages/twenty-server/src/engine/core-modules/workspace/services/stock-workspace-activation.ts
 # The ordinary/refusal controls mock that exact internal provider field.
 packages/twenty-server/src/engine/core-modules/workspace/services/__tests__/stock-workspace-activation.spec.ts
+
+# Native schema extraction preserves fixed stock standard-application identifiers. No customer UI branding.
+packages/twenty-server/src/engine/api/graphql/stock-workspace-schema-parts.service.ts
+
+# Native cache imports retain the internal twenty-orm module path. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-caches.ts
+
+# Fixed environment provider uses existing twenty-config types and driver. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-environment.ts
+
+# Owned query-runner custody uses existing twenty-orm native data source. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-pool-custody.ts
+
+# Concrete provider graph reuses fixed internal config, ORM and stock services. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context.ts
+
+# Fixed native role policy names existing internal standard applications. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-role-policy.ts
+
+# Confined SDK entry loads the pinned internal client SDK resources. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-worker.entry.ts
+
+# Stock SDK service retains native TwentyConfigService and standard application identifiers. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk.service.ts
+
+# Concrete service registry reuses existing internal config and ORM classes. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-services-1.ts
+
+# Concrete service registry reuses existing internal config and schema manager classes. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-services-2.ts
+
+# Owned stock storage preserves native SDK resource paths and config identifiers. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-storage.ts
+
+# Native subject completion reuses fixed stock standard-role identifiers. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-subject-completion.ts
+
+# Stock workspace operation reuses native TwentyConfigService and standard application. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation.ts
+
+# Existing file-storage driver factory keeps its native config service type. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/file-storage/file-storage-driver.factory.ts
+
+# Ordinary member extraction controls use native internal config mocks. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/user-workspace/stock-workspace-member-creation.service.spec.ts
+
+# Ordinary member extraction preserves existing config and standard application identifiers. No customer UI branding.
+packages/twenty-server/src/engine/core-modules/user-workspace/stock-workspace-member-creation.service.ts
+
+# Ordinary logic-function extraction controls use native internal config mocks. No customer UI branding.
+packages/twenty-server/src/engine/metadata-modules/logic-function/services/stock-logic-function-creation.service.spec.ts
+
+# Ordinary logic-function extraction retains native config and shared resource identifiers. No customer UI branding.
+packages/twenty-server/src/engine/metadata-modules/logic-function/services/stock-logic-function-creation.service.ts

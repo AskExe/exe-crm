@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { TypeOrmQueryService } from '@ptc-org/nestjs-query-typeorm';
-import { type APP_LOCALES, SOURCE_LOCALE } from 'twenty-shared/translations';
 import { FileFolder } from 'twenty-shared/types';
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
 import { IsNull, Not, type QueryRunner, type Repository } from 'typeorm';
@@ -22,6 +21,8 @@ import { FileCorePictureService } from 'src/engine/core-modules/file/file-core-p
 import { extractFileIdFromUrl } from 'src/engine/core-modules/file/files-field/utils/extract-file-id-from-url.util';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
+import { StockUserWorkspaceRemovalService } from 'src/engine/core-modules/user-workspace/stock-user-workspace-removal.service';
+import { StockWorkspaceMemberCreationService } from 'src/engine/core-modules/user-workspace/stock-workspace-member-creation.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
@@ -39,7 +40,6 @@ import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { assert } from 'src/utils/assert';
 import { getDomainNameByEmail } from 'src/utils/get-domain-name-by-email';
 
 export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspaceEntity> {
@@ -109,46 +109,10 @@ export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspaceEntit
       'id' | 'firstName' | 'lastName' | 'email' | 'locale'
     >,
   ) {
-    const authContext = buildSystemAuthContext(workspaceId);
-
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
-      const workspaceMemberRepository =
-        await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
-          workspaceId,
-          'workspaceMember',
-          { shouldBypassPermissionChecks: true },
-        );
-
-      const userWorkspace = await this.userWorkspaceRepository.findOneOrFail({
-        where: {
-          userId: user.id,
-          workspaceId,
-        },
-      });
-
-      await workspaceMemberRepository.insert({
-        name: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-        colorScheme: 'System',
-        userId: user.id,
-        userEmail: user.email,
-        avatarUrl: userWorkspace.defaultAvatarUrl ?? '',
-        locale: (user.locale ?? SOURCE_LOCALE) as keyof typeof APP_LOCALES,
-      });
-
-      const workspaceMember = await workspaceMemberRepository.find({
-        where: {
-          userId: user.id,
-        },
-      });
-
-      assert(
-        workspaceMember?.length === 1,
-        `Error while creating workspace member ${user.email} on workspace ${workspaceId}`,
-      );
-    }, authContext);
+    return new StockWorkspaceMemberCreationService(
+      this.userWorkspaceRepository,
+      this.globalWorkspaceOrmManager,
+    ).createWorkspaceMember(workspaceId, user);
   }
 
   async addUserToWorkspaceIfUserNotInWorkspace(
@@ -290,13 +254,10 @@ export class UserWorkspaceService extends TypeOrmQueryService<UserWorkspaceEntit
     userWorkspaceId: string;
     softDelete?: boolean;
   }): Promise<void> {
-    if (softDelete) {
-      await this.roleTargetRepository.softRemove({ userWorkspaceId });
-      await this.userWorkspaceRepository.softDelete({ id: userWorkspaceId });
-    } else {
-      await this.roleTargetRepository.delete({ userWorkspaceId }); // TODO remove once userWorkspace foreign key is added on roleTarget
-      await this.userWorkspaceRepository.delete({ id: userWorkspaceId });
-    }
+    await new StockUserWorkspaceRemovalService(
+      this.userWorkspaceRepository,
+      this.roleTargetRepository,
+    ).deleteUserWorkspace({ userWorkspaceId, softDelete });
   }
 
   async findAvailableWorkspacesByEmail(email: string) {
