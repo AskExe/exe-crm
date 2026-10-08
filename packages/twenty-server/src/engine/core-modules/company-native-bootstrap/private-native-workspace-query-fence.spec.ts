@@ -377,6 +377,57 @@ describe('original-action workspace query fencing', () => {
     ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
     expect(runner.query).not.toHaveBeenCalled();
   });
+  it.each([false, true])(
+    'preserves actual TypeORM query forwarding and result with structured=%s',
+    async (structured) => {
+      const fence = await issued();
+      const pool = new Pool({
+        max: 1,
+        Client: ControlledClient as unknown as typeof Client,
+      });
+      const database = new DataSource({ type: 'postgres', logging: false });
+      (database.driver as unknown as { master: Pool }).master = pool;
+      (database as unknown as { isInitialized: boolean }).isInitialized = true;
+      const runner = database.createQueryRunner();
+      const original = runner.query;
+      const forwarded = jest.fn(function (
+        this: typeof runner,
+        ...args: [query: string, parameters?: unknown[], structured?: boolean]
+      ) {
+        expect(this).toBe(runner);
+        return Reflect.apply(original, this, args);
+      });
+      runner.query = forwarded;
+      const restore = await fencePrivateWorkspaceQueries(
+        runner,
+        fence,
+        workspaceId,
+      );
+      const parameters = ['controlled'];
+      try {
+        const result = structured
+          ? await runner.query('SELECT controlled', parameters, true)
+          : await runner.query('SELECT controlled', parameters);
+        const args = forwarded.mock.calls[0];
+        expect(args).toHaveLength(structured ? 3 : 2);
+        expect(args?.[0]).toBe('SELECT controlled');
+        expect(args?.[1]).toBe(parameters);
+        if (structured) {
+          expect(args?.[2]).toBe(true);
+          expect(result).toEqual(expect.objectContaining({ records: [] }));
+        } else {
+          expect(result).toEqual([]);
+        }
+        expect(ControlledClient.queries).toEqual(['SELECT controlled']);
+      } finally {
+        restore();
+        await runner.release();
+        await pool.end();
+      }
+      expect(pool.totalCount).toBe(0);
+      expect(pool.waitingCount).toBe(0);
+    },
+  );
   it.each(['DDL', 'metadata', 'COMMIT'])(
     'checks original owner before and after actual runner %s and releases every client',
     async (phase) => {

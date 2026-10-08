@@ -15,10 +15,16 @@ export async function fencePrivateWorkspaceQueries(
   if (runner.isTransactionActive || runner.isReleased)
     throw new PrivateNativeActionUnavailable();
   const original = runner.query;
-  const guarded: QueryRunner['query'] = async (...args) => {
+  const guarded: QueryRunner['query'] = async (
+    ...args: [
+      query: string,
+      parameters?: unknown[],
+      useStructuredResult?: boolean,
+    ]
+  ) => {
     if (runner.query !== guarded) throw new PrivateNativeActionUnavailable();
     await fence.assertWorkspaceCurrent(workspaceId);
-    const result = await original.apply(runner, args);
+    const result = await Reflect.apply(original, runner, args);
     await fence.assertWorkspaceCurrent(workspaceId);
     return result;
   };
