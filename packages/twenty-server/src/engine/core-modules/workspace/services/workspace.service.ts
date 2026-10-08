@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import assert from 'assert';
@@ -53,19 +53,10 @@ import {
 } from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { PermissionsService } from 'src/engine/metadata-modules/permissions/permissions.service';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
-import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { prefillCompanies } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-companies.util';
-import { prefillDashboards } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-dashboards.util';
-import { prefillOpportunities } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-opportunities.util';
-import { prefillPeople } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-people.util';
-import { prefillWorkflowCommandMenuItems } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-command-menu-items.util';
-import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflows.util';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { WorkspaceManagerService } from 'src/engine/workspace-manager/workspace-manager.service';
-import { DEFAULT_FEATURE_FLAGS } from 'src/engine/workspace-manager/workspace-migration/constant/default-feature-flags';
-import { resolveEngineVersion } from 'src/utils/version/resolve-engine-version';
+import { activateStockWorkspace } from './stock-workspace-activation';
 
 @Injectable()
 // oxlint-disable-next-line exe-crm/inject-workspace-repository
@@ -315,67 +306,17 @@ export class WorkspaceService extends TypeOrmQueryService<WorkspaceEntity> {
     workspace: WorkspaceEntity,
     data: ActivateWorkspaceInput,
   ) {
-    if (!data.displayName || !data.displayName.length) {
-      throw new BadRequestException("'displayName' not provided");
-    }
-
-    if (
-      workspace.activationStatus === WorkspaceActivationStatus.ONGOING_CREATION
-    ) {
-      throw new Error('Workspace is already being created');
-    }
-
-    if (
-      workspace.activationStatus !== WorkspaceActivationStatus.PENDING_CREATION
-    ) {
-      throw new Error('Workspace is not pending creation');
-    }
-
-    await this.workspaceRepository.update(workspace.id, {
-      activationStatus: WorkspaceActivationStatus.ONGOING_CREATION,
-    });
-
-    await this.coreEntityCacheService.invalidate(
-      'workspaceEntity',
-      workspace.id,
-    );
-
-    await this.featureFlagService.enableFeatureFlags(
-      DEFAULT_FEATURE_FLAGS,
-      workspace.id,
-    );
-
-    await this.workspaceManagerService.init({
-      workspace,
-      userId: user.id,
-    });
-
-    await this.userWorkspaceService.createWorkspaceMember(workspace.id, user);
-
-    await this.prefillCreatedWorkspaceRecords({
-      workspaceId: workspace.id,
-      schemaName: getWorkspaceSchemaName(workspace.id),
-    });
-
-    const appVersion = this.twentyConfigService.get('APP_VERSION');
-
-    await this.workspaceRepository.update(workspace.id, {
-      displayName: data.displayName,
-      activationStatus: WorkspaceActivationStatus.ACTIVE,
-      // workspace.version lives on the migration-engine track, not the
-      // exe-crm release track — stamping the raw APP_VERSION (0.9.x) would
-      // make the next upgrade abort with WORKSPACE_VERSION_MISSMATCH
-      // (bug 928a4140).
-      version: resolveEngineVersion(appVersion).version,
-    });
-
-    await this.coreEntityCacheService.invalidate(
-      'workspaceEntity',
-      workspace.id,
-    );
-
-    return await this.workspaceRepository.findOneBy({
-      id: workspace.id,
+    return activateStockWorkspace(user, workspace, data, {
+      workspaceRepository: this.workspaceRepository,
+      coreEntityCacheService: this.coreEntityCacheService,
+      featureFlagService: this.featureFlagService,
+      workspaceManagerService: this.workspaceManagerService,
+      userWorkspaceService: this.userWorkspaceService,
+      twentyConfigService: this.twentyConfigService,
+      flatEntityMapsCacheService: this.flatEntityMapsCacheService,
+      prefillLogicFunctionService: this.prefillLogicFunctionService,
+      coreDataSource: this.coreDataSource,
+      logger: this.logger,
     });
   }
 
@@ -689,84 +630,6 @@ export class WorkspaceService extends TypeOrmQueryService<WorkspaceEntity> {
           },
         );
       }
-    }
-  }
-
-  private async prefillCreatedWorkspaceRecords({
-    workspaceId,
-    schemaName,
-  }: {
-    workspaceId: string;
-    schemaName: string;
-  }): Promise<void> {
-    const {
-      flatObjectMetadataMaps,
-      flatFieldMetadataMaps,
-      flatPageLayoutMaps,
-    } =
-      await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
-        {
-          workspaceId,
-          flatMapsKeys: [
-            'flatObjectMetadataMaps',
-            'flatFieldMetadataMaps',
-            'flatPageLayoutMaps',
-          ],
-        },
-      );
-
-    await this.prefillLogicFunctionService.ensureSeeded({
-      workspaceId,
-      definitions:
-        getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
-          workspaceId,
-        ),
-    });
-
-    const queryRunner = this.coreDataSource.createQueryRunner();
-
-    await queryRunner.connect();
-
-    try {
-      await queryRunner.startTransaction();
-
-      await prefillCompanies(queryRunner.manager, schemaName);
-
-      await prefillPeople(queryRunner.manager, schemaName);
-
-      await prefillWorkflows(
-        queryRunner.manager,
-        workspaceId,
-        schemaName,
-        flatObjectMetadataMaps,
-        flatFieldMetadataMaps,
-      );
-
-      await prefillWorkflowCommandMenuItems(queryRunner.manager, workspaceId);
-
-      await prefillOpportunities(queryRunner.manager, schemaName);
-
-      await prefillDashboards(
-        queryRunner.manager,
-        schemaName,
-        flatPageLayoutMaps,
-      );
-
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      if (queryRunner.isTransactionActive) {
-        try {
-          await queryRunner.rollbackTransaction();
-        } catch (rollbackError) {
-          this.logger.error(
-            `Failed to rollback prefill transaction: ${rollbackError.message}`,
-          );
-        }
-      }
-
-      throw error;
-    } finally {
-      await queryRunner.release();
     }
   }
 }
