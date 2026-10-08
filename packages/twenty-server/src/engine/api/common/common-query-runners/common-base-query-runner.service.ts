@@ -104,7 +104,7 @@ export abstract class CommonBaseQueryRunnerService<
 
     if (companyEditorEnabled()) {
       await this.companyAuthService.assertEditorRecord(
-        this.isReadOnly,
+        this.isReadOnly || this.operationName === CommonQueryNames.FIND_ONE,
         !companyEditorRecordAllowed(flatObjectMetadata),
       );
     }
@@ -218,7 +218,7 @@ export abstract class CommonBaseQueryRunnerService<
 
     if (companyEditorEnabled()) {
       await this.companyAuthService.assertEditorRecord(
-        this.isReadOnly,
+        this.isReadOnly || this.operationName === CommonQueryNames.FIND_ONE,
         !companyEditorRecordAllowed(queryRunnerContext.flatObjectMetadata),
       );
     }
