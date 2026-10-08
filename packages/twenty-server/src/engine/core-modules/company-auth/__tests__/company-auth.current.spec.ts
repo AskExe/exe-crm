@@ -487,13 +487,11 @@ it.each([
     request.headers['x-exe-company-context'] =
       companyEditorContextDigest(authority);
     const read = jest.spyOn(current, 'currentRead').mockResolvedValue(prepared);
-    jest
-      .spyOn(current, 'assertEditorWrite')
-      .mockResolvedValue({
-        context: prepared.context,
-        authority,
-        contextDigest: companyEditorContextDigest(authority),
-      });
+    jest.spyOn(current, 'assertEditorWrite').mockResolvedValue({
+      context: prepared.context,
+      authority,
+      contextDigest: companyEditorContextDigest(authority),
+    });
     const auth = {
       ...prepared.context,
       type: 'user',
