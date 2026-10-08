@@ -216,3 +216,6 @@ packages/twenty-server/src/engine/metadata-modules/logic-function/services/stock
 
 # SDK binding controls use the exact native standard-application constant; no customer UI branding.
 packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-channel.spec.ts
+
+# Original stock application snapshot validates the native standard-application constant; no customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint.ts
