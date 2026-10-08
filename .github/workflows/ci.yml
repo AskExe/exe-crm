@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, codex/crm-company-producer-integration, 'codex/**']
   push:
-    branches: [main]
+    branches: [main, codex/askexe-public-beta]
   merge_group:
 
 permissions:
