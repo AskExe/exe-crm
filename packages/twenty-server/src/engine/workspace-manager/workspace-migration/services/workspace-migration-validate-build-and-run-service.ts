@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 
 import {
   AllMetadataName,
@@ -358,6 +359,7 @@ export class WorkspaceMigrationValidateBuildAndRunService {
   public async validateBuildAndRunWorkspaceMigrationFromTo(
     args: WorkspaceMigrationOrchestratorBuildArgs & {
       idByUniversalIdentifierByMetadataName?: IdByUniversalIdentifierByMetadataName;
+      privateFence?: PrivateNativeMutationFence;
     },
   ): Promise<
     | WorkspaceMigrationOrchestratorFailedResult
@@ -365,18 +367,28 @@ export class WorkspaceMigrationValidateBuildAndRunService {
         hasSchemaMetadataChanged: boolean;
       })
   > {
-    const { idByUniversalIdentifierByMetadataName, ...buildArgs } = args;
+    const {
+      idByUniversalIdentifierByMetadataName,
+      privateFence,
+      ...buildArgs
+    } = args;
+    if (privateFence)
+      await privateFence.assertWorkspaceCurrent(args.workspaceId);
 
     const validateAndBuildResult =
       await this.workspaceMigrationBuildOrchestratorService
         .buildWorkspaceMigration(buildArgs)
         .catch((error) => {
+          if (privateFence) throw error;
           this.logger.error(error);
           throw new WorkspaceMigrationV2Exception(
             WorkspaceMigrationV2ExceptionCode.BUILDER_INTERNAL_SERVER_ERROR,
             error.message,
           );
         });
+
+    if (privateFence)
+      await privateFence.assertWorkspaceCurrent(args.workspaceId);
 
     if (validateAndBuildResult.status === 'fail') {
       if (this.isDebugEnabled) {
@@ -405,7 +417,11 @@ export class WorkspaceMigrationValidateBuildAndRunService {
       await this.workspaceMigrationRunnerService.run({
         workspaceId: args.workspaceId,
         workspaceMigration,
+        privateFence,
       });
+
+    if (privateFence)
+      await privateFence.assertWorkspaceCurrent(args.workspaceId);
 
     this.metadataEventEmitter.emitMetadataEvents({
       metadataEvents: metadataEvents,

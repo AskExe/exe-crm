@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 
 import { type DataSource } from 'typeorm';
+import { v5 } from 'uuid';
 
 import {
   PrivateNativeActionReader,
@@ -10,9 +11,26 @@ import {
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 
 import { PrivateNativeDatabaseGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-database-guard';
+import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
+
+export type OriginalPrivateNativeWorkspace = Readonly<{
+  actionId: string;
+  workspaceId: string;
+  userId: string;
+  userWorkspaceId: string;
+  customApplicationId: string;
+  standardApplicationId: string;
+  ownerSubject: string;
+  schemaName: string;
+}>;
+
+const issuedFences = new WeakSet<PrivateNativeMutationFence>();
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 // Concrete SQL-owned fence, not a caller-supplied checkpoint callback.
 export class PrivateNativeMutationFence {
+  private originalWorkspace?: OriginalPrivateNativeWorkspace;
   private constructor(
     private readonly reader: PrivateNativeActionReader,
     private readonly tuple: Readonly<PrivateNativeActionTuple>,
@@ -21,7 +39,12 @@ export class PrivateNativeMutationFence {
     private readonly originalLeaseDeadline: number,
     private readonly reserveMilliseconds: number,
     private readonly nativeGuard: PrivateNativeDatabaseGuard,
+    private readonly nativeDatabase: DataSource,
   ) {}
+
+  static assertIssued(fence: PrivateNativeMutationFence): void {
+    if (!issuedFences.has(fence)) throw new PrivateNativeActionUnavailable();
+  }
 
   static async bindCommittedMarker(
     nativeDatabase: DataSource,
@@ -49,6 +72,7 @@ export class PrivateNativeMutationFence {
       originalLeaseDeadline,
       reserveMilliseconds,
       new PrivateNativeDatabaseGuard(nativeDatabase, nativeRole, false),
+      nativeDatabase,
     );
     await fence.assertCurrent();
     const rows: unknown = await nativeDatabase.query(
@@ -81,7 +105,102 @@ export class PrivateNativeMutationFence {
       throw new PrivateNativeActionUnavailable();
     }
     await fence.assertCurrent();
+    issuedFences.add(fence);
     return fence;
+  }
+
+  // Provisioning selectors come from the original committed marker/binding,
+  // never from an initializer's workspace, subject or schema argument.
+  async readOriginalWorkspace(): Promise<OriginalPrivateNativeWorkspace> {
+    if (!issuedFences.has(this)) throw new PrivateNativeActionUnavailable();
+    await this.assertCurrent();
+    const rows: unknown = await this.nativeDatabase.query(
+      `SELECT a."actionId",a."plannedWorkspaceId" AS "workspaceId",a."plannedUserId" AS "userId",
+        a."plannedUserWorkspaceId" AS "userWorkspaceId",a."plannedApplicationId" AS "applicationId",a."ownerSubject",w."databaseSchema"
+       FROM core."privateNativeAction" a
+       JOIN core."privateNativeWorkspaceBinding" b ON b."actionId"=a."actionId"
+       JOIN core.workspace w ON w.id=b."workspaceId" AND w.id=a."plannedWorkspaceId"
+       JOIN core."user" u ON u.id=b."userId" AND u.id=a."plannedUserId"
+       JOIN core."userWorkspace" uw ON uw.id=b."userWorkspaceId"
+         AND uw.id=a."plannedUserWorkspaceId" AND uw."workspaceId"=w.id AND uw."userId"=u.id
+       JOIN core.application app ON app.id=a."plannedApplicationId" AND app."workspaceId"=w.id
+         AND w."workspaceCustomApplicationId"=app.id
+         AND app."universalIdentifier"=app.id AND app."deletedAt" IS NULL
+       WHERE a."actionId"=$1 AND a."intentId"=$2 AND a."jobId"=$3
+         AND a."companyId"=$4 AND a."deploymentId"=$5 AND a."requestKey"=$6
+         AND a."ownerSubject"=$7 AND a."attempt"=$8 AND a."workerId"=$9
+         AND a."profileSha256"=$10 AND a."configSha256"=$11 AND a."initializerSha256"=$12
+         AND w."activationStatus"='PENDING_CREATION' AND w."deletedAt" IS NULL
+         AND w."suspendedAt" IS NULL AND u."deletedAt" IS NULL AND u.disabled=false
+         AND u."passwordHash" IS NULL AND u."canImpersonate"=false
+         AND u."canAccessFullAdminPanel"=false AND u."isEmailVerified"=false
+         AND u.email=$13 AND uw."deletedAt" IS NULL`,
+      [
+        this.tuple.action_id,
+        this.tuple.intent_id,
+        this.tuple.job_id,
+        this.tuple.company_id,
+        this.tuple.deployment_id,
+        this.tuple.request_key,
+        this.ownerSubject,
+        this.tuple.attempt,
+        this.tuple.worker_id,
+        this.tuple.profile_sha256,
+        this.tuple.config_sha256,
+        this.tuple.initializer_sha256,
+        `subject-${this.ownerSubject}@native.invalid`,
+      ],
+    );
+    await this.assertCurrent();
+    if (
+      !Array.isArray(rows) ||
+      rows.length !== 1 ||
+      typeof rows[0] !== 'object' ||
+      rows[0] === null
+    )
+      throw new PrivateNativeActionUnavailable();
+    const row = rows[0];
+    if (
+      row.actionId !== this.tuple.action_id ||
+      row.ownerSubject !== this.ownerSubject ||
+      !['workspaceId', 'userId', 'userWorkspaceId', 'applicationId'].every(
+        (key) => typeof row[key] === 'string' && UUID.test(row[key]),
+      )
+    )
+      throw new PrivateNativeActionUnavailable();
+    const schemaName = getWorkspaceSchemaName(row.workspaceId);
+    if (row.databaseSchema !== null && row.databaseSchema !== schemaName)
+      throw new PrivateNativeActionUnavailable();
+    const original = Object.freeze({
+      actionId: row.actionId,
+      workspaceId: row.workspaceId,
+      userId: row.userId,
+      userWorkspaceId: row.userWorkspaceId,
+      customApplicationId: row.applicationId,
+      standardApplicationId: v5(
+        'private-native-standard-application-v1',
+        row.actionId,
+      ),
+      ownerSubject: this.ownerSubject,
+      schemaName,
+    });
+    if (
+      this.originalWorkspace &&
+      Object.keys(original).some(
+        (key) =>
+          original[key as keyof OriginalPrivateNativeWorkspace] !==
+          this.originalWorkspace?.[key as keyof OriginalPrivateNativeWorkspace],
+      )
+    )
+      throw new PrivateNativeActionUnavailable();
+    this.originalWorkspace ??= original;
+    return original;
+  }
+
+  async assertWorkspaceCurrent(workspaceId: string): Promise<void> {
+    const original = await this.readOriginalWorkspace();
+    if (workspaceId !== original.workspaceId)
+      throw new PrivateNativeActionUnavailable();
   }
 
   assertOriginalDeadline(): void {

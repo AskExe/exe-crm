@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
 
+import { type PrivateNativeMutationFence } from 'src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
   WorkspaceMetadataVersionException,
@@ -21,12 +22,17 @@ export class WorkspaceMetadataVersionService {
     private readonly workspaceCacheStorageService: WorkspaceCacheStorageService,
   ) {}
 
-  async incrementMetadataVersion(workspaceId: string): Promise<void> {
+  async incrementMetadataVersion(
+    workspaceId: string,
+    privateFence?: PrivateNativeMutationFence,
+  ): Promise<void> {
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
       withDeleted: true,
     });
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     const metadataVersion = workspace?.metadataVersion;
 
     if (!isDefined(metadataVersion)) {
@@ -38,14 +44,17 @@ export class WorkspaceMetadataVersionService {
 
     const newMetadataVersion = metadataVersion + 1;
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     await this.workspaceRepository.update(
       { id: workspaceId },
       { metadataVersion: newMetadataVersion },
     );
 
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
     await this.workspaceCacheStorageService.setMetadataVersion(
       workspaceId,
       newMetadataVersion,
     );
+    if (privateFence) await privateFence.assertWorkspaceCurrent(workspaceId);
   }
 }
