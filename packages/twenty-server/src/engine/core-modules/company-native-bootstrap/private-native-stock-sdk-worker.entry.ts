@@ -116,14 +116,22 @@ const main = async (): Promise<void> => {
         before.size > STOCK_SDK_MAX_ARCHIVE_BYTES
       )
         throw new Error('stock_sdk_archive_bound');
-      archive = await handle.readFile();
+      archive = Buffer.alloc(before.size);
+      const read = await handle.read(archive, 0, archive.length, 0);
+      if (read.bytesRead !== archive.length)
+        throw new Error('stock_sdk_archive_incomplete');
       const after = await handle.stat();
       if (
         archive.length !== before.size ||
         before.dev !== after.dev ||
         before.ino !== after.ino ||
+        !after.isFile() ||
+        after.uid !== 1000 ||
+        after.nlink !== 1 ||
         before.size !== after.size ||
-        before.mtimeMs !== after.mtimeMs
+        before.mode !== after.mode ||
+        before.mtimeMs !== after.mtimeMs ||
+        before.ctimeMs !== after.ctimeMs
       )
         throw new Error('stock_sdk_archive_changed');
     } finally {

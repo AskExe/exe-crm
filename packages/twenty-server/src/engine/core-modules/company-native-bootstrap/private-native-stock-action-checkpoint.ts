@@ -7,6 +7,20 @@ import {
   type StockPendingNativePlan,
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-pending-plan';
 
+import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
+import { TWENTY_STANDARD_APPLICATION } from 'src/engine/workspace-manager/twenty-standard-application/constants/twenty-standard-applications';
+
+export type PrivateStockApplicationSnapshot = Readonly<{
+  actionId: string;
+  workspaceId: string;
+  customApplicationId: string;
+  standardApplicationId: string;
+}>;
+const issuedApplicationSnapshots = new WeakMap<
+  PrivateStockApplicationSnapshot,
+  PrivateNativeStockActionCheckpoint
+>();
+
 const issuedCheckpoints = new WeakSet<PrivateNativeStockActionCheckpoint>();
 
 // This is current-action evidence, not a setup credential or SQL capability.
@@ -78,6 +92,57 @@ export class PrivateNativeStockActionCheckpoint {
         (row) => row.path === 'dependencies/yarn.lock' && row.size === 112283,
       ).length !== 1
     )
+      throw new PrivateNativeActionUnavailable();
+  }
+
+  async readOriginalStockApplications(): Promise<PrivateStockApplicationSnapshot> {
+    await this.assertNativeDatabase(this.nativeDatabase);
+    const original = this.pendingPlan.original;
+    const applications = await this.nativeDatabase
+      .getRepository(ApplicationEntity)
+      .find({ where: { workspaceId: original.workspaceId } });
+    await this.assertNativeDatabase(this.nativeDatabase);
+    const standard = applications.find(
+      (app) =>
+        app.universalIdentifier ===
+        TWENTY_STANDARD_APPLICATION.universalIdentifier,
+    );
+    const custom = applications.find(
+      (app) =>
+        app.id === original.customApplicationId &&
+        app.universalIdentifier === original.customApplicationId,
+    );
+    if (
+      applications.length !== 2 ||
+      !standard ||
+      !custom ||
+      standard.id === custom.id ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        standard.id,
+      ) ||
+      standard.name !== TWENTY_STANDARD_APPLICATION.name ||
+      standard.version !== TWENTY_STANDARD_APPLICATION.version ||
+      standard.sourcePath !== TWENTY_STANDARD_APPLICATION.sourcePath ||
+      standard.canBeUninstalled !== false ||
+      !standard.packageJsonFileId ||
+      !standard.yarnLockFileId ||
+      !standard.packageJsonChecksum ||
+      !standard.yarnLockChecksum
+    )
+      throw new PrivateNativeActionUnavailable();
+    const snapshot = Object.freeze({
+      actionId: original.actionId,
+      workspaceId: original.workspaceId,
+      customApplicationId: original.customApplicationId,
+      standardApplicationId: standard.id,
+    });
+    issuedApplicationSnapshots.set(snapshot, this);
+    return snapshot;
+  }
+
+  assertApplicationSnapshot(snapshot: PrivateStockApplicationSnapshot): void {
+    PrivateNativeStockActionCheckpoint.assertIssued(this);
+    if (issuedApplicationSnapshots.get(snapshot) !== this)
       throw new PrivateNativeActionUnavailable();
   }
 

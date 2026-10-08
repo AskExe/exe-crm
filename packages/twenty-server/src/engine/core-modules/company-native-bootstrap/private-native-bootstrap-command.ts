@@ -186,6 +186,7 @@ export async function readPrivateOperatorBytes(name: string): Promise<Buffer> {
     constants.O_RDONLY | constants.O_NOFOLLOW,
   );
   let primary: unknown;
+  let failed = false;
   try {
     const before = await handle.stat({ bigint: true });
     refuse(
@@ -218,6 +219,7 @@ export async function readPrivateOperatorBytes(name: string): Promise<Buffer> {
     );
     return bytes;
   } catch (error) {
+    failed = true;
     primary = error;
     throw error;
   } finally {
@@ -225,7 +227,7 @@ export async function readPrivateOperatorBytes(name: string): Promise<Buffer> {
       await handle.close();
     } catch (error) {
       throw new AggregateError(
-        primary === undefined ? [error] : [primary, error],
+        failed ? [primary, error] : [error],
         'Private protected file unavailable',
       );
     }
@@ -262,10 +264,29 @@ export async function assertPrivateNativeRole(
 // No automatic CLI activation or provider callback. Default-off must be
 // enabled explicitly by the protected operator trust artifact and private call.
 export async function runPrivateNativeBootstrap(enabled = false) {
+  return runPrivateNativeBootstrapMode(enabled, false);
+}
+
+export async function runPrivateNativeStockBootstrap(enabled = false) {
+  refuse(
+    process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED === 'true' &&
+      process.platform === 'linux',
+  );
+  return runPrivateNativeBootstrapMode(enabled, true);
+}
+
+async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
   refuse(enabled && process.getuid?.() === OWNER_UID);
   const start = performance.now();
   let wholeDeadline = start + 181000;
-  refuse(fstatSync(0).isFIFO());
+  const inputDescriptor = fstatSync(0);
+  // The fixed stock launcher creates a UID-owned Unix socket inside the
+  // container. Legacy direct dispatch still requires its original FIFO.
+  refuse(
+    stock
+      ? inputDescriptor.isSocket() && inputDescriptor.uid === OWNER_UID
+      : inputDescriptor.isFIFO(),
+  );
   const frame = await readPrivateFirstWriterFrame(process.stdin);
   const lifetime = new PrivateDispatchLifetime(frame, wholeDeadline);
   const trust = closed(
@@ -482,6 +503,21 @@ export async function runPrivateNativeBootstrap(enabled = false) {
         decodeURIComponent(native.pathname.slice(1)) === config.native_database,
     );
   }
+  const parentUrl = stock
+    ? privateConnection(
+        await readPrivateOperatorBytes('native-stock-parent.json'),
+        'exe_crm_native_stock_parent',
+      )
+    : undefined;
+  if (parentUrl) {
+    const parentEndpoint = new URL(parentUrl);
+    refuse(
+      parentEndpoint.hostname === config.native_host &&
+        Number(parentEndpoint.port || 5432) === config.native_port &&
+        decodeURIComponent(parentEndpoint.pathname.slice(1)) ===
+          config.native_database,
+    );
+  }
   const common = {
     type: 'postgres' as const,
     logging: false as const,
@@ -518,10 +554,20 @@ export async function runPrivateNativeBootstrap(enabled = false) {
     // Observer freshness must not share its repeatable-read snapshot.
     extra: { ...common.extra, max: 2 },
   });
+  const parent = parentUrl
+    ? new DataSource({ ...common, url: parentUrl, schema: 'core' })
+    : undefined;
   const opened: DataSource[] = [];
   let primary: unknown;
+  let failed = false;
   try {
-    for (const database of [core, independentCore, writer, observer]) {
+    for (const database of [
+      core,
+      independentCore,
+      writer,
+      observer,
+      ...(parent ? [parent] : []),
+    ]) {
       await database.initialize();
       opened.push(database);
       refuse(performance.now() < wholeDeadline - 61000);
@@ -562,8 +608,49 @@ export async function runPrivateNativeBootstrap(enabled = false) {
         observed.userWorkspaceId === pending.userWorkspaceId &&
         observed.actionId === pending.actionId,
     );
-    return Object.freeze({ ...pending, readiness: 'unverified' as const });
+    if (!stock)
+      return Object.freeze({ ...pending, readiness: 'unverified' as const });
+    refuse(parent && selected && performance.now() < wholeDeadline - 61000);
+    const [
+      { PrivateNativeMutationFence },
+      { PrivateNativeStockActionCheckpoint },
+      { PrivateNativeStockSetupSession },
+    ] = await Promise.all([
+      import('src/engine/core-modules/company-native-bootstrap/private-native-mutation-fence'),
+      import('src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint'),
+      import('src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-session'),
+    ]);
+    const original = await writerAuthority.read(tuple, 61001);
+    const leaseEnd = original.monotonicDeadline;
+    const workEnd = Math.min(wholeDeadline - 61000, leaseEnd - 61001);
+    const fence = await PrivateNativeMutationFence.bindCommittedMarker(
+      writer,
+      writerAuthority,
+      tuple,
+      original.authority.owner_subject,
+      workEnd,
+      leaseEnd,
+      61000,
+      roles[1] as string,
+    );
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      fence,
+      writer,
+    );
+    const setup = await PrivateNativeStockSetupSession.bind(
+      checkpoint,
+      writer,
+      parent,
+    );
+    const native = await setup.prepare();
+    await checkpoint.assertCurrent();
+    return Object.freeze({
+      ...native,
+      readiness: 'unverified' as const,
+      qualification: 'stock-cold-observation-only' as const,
+    });
   } catch (error) {
+    failed = true;
     primary = error;
     throw error;
   } finally {
@@ -577,7 +664,7 @@ export async function runPrivateNativeBootstrap(enabled = false) {
     }
     if (errors.length)
       throw new AggregateError(
-        primary === undefined ? errors : [primary, ...errors],
+        failed ? [primary, ...errors] : errors,
         'Private native command unavailable',
       );
   }

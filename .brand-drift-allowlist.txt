@@ -213,3 +213,9 @@ packages/twenty-server/src/engine/metadata-modules/logic-function/services/stock
 
 # Ordinary logic-function extraction retains native config and shared resource identifiers. No customer UI branding.
 packages/twenty-server/src/engine/metadata-modules/logic-function/services/stock-logic-function-creation.service.ts
+
+# SDK binding controls use the exact native standard-application constant; no customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-channel.spec.ts
+
+# Original stock application snapshot validates the native standard-application constant; no customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint.ts

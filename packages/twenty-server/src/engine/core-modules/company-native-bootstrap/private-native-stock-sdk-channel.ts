@@ -3,7 +3,10 @@ import { fstatSync } from 'node:fs';
 import { Socket } from 'node:net';
 
 import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
-import { PrivateNativeStockActionCheckpoint } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint';
+import {
+  PrivateNativeStockActionCheckpoint,
+  type PrivateStockApplicationSnapshot,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint';
 import {
   STOCK_SDK_MAX_ARCHIVE_BYTES,
   STOCK_SDK_MAX_REQUEST_BYTES,
@@ -33,6 +36,7 @@ export class PrivateNativeStockSdkChannel {
   readonly #request = new Socket({ fd: 3, readable: false, writable: true });
   readonly #response = new Socket({ fd: 4, readable: true, writable: false });
   #buffer = Buffer.alloc(0);
+  #applications: PrivateStockApplicationSnapshot | undefined;
   private constructor(
     private readonly checkpoint: PrivateNativeStockActionCheckpoint,
   ) {
@@ -122,9 +126,46 @@ export class PrivateNativeStockSdkChannel {
     await this.checkpoint.assertCurrent();
   }
 
+  async bindApplications(
+    snapshot: PrivateStockApplicationSnapshot,
+  ): Promise<void> {
+    this.assertCheckpoint(this.checkpoint);
+    this.checkpoint.assertApplicationSnapshot(snapshot);
+    await this.checkpoint.assertCurrent();
+    if (this.#busy) throw new PrivateNativeActionUnavailable();
+    if (this.#applications) {
+      if (JSON.stringify(snapshot) !== JSON.stringify(this.#applications))
+        throw new PrivateNativeActionUnavailable();
+      return;
+    }
+    if (this.#requests !== 0) throw new PrivateNativeActionUnavailable();
+    this.#busy = true;
+    try {
+      const input = Buffer.from(JSON.stringify(snapshot));
+      if (input.length > 1024) throw new PrivateNativeActionUnavailable();
+      const header = Buffer.alloc(4);
+      header.writeUInt32BE(input.length);
+      await this.transfer(header, true);
+      await this.transfer(input, true);
+      await this.transfer(header, false);
+      if (header.readUInt32BE() !== input.length)
+        throw new PrivateNativeActionUnavailable();
+      const echoed = Buffer.alloc(input.length);
+      await this.transfer(echoed, false);
+      if (!echoed.equals(input)) throw new PrivateNativeActionUnavailable();
+      await this.checkpoint.assertCurrent();
+      this.#applications = snapshot;
+    } catch (error) {
+      this.#terminal = true;
+      throw error;
+    } finally {
+      this.#busy = false;
+    }
+  }
+
   async generate(request: PrivateStockSdkRequest): Promise<Buffer> {
     PrivateNativeStockSdkChannel.assertIssued(this);
-    if (this.#busy || this.#requests >= 2)
+    if (!this.#applications || this.#busy || this.#requests >= 2)
       throw new PrivateNativeActionUnavailable();
     const original = this.checkpoint.pendingPlan.original;
     if (
@@ -137,6 +178,13 @@ export class PrivateNativeStockSdkChannel {
         : request.applicationId !== original.customApplicationId ||
           request.applicationUniversalIdentifier !==
             original.customApplicationId)
+    )
+      throw new PrivateNativeActionUnavailable();
+    if (
+      request.applicationId !==
+      (this.#requests === 0
+        ? this.#applications.standardApplicationId
+        : this.#applications.customApplicationId)
     )
       throw new PrivateNativeActionUnavailable();
     this.#busy = true;
