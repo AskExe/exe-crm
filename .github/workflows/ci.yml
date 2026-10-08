@@ -206,11 +206,8 @@ jobs:
 
           echo "Brand drift check passed."
 
-  # MAIN LANE — full Linux server test coverage, unchanged, but now runs ONLY
-  # on push to main. PRs and the merge queue get the same suite on the mac
-  # runner via `server-tests-mac` below (the PR-lane primary gate). Linux test
-  # coverage is NOT lost — every merge to main still runs this full job on the
-  # existing [self-hosted, linux, x64] runners.
+  # PUSH LANE — full Linux server coverage on main and beta pushes.
+  # PRs and the merge queue use the existing local Linux assertion gate below.
   server-tests:
     name: Server unit tests
     if: github.event_name == 'push'
@@ -254,36 +251,15 @@ jobs:
         # `--configuration=ci` pins maxWorkers=1 for deterministic runs.
         run: npx nx test twenty-server --configuration=ci -- --passWithNoTests
 
-  # PR LANE (primary test gate) — runs the server unit test suite, scoped to the
-  # tests affected by the PR's diff (see "Select test scope" below; a change
-  # outside jest's module graph still runs everything), on the
-  # dedicated self-hosted macOS runner (mac-m4-exe-crm, M4 / 16 cores). Check
-  # context: "Server unit tests (mac)". Runs ONLY on pull_request + merge_group
-  # (merge queue requires protection-required contexts to report on merge_group
-  # or the queue stalls).
-  #
-  # Why: the Linux build-my runners share one overloaded host — the full yarn
-  # workspace install + jest run took 30+ min there and queued behind other
-  # jobs. The mac runner is a dedicated 16-core box.
-  #
-  # `--maxWorkers=6` overrides the `--configuration=ci` pin of maxWorkers=1
-  # (nx CLI args take precedence over configuration values). maxWorkers=1 on
-  # Linux exists to avoid core thrash on the SHARED build-my host; the mac
-  # runner runs only this job, so 6 workers on 16 cores is safe headroom while
-  # leaving cores for the dev box's own load.
-  #
-  # macOS notes: this runner DOES have Docker available to the account the
-  # runner service executes as, and the CLI is on the runner's PATH. An
-  # earlier version of this note claimed otherwise and pinned security-scan to
-  # Linux because of it; that claim was verified wrong — the pinned gitleaks
-  # image was pulled and run to completion on this runner. That digest is a
-  # multi-arch manifest including arm64, so no emulation is involved.
-  # setup-node cache keys include runner OS+arch, so the macOS-arm64 yarn cache
-  # never collides with the Linux-x64 one.
+  # PR/merge-queue full assertion gate on the existing local Linux runner.
+  # The job key is retained for slot-budget checks. Its registration has a
+  # legacy x64 label; actual runner 24 is Linux ARM64, admitted below.
+  # Use the existing Linux one-worker setting within the unchanged 40-minute budget.
+  # Native Mac V8 crash originals remain in the prior source-head CI logs.
   server-tests-mac:
-    name: Server unit tests (mac)
+    name: Server unit tests (local Linux)
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
-    runs-on: ${{ fromJSON('["self-hosted", "macOS", "ARM64", "mac-fast"]') }}
+    runs-on: ${{ fromJSON('["self-hosted", "linux", "x64", "mac-local"]') }}
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -299,20 +275,28 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      # Keep the dedicated Mac on its persistent local Yarn cache. Restoring
-      # the remote archive has repeatedly stalled this required gate in Setup
-      # Node before dependency installation or tests can start.
+      - name: Admit local Linux unit runner
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          assert.equal(process.platform, 'linux');
+          assert.equal(process.arch, 'arm64');
+          assert.equal(process.version, 'v24.5.0');
+          assert.equal(process.env.RUNNER_NAME, 'mac-vm-crm-1');
+          const workspace = process.env.GITHUB_WORKSPACE;
+          assert.ok(typeof workspace === 'string' && workspace.startsWith('/'));
+          const stats = fs.statfsSync(workspace, { bigint: true });
+          const free = stats.bavail * stats.bsize;
+          assert.ok(free >= 20n * 1024n ** 3n);
+          console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, freeBytes: free.toString() }));
+          NODE
+
+      # Keep the existing local Linux runner on its persistent Yarn cache.
 
       - name: Install dependencies
-        # @recallai/desktop-sdk (a twenty-companion desktop-only dep) runs a
-        # darwin-only postinstall that downloads a ~48MB native SDK tar from
-        # us-east-1 S3 with no retry. From this runner that download flakes with
-        # ECONNRESET and fails `yarn install --immutable`, breaking this required
-        # "Server unit tests (mac)" gate — even though the server suite never
-        # uses the desktop SDK. On Linux the same postinstall is a no-op (it only
-        # downloads on darwin/win32), which is why the Linux lane is unaffected.
-        # RECALL_LOCAL_BUILD makes setup.js skip the native download entirely.
-        # (bug 19fcc1f0)
+        # Preserve the existing desktop-postinstall guard; Linux does not use
+        # the Darwin/Windows desktop SDK. No server dependency is skipped.
         env:
           RECALL_LOCAL_BUILD: '1'
         run: yarn install --immutable
@@ -388,7 +372,7 @@ jobs:
         run: |
           node scripts/ci-observe-child-exits.cjs --initialize
           export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
-          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }} --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
+          npx nx test twenty-server --configuration=ci --maxWorkers=1 --outputStyle=stream -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }} --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
       - name: Run server tests (full suite)
         if: steps.scope.outputs.scope == 'full'
@@ -397,7 +381,7 @@ jobs:
         run: |
           node scripts/ci-observe-child-exits.cjs --initialize
           export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
-          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
+          npx nx test twenty-server --configuration=ci --maxWorkers=1 --outputStyle=stream -- --passWithNoTests --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
       - name: Report server test termination and result
         if: always() && (steps.scope.outputs.scope == 'changed' || steps.scope.outputs.scope == 'full')

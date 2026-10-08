@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 /* @license Enterprise */
 
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
@@ -32,21 +33,28 @@ export const useBuildRecordInputFromRLSPredicates = ({
 }) => {
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
 
+  const { objectPermissionsByObjectMetadataId } = useObjectPermissions();
+  const objectPermissions = getObjectPermissionsForObject(
+    objectPermissionsByObjectMetadataId,
+    objectMetadataItem.id,
+  );
+  const needsDynamicMember =
+    objectPermissions.rowLevelPermissionPredicates.some(
+      (predicate) =>
+        predicate.objectMetadataId === objectMetadataItem.id &&
+        isDefined(predicate.workspaceMemberFieldMetadataId),
+    );
+
   const { record: currentWorkspaceMemberRecord } = useFindOneRecord({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
     objectRecordId: currentWorkspaceMember?.id,
+    skip: REACT_APP_COMPANY_EDITOR_ENABLED && !needsDynamicMember,
   });
 
   const { objectMetadataItem: workspaceMemberObjectMetadataItem } =
     useObjectMetadataItem({
       objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
     });
-
-  const { objectPermissionsByObjectMetadataId } = useObjectPermissions();
-  const objectPermissions = getObjectPermissionsForObject(
-    objectPermissionsByObjectMetadataId,
-    objectMetadataItem.id,
-  );
 
   const getRecordInputFieldName = (fieldMetadataItem: {
     name: string;

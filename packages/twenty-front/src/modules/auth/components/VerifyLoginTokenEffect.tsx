@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -46,7 +47,7 @@ export const VerifyLoginTokenEffect = () => {
   }, [loginToken]);
 
   useEffect(() => {
-    if (!clientConfigLoaded) {
+    if (REACT_APP_COMPANY_EDITOR_ENABLED || !clientConfigLoaded) {
       return;
     }
 

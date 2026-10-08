@@ -8,6 +8,7 @@ import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 import {
   FeatureFlagGuard,
   RequireFeatureFlag,
@@ -53,6 +54,7 @@ export class CommandMenuItemResolver {
   @Query(() => [CommandMenuItemDTO])
   @UseGuards(NoPermissionGuard)
   @RequireFeatureFlag(FeatureFlagKey.IS_COMMAND_MENU_ITEM_ENABLED)
+  @CompanyEditorRead()
   async commandMenuItems(
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<CommandMenuItemDTO[]> {
@@ -62,6 +64,7 @@ export class CommandMenuItemResolver {
   @Query(() => CommandMenuItemDTO, { nullable: true })
   @UseGuards(NoPermissionGuard)
   @RequireFeatureFlag(FeatureFlagKey.IS_COMMAND_MENU_ITEM_ENABLED)
+  @CompanyEditorRead()
   async commandMenuItem(
     @Args('id', { type: () => UUIDScalarType }) id: string,
     @AuthWorkspace() workspace: WorkspaceEntity,

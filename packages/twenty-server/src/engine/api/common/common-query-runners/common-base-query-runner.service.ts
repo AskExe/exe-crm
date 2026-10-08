@@ -49,6 +49,9 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 import { getWorkspaceContext } from 'src/engine/twenty-orm/storage/orm-workspace-context.storage';
 import { resolveRolePermissionConfig } from 'src/engine/twenty-orm/utils/resolve-role-permission-config.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import { CompanyAuthService } from 'src/engine/core-modules/company-auth/company-auth.service';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
+import { companyEditorRecordAllowed } from 'src/engine/core-modules/company-auth/company-editor-record-identity';
 
 @Injectable()
 export abstract class CommonBaseQueryRunnerService<
@@ -81,6 +84,8 @@ export abstract class CommonBaseQueryRunnerService<
   protected readonly metricsService: MetricsService;
   @Inject()
   protected readonly featureFlagService: FeatureFlagService;
+  @Inject()
+  protected readonly companyAuthService: CompanyAuthService;
 
   protected abstract readonly operationName: CommonQueryNames;
 
@@ -97,6 +102,12 @@ export abstract class CommonBaseQueryRunnerService<
       flatFieldMetadataMaps,
     } = queryRunnerContext;
 
+    if (companyEditorEnabled()) {
+      await this.companyAuthService.assertEditorRecord(
+        this.isReadOnly || this.operationName === CommonQueryNames.FIND_ONE,
+        !companyEditorRecordAllowed(flatObjectMetadata),
+      );
+    }
     await this.throttleQueryExecution(authContext);
 
     await this.validate(args, queryRunnerContext);
@@ -204,6 +215,13 @@ export abstract class CommonBaseQueryRunnerService<
       await this.prepareExtendedQueryRunnerContextWithGlobalDatasource(
         queryRunnerContext,
       );
+
+    if (companyEditorEnabled()) {
+      await this.companyAuthService.assertEditorRecord(
+        this.isReadOnly || this.operationName === CommonQueryNames.FIND_ONE,
+        !companyEditorRecordAllowed(queryRunnerContext.flatObjectMetadata),
+      );
+    }
 
     const results = await this.run(processedArgs, {
       ...extendedQueryRunnerContext,

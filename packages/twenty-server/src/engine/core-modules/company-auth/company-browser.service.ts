@@ -180,6 +180,17 @@ export class CompanyBrowserService {
         response.status(200).json({ revoked: true });
         return;
       }
+      if (path === '/company-session/editor') {
+        if (request.headers['sec-fetch-site'] !== 'same-origin')
+          throw new CompanyBrowserError(403);
+        const result = await this.auth.editorBootstrap(
+          request,
+          controller.signal,
+        );
+        check();
+        response.status(200).json(result);
+        return;
+      }
       let token = cookies.get(COMPANY_SESSION_COOKIE),
         expires = 0;
       if (path === '/company-session/callback') {
@@ -231,7 +242,8 @@ export class CompanyBrowserService {
         });
         response.redirect(
           303,
-          configuration.origin + '/company-session/status',
+          configuration.origin +
+            (this.auth.editorEnabled ? '/' : '/company-session/status'),
         );
       } else response.status(200).json({ enabled: true, authenticated: true });
     } catch (error) {

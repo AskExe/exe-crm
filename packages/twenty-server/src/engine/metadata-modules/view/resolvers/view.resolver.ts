@@ -12,6 +12,7 @@ import { ViewType, ViewVisibility } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 import { I18nService } from 'src/engine/core-modules/i18n/i18n.service';
 import { type I18nContext } from 'src/engine/core-modules/i18n/types/i18n-context.type';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -94,6 +95,7 @@ export class ViewResolver {
 
   @Query(() => [ViewDTO])
   @UseGuards(CustomPermissionGuard)
+  @CompanyEditorRead()
   async getViews(
     @AuthWorkspace() workspace: WorkspaceEntity,
     @AuthUserWorkspaceId({ allowUndefined: true })
@@ -121,6 +123,7 @@ export class ViewResolver {
 
   @Query(() => ViewDTO, { nullable: true })
   @UseGuards(NoPermissionGuard)
+  @CompanyEditorRead()
   async getView(
     @Args('id', { type: () => String }) id: string,
     @AuthWorkspace() workspace: WorkspaceEntity,

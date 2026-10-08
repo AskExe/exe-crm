@@ -19,6 +19,7 @@ import { AuthApiKey } from 'src/engine/decorators/auth/auth-api-key.decorator';
 import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { CreateNavigationMenuItemInput } from 'src/engine/metadata-modules/navigation-menu-item/dtos/create-navigation-menu-item.input';
@@ -42,6 +43,7 @@ export class NavigationMenuItemResolver {
 
   @Query(() => [NavigationMenuItemDTO])
   @UseGuards(NoPermissionGuard)
+  @CompanyEditorRead()
   async navigationMenuItems(
     @AuthWorkspace() workspace: WorkspaceEntity,
     @AuthUserWorkspaceId({ allowUndefined: true })
@@ -55,6 +57,7 @@ export class NavigationMenuItemResolver {
 
   @Query(() => NavigationMenuItemDTO, { nullable: true })
   @UseGuards(NoPermissionGuard)
+  @CompanyEditorRead()
   async navigationMenuItem(
     @Args('id', { type: () => UUIDScalarType }) id: string,
     @AuthWorkspace() workspace: WorkspaceEntity,

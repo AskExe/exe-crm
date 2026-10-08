@@ -1,3 +1,10 @@
+let mockCompanyEditorEnabled = false;
+jest.mock('~/config', () => ({
+  ...jest.requireActual('~/config'),
+  get REACT_APP_COMPANY_EDITOR_ENABLED() {
+    return mockCompanyEditorEnabled;
+  },
+}));
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import {
   GO_TRUE_BRIDGE_IN_FLIGHT_MS,
@@ -453,5 +460,69 @@ describe('usePageChangeEffectNavigateLocation', () => {
           ['notOnWorkspace:verify', 'notOnWorkspace:signInUp'].length,
       );
     });
+  });
+});
+
+describe('hosted editor navigation ordering', () => {
+  afterEach(() => {
+    mockCompanyEditorEnabled = false;
+  });
+  it.each([
+    {
+      name: 'unresolved authority',
+      ready: false,
+      workspace: null,
+      metadata: false,
+    },
+    {
+      name: 'admitted authority before workspace',
+      ready: true,
+      workspace: null,
+      metadata: false,
+    },
+    {
+      name: 'workspace before metadata',
+      ready: true,
+      workspace: { id: 'bound-workspace' },
+      metadata: false,
+    },
+    {
+      name: 'revoked or signed-out authority',
+      ready: false,
+      workspace: { id: 'bound-workspace' },
+      metadata: true,
+    },
+  ])(
+    'withholds standalone navigation during $name',
+    ({ ready, workspace, metadata }) => {
+      mockCompanyEditorEnabled = true;
+      setupMockIsMatchingLocation(AppPath.RecordShowPage);
+      setupMockHasAccessTokenPair(ready);
+      setupMockOnboardingStatus(OnboardingStatus.PLAN_REQUIRED);
+      setupMockIsWorkspaceActivationStatusEqualsTo(false);
+      setupMockIsOnAWorkspace(true);
+      setupMockUseParams();
+      setupMockState();
+      jest
+        .mocked(useAtomStateValue)
+        .mockReturnValueOnce(workspace)
+        .mockReturnValueOnce(metadata);
+      expect(usePageChangeEffectNavigateLocation()).toBeUndefined();
+    },
+  );
+  it('keeps the admitted record route after actual workspace/metadata and completed onboarding', () => {
+    mockCompanyEditorEnabled = true;
+    setupMockIsMatchingLocation(AppPath.RecordShowPage);
+    setupMockHasAccessTokenPair(true);
+    setupMockOnboardingStatus(OnboardingStatus.COMPLETED);
+    setupMockIsWorkspaceActivationStatusEqualsTo(false);
+    setupMockIsOnAWorkspace(true);
+    setupMockUseParams();
+    setupMockState();
+    jest
+      .mocked(useAtomStateValue)
+      .mockReturnValueOnce({ id: 'bound-workspace' })
+      .mockReturnValueOnce(true);
+    expect(usePageChangeEffectNavigateLocation()).toBeUndefined();
   });
 });

@@ -33,7 +33,17 @@ import {
 } from 'graphql';
 import isEmpty from 'lodash.isempty';
 import { getGenericOperationName, isDefined } from 'twenty-shared/utils';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
+import {
+  REACT_APP_SERVER_BASE_URL,
+  REACT_APP_COMPANY_EDITOR_ENABLED,
+} from '~/config';
+import {
+  companyEditorFetch,
+  companyEditorSessionReady,
+  companyEditorSessionSigningOut,
+  revokeCompanyEditorSession,
+  subscribeCompanyEditorSession,
+} from '@/auth/company-editor/company-editor-session';
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
 
 const logger = loggerLink(() => 'Twenty');
@@ -70,6 +80,7 @@ export class ApolloFactory implements ApolloManager {
   private currentWorkspaceMember: CurrentWorkspaceMember | null = null;
   private currentWorkspace: CurrentWorkspace | null = null;
   private appVersion?: string;
+  private unsubscribeEditor?: () => void;
 
   constructor(opts: Options) {
     const {
@@ -98,6 +109,9 @@ export class ApolloFactory implements ApolloManager {
     const buildApolloLink = (): ApolloLink => {
       const uploadLink = new UploadHttpLink({
         uri,
+        ...(REACT_APP_COMPANY_EDITOR_ENABLED
+          ? { fetch: companyEditorFetch, credentials: 'same-origin' }
+          : {}),
       });
 
       const streamingRestLink = new StreamingRestLink({
@@ -109,6 +123,8 @@ export class ApolloFactory implements ApolloManager {
       });
 
       const authLink = setContext(async (_, { headers }) => {
+        if (REACT_APP_COMPANY_EDITOR_ENABLED)
+          return { headers: { 'Content-Type': 'application/json' } };
         const tokenPair = getTokenPair();
 
         const locale = this.currentWorkspaceMember?.locale ?? i18n.locale;
@@ -146,6 +162,7 @@ export class ApolloFactory implements ApolloManager {
         attempts: {
           max: 2,
           retryIf: (error) => {
+            if (REACT_APP_COMPANY_EDITOR_ENABLED) return false;
             // oxlint-disable-next-line no-console
             console.log('retryIf error from retryLink', error);
             if (this.isAuthenticationError(error)) {
@@ -181,6 +198,11 @@ export class ApolloFactory implements ApolloManager {
         operation: ApolloLink.Operation,
         forward: ApolloLink.ForwardFunction,
       ) => {
+        if (REACT_APP_COMPANY_EDITOR_ENABLED) {
+          revokeCompanyEditorSession();
+          if (!companyEditorSessionSigningOut()) onUnauthenticatedError?.();
+          return;
+        }
         if (!renewalPromise) {
           renewalPromise = attemptTokenRenewal()
             .catch(() => {
@@ -337,8 +359,9 @@ export class ApolloFactory implements ApolloManager {
         ...(extraLinks || []),
         ...(isDebugMode ? [logger] : []),
         retryLink,
-        streamingRestLink,
-        restLink,
+        ...(!REACT_APP_COMPANY_EDITOR_ENABLED
+          ? [streamingRestLink, restLink]
+          : []),
         uploadLink,
       ] as ApolloLink[];
 
@@ -351,6 +374,19 @@ export class ApolloFactory implements ApolloManager {
       defaultOptions,
       devtools,
     });
+    if (REACT_APP_COMPANY_EDITOR_ENABLED) {
+      this.unsubscribeEditor = subscribeCompanyEditorSession(() => {
+        if (!companyEditorSessionReady()) {
+          void this.client.clearStore();
+          // Explicit logout owns central recovery; never race it with sign-in.
+          if (!companyEditorSessionSigningOut()) onUnauthenticatedError?.();
+        }
+      });
+    }
+  }
+
+  dispose() {
+    this.unsubscribeEditor?.();
   }
 
   private isRestOperation(operation: ApolloLink.Operation): boolean {

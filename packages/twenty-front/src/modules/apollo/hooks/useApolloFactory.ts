@@ -22,7 +22,10 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { AppPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
+import {
+  REACT_APP_SERVER_BASE_URL,
+  REACT_APP_COMPANY_EDITOR_ENABLED,
+} from '~/config';
 import { useUpdateEffect } from '~/hooks/useUpdateEffect';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
 
@@ -58,6 +61,7 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
   }, [currentWorkspace?.id]);
 
   const apolloClient = useMemo(() => {
+    apolloRef.current?.dispose();
     apolloRef.current = new ApolloFactory({
       uri: `${REACT_APP_SERVER_BASE_URL}/graphql`,
       cache: new InMemoryCache({
@@ -87,6 +91,10 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
         setCurrentWorkspaceMember(null);
         setCurrentWorkspace(null);
         setCurrentUserWorkspace(null);
+        if (REACT_APP_COMPANY_EDITOR_ENABLED) {
+          window.location.replace('/company-session/start');
+          return;
+        }
         if (
           !isMatchingLocation(location, AppPath.Verify) &&
           !isMatchingLocation(location, AppPath.SignInUp) &&

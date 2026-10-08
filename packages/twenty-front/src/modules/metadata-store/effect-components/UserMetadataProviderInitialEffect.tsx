@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import { availableWorkspacesState } from '@/auth/states/availableWorkspacesState';
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -87,6 +88,7 @@ export const UserMetadataProviderInitialEffect = () => {
     }
 
     if (!hasAccessTokenPair) {
+      if (REACT_APP_COMPANY_EDITOR_ENABLED) return;
       setIsCurrentUserLoaded(true);
       setIsInitialized(true);
       return;

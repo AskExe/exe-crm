@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 
+import { CompanyAuthModule } from 'src/engine/core-modules/company-auth/company-auth.module';
+
 import { WorkspaceQueryHookStorage } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/storage/workspace-query-hook.storage';
 import { WorkspaceQueryHookMetadataAccessor } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/workspace-query-hook-metadata.accessor';
 import { WorkspaceQueryHookExplorer } from 'src/engine/api/graphql/workspace-query-runner/workspace-query-hook/workspace-query-hook.explorer';
@@ -16,6 +18,7 @@ import { WorkspaceMemberQueryHookModule } from 'src/modules/workspace-member/que
 
 @Module({
   imports: [
+    CompanyAuthModule,
     MessagingQueryHookModule,
     CalendarQueryHookModule,
     ConnectedAccountQueryHookModule,

@@ -9,6 +9,7 @@ import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { MinimalMetadataDTO } from 'src/engine/metadata-modules/minimal-metadata/dtos/minimal-metadata.dto';
 import { MinimalMetadataService } from 'src/engine/metadata-modules/minimal-metadata/minimal-metadata.service';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 
 @MetadataResolver(() => MinimalMetadataDTO)
 @UseGuards(WorkspaceAuthGuard, NoPermissionGuard)
@@ -18,6 +19,7 @@ export class MinimalMetadataResolver {
   ) {}
 
   @Query(() => MinimalMetadataDTO)
+  @CompanyEditorRead()
   async minimalMetadata(
     @AuthWorkspace() workspace: WorkspaceEntity,
     @AuthUserWorkspaceId({ allowUndefined: true })

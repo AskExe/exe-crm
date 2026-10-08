@@ -1,5 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { readCompanyAuthConfiguration } from 'src/engine/core-modules/company-auth/company-auth.config';
+import { readCompanyBrowserConfiguration } from 'src/engine/core-modules/company-auth/company-browser.config';
+import { companyEditorEnabled } from 'src/engine/core-modules/company-auth/company-editor.config';
 
 import { config } from 'dotenv';
 config({
@@ -136,10 +139,17 @@ function generateBrandingBlock(branding: BrandingConfig): string {
 }
 
 export function generateFrontConfig(): void {
+  const editorEnabled = companyEditorEnabled();
+  const authOrigin = editorEnabled
+    ? readCompanyBrowserConfiguration(readCompanyAuthConfiguration())
+        ?.authOrigin
+    : undefined;
   const configObject = {
     window: {
       _env_: {
         REACT_APP_SERVER_BASE_URL: process.env.SERVER_URL,
+        REACT_APP_COMPANY_EDITOR_ENABLED: String(editorEnabled),
+        REACT_APP_COMPANY_AUTH_ORIGIN: authOrigin,
       },
     },
   };

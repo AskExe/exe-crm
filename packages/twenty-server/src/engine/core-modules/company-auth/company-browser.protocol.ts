@@ -19,6 +19,7 @@ export const browserPath = (value: string): boolean =>
     '/company-session/start',
     '/company-session/callback',
     '/company-session/status',
+    '/company-session/editor',
     '/company-session/logout',
   ].includes(value.split('?')[0]);
 

@@ -35,6 +35,7 @@ import { ViewModule } from 'src/engine/metadata-modules/view/view.module';
 import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
+import { CompanyEditorRead } from 'src/engine/core-modules/company-auth/company-editor-read.decorator';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { FlatFieldMetadataValidatorService } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-field-metadata-validator.service';
 import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration.module';
@@ -77,6 +78,7 @@ import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace
           ServiceClass: ObjectMetadataService,
           pagingStrategy: PagingStrategies.CURSOR,
           read: {
+            decorators: [CompanyEditorRead()],
             defaultSort: [{ field: 'id', direction: SortDirection.DESC }],
           },
           create: {

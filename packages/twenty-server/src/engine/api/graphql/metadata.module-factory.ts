@@ -18,6 +18,7 @@ import { type MetricsService } from 'src/engine/core-modules/metrics/metrics.ser
 import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { type DataloaderService } from 'src/engine/dataloaders/dataloader.service';
 import { renderApolloPlayground } from 'src/engine/utils/render-apollo-playground.util';
+import { useCompanyEditorBoundary } from 'src/engine/core-modules/company-auth/company-editor.graphql';
 
 export const metadataModuleFactory = async (
   twentyConfigService: TwentyConfigService,
@@ -37,6 +38,7 @@ export const metadataModuleFactory = async (
     },
     resolvers: { JSON: GraphQLJSON },
     plugins: [
+      useCompanyEditorBoundary('metadata'),
       useGraphQLQueryTiming({ featureFlagService }),
       useGraphQLErrorHandlerHook({
         metricsService: metricsService,

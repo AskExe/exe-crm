@@ -32,3 +32,9 @@ export const REACT_APP_SERVER_BASE_URL =
 export const REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN =
   (window._env_?.REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN ||
     process.env.REACT_APP_ENABLE_ADMIN_TOKEN_LOGIN) === 'true';
+
+export const REACT_APP_COMPANY_EDITOR_ENABLED =
+  window._env_?.REACT_APP_COMPANY_EDITOR_ENABLED === 'true';
+
+export const REACT_APP_COMPANY_AUTH_ORIGIN =
+  window._env_?.REACT_APP_COMPANY_AUTH_ORIGIN;

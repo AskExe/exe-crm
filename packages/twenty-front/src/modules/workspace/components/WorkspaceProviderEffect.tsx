@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { useReadWorkspaceUrlFromCurrentLocation } from '@/domain-manager/hooks/useReadWorkspaceUrlFromCurrentLocation';
 import { useRedirectToWorkspaceDomain } from '@/domain-manager/hooks/useRedirectToWorkspaceDomain';
@@ -43,6 +44,7 @@ export const WorkspaceProviderEffect = () => {
 
   useEffect(() => {
     if (
+      !REACT_APP_COMPANY_EDITOR_ENABLED &&
       isMultiWorkspaceEnabled &&
       isDefined(getPublicWorkspaceData) &&
       !isWorkspaceHostnameMatchCurrentLocationHostname(
@@ -65,6 +67,7 @@ export const WorkspaceProviderEffect = () => {
 
   useEffect(() => {
     if (
+      !REACT_APP_COMPANY_EDITOR_ENABLED &&
       isMultiWorkspaceEnabled &&
       isDefaultDomain &&
       isDefined(lastAuthenticatedWorkspaceDomain) &&

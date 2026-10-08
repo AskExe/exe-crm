@@ -7,7 +7,14 @@ import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { useCallback } from 'react';
 import { AppPath } from 'twenty-shared/types';
 
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
+import {
+  REACT_APP_COMPANY_EDITOR_ENABLED,
+  REACT_APP_SERVER_BASE_URL,
+} from '~/config';
+import {
+  beginCompanyEditorSignOut,
+  signOutCompanyEditorSession,
+} from '@/auth/company-editor/company-editor-session';
 import {
   type AuthToken,
   type AuthTokenPair,
@@ -25,6 +32,7 @@ import {
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStorageKeys';
 import { broadcastSignOutToOtherTabs } from '@/auth/utils/crossTabSignOut';
+import { signOutViaCentralPage } from '@/auth/utils/signOutViaCentralPage';
 import { getRegistrableDomain } from '@/auth/utils/getRegistrableDomain';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -148,10 +156,13 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   const clearSession = useCallback(async () => {
+    if (REACT_APP_COMPANY_EDITOR_ENABLED) beginCompanyEditorSignOut();
     clearSseClient();
     store.set(isAppEffectRedirectEnabledState.atom, false);
 
-    const mockedData = await preloadMockedMetadata();
+    const mockedData = REACT_APP_COMPANY_EDITOR_ENABLED
+      ? undefined
+      : await preloadMockedMetadata();
 
     const authProvidersValue = store.get(workspaceAuthProvidersState.atom);
     const domainConfigurationValue = store.get(domainConfigurationState.atom);
@@ -186,7 +197,7 @@ export const useAuth = () => {
     store.set(loginTokenState.atom, null);
     store.set(signInUpStepState.atom, SignInUpStep.Init);
 
-    applyMockedMetadata(mockedData);
+    if (mockedData) applyMockedMetadata(mockedData);
 
     await client.clearStore();
     setLastAuthenticateWorkspaceDomain(null);
@@ -508,6 +519,18 @@ export const useAuth = () => {
   );
 
   const handleSignOut = useCallback(async () => {
+    if (REACT_APP_COMPANY_EDITOR_ENABLED) {
+      await signOutViaCentralPage(async () => {
+        beginCompanyEditorSignOut();
+        try {
+          broadcastSignOutToOtherTabs();
+          await signOutCompanyEditorSession();
+        } finally {
+          await clearSession();
+        }
+      });
+      return;
+    }
     broadcastSignOutToOtherTabs();
     await revokeCentralGoTrueSession();
     await clearSession();

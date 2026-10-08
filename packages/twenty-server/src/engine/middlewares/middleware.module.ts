@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
+import { CompanyAuthModule } from 'src/engine/core-modules/company-auth/company-auth.module';
 import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
@@ -16,6 +17,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 @Global()
 @Module({
   imports: [
+    CompanyAuthModule,
     DataSourceModule,
     FeatureFlagModule,
     WorkspaceCacheStorageModule,

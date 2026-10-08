@@ -1,3 +1,4 @@
+import { REACT_APP_COMPANY_EDITOR_ENABLED } from '~/config';
 import { useUpdateMetadataStoreDraft } from '@/metadata-store/hooks/useUpdateMetadataStoreDraft';
 import { type MetadataEntityKey } from '@/metadata-store/states/metadataStoreState';
 import { splitObjectMetadataGqlResponse } from '@/metadata-store/utils/splitObjectMetadataGqlResponse';
@@ -155,7 +156,10 @@ export const useLoadStaleMetadataEntities = () => {
         );
       }
 
-      if (staleEntityKeys.includes('logicFunctions')) {
+      if (
+        !REACT_APP_COMPANY_EDITOR_ENABLED &&
+        staleEntityKeys.includes('logicFunctions')
+      ) {
         fetchPromises.push(
           client
             .query({
