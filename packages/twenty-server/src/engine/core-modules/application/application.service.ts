@@ -11,6 +11,9 @@ import {
   ApplicationException,
   ApplicationExceptionCode,
 } from 'src/engine/core-modules/application/application.exception';
+import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
+
 import { getDefaultApplicationPackageFields } from 'src/engine/core-modules/application/application-package/utils/get-default-application-package-fields.util';
 import { parseAvailablePackagesFromPackageJsonAndYarnLock } from 'src/engine/core-modules/application/application-package/utils/parse-available-packages-from-package-json-and-yarn-lock.util';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
@@ -259,7 +262,22 @@ export class ApplicationService {
       skipCacheInvalidation?: boolean;
     },
     queryRunner?: QueryRunner,
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter,
   ) {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      if (queryRunner) throw new PrivateNativeActionUnavailable();
+      const application =
+        await privateStructuralAdapter.createStandardApplication(workspaceId);
+      if (!skipCacheInvalidation) {
+        await privateStructuralAdapter.assertWorkspaceCurrent(workspaceId);
+        await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
+          'flatApplicationMaps',
+        ]);
+        await privateStructuralAdapter.assertWorkspaceCurrent(workspaceId);
+      }
+      return application;
+    }
     const defaultPackageFields = await getDefaultApplicationPackageFields();
 
     const twentyStandardApplication = await this.create(

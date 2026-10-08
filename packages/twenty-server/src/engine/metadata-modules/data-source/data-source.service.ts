@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { type FindManyOptions, Repository } from 'typeorm';
 
+import { PrivateNativeStructuralAdapter } from 'src/engine/core-modules/company-native-bootstrap/private-native-structural-adapter';
+
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
   DataSourceException,
@@ -27,7 +29,15 @@ export class DataSourceService {
   async createDataSourceMetadata(
     workspaceId: string,
     workspaceSchema: string,
+    privateStructuralAdapter?: PrivateNativeStructuralAdapter,
   ): Promise<DataSourceEntity> {
+    if (privateStructuralAdapter) {
+      PrivateNativeStructuralAdapter.assertIssued(privateStructuralAdapter);
+      return privateStructuralAdapter.prepareWorkspace(
+        workspaceId,
+        workspaceSchema,
+      );
+    }
     const dataSource = await this.dataSourceMetadataRepository.findOne({
       where: { workspaceId },
     });
