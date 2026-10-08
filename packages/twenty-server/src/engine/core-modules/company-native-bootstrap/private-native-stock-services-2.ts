@@ -47,7 +47,7 @@ import { WorkspaceSchemaColumnManagerService } from 'src/engine/twenty-orm/works
 import { WorkspaceSchemaEnumManagerService } from 'src/engine/twenty-orm/workspace-schema-manager/services/workspace-schema-enum-manager.service';
 import { WorkspaceSchemaForeignKeyManagerService } from 'src/engine/twenty-orm/workspace-schema-manager/services/workspace-schema-foreign-key-manager.service';
 import { WorkspaceSchemaIndexManagerService } from 'src/engine/twenty-orm/workspace-schema-manager/services/workspace-schema-index-manager.service';
-import { WorkspaceSchemaManagerService } from '/private/tmp/askexe-staging-20261008/company-crm-stock-phase/exe-crm/packages/twenty-server/src/engine/twenty-orm/workspace-schema-manager/workspace-schema-manager.service';
+import { WorkspaceSchemaManagerService } from 'src/engine/twenty-orm/workspace-schema-manager/workspace-schema-manager.service';
 import { WorkspaceSchemaTableManagerService } from 'src/engine/twenty-orm/workspace-schema-manager/services/workspace-schema-table-manager.service';
 
 export const PRIVATE_STOCK_SERVICES2 = Object.freeze([
