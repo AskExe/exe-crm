@@ -1,5 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
+
+import {
+  PrivateNativeStockPoolCustody,
+  PRIVATE_NATIVE_STOCK_POOL_CUSTODY,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-pool-custody';
 
 import { BaseWorkspaceMigrationRunnerActionHandlerService } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/interfaces/workspace-migration-runner-action-handler-service.interface';
 
@@ -23,16 +28,25 @@ export class WorkspaceMigrationRunnerActionHandlerRegistryService implements OnM
     InstanceType<typeof BaseWorkspaceMigrationRunnerActionHandlerService>
   >();
 
-  constructor(private readonly discoveryService: DiscoveryService) {}
+  constructor(
+    private readonly discoveryService: DiscoveryService,
+    @Optional()
+    @Inject(PRIVATE_NATIVE_STOCK_POOL_CUSTODY)
+    private readonly privateStockPools?: PrivateNativeStockPoolCustody,
+  ) {}
 
   async onModuleInit() {
     this.discoverAndRegisterActionHandlers();
   }
 
   private discoverAndRegisterActionHandlers(): void {
-    const providers = this.discoveryService.getProviders({
-      include: [WorkspaceSchemaMigrationRunnerActionHandlersModule],
-    });
+    if (this.privateStockPools)
+      PrivateNativeStockPoolCustody.assertIssued(this.privateStockPools);
+    const providers = this.privateStockPools
+      ? this.discoveryService.getProviders()
+      : this.discoveryService.getProviders({
+          include: [WorkspaceSchemaMigrationRunnerActionHandlersModule],
+        });
 
     providers.forEach((wrapper) => {
       const { instance, metatype } = wrapper;

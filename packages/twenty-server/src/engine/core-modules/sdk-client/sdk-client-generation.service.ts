@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as fs from 'fs/promises';
@@ -9,6 +9,7 @@ import { replaceCoreClient } from 'twenty-client-sdk/generate';
 import { FileFolder } from 'twenty-shared/types';
 import { Repository } from 'typeorm';
 
+import { StockSdkSchemaFactory } from 'src/engine/api/graphql/stock-sdk-schema.factory';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
@@ -33,7 +34,10 @@ export class SdkClientGenerationService {
     @InjectRepository(ApplicationEntity)
     private readonly applicationRepository: Repository<ApplicationEntity>,
     private readonly workspaceCacheService: WorkspaceCacheService,
-    private readonly workspaceSchemaFactory: WorkspaceSchemaFactory,
+    @Inject(WorkspaceSchemaFactory)
+    private readonly workspaceSchemaFactory:
+      | WorkspaceSchemaFactory
+      | StockSdkSchemaFactory,
   ) {}
 
   async generateSdkClientForApplication({

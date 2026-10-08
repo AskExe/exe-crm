@@ -27,6 +27,7 @@ import {
   UpdateWorkspaceMemberEmailJobData,
 } from 'src/engine/core-modules/user/jobs/update-workspace-member-email.job';
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { StockUserSoftDeletionService } from 'src/engine/core-modules/user/services/stock-user-soft-deletion.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserExceptionCode } from 'src/engine/core-modules/user/user.exception';
 import { userValidator } from 'src/engine/core-modules/user/user.validate';
@@ -160,15 +161,10 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
       );
     }
 
-    await this.userRepository.softDelete({ id: userId });
-    await this.coreEntityCacheService.invalidate('user', userId);
-
-    return await this.userRepository.findOne({
-      where: {
-        id: userId,
-      },
-      withDeleted: true,
-    });
+    return new StockUserSoftDeletionService(
+      this.userRepository,
+      this.coreEntityCacheService,
+    ).softDeleteUser(userId);
   }
 
   async deleteUserWorkspaceAndPotentiallyDeleteUser({
