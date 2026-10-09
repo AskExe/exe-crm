@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { DataSource } from 'typeorm';
+import { v5 } from 'uuid';
 
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 
@@ -22,10 +23,17 @@ export type PrivateStockNativeObservation = Readonly<{
   customApplicationId: string;
   standardApplicationId: string;
   setupRemoved: true;
+  recordRoles: Readonly<{
+    readerRoleId: string;
+    writerRoleId: string;
+    personObjectMetadataId: string;
+    companyObjectMetadataId: string;
+  }>;
 }>;
 const OBSERVATION_KEYS = [
   'actionId',
   'customApplicationId',
+  'recordRoles',
   'roleId',
   'schemaName',
   'setupRemoved',
@@ -331,12 +339,31 @@ export class PrivateNativeStockParentLifecycle {
       !['workspaceMemberId', 'roleId', 'standardApplicationId'].every(
         (key) => typeof value[key] === 'string' && UUID.test(value[key]),
       ) ||
-      value.standardApplicationId === value.customApplicationId
+      value.standardApplicationId === value.customApplicationId ||
+      !value.recordRoles ||
+      typeof value.recordRoles !== 'object' ||
+      Object.keys(value.recordRoles).sort().join(',') !==
+        'companyObjectMetadataId,personObjectMetadataId,readerRoleId,writerRoleId' ||
+      !Object.values(value.recordRoles).every(
+        (identifier) => typeof identifier === 'string' && UUID.test(identifier),
+      ) ||
+      new Set(Object.values(value.recordRoles)).size !== 4
+    )
+      throw new PrivateNativeActionUnavailable();
+    const recordRoles = value.recordRoles as Record<string, string>;
+    if (
+      recordRoles.readerRoleId !==
+        v5('private-native-stock-record-reader-role-v1', original.actionId) ||
+      recordRoles.writerRoleId !==
+        v5('private-native-stock-record-writer-role-v1', original.actionId)
     )
       throw new PrivateNativeActionUnavailable();
     // This DTO covers independently observed SQL state only. Filesystem bytes and
     // SDK archive hashes require separate current-action observation before readiness.
     await this.checkpoint.assertCurrent();
-    return Object.freeze({ ...value }) as PrivateStockNativeObservation;
+    return Object.freeze({
+      ...value,
+      recordRoles: Object.freeze({ ...recordRoles }),
+    }) as PrivateStockNativeObservation;
   }
 }

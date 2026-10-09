@@ -8,6 +8,7 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
 import { PrivateNativeStockActionCheckpoint } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint';
 import { assertPrivateStockProviderContext } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context';
+import { prepareOriginalStockRecordRoles } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-record-roles';
 import { PrivateNativeStockRoleGuard } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-role-guard';
 import {
   OnboardingStepKeys,
@@ -64,6 +65,8 @@ export async function completeOriginalStockSubjectAndRemoveSetup(
     original.customApplicationId
   )
     throw new PrivateNativeActionUnavailable();
+  await prepareOriginalStockRecordRoles(checkpoint, database, control, context);
+  await checkpoint.assertCurrent();
   const guest = await context.get(RoleService).createGuestRole({
     workspaceId: original.workspaceId,
     ownerFlatApplication: applications.workspaceCustomFlatApplication,
