@@ -36,7 +36,7 @@ const ownedRunners = new WeakMap<
   QueryRunner,
   PrivateNativeEditorActivationCredential
 >();
-// No credential creation, installer, Nest provider or public producer exists.
+// No credential creation, Nest provider or public producer exists.
 // The protected operator supplies its separately reviewed association and DS.
 // Issuance observes the closed EXEC ACL. The fixed helper independently locks
 // and matches the original native marker before any identity/role mutation.
