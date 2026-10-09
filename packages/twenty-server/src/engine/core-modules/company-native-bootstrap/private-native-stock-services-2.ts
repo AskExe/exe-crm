@@ -2,6 +2,7 @@
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { TwentyStandardApplicationService } from 'src/engine/workspace-manager/twenty-standard-application/services/twenty-standard-application.service';
 import { TypeMapperService } from 'src/engine/api/graphql/workspace-schema-builder/services/type-mapper.service';
+import { ObjectPermissionService } from 'src/engine/metadata-modules/object-permission/object-permission.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
@@ -55,6 +56,7 @@ export const PRIVATE_STOCK_SERVICES2 = Object.freeze([
   TwentyStandardApplicationService,
   TypeMapperService,
   UserRoleService,
+  ObjectPermissionService,
   WorkspaceCacheService,
   WorkspaceCacheStorageService,
   WorkspaceDataSourceService,

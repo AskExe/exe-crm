@@ -219,3 +219,9 @@ packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-
 
 # Original stock application snapshot validates the native standard-application constant; no customer UI branding.
 packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint.ts
+
+# Cold constrained role setup uses the existing native standard/custom application service and constants; no customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-record-roles.ts
+
+# Cold role controls exercise native standard/custom application projections; no customer UI branding.
+packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-record-roles.spec.ts

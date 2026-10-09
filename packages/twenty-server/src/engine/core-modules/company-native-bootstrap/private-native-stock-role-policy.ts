@@ -227,6 +227,10 @@ DECLARE
   setup_user uuid;
   setup_membership uuid;
   subject_role uuid;
+  reader_role uuid;
+  writer_role uuid;
+  person_object uuid;
+  company_object uuid;
   numeric_uuid numeric := 0;
   digit integer;
   hex_uuid text;
@@ -305,9 +309,33 @@ BEGIN
      EXISTS(SELECT 1 FROM core."rowLevelPermissionPredicateGroup" WHERE "roleId"=subject_role) THEN
     RAISE EXCEPTION 'Stock observation unavailable' USING ERRCODE='55000';
   END IF;
+  reader_role:=public.uuid_generate_v5(a."actionId",'private-native-stock-record-reader-role-v1');
+  writer_role:=public.uuid_generate_v5(a."actionId",'private-native-stock-record-writer-role-v1');
+  SELECT id INTO STRICT person_object FROM core."objectMetadata" WHERE "workspaceId"=w.id AND "applicationId"=standard_application AND "nameSingular"='person' AND "universalIdentifier"='20202020-e674-48e5-a542-72570eee7213' AND "isSystem"=false;
+  SELECT id INTO STRICT company_object FROM core."objectMetadata" WHERE "workspaceId"=w.id AND "applicationId"=standard_application AND "nameSingular"='company' AND "universalIdentifier"='20202020-b374-4779-a561-80086cb2e17f' AND "isSystem"=false;
+  IF person_object=company_object OR
+     (SELECT count(*) FROM core.role WHERE id IN(reader_role,writer_role))<>2 OR
+     (SELECT count(*) FROM core.role WHERE id IN(reader_role,writer_role) AND "workspaceId"=w.id AND "applicationId"=a."plannedApplicationId"
+       AND label=CASE WHEN id=reader_role THEN 'Company record reader' ELSE 'Company record writer' END
+       AND "universalIdentifier"=public.uuid_generate_v5(a."actionId",CASE WHEN id=reader_role THEN 'private-native-stock-record-reader-role-universal-v1' ELSE 'private-native-stock-record-writer-role-universal-v1' END)
+       AND "isEditable"=false AND "canBeAssignedToUsers"=true AND "canBeAssignedToAgents"=false AND "canBeAssignedToApiKeys"=false
+       AND "canReadAllObjectRecords"=false AND "canUpdateAllObjectRecords"=false AND "canSoftDeleteAllObjectRecords"=false AND "canDestroyAllObjectRecords"=false AND "canUpdateAllSettings"=false AND "canAccessAllTools"=false)<>2 OR
+     EXISTS(SELECT 1 FROM core."roleTarget" WHERE "roleId" IN(reader_role,writer_role)) OR
+     (SELECT count(*) FROM core."objectPermission" WHERE "roleId" IN(reader_role,writer_role))<>4 OR
+     (SELECT count(*) FROM (SELECT "roleId","objectMetadataId" FROM core."objectPermission" WHERE "roleId" IN(reader_role,writer_role) GROUP BY "roleId","objectMetadataId" HAVING count(*)=1) exact_pairs)<>4 OR
+     (SELECT count(*) FROM core."objectPermission" WHERE "roleId" IN(reader_role,writer_role) AND "workspaceId"=w.id AND "applicationId"=a."plannedApplicationId"
+       AND "objectMetadataId" IN(person_object,company_object) AND "canReadObjectRecords"=true
+       AND "canUpdateObjectRecords"=CASE WHEN "roleId"=writer_role THEN true ELSE false END
+       AND "canSoftDeleteObjectRecords"=false AND "canDestroyObjectRecords"=false)<>4 OR
+     EXISTS(SELECT 1 FROM core."fieldPermission" WHERE "roleId" IN(reader_role,writer_role)) OR
+     EXISTS(SELECT 1 FROM core."permissionFlag" WHERE "roleId" IN(reader_role,writer_role)) OR
+     EXISTS(SELECT 1 FROM core."rowLevelPermissionPredicate" WHERE "roleId" IN(reader_role,writer_role)) OR
+     EXISTS(SELECT 1 FROM core."rowLevelPermissionPredicateGroup" WHERE "roleId" IN(reader_role,writer_role)) THEN
+    RAISE EXCEPTION 'Stock observation unavailable' USING ERRCODE='55000';
+  END IF;
   EXECUTE format('SELECT id FROM %I."workspaceMember" WHERE "userId"=$1',w."databaseSchema") INTO STRICT subject_member USING a."plannedUserId";
   EXECUTE format('SELECT EXISTS(SELECT 1 FROM %I."workspaceMember" WHERE "userId"=$1)',w."databaseSchema") INTO setup_member_present USING setup_user;
   IF setup_member_present THEN RAISE EXCEPTION 'Stock observation unavailable' USING ERRCODE='55000'; END IF;
-  RETURN jsonb_build_object('actionId',a."actionId",'workspaceId',w.id,'schemaName',w."databaseSchema",'userId',a."plannedUserId",'userWorkspaceId',a."plannedUserWorkspaceId",'workspaceMemberId',subject_member,'roleId',subject_role,'customApplicationId',a."plannedApplicationId",'standardApplicationId',standard_application,'setupRemoved',true);
+  RETURN jsonb_build_object('actionId',a."actionId",'workspaceId',w.id,'schemaName',w."databaseSchema",'userId',a."plannedUserId",'userWorkspaceId',a."plannedUserWorkspaceId",'workspaceMemberId',subject_member,'roleId',subject_role,'customApplicationId',a."plannedApplicationId",'standardApplicationId',standard_application,'setupRemoved',true,'recordRoles',jsonb_build_object('readerRoleId',reader_role,'writerRoleId',writer_role,'personObjectMetadataId',person_object,'companyObjectMetadataId',company_object));
 END
 `;
