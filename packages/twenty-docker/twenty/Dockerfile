@@ -46,7 +46,8 @@ RUN npx nx run twenty-server:lingui:extract && \
     npx nx run twenty-emails:lingui:extract && \
     npx nx run twenty-emails:lingui:compile
 
-RUN npx nx run twenty-server:build
+RUN npx nx run twenty-sdk:build && \
+    npx nx run twenty-server:build
 
 # Clean server build output (type declarations and compiled tests are not needed at runtime;
 # source maps are kept because twenty-infra extracts them from the image for Sentry uploads)
@@ -137,6 +138,7 @@ COPY --from=twenty-server-build /app/packages/twenty-shared/dist /app/packages/t
 COPY --from=twenty-server-build /app/packages/twenty-emails/package.json /app/packages/twenty-emails/
 COPY --from=twenty-server-build /app/packages/twenty-emails/dist /app/packages/twenty-emails/dist
 COPY --from=twenty-server-build /app/packages/twenty-sdk/package.json /app/packages/twenty-sdk/
+COPY --from=twenty-server-build /app/packages/twenty-sdk/dist /app/packages/twenty-sdk/dist
 COPY --from=twenty-server-build /app/packages/twenty-client-sdk/package.json /app/packages/twenty-client-sdk/
 COPY --from=twenty-server-build /app/packages/twenty-client-sdk/dist /app/packages/twenty-client-sdk/dist
 COPY --from=twenty-server-build /app/packages/twenty-ui/package.json /app/packages/twenty-ui/
@@ -255,6 +257,7 @@ COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-shared/dist /a
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-emails/package.json /app/packages/twenty-emails/
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-emails/dist /app/packages/twenty-emails/dist
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-sdk/package.json /app/packages/twenty-sdk/
+COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-sdk/dist /app/packages/twenty-sdk/dist
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-client-sdk/package.json /app/packages/twenty-client-sdk/
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-client-sdk/dist /app/packages/twenty-client-sdk/dist
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-ui/package.json /app/packages/twenty-ui/

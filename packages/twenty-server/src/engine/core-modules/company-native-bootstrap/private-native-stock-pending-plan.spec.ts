@@ -3,6 +3,9 @@ import { performance } from 'node:perf_hooks';
 import { DataSource } from 'typeorm';
 import { v5 } from 'uuid';
 
+import { installPrivateNativeEditorActivationFunction } from 'src/engine/core-modules/company-people/private-native-editor-activation-installer';
+import { PRIVATE_NATIVE_EDITOR_ACTIVATION_BODY } from 'src/engine/core-modules/company-people/private-native-editor-activation-policy';
+
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
 import {
   PrivateNativeActionReader,
@@ -627,6 +630,45 @@ describe('stock pending plan materialization', () => {
       expect(fixture.release).toHaveBeenCalledTimes(1);
     },
   );
+  it('installs activation after stock helpers with the same issued checkpoint and refuses later revocation', async () => {
+    const fixture = await installerRunner('success');
+    await installPrivateStockParentFunctions(
+      fixture.checkpoint,
+      fixture.database,
+    );
+    let activationInstalled = false;
+    fixture.sql.mockImplementation(async (query) => {
+      if (query.includes('AS ceiling'))
+        return [{ identity: true, ceiling: true }];
+      if (query.includes('p.prosrc AS body'))
+        return activationInstalled
+          ? [{ helper: true, body: PRIVATE_NATIVE_EDITOR_ACTIVATION_BODY }]
+          : [];
+      if (query.startsWith('CREATE FUNCTION')) activationInstalled = true;
+      return [];
+    });
+    await installPrivateNativeEditorActivationFunction(
+      fixture.checkpoint,
+      fixture.database,
+    );
+    expect(
+      fixture.sql.mock.calls.filter(([query]) =>
+        query.startsWith('CREATE FUNCTION'),
+      ),
+    ).toHaveLength(5);
+    expect(
+      fixture.sql.mock.calls.filter(([query]) => query === 'COMMIT'),
+    ).toHaveLength(2);
+    revoked = true;
+    const count = fixture.sql.mock.calls.length;
+    await expect(
+      installPrivateNativeEditorActivationFunction(
+        fixture.checkpoint,
+        fixture.database,
+      ),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(fixture.sql.mock.calls).toHaveLength(count);
+  });
   it('quarantines installer commit acknowledgement loss without rollback or compensating function drop', async () => {
     const fixture = await installerRunner('commit');
     await expect(
