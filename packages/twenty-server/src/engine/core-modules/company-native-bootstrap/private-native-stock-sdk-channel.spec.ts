@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto';
+import path from 'node:path';
+
+import { ASSET_PATH } from 'src/constants/assets-path';
 import { PrivateNativeStockSdkChannel } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-channel';
 import { TWENTY_STANDARD_APPLICATION } from 'src/engine/workspace-manager/twenty-standard-application/constants/twenty-standard-applications';
 import { performance } from 'node:perf_hooks';
@@ -364,6 +367,70 @@ describe('SDK application binding source controls', () => {
       expect(f.messages).toHaveLength(0);
     } finally {
       await f.channel.close();
+    }
+  });
+});
+
+// Exercise the worker's actual entry before any request or writable copy exists.
+describe('SDK worker immutable asset custody', () => {
+  it.each([
+    { uid: 1000, mode: 0o755, symlink: false },
+    { uid: 0, mode: 0o775, symlink: false },
+    { uid: 0, mode: 0o757, symlink: false },
+    { uid: 0, mode: 0o755, symlink: true },
+  ])('refuses unsafe packaged assets %j before copying', async (asset) => {
+    const environment = process.env;
+    const exitCode = process.exitCode;
+    const copy = jest.fn();
+    const replace = jest.fn();
+    const inspect = jest.fn(async (named: string) => ({
+      isDirectory: () => true,
+      isSymbolicLink: () => (named === '/tmp' ? false : asset.symlink),
+      uid: named === '/tmp' ? 1000 : asset.uid,
+      mode: named === '/tmp' ? 0o1777 : asset.mode,
+    }));
+    const stderr = jest.spyOn(process.stderr, 'write').mockReturnValue(true);
+    Object.defineProperty(process, 'platform', {
+      ...platformDescriptor,
+      value: 'linux',
+    });
+    jest.spyOn(process, 'getuid').mockReturnValue(1000);
+    // Development mode must still use the packaged asset convention.
+    process.env = { NODE_ENV: 'development', ASSET_PATH: '/tmp/untrusted' };
+    try {
+      await new Promise<void>((resolve) => {
+        jest.isolateModules(() => {
+          jest.doMock('node:fs/promises', () => ({ lstat: inspect, cp: copy }));
+          jest.doMock('esbuild', () => ({ stop: resolve }));
+          jest.doMock('twenty-client-sdk/generate', () => ({
+            replaceCoreClient: replace,
+          }));
+          jest.doMock(
+            'src/engine/core-modules/logic-function/logic-function-drivers/utils/create-zip-file',
+            () => ({ createZipFile: jest.fn() }),
+          );
+          require('src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-worker.entry');
+        });
+      });
+      expect(inspect.mock.calls).toEqual([
+        ['/tmp'],
+        [path.join(ASSET_PATH, 'twenty-client-sdk')],
+      ]);
+      expect(copy).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+      expect(stderr).toHaveBeenCalledWith('stock_sdk_worker_failed\n');
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.env = environment;
+      process.exitCode = exitCode;
+      Object.defineProperty(process, 'platform', platformDescriptor);
+      jest.restoreAllMocks();
+      jest.dontMock('node:fs/promises');
+      jest.dontMock('esbuild');
+      jest.dontMock('twenty-client-sdk/generate');
+      jest.dontMock(
+        'src/engine/core-modules/logic-function/logic-function-drivers/utils/create-zip-file',
+      );
     }
   });
 });

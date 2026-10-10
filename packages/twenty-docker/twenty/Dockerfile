@@ -130,6 +130,9 @@ COPY --from=twenty-server-build /app/node_modules /app/node_modules
 # Server package (compiled dist + package.json only, no src/)
 COPY --from=twenty-server-build /app/packages/twenty-server/package.json /app/packages/twenty-server/
 COPY --from=twenty-server-build /app/packages/twenty-server/dist /app/packages/twenty-server/dist
+# The private SDK worker copies immutable source assets into its own tmpfs.
+RUN chown -R 0:0 /app/packages/twenty-server/dist/assets/twenty-client-sdk \
+ && chmod -R go-w /app/packages/twenty-server/dist/assets/twenty-client-sdk
 COPY --from=twenty-server-build /app/packages/twenty-server/patches /app/packages/twenty-server/patches
 
 # Workspace packages (dist + package.json; node_modules symlinks resolve to these)
@@ -249,6 +252,9 @@ COPY --chown=1000 --from=twenty-server-build /app/node_modules /app/node_modules
 # Server package (compiled dist + package.json only, no src/)
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-server/package.json /app/packages/twenty-server/
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-server/dist /app/packages/twenty-server/dist
+# The private SDK worker copies immutable source assets into its own tmpfs.
+RUN chown -R 0:0 /app/packages/twenty-server/dist/assets/twenty-client-sdk \
+ && chmod -R go-w /app/packages/twenty-server/dist/assets/twenty-client-sdk
 COPY --chown=1000 --from=twenty-server-build /app/packages/twenty-server/patches /app/packages/twenty-server/patches
 
 # Workspace packages (dist + package.json; node_modules symlinks resolve to these)

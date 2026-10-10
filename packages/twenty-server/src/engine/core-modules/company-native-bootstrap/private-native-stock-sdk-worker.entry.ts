@@ -6,6 +6,7 @@ import path from 'node:path';
 import { stop } from 'esbuild';
 import { replaceCoreClient } from 'twenty-client-sdk/generate';
 
+import { ASSET_PATH } from 'src/constants/assets-path';
 import { createZipFile } from 'src/engine/core-modules/logic-function/logic-function-drivers/utils/create-zip-file';
 import {
   decodePrivateStockSdkRequest,
@@ -15,7 +16,7 @@ import {
 } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-protocol';
 
 const ROOT = '/tmp/stock-sdk';
-const PACKAGE = '/app/dist/assets/twenty-client-sdk';
+const PACKAGE = path.join(ASSET_PATH, 'twenty-client-sdk');
 
 // Invoked only in the parent's fixed read-only image with a bounded tmpfs,
 // network none, no host binds and no SQL/Core/parent credential environment.
