@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fileSystem from 'node:fs';
 import * as frameModule from 'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-frame';
@@ -21,6 +22,7 @@ import {
 jest.mock('node:fs', () => ({
   ...jest.requireActual('node:fs'),
   fstatSync: jest.fn(),
+  writeSync: jest.fn(),
 }));
 jest.mock(
   'src/engine/core-modules/company-native-bootstrap/private-native-bootstrap-frame',
@@ -467,6 +469,65 @@ describe('separate stock transport admission', () => {
       PrivateNativeActionUnavailable,
     );
     expect(inspected).not.toHaveBeenCalled();
+  });
+  it('emits one finite producer failure on the admitted stock path without private exception text', async () => {
+    descriptor(true, false, 1000);
+    const write = jest.mocked(fileSystem.writeSync).mockClear();
+    const secret = new Error('postgresql://secret:password@private/authority');
+    jest
+      .mocked(frameModule.readPrivateFirstWriterFrame)
+      .mockRejectedValueOnce(secret);
+    await expect(runPrivateNativeStockBootstrap(true)).rejects.toBe(secret);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledWith(
+      2,
+      '{"kind":"crm-stock-producer-failure-v1","producerStage":"issued-frame"}\n',
+    );
+  });
+  (process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE ? it : it.skip)(
+    'passes actual producer failure through launcher pair into strict Core decoded v3',
+    async () => {
+      descriptor(true, false, 1000);
+      const write = jest.mocked(fileSystem.writeSync).mockClear();
+      await expect(runPrivateNativeStockBootstrap(true)).rejects.toBe(stop);
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--test',
+          '--test-name-pattern=actual launcher pair reaches',
+          'scripts/test-private-native-stock-launcher.mjs',
+        ],
+        {
+          encoding: 'utf8',
+          timeout: 5000,
+          env: {
+            ...process.env,
+            CRM_DIAGNOSTIC_PRODUCER_TEST_RECORD: String(write.mock.calls[0][1]),
+          },
+        },
+      );
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain(
+        'actual launcher pair reaches strict Core decoded producer measurement',
+      );
+      expect(result.stdout).toContain('pass 1');
+    },
+  );
+  it('keeps default-off and legacy refusals free of producer diagnostics', async () => {
+    const write = jest.mocked(fileSystem.writeSync).mockClear();
+    await expect(runPrivateNativeStockBootstrap()).rejects.toBeInstanceOf(
+      PrivateNativeActionUnavailable,
+    );
+    descriptor(false, true, 1000);
+    await expect(runPrivateNativeBootstrap(true)).rejects.toBe(stop);
+    expect(write).not.toHaveBeenCalled();
+  });
+  it('preserves the primary error when the finite diagnostic write fails', async () => {
+    descriptor(true, false, 1000);
+    jest.mocked(fileSystem.writeSync).mockImplementationOnce(() => {
+      throw new Error('private diagnostic write');
+    });
+    await expect(runPrivateNativeStockBootstrap(true)).rejects.toBe(stop);
   });
   it('admits measured stock socket shape only to the unchanged frame boundary', async () => {
     descriptor(true, false, 1000);

@@ -210,6 +210,60 @@ const refusalReason = (error) => {
     return localRefused ? 'Other' : null;
   }
 };
+const producerStages = new Set([
+  'input-admission',
+  'issued-frame',
+  'operator-trust',
+  'operator-profile',
+  'storage-secrets',
+  'database-connect',
+  'authority-check',
+  'pending-allocation',
+  'pending-observation',
+  'stock-imports',
+  'stock-fence',
+  'stock-checkpoint',
+  'stock-session',
+  'stock-prepare',
+  'stock-final-check',
+]);
+function producerStage(bytes) {
+  try {
+    if (bytes.length > 512) return null;
+    const text = bytes.toString('utf8');
+    if (!Buffer.from(text).equals(bytes)) return null;
+    const lines = text.split('\n');
+    if (
+      lines.length !== 3 ||
+      lines[1] !== 'Private stock command requires reconciliation' ||
+      lines[2] !== ''
+    )
+      return null;
+    const value = JSON.parse(lines[0]);
+    exact(value, ['kind', 'producerStage']);
+    if (
+      Reflect.ownKeys(value).length !== 2 ||
+      JSON.stringify(value) !== lines[0]
+    )
+      return null;
+    if (
+      !Object.keys(value).every((key) =>
+        Object.hasOwn(
+          Object.getOwnPropertyDescriptor(value, key) ?? {},
+          'value',
+        ),
+      )
+    )
+      return null;
+    return value.kind === 'crm-stock-producer-failure-v1' &&
+      typeof value.producerStage === 'string' &&
+      producerStages.has(value.producerStage)
+      ? value.producerStage
+      : null;
+  } catch {
+    return null;
+  }
+}
 // Only this module's owned catch writes metadata. Caller lookalikes are ignored.
 export function launcherFailureStderr(error) {
   const value =
@@ -330,7 +384,8 @@ async function runOwned(diagnostic) {
     secondaryOverflow = false,
     stdoutEof = false,
     stderrEof = false,
-    requestEof = false;
+    requestEof = false,
+    snapshotComplete = false;
   const cleanup = [],
     stdioClosed = [false, false, false, false, false];
   const remember = (e) => {
@@ -440,6 +495,7 @@ async function runOwned(diagnostic) {
     // its original plan only when that plan actually holds this value.
     diagnostic.phase = 'native-snapshot';
     const snapshotBytes = await requestsIn.frame(1024);
+    snapshotComplete = true;
     const applications = applicationSnapshot(
       canonical(snapshotBytes),
       issued.tuple.action_id,
@@ -561,6 +617,33 @@ async function runOwned(diagnostic) {
     if (!closed) remember(new Refused('reap_unproved'));
   }
   if (failed) {
+    // Preserve the already emitted primary/lifecycle snapshot. Only the existing
+    // completed cleanup path can supplement it after private stderr reaches EOF.
+    const stage =
+      closed && stderrEof ? producerStage(Buffer.concat(stderr)) : null;
+    if (diagnostic.reported && stage) {
+      try {
+        writeSync(
+          2,
+          'Private stock launcher requires reconciliation\n' +
+            JSON.stringify({
+              kind: 'crm-stock-launcher-failure-v3',
+              ...diagnostic.firstRecord,
+              producerStage: stage,
+              snapshotDelivery: snapshotComplete
+                ? 'complete'
+                : requestsIn
+                  ? requestsIn.charged === 0
+                    ? 'zero'
+                    : 'partial'
+                  : 'unavailable',
+            }) +
+            '\n',
+        );
+      } catch {
+        // Supplement failure never replaces the original refusal.
+      }
+    }
     const failure = new Refused('stock_launcher_reconciliation');
     failure.primary = primary;
     failure.cleanup = cleanup;
