@@ -56,8 +56,9 @@ function launcher({
     reportLauncherFailure,
     refusalReason,
     Refused,
+    Frames,
   } = runInNewContext(
-    `${source}\n({run, launcherFailureStderr, reportLauncherFailure, refusalReason, Refused})`,
+    `${source}\n({run, launcherFailureStderr, reportLauncherFailure, refusalReason, Refused, Frames})`,
     {
       Buffer,
       writeSync: (fd, text) => {
@@ -122,6 +123,7 @@ function launcher({
     run,
     refusalReason,
     Refused,
+    Frames,
     calls,
     boundary,
     environment,
@@ -398,4 +400,56 @@ test('reason projection never evaluates getters or arbitrary codes and requires 
     null,
   );
   assert.equal(reads, 0);
+});
+
+test('fragmented frames consume buffered prefixes without starving the remaining bytes', async () => {
+  const { Frames } = launcher();
+  const body = Buffer.from('{"test":"snapshot"}');
+  const header = Buffer.alloc(4);
+  header.writeUInt32BE(body.length);
+  const frame = Buffer.concat([header, body]);
+  for (const split of [0, 1, 3, 4, 5, frame.length - 1, frame.length]) {
+    const stream = new PassThrough();
+    const end = performance.now() + 100;
+    const reader = new Frames(stream, () => end, 2048);
+    const pending = reader.frame(1024).then(
+      (bytes) => ({ bytes }),
+      (error) => ({ error }),
+    );
+    stream.write(frame.subarray(0, split));
+    await new Promise(setImmediate);
+    stream.end(frame.subarray(split));
+    const result = await pending;
+    assert.ifError(result.error);
+    assert.ok(result.bytes.equals(body), `split ${split}`);
+    assert.equal(await reader.frame(1024, true), null);
+    assert.equal(reader.charged, frame.length);
+  }
+});
+
+test('partial frame EOF stays refused and adjacent frames are not over-read', async () => {
+  const { Frames } = launcher();
+  const body = Buffer.from('{"test":"snapshot"}');
+  const header = Buffer.alloc(4);
+  header.writeUInt32BE(body.length);
+  const frame = Buffer.concat([header, body]);
+  for (const length of [0, 1, 3, 4, 5, frame.length - 1]) {
+    const stream = new PassThrough();
+    const end = performance.now() + 100;
+    const reader = new Frames(stream, () => end, 2048);
+    stream.end(frame.subarray(0, length));
+    await assert.rejects(
+      reader.frame(1024),
+      (error) => error.code === 'truncated_frame',
+    );
+  }
+  const stream = new PassThrough();
+  const end = performance.now() + 100;
+  const reader = new Frames(stream, () => end, 2048);
+  stream.end(Buffer.concat([frame, frame]));
+  assert.ok((await reader.frame(1024)).equals(body));
+  assert.equal(reader.charged, frame.length);
+  assert.ok((await reader.frame(1024)).equals(body));
+  assert.equal(reader.charged, 2 * frame.length);
+  assert.equal(await reader.frame(1024, true), null);
 });
