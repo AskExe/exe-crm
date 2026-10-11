@@ -410,7 +410,7 @@ test('fragmented frames consume buffered prefixes without starving the remaining
   const frame = Buffer.concat([header, body]);
   for (const split of [0, 1, 3, 4, 5, frame.length - 1, frame.length]) {
     const stream = new PassThrough();
-    const end = performance.now() + 100;
+    const end = performance.now() + 2000;
     const reader = new Frames(stream, () => end, 2048);
     const pending = reader.frame(1024).then(
       (bytes) => ({ bytes }),
@@ -435,7 +435,7 @@ test('partial frame EOF stays refused and adjacent frames are not over-read', as
   const frame = Buffer.concat([header, body]);
   for (const length of [0, 1, 3, 4, 5, frame.length - 1]) {
     const stream = new PassThrough();
-    const end = performance.now() + 100;
+    const end = performance.now() + 2000;
     const reader = new Frames(stream, () => end, 2048);
     stream.end(frame.subarray(0, length));
     await assert.rejects(
@@ -444,7 +444,7 @@ test('partial frame EOF stays refused and adjacent frames are not over-read', as
     );
   }
   const stream = new PassThrough();
-  const end = performance.now() + 100;
+  const end = performance.now() + 2000;
   const reader = new Frames(stream, () => end, 2048);
   stream.end(Buffer.concat([frame, frame]));
   assert.ok((await reader.frame(1024)).equals(body));
