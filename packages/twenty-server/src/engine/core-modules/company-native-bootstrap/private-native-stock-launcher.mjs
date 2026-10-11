@@ -180,6 +180,31 @@ const failureClass = (error) => {
           ? 'SyntaxError'
           : 'Other';
 };
+// Only local Refused instances and own data descriptors can expose a reason.
+const refusalReasons = new Set([
+  'original_end',
+  'truncated_frame',
+  'canonical_frame',
+  'closed_frame',
+  'application_snapshot',
+  'native_stream_error',
+]);
+const refusalReason = (error) => {
+  let localRefused = false;
+  try {
+    if (Object.getPrototypeOf(error) !== Refused.prototype) return null;
+    localRefused = true;
+    const descriptor = Object.getOwnPropertyDescriptor(error, 'code');
+    return descriptor &&
+      Object.hasOwn(descriptor, 'value') &&
+      typeof descriptor.value === 'string' &&
+      refusalReasons.has(descriptor.value)
+      ? descriptor.value
+      : 'Other';
+  } catch {
+    return localRefused ? 'Other' : null;
+  }
+};
 // Only this module's owned catch writes metadata. Caller lookalikes are ignored.
 export function launcherFailureStderr(error) {
   const value =
@@ -187,10 +212,11 @@ export function launcherFailureStderr(error) {
   return (
     'Private stock launcher requires reconciliation\n' +
     JSON.stringify({
-      kind: 'crm-stock-launcher-failure-v1',
+      kind: 'crm-stock-launcher-failure-v2',
       ...(value ?? {
         phase: 'unavailable',
         primaryClass: 'Other',
+        primaryReason: null,
         spawned: false,
         childClosed: null,
         childStatus: null,
@@ -201,7 +227,7 @@ export function launcherFailureStderr(error) {
   );
 }
 // One small record is written before any owned cleanup wait; no streams or
-// exception properties enter this channel. Failed writes never change refusal.
+// arbitrary exception properties enter this channel. Failed writes never change refusal.
 export function reportLauncherFailure(error) {
   const owned = error && typeof error === 'object';
   if (owned && reported.has(error)) return true;
@@ -228,6 +254,7 @@ export async function run() {
         diagnostic.firstRecord ?? {
           phase: diagnostic.primaryPhase ?? diagnostic.phase,
           primaryClass: failureClass(diagnostic.primary ?? error),
+          primaryReason: refusalReason(diagnostic.primary ?? error),
           spawned: diagnostic.spawned,
           childClosed: diagnostic.childClosed ?? null,
           childStatus: diagnostic.childStatus ?? null,
@@ -310,6 +337,7 @@ async function runOwned(diagnostic) {
       diagnostic.firstRecord = {
         phase: diagnostic.phase,
         primaryClass: failureClass(e),
+        primaryReason: refusalReason(e),
         spawned: diagnostic.spawned,
         childClosed: diagnostic.spawned ? closed : null,
         childStatus:

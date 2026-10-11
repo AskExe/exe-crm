@@ -25,6 +25,7 @@ function launcher({
   remaining = 200000,
   childFailure = false,
   delayedClosure = false,
+  snapshotMode = null,
 } = {}) {
   const environment = Object.freeze({
     PATH: '/usr/bin:/bin',
@@ -49,8 +50,14 @@ function launcher({
     diagnostics = [];
   let releaseClosure;
   const boundary = Error('Controlled child spawn boundary');
-  const { run, launcherFailureStderr, reportLauncherFailure } = runInNewContext(
-    `${source}\n({run, launcherFailureStderr, reportLauncherFailure})`,
+  const {
+    run,
+    launcherFailureStderr,
+    reportLauncherFailure,
+    refusalReason,
+    Refused,
+  } = runInNewContext(
+    `${source}\n({run, launcherFailureStderr, reportLauncherFailure, refusalReason, Refused})`,
     {
       Buffer,
       writeSync: (fd, text) => {
@@ -82,6 +89,26 @@ function launcher({
         child.stdio = Array.from({ length: 5 }, () => new PassThrough());
         [child.stdin, child.stdout, child.stderr] = child.stdio;
         setImmediate(() => {
+          if (snapshotMode === 'expiry') return;
+          if (snapshotMode === 'stream') {
+            child.stdio[3].emit('error', Error('private transport secret'));
+          } else if (snapshotMode) {
+            const value =
+              snapshotMode === 'canonical'
+                ? '{ "private":true}'
+                : snapshotMode === 'shape'
+                  ? '{}'
+                  : JSON.stringify({
+                      actionId: 'invalid',
+                      workspaceId: 'invalid',
+                      customApplicationId: 'invalid',
+                      standardApplicationId: 'invalid',
+                    });
+            const body = Buffer.from(value),
+              head = Buffer.alloc(4);
+            head.writeUInt32BE(body.length);
+            child.stdio[3].write(Buffer.concat([head, body]));
+          }
           for (const stream of child.stdio) stream.end();
           const close = () => child.emit('close', 1, null);
           if (delayedClosure) releaseClosure = close;
@@ -93,6 +120,8 @@ function launcher({
   );
   return {
     run,
+    refusalReason,
+    Refused,
     calls,
     boundary,
     environment,
@@ -160,12 +189,14 @@ test('closed owned projection retains first refusal and excludes arbitrary prope
     'kind',
     'phase',
     'primaryClass',
+    'primaryReason',
     'spawned',
     'childClosed',
     'childStatus',
     'childSignal',
   ]);
   assert.equal(row.phase, 'native-spawn');
+  assert.equal(row.primaryReason, null);
   assert.equal(row.spawned, false);
   assert.equal(row.childClosed, null);
   assert.equal(row.childStatus, null);
@@ -203,7 +234,7 @@ test('native snapshot refusal reports closed child flags after mandatory cleanup
   assert.ok(original.closure.stdioClosed.every((v) => typeof v === 'boolean'));
   assert.ok(fixture.children[0].stdio.every((stream) => stream.destroyed));
   assert.equal(original.primary.code, 'truncated_frame');
-  assert.ok(!text.includes('truncated_frame'));
+  assert.equal(record.primaryReason, 'truncated_frame');
   assert.ok(!text.includes('/app'));
 });
 
@@ -246,6 +277,7 @@ test('actual entry retains fixed refusal and only the owned closed record', asyn
     'Private stock launcher requires reconciliation',
   );
   assert.equal(JSON.parse(stderr.split('\n')[1]).phase, 'runtime-admission');
+  assert.equal(JSON.parse(stderr.split('\n')[1]).primaryReason, 'Other');
   assert.equal(stderr.split('\n').length, 3);
 });
 
@@ -268,6 +300,7 @@ test('first owned refusal is emitted once before delayed child closure', async (
   const first = JSON.parse(fixture.diagnostics[0].split('\n')[1]);
   assert.equal(first.phase, 'native-snapshot');
   assert.equal(first.primaryClass, 'Refused');
+  assert.equal(first.primaryReason, 'truncated_frame');
   assert.equal(first.spawned, true);
   assert.equal(first.childClosed, false);
   assert.equal(first.childStatus, null);
@@ -278,4 +311,91 @@ test('first owned refusal is emitted once before delayed child closure', async (
   assert.ok(fixture.children[0].stdio.every((stream) => stream.destroyed));
   fixture.reportLauncherFailure(original);
   assert.equal(fixture.diagnostics.length, 1);
+});
+
+for (const [mode, reason] of [
+  ['expiry', 'original_end'],
+  ['canonical', 'canonical_frame'],
+  ['shape', 'closed_frame'],
+  ['application', 'application_snapshot'],
+  ['stream', 'native_stream_error'],
+]) {
+  test(`snapshot ${mode} retains its finite first reason before cleanup`, async () => {
+    const fixture = launcher({
+      childFailure: true,
+      delayedClosure: true,
+      remaining: mode === 'expiry' ? 30 : 200000,
+      snapshotMode: mode,
+    });
+    const pending = fixture.run().catch((error) => error);
+    // Wait only for the existing early report; child cleanup is still held.
+    const until = performance.now() + 1000;
+    while (!fixture.diagnostics.length && performance.now() < until)
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.equal(fixture.diagnostics.length, 1);
+    const record = JSON.parse(fixture.diagnostics[0].split('\n')[1]);
+    assert.equal(record.kind, 'crm-stock-launcher-failure-v2');
+    assert.equal(record.phase, 'native-snapshot');
+    assert.equal(record.primaryReason, reason);
+    assert.equal(record.childClosed, false);
+    assert.equal(record.childStatus, null);
+    if (mode === 'expiry') fixture.children[0].emit('close', 1, null);
+    else fixture.release();
+    const error = await pending;
+    assert.equal(fixture.diagnostics.length, 1);
+    assert.equal(
+      JSON.parse(fixture.launcherFailureStderr(error).split('\n')[1])
+        .primaryReason,
+      reason,
+    );
+    assert.ok(!fixture.diagnostics[0].includes('private transport secret'));
+  });
+}
+
+test('reason projection never evaluates getters or arbitrary codes and requires the exact local prototype', () => {
+  const fixture = launcher();
+  let reads = 0;
+  for (const code of [
+    'original_end',
+    'truncated_frame',
+    'canonical_frame',
+    'closed_frame',
+    'application_snapshot',
+    'native_stream_error',
+  ])
+    assert.equal(fixture.refusalReason(new fixture.Refused(code)), code);
+  const unknown = new fixture.Refused('postgresql://private:secret@host/db');
+  assert.equal(fixture.refusalReason(unknown), 'Other');
+  const getter = new fixture.Refused('original_end');
+  Object.defineProperty(getter, 'code', {
+    get() {
+      reads++;
+      throw Error('secret');
+    },
+  });
+  Object.defineProperty(getter, 'message', {
+    get() {
+      reads++;
+      throw Error('secret');
+    },
+  });
+  Object.defineProperty(getter, 'stack', {
+    get() {
+      reads++;
+      throw Error('secret');
+    },
+  });
+  assert.equal(fixture.refusalReason(getter), 'Other');
+  const inherited = new fixture.Refused('original_end');
+  delete inherited.code;
+  assert.equal(fixture.refusalReason(inherited), 'Other');
+  class Subclass extends fixture.Refused {}
+  assert.equal(fixture.refusalReason(new Subclass('original_end')), null);
+  assert.equal(
+    fixture.refusalReason(
+      Object.assign(Error('secret'), { code: 'original_end' }),
+    ),
+    null,
+  );
+  assert.equal(reads, 0);
 });
