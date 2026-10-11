@@ -92,7 +92,12 @@ class Frames {
     let total = 0;
     while (total < size) {
       need(performance.now() < this.deadline(), 'original_end');
-      const chunk = this.stream.read(size - total);
+      // read(n) can re-emit readable for an unconsumed short prefix and starve
+      // the I/O delivering the rest. Consume available bytes without over-read.
+      const available = this.stream.readableLength;
+      const chunk = this.stream.read(
+        available > 0 ? Math.min(size - total, available) : size - total,
+      );
       if (chunk !== null) {
         need(Buffer.isBuffer(chunk), 'binary_frame');
         parts.push(chunk);
