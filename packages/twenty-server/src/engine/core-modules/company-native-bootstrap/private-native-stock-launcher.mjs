@@ -196,7 +196,7 @@ export async function run() {
   );
   const child = spawn(process.execPath, [CHILD], {
     cwd: '/app',
-    env: process.env,
+    env: { ...process.env, CRM_PRIVATE_NATIVE_STOCK_ENABLED: 'true' },
     detached: true,
     stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
   });
