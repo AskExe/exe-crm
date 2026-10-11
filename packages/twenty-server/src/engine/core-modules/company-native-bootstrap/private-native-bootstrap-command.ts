@@ -1,5 +1,5 @@
 import { createHash, createPublicKey, verify } from 'node:crypto';
-import { constants, fstatSync } from 'node:fs';
+import { constants, fstatSync, writeSync } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -270,12 +270,38 @@ export async function runPrivateNativeBootstrap(enabled = false) {
 export async function runPrivateNativeStockBootstrap(enabled = false) {
   refuse(
     process.env.CRM_PRIVATE_NATIVE_STOCK_ENABLED === 'true' &&
-      process.platform === 'linux',
+      process.platform === 'linux' &&
+      enabled &&
+      process.getuid?.() === OWNER_UID,
   );
-  return runPrivateNativeBootstrapMode(enabled, true);
+  const diagnostic = { stage: 'input-admission' };
+  try {
+    return await runPrivateNativeBootstrapMode(enabled, true, diagnostic);
+  } catch (error) {
+    // Fixed owned stage only: never inspect or serialize the exception.
+    try {
+      writeSync(
+        2,
+        JSON.stringify({
+          kind: 'crm-stock-producer-failure-v1',
+          producerStage: diagnostic.stage,
+        }) + '\n',
+      );
+    } catch {
+      // Diagnostic failure must preserve the original refusal.
+    }
+    throw error;
+  }
 }
 
-async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
+async function runPrivateNativeBootstrapMode(
+  enabled: boolean,
+  stock: boolean,
+  diagnostic?: { stage: string },
+) {
+  const stage = (value: string) => {
+    if (diagnostic) diagnostic.stage = value;
+  };
   refuse(enabled && process.getuid?.() === OWNER_UID);
   const start = performance.now();
   let wholeDeadline = start + 181000;
@@ -287,8 +313,10 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
       ? inputDescriptor.isSocket() && inputDescriptor.uid === OWNER_UID
       : inputDescriptor.isFIFO(),
   );
+  stage('issued-frame');
   const frame = await readPrivateFirstWriterFrame(process.stdin);
   const lifetime = new PrivateDispatchLifetime(frame, wholeDeadline);
+  stage('operator-trust');
   const trust = closed(
     JSON.parse(
       (await readPrivateOperatorBytes('operator-trust.json')).toString('utf8'),
@@ -326,6 +354,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
   refuse(sha(spki) === trust.signer_sha256);
   const key = createPublicKey({ key: spki, format: 'der', type: 'spki' });
   refuse(key.asymmetricKeyType === 'ed25519');
+  stage('operator-profile');
   const profileBytes = await readPrivateOperatorBytes('profile.json');
   const configBytes = await readPrivateOperatorBytes('configuration.json');
   const signature = await readPrivateOperatorBytes('profile.sig');
@@ -472,6 +501,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
         /^[a-z][a-z0-9_]{0,62}$/.test(role as string),
     ) && new Set(roles).size === roles.length,
   );
+  stage('storage-secrets');
   refuse((await realpath(STORAGE_ROOT)) === STORAGE_ROOT);
   const storage = await stat(STORAGE_ROOT);
   refuse(
@@ -561,6 +591,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
   let primary: unknown;
   let failed = false;
   try {
+    stage('database-connect');
     for (const database of [
       core,
       independentCore,
@@ -578,11 +609,13 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
       true,
       lifetime,
     );
+    stage('authority-check');
     await writerAuthority.read(tuple, 61001);
     wholeDeadline = lifetime.workEnd();
     await assertPrivateNativeRole(writer, roles[1] as string, false);
     await assertPrivateNativeRole(observer, roles[2] as string, true);
     refuse(performance.now() < wholeDeadline - 61000);
+    stage('pending-allocation');
     const pending = await new PrivateNativeWorkspaceAllocator(
       writer,
       writerAuthority,
@@ -594,6 +627,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
       tuple,
       Math.floor(wholeDeadline - performance.now() - 61000),
     );
+    stage('pending-observation');
     const observed = await new PrivateNativeWorkspaceObserver(
       observer,
       observerAuthority,
@@ -611,6 +645,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
     if (!stock)
       return Object.freeze({ ...pending, readiness: 'unverified' as const });
     refuse(parent && selected && performance.now() < wholeDeadline - 61000);
+    stage('stock-imports');
     const [
       { PrivateNativeMutationFence },
       { PrivateNativeStockActionCheckpoint },
@@ -620,6 +655,7 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
       import('src/engine/core-modules/company-native-bootstrap/private-native-stock-action-checkpoint'),
       import('src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-session'),
     ]);
+    stage('stock-fence');
     const original = await writerAuthority.read(tuple, 61001);
     const leaseEnd = original.monotonicDeadline;
     const workEnd = Math.min(wholeDeadline - 61000, leaseEnd - 61001);
@@ -633,16 +669,20 @@ async function runPrivateNativeBootstrapMode(enabled: boolean, stock: boolean) {
       61000,
       roles[1] as string,
     );
+    stage('stock-checkpoint');
     const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
       fence,
       writer,
     );
+    stage('stock-session');
     const setup = await PrivateNativeStockSetupSession.bind(
       checkpoint,
       writer,
       parent,
     );
+    stage('stock-prepare');
     const native = await setup.prepare();
+    stage('stock-final-check');
     await checkpoint.assertCurrent();
     return Object.freeze({
       ...native,

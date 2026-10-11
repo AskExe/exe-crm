@@ -26,6 +26,9 @@ function launcher({
   childFailure = false,
   delayedClosure = false,
   snapshotMode = null,
+  producerDiagnostic = null,
+  lateProducerDiagnostic = false,
+  stderrNeverEnds = false,
 } = {}) {
   const environment = Object.freeze({
     PATH: '/usr/bin:/bin',
@@ -90,10 +93,14 @@ function launcher({
         child.stdio = Array.from({ length: 5 }, () => new PassThrough());
         [child.stdin, child.stdout, child.stderr] = child.stdio;
         setImmediate(() => {
+          if (producerDiagnostic !== null && !lateProducerDiagnostic)
+            child.stderr.write(producerDiagnostic);
           if (snapshotMode === 'expiry') return;
+          if (snapshotMode === 'partial')
+            child.stdio[3].write(Buffer.from([0, 0]));
           if (snapshotMode === 'stream') {
             child.stdio[3].emit('error', Error('private transport secret'));
-          } else if (snapshotMode) {
+          } else if (snapshotMode && snapshotMode !== 'partial') {
             const value =
               snapshotMode === 'canonical'
                 ? '{ "private":true}'
@@ -110,9 +117,21 @@ function launcher({
             head.writeUInt32BE(body.length);
             child.stdio[3].write(Buffer.concat([head, body]));
           }
-          for (const stream of child.stdio) stream.end();
+          for (const stream of child.stdio) {
+            if (
+              stream === child.stderr &&
+              (lateProducerDiagnostic || stderrNeverEnds)
+            )
+              continue;
+            stream.end();
+          }
           const close = () => child.emit('close', 1, null);
           if (delayedClosure) releaseClosure = close;
+          else if (lateProducerDiagnostic)
+            setImmediate(() => {
+              child.stderr.end(producerDiagnostic);
+              close();
+            });
           else close();
         });
         return child;
@@ -452,4 +471,138 @@ test('partial frame EOF stays refused and adjacent frames are not over-read', as
   assert.ok((await reader.frame(1024)).equals(body));
   assert.equal(reader.charged, 2 * frame.length);
   assert.equal(await reader.frame(1024, true), null);
+});
+
+const producerFailure = (stage) =>
+  JSON.stringify({
+    kind: 'crm-stock-producer-failure-v1',
+    producerStage: stage,
+  }) + '\nPrivate stock command requires reconciliation\n';
+for (const [snapshotMode, delivery] of [
+  [null, 'zero'],
+  ['partial', 'partial'],
+  ['shape', 'complete'],
+]) {
+  test(`closed producer stage supplements primary v2 with ${delivery} FD3 delivery`, async () => {
+    const fixture = launcher({
+      childFailure: true,
+      snapshotMode,
+      producerDiagnostic: producerFailure('stock-prepare'),
+    });
+    let error;
+    await assert.rejects(fixture.run, (e) => {
+      error = e;
+      return true;
+    });
+    assert.equal(fixture.diagnostics.length, 2);
+    const first = JSON.parse(fixture.diagnostics[0].split('\n')[1]),
+      last = JSON.parse(fixture.diagnostics[1].split('\n')[1]);
+    assert.equal(first.kind, 'crm-stock-launcher-failure-v2');
+    assert.equal(last.kind, 'crm-stock-launcher-failure-v3');
+    assert.equal(last.producerStage, 'stock-prepare');
+    assert.equal(last.snapshotDelivery, delivery);
+    const shared = { ...last };
+    delete shared.kind;
+    delete shared.producerStage;
+    delete shared.snapshotDelivery;
+    const primary = { ...first };
+    delete primary.kind;
+    assert.deepEqual(shared, primary);
+    assert.equal(fixture.launcherFailureStderr(error), fixture.diagnostics[0]);
+    assert.equal(
+      error.primary.code,
+      snapshotMode === 'shape' ? 'closed_frame' : 'truncated_frame',
+    );
+  });
+}
+for (const text of [
+  producerFailure('secret'),
+  producerFailure('stock-prepare') + 'extra',
+  JSON.stringify({
+    kind: 'crm-stock-producer-failure-v1',
+    producerStage: 'stock-prepare',
+    secret: 'postgresql://secret',
+  }) + '\nPrivate stock command requires reconciliation\n',
+]) {
+  test('invalid private producer bytes preserve exact v2 fallback', async () => {
+    const fixture = launcher({ childFailure: true, producerDiagnostic: text });
+    await assert.rejects(fixture.run);
+    assert.equal(fixture.diagnostics.length, 1);
+    assert.equal(
+      JSON.parse(fixture.diagnostics[0].split('\n')[1]).kind,
+      'crm-stock-launcher-failure-v2',
+    );
+    assert.ok(!fixture.diagnostics.join('').includes('postgresql'));
+  });
+}
+
+test(
+  'actual launcher pair reaches strict Core decoded producer measurement',
+  { skip: !process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE },
+  async () => {
+    const {
+      recordStockLauncherFailure,
+      privateFailureStderr,
+      parsePrivateFailureStderr,
+    } = await import(process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE);
+    for (const [snapshotMode, snapshotDelivery] of [
+      [null, 'zero'],
+      ['partial', 'partial'],
+      ['shape', 'complete'],
+    ]) {
+      const fixture = launcher({
+        childFailure: true,
+        snapshotMode,
+        producerDiagnostic: process.env.CRM_DIAGNOSTIC_PRODUCER_TEST_RECORD
+          ? process.env.CRM_DIAGNOSTIC_PRODUCER_TEST_RECORD +
+            'Private stock command requires reconciliation\n'
+          : producerFailure('issued-frame'),
+      });
+      await assert.rejects(fixture.run);
+      const failure = new Error('postgresql://secret:password@private');
+      recordStockLauncherFailure(
+        failure,
+        Buffer.from(fixture.diagnostics.join('')),
+      );
+      const row = parsePrivateFailureStderr(privateFailureStderr(failure)).error
+        .prelude.launcher;
+      assert.equal(row.kind, 'crm-stock-launcher-failure-v3');
+      assert.equal(row.producerStage, 'issued-frame');
+      assert.equal(row.snapshotDelivery, snapshotDelivery);
+      assert.equal(
+        row.primaryReason,
+        snapshotMode === 'shape' ? 'closed_frame' : 'truncated_frame',
+      );
+      assert.ok(!privateFailureStderr(failure).includes('postgresql'));
+    }
+  },
+);
+
+test('late private stderr supplements only after existing cleanup and matches early v2', async () => {
+  const fixture = launcher({
+    childFailure: true,
+    producerDiagnostic: producerFailure('stock-prepare'),
+    lateProducerDiagnostic: true,
+  });
+  await assert.rejects(fixture.run);
+  assert.equal(fixture.diagnostics.length, 2);
+  const first = JSON.parse(fixture.diagnostics[0].split('\n')[1]),
+    last = JSON.parse(fixture.diagnostics[1].split('\n')[1]);
+  assert.equal(first.childClosed, false);
+  assert.equal(last.childClosed, false);
+  assert.equal(last.producerStage, 'stock-prepare');
+  assert.equal(last.snapshotDelivery, 'zero');
+});
+test('undrained private stderr preserves only early v2 without additional waits', async () => {
+  const fixture = launcher({
+    childFailure: true,
+    producerDiagnostic: producerFailure('stock-prepare'),
+    stderrNeverEnds: true,
+  });
+  await assert.rejects(fixture.run);
+  assert.equal(fixture.diagnostics.length, 1);
+  assert.equal(
+    JSON.parse(fixture.diagnostics[0].split('\n')[1]).kind,
+    'crm-stock-launcher-failure-v2',
+  );
 });
