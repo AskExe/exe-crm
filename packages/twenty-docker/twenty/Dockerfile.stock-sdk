@@ -1,0 +1,12 @@
+# Metadata-only private SDK profile. The reviewed base must already contain
+# the compiled worker and protected SDK assets; this file never rebuilds them.
+ARG CRM_IMAGE
+FROM ${CRM_IMAGE}
+ARG SOURCE_SHA256
+ARG PACKAGE_SHA256
+LABEL askexe.stock-sdk.source-sha256=${SOURCE_SHA256}
+LABEL askexe.stock-sdk.package-sha256=${PACKAGE_SHA256}
+WORKDIR /app
+USER 1000:1000
+ENTRYPOINT ["node", "/app/packages/twenty-server/dist/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-worker.entry.js"]
+CMD []
