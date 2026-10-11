@@ -231,3 +231,9 @@ packages/twenty-docker/twenty/Dockerfile.stock-sdk
 
 # Private SDK operator instructions document existing internal package paths; no customer UI branding.
 packages/twenty-docker/twenty/stock-sdk.md
+
+# Private native profile copies the exact existing compiled internal package tree; no customer UI branding.
+packages/twenty-docker/twenty/Dockerfile.stock-native
+
+# Private native operator instructions document existing internal package paths; no customer UI branding.
+packages/twenty-docker/twenty/stock-native.md

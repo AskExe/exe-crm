@@ -1,0 +1,28 @@
+# Private native profile over an independently qualified immutable base.
+# No compilation or dependency installation occurs in this derivative.
+ARG CRM_IMAGE
+FROM ${CRM_IMAGE} AS qualified
+
+# Copy the actual rootfs without inheriting the ordinary production image's
+# labels, entrypoint or working directory. Native admission checks exact config.
+FROM scratch
+COPY --from=qualified / /
+# The launcher owns a fixed /app/dist child path. Copy the complete compiled
+# tree so relative imports, entity globs and adjacent assets stay together.
+COPY --from=qualified --chown=0:0 /app/packages/twenty-server/dist /app/dist
+ARG GIT_SHA
+ARG SOURCE_SHA256
+LABEL org.exe.git_sha=${GIT_SHA} \
+      org.exe.source_tree_sha256=${SOURCE_SHA256} \
+      org.exe.scope="server-only-native-runtime-derivative"
+# These are the complete observed non-secret base Config.Env values. A changed
+# base requires fresh qualification, including this explicit metadata projection.
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    NODE_VERSION=24.18.0 \
+    YARN_VERSION=1.22.22 \
+    REACT_APP_SERVER_BASE_URL="" \
+    APP_VERSION=0.9.75
+WORKDIR /app
+USER 1000:1000
+ENTRYPOINT ["node"]
+CMD ["/app/dist/engine/core-modules/company-native-bootstrap/private-native-stock-launcher.entry.js"]
