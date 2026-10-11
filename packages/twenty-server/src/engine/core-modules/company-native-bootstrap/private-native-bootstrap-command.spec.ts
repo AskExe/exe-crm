@@ -234,9 +234,11 @@ describe('private one-shot command admission', () => {
 describe('selected native CRM profile bytes', () => {
   const id = '11111111-1111-4111-8111-111111111111';
   const packageSha = 'a'.repeat(64);
-  const build = () => {
+  const build = (stock = false) => {
     const configuration = {
-      version: 'private-native-initializer-v1',
+      version: stock
+        ? 'private-crm-stock-initializer-v2'
+        : 'private-native-initializer-v1',
       product: 'crm-workspace',
       image: 'sha256:' + 'b'.repeat(64),
       image_id: 'sha256:' + 'b'.repeat(64),
@@ -244,7 +246,9 @@ describe('selected native CRM profile bytes', () => {
       package_sha256: packageSha,
       entrypoint: '/usr/local/bin/node',
       command: [
-        'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
+        stock
+          ? 'dist/engine/core-modules/company-native-bootstrap/private-native-stock-launcher.entry.js'
+          : 'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
       ],
       uid: 1000,
       memory_bytes: 1073741824,
@@ -301,6 +305,58 @@ describe('selected native CRM profile bytes', () => {
       ),
     ).not.toThrow();
   });
+  it('admits exact stock v2 profile bytes only in stock mode', () => {
+    const { profile, bytes, tuple } = build(true);
+    expect(() =>
+      assertSelectedPrivateNativeProfile(
+        profile,
+        bytes,
+        bytes,
+        tuple,
+        packageSha,
+        true,
+      ),
+    ).not.toThrow();
+  });
+  it.each([false, true])(
+    'refuses the other recipe in stock mode %s',
+    (stock) => {
+      const { profile, bytes, tuple } = build(!stock);
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          bytes,
+          bytes,
+          tuple,
+          packageSha,
+          stock,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    },
+  );
+  it.each([false, true])(
+    'refuses a version and command mismatch in stock mode %s',
+    (stock) => {
+      const { profile, tuple } = build(stock);
+      profile.configuration.command =
+        build(!stock).profile.configuration.command;
+      const bytes = Buffer.from(JSON.stringify(profile.configuration));
+      const digest = createHash('sha256').update(bytes).digest('hex');
+      tuple.config_sha256 = tuple.initializer_sha256 = digest;
+      profile.initializer_sha256 = profile.native_intent.initializer_sha256 =
+        digest;
+      expect(() =>
+        assertSelectedPrivateNativeProfile(
+          profile,
+          bytes,
+          bytes,
+          tuple,
+          packageSha,
+          stock,
+        ),
+      ).toThrow(PrivateNativeActionUnavailable);
+    },
+  );
   it.each(['configuration', 'initializer'])(
     'refuses changed %s bytes even with the same parsed value',
     (which) => {
