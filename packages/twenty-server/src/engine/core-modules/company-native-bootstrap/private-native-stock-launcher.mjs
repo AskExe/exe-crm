@@ -1,4 +1,5 @@
 // Source-only: fixed CRM supplier launcher. Not mounted or qualified yet.
+import { writeSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 const CHILD =
@@ -159,7 +160,86 @@ async function framed(stream, bytes, end) {
   await write(stream, header, end);
   await write(stream, bytes, end);
 }
+const failures = new WeakMap();
+const reported = new WeakSet();
+const failureClass = (error) => {
+  let prototype;
+  try {
+    prototype =
+      error && typeof error === 'object' ? Object.getPrototypeOf(error) : null;
+  } catch {
+    return 'Other';
+  }
+  return prototype === Refused.prototype
+    ? 'Refused'
+    : prototype === Error.prototype
+      ? 'Error'
+      : prototype === TypeError.prototype
+        ? 'TypeError'
+        : prototype === SyntaxError.prototype
+          ? 'SyntaxError'
+          : 'Other';
+};
+// Only this module's owned catch writes metadata. Caller lookalikes are ignored.
+export function launcherFailureStderr(error) {
+  const value =
+    error && typeof error === 'object' ? failures.get(error) : undefined;
+  return (
+    'Private stock launcher requires reconciliation\n' +
+    JSON.stringify({
+      kind: 'crm-stock-launcher-failure-v1',
+      ...(value ?? {
+        phase: 'unavailable',
+        primaryClass: 'Other',
+        spawned: false,
+        childClosed: null,
+        childStatus: null,
+        childSignal: null,
+      }),
+    }) +
+    '\n'
+  );
+}
+// One small record is written before any owned cleanup wait; no streams or
+// exception properties enter this channel. Failed writes never change refusal.
+export function reportLauncherFailure(error) {
+  const owned = error && typeof error === 'object';
+  if (owned && reported.has(error)) return true;
+  try {
+    writeSync(2, launcherFailureStderr(error));
+    if (owned) reported.add(error);
+    return true;
+  } catch {
+    return false;
+  }
+}
 export async function run() {
+  const diagnostic = {
+    phase: 'runtime-admission',
+    spawned: false,
+    primary: null,
+  };
+  try {
+    return await runOwned(diagnostic);
+  } catch (error) {
+    if (error && typeof error === 'object')
+      failures.set(
+        error,
+        diagnostic.firstRecord ?? {
+          phase: diagnostic.primaryPhase ?? diagnostic.phase,
+          primaryClass: failureClass(diagnostic.primary ?? error),
+          spawned: diagnostic.spawned,
+          childClosed: diagnostic.childClosed ?? null,
+          childStatus: diagnostic.childStatus ?? null,
+          childSignal: diagnostic.childSignal ?? null,
+        },
+      );
+    if (diagnostic.reported && error && typeof error === 'object')
+      reported.add(error);
+    throw error;
+  }
+}
+async function runOwned(diagnostic) {
   need(
     process.platform === 'linux' &&
       process.getuid() === 1000 &&
@@ -170,6 +250,7 @@ export async function run() {
   const started = performance.now();
   let end = started + 5000;
   const input = new Frames(process.stdin, () => end, TRANSPORT);
+  diagnostic.phase = 'initial-frame';
   const raw = await input.frame(16384);
   need(raw.at(-1) === 10, 'issued_line');
   const issued = canonical(raw.subarray(0, -1));
@@ -194,12 +275,15 @@ export async function run() {
     started + 181000,
     started + issued.remaining_work_milliseconds,
   );
+  diagnostic.phase = 'native-spawn';
   const child = spawn(process.execPath, [CHILD], {
     cwd: '/app',
     env: { ...process.env, CRM_PRIVATE_NATIVE_STOCK_ENABLED: 'true' },
     detached: true,
     stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
   });
+  diagnostic.spawned = Number.isSafeInteger(child.pid) && child.pid > 0;
+  diagnostic.childClosed = diagnostic.spawned ? false : null;
   let status = null,
     signal = null,
     closed = false,
@@ -221,6 +305,26 @@ export async function run() {
     if (!failed) {
       failed = true;
       primary = e;
+      diagnostic.primary = e;
+      diagnostic.primaryPhase = diagnostic.phase;
+      diagnostic.firstRecord = {
+        phase: diagnostic.phase,
+        primaryClass: failureClass(e),
+        spawned: diagnostic.spawned,
+        childClosed: diagnostic.spawned ? closed : null,
+        childStatus:
+          Number.isInteger(status) && status >= 0 && status <= 255
+            ? status
+            : null,
+        childSignal:
+          signal === null
+            ? null
+            : ['SIGTERM', 'SIGKILL', 'SIGINT'].includes(signal)
+              ? signal
+              : 'Other',
+      };
+      if (e && typeof e === 'object') failures.set(e, diagnostic.firstRecord);
+      diagnostic.reported = reportLauncherFailure(e);
     } else if (cleanup.length < 16) cleanup.push(e);
     else secondaryOverflow = true;
   };
@@ -237,6 +341,17 @@ export async function run() {
         status = code;
         signal = sig;
         closed = true;
+        if (diagnostic.spawned) {
+          diagnostic.childClosed = true;
+          diagnostic.childStatus =
+            Number.isInteger(code) && code >= 0 && code <= 255 ? code : null;
+          diagnostic.childSignal =
+            sig === null
+              ? null
+              : ['SIGTERM', 'SIGKILL', 'SIGINT'].includes(sig)
+                ? sig
+                : 'Other';
+        }
         resolve();
       }),
     );
@@ -263,7 +378,7 @@ export async function run() {
       'native_spawn_streams',
     );
     let retainedDiagnosticBytes = 0;
-    const diagnostic = (chunks, kind, b) => {
+    const retainDiagnostic = (chunks, kind, b) => {
       if (kind === 'stdout') businessBytes += b.length;
       else stderrBytes += b.length;
       const keep = Math.min(b.length, DIAGNOSTIC - retainedDiagnosticBytes);
@@ -282,13 +397,15 @@ export async function run() {
     child.stderr.once('end', () => {
       stderrEof = true;
     });
-    child.stdout.on('data', (b) => diagnostic(business, 'stdout', b));
-    child.stderr.on('data', (b) => diagnostic(stderr, 'stderr', b));
+    child.stdout.on('data', (b) => retainDiagnostic(business, 'stdout', b));
+    child.stderr.on('data', (b) => retainDiagnostic(stderr, 'stderr', b));
+    diagnostic.phase = 'native-input';
     await write(child.stdin, raw, () => end);
     child.stdin.end();
     // Metadata creates the standard application before this first FD3 frame.
     // Workspace is source-authenticated native observation here; parent checks
     // its original plan only when that plan actually holds this value.
+    diagnostic.phase = 'native-snapshot';
     const snapshotBytes = await requestsIn.frame(1024);
     const applications = applicationSnapshot(
       canonical(snapshotBytes),
@@ -299,6 +416,7 @@ export async function run() {
       Buffer.from(JSON.stringify({ kind: 'sdk-bind', snapshot: applications })),
       () => end,
     );
+    diagnostic.phase = 'bind-ack';
     const bound = canonical(await input.frame(2048));
     exact(bound, ['kind', 'snapshot']);
     need(
@@ -308,6 +426,7 @@ export async function run() {
     );
     await framed(child.stdio[4], snapshotBytes, () => end);
     for (let sequence = 1; sequence <= 2; sequence++) {
+      diagnostic.phase = 'sdk-request';
       const requestBytes = await requestsIn.frame(REQUEST),
         request = canonical(requestBytes);
       sdkRequest(request, applications, sequence);
@@ -318,6 +437,7 @@ export async function run() {
         Buffer.from(JSON.stringify({ kind: 'sdk-request', sequence, request })),
         () => end,
       );
+      diagnostic.phase = 'sdk-result';
       const response = canonical(await input.frame(RESULT + 1024));
       exact(response, ['kind', 'sequence', 'result']);
       need(
@@ -331,6 +451,7 @@ export async function run() {
     }
     need((await requestsIn.frame(REQUEST, true)) === null, 'extra_sdk_request');
     requestEof = true;
+    diagnostic.phase = 'native-close';
     let timer;
     try {
       await Promise.race([
@@ -362,6 +483,7 @@ export async function run() {
       text.endsWith('\n') && Buffer.from(text).equals(bytes),
       'native_result',
     );
+    diagnostic.phase = 'native-output';
     observation = canonical(bytes.subarray(0, -1));
   } catch (error) {
     remember(error);
@@ -429,6 +551,7 @@ export async function run() {
     throw failure;
   }
   try {
+    diagnostic.phase = 'final-frame';
     await framed(
       process.stdout,
       Buffer.from(
