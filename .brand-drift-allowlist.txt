@@ -225,3 +225,9 @@ packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-
 
 # Cold role controls exercise native standard/custom application projections; no customer UI branding.
 packages/twenty-server/src/engine/core-modules/company-native-bootstrap/private-native-stock-record-roles.spec.ts
+
+# Dedicated private SDK image uses the exact existing compiled internal package path; no customer UI branding.
+packages/twenty-docker/twenty/Dockerfile.stock-sdk
+
+# Private SDK operator instructions document existing internal package paths; no customer UI branding.
+packages/twenty-docker/twenty/stock-sdk.md
