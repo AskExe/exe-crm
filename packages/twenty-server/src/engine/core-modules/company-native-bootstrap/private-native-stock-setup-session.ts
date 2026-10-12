@@ -87,14 +87,15 @@ export class PrivateNativeStockSetupSession {
     try {
       stage('stock-prepare-current');
       await this.checkpoint.assertCurrent();
+      this.#beginAttempted = true;
+      stage('stock-prepare-begin');
+      this.#business = await this.parent.begin();
+      // BEGIN creates the confined role and grants checked by control admission.
       stage('stock-prepare-control');
       this.#control = await PrivateNativeStockRoleGuard.bindControl(
         this.original,
         this.checkpoint,
       );
-      this.#beginAttempted = true;
-      stage('stock-prepare-begin');
-      this.#business = await this.parent.begin();
       stage('stock-prepare-business');
       await this.#control.bindBusinessDatabase(this.#business);
       // The explicit setup runner is admitted before automatic pool fencing.
