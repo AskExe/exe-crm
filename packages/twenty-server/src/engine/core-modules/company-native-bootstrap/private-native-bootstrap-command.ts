@@ -70,6 +70,7 @@ export function assertSelectedPrivateNativeProfile(
   initializerBytes: Buffer,
   tuple: PrivateNativeActionTuple,
   packageSha256: string,
+  stock = false,
 ): void {
   const profileKeys = [
     'version',
@@ -117,7 +118,10 @@ export function assertSelectedPrivateNativeProfile(
       JSON.stringify(configKeys),
   );
   refuse(
-    config.version === 'private-native-initializer-v1' &&
+    config.version ===
+      (stock
+        ? 'private-crm-stock-initializer-v2'
+        : 'private-native-initializer-v1') &&
       config.product === 'crm-workspace' &&
       config.package_sha256 === packageSha256 &&
       typeof config.source_sha256 === 'string' &&
@@ -130,7 +134,9 @@ export function assertSelectedPrivateNativeProfile(
       config.entrypoint === '/usr/local/bin/node' &&
       JSON.stringify(config.command) ===
         JSON.stringify([
-          'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
+          stock
+            ? 'dist/engine/core-modules/company-native-bootstrap/private-native-stock-launcher.entry.js'
+            : 'dist/engine/core-modules/company-native-bootstrap/private-native-bootstrap.entry.js',
         ]) &&
       config.uid === OWNER_UID &&
       config.memory_bytes === 1073741824 &&
@@ -487,6 +493,7 @@ async function runPrivateNativeBootstrapMode(
       initializerBytes,
       tuple,
       trust.package_sha256 as string,
+      stock,
     );
   }
   const roles = [
