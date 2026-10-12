@@ -606,3 +606,52 @@ test('undrained private stderr preserves only early v2 without additional waits'
     'crm-stock-launcher-failure-v2',
   );
 });
+
+for (const stage of [
+  'stock-prepare-current',
+  'stock-prepare-control',
+  'stock-prepare-begin',
+  'stock-prepare-business',
+  'stock-prepare-identity',
+  'stock-prepare-custody',
+  'stock-prepare-storage',
+  'stock-prepare-channel',
+  'stock-prepare-context',
+  'stock-prepare-activate',
+  'stock-prepare-complete',
+  'stock-prepare-final-current',
+  'stock-prepare-output-bind',
+  'stock-prepare-observe',
+  'stock-prepare-output-observe',
+]) {
+  test(`fixed prepare operation ${stage} survives owned launcher projection`, async () => {
+    const fixture = launcher({
+      childFailure: true,
+      producerDiagnostic: producerFailure(stage),
+    });
+    await assert.rejects(fixture.run);
+    const row = JSON.parse(fixture.diagnostics.at(-1).split('\n')[1]);
+    assert.equal(row.kind, 'crm-stock-launcher-failure-v3');
+    assert.equal(row.producerStage, stage);
+    assert.equal(row.snapshotDelivery, 'zero');
+    assert.equal(row.primaryReason, 'truncated_frame');
+    if (process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE) {
+      const {
+        recordStockLauncherFailure,
+        privateFailureStderr,
+        parsePrivateFailureStderr,
+      } = await import(process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE);
+      const failure = new Error('postgresql://sentinel-secret@private');
+      recordStockLauncherFailure(
+        failure,
+        Buffer.from(fixture.diagnostics.join('')),
+      );
+      assert.equal(
+        parsePrivateFailureStderr(privateFailureStderr(failure)).error.prelude
+          .launcher.producerStage,
+        stage,
+      );
+      assert.ok(!privateFailureStderr(failure).includes('sentinel-secret'));
+    }
+  });
+}

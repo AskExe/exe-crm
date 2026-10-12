@@ -24,6 +24,8 @@ export type PrivateStockSetupObservation = Readonly<{
   files: Awaited<ReturnType<PrivateNativeStockOutputObserver['observe']>>;
 }>;
 
+export type PrivateStockSetupDiagnostic = { stage: string };
+
 const issued = new WeakSet<PrivateNativeStockSetupSession>();
 
 // Unmounted concrete composition, not a provider/plugin selector. A complete SQL
@@ -68,7 +70,9 @@ export class PrivateNativeStockSetupSession {
     return session;
   }
 
-  async prepare(): Promise<PrivateStockSetupObservation> {
+  async prepare(
+    diagnostic?: PrivateStockSetupDiagnostic,
+  ): Promise<PrivateStockSetupObservation> {
     if (!issued.has(this) || this.#started || this.#closed)
       throw new PrivateNativeActionUnavailable();
     this.#started = true;
@@ -77,29 +81,41 @@ export class PrivateNativeStockSetupSession {
     let completed = false;
     let outputObserver: PrivateNativeStockOutputObserver | undefined;
     const cleanupErrors: unknown[] = [];
+    const stage = (value: string) => {
+      if (diagnostic) diagnostic.stage = value;
+    };
     try {
+      stage('stock-prepare-current');
       await this.checkpoint.assertCurrent();
+      stage('stock-prepare-control');
       this.#control = await PrivateNativeStockRoleGuard.bindControl(
         this.original,
         this.checkpoint,
       );
       this.#beginAttempted = true;
+      stage('stock-prepare-begin');
       this.#business = await this.parent.begin();
+      stage('stock-prepare-business');
       await this.#control.bindBusinessDatabase(this.#business);
       // The explicit setup runner is admitted before automatic pool fencing.
       // Installing custody first would wrap a gate as its own original query.
+      stage('stock-prepare-identity');
       await createPrivateStockSetupIdentity(
         this.checkpoint,
         this.#business,
         this.#control,
       );
+      stage('stock-prepare-custody');
       this.#custody = await PrivateNativeStockPoolCustody.bind(
         this.#business,
         this.#control,
         this.checkpoint,
       );
+      stage('stock-prepare-storage');
       this.#storage = await PrivateNativeStockStorage.bind(this.checkpoint);
+      stage('stock-prepare-channel');
       this.#channel = await PrivateNativeStockSdkChannel.bind(this.checkpoint);
+      stage('stock-prepare-context');
       this.#context = await createPrivateStockProviderContext(
         this.checkpoint,
         this.#business,
@@ -108,19 +124,23 @@ export class PrivateNativeStockSetupSession {
         this.#storage,
         this.#channel,
       );
+      stage('stock-prepare-activate');
       await activateOriginalStockWorkspace(
         this.checkpoint,
         this.#business,
         this.#control,
         this.#context,
       );
+      stage('stock-prepare-complete');
       await completeOriginalStockSubjectAndRemoveSetup(
         this.checkpoint,
         this.#business,
         this.#control,
         this.#context,
       );
+      stage('stock-prepare-final-current');
       await this.checkpoint.assertCurrent();
+      stage('stock-prepare-output-bind');
       outputObserver = PrivateNativeStockOutputObserver.bind(
         this.checkpoint,
         this.#storage,
@@ -130,6 +150,8 @@ export class PrivateNativeStockSetupSession {
       failed = true;
       primary = error;
     } finally {
+      // Cleanup cannot replace the first failed operation's diagnostic stage.
+      if (!failed) stage('stock-prepare');
       // Every acquired owner is attempted independently; no cleanup error may
       // replace the first operation failure or skip remaining owned closure.
       if (this.#context) {
@@ -189,8 +211,10 @@ export class PrivateNativeStockSetupSession {
         Object.freeze(cleanupErrors),
       );
     // No replacement timer: the current original action must still qualify.
+    stage('stock-prepare-observe');
     const native = await this.parent.observe();
     if (!outputObserver) throw new PrivateNativeActionUnavailable();
+    stage('stock-prepare-output-observe');
     const files = await outputObserver.observe();
     return Object.freeze({ native, files });
   }

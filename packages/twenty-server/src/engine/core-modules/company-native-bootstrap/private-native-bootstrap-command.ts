@@ -688,7 +688,7 @@ async function runPrivateNativeBootstrapMode(
       parent,
     );
     stage('stock-prepare');
-    const native = await setup.prepare();
+    const native = await setup.prepare(diagnostic);
     stage('stock-final-check');
     await checkpoint.assertCurrent();
     return Object.freeze({
