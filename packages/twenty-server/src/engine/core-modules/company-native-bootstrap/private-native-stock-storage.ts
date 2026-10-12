@@ -34,24 +34,30 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
   #bytes = 0;
   private constructor(
     private readonly checkpoint: PrivateNativeStockActionCheckpoint,
+    private bindDiagnostic?: { stage: string },
   ) {
     super();
   }
 
   static async bind(
     checkpoint: PrivateNativeStockActionCheckpoint,
+    diagnostic?: { stage: string },
   ): Promise<PrivateNativeStockStorage> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-issued';
     PrivateNativeStockActionCheckpoint.assertIssued(checkpoint);
+    if (diagnostic) diagnostic.stage = 'stock-storage-runtime';
     if (process.platform !== 'linux' || process.getuid?.() !== 1000)
       throw new PrivateNativeActionUnavailable();
-    const storage = new PrivateNativeStockStorage(checkpoint);
+    const storage = new PrivateNativeStockStorage(checkpoint, diagnostic);
     try {
       let parent: Directory | undefined;
-      for (const [name, named] of [
-        ['/', '/'],
-        ['app', '/app'],
-        ['.local-storage', ROOT],
+      for (const [name, named, stage] of [
+        ['/', '/', 'stock-storage-ancestor-root'],
+        ['app', '/app', 'stock-storage-ancestor-app'],
+        ['.local-storage', ROOT, 'stock-storage-ancestor-local'],
       ] as const) {
+        if (diagnostic) diagnostic.stage = stage;
         const before = await lstat(named);
         if (
           !before.isDirectory() ||
@@ -73,6 +79,8 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
       await storage.bindOriginalPackages();
       await storage.assertCurrent();
       issuedStockStorage.add(storage);
+      storage.bindDiagnostic = undefined;
+      if (diagnostic && previous !== undefined) diagnostic.stage = previous;
       return storage;
     } catch (primary) {
       const cleanup = await storage.closeHandles();
@@ -81,14 +89,17 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
   }
 
   private async bindOriginalPackages(): Promise<void> {
-    await this.checkpoint.assertOriginalCustomPackageMetadata();
+    await this.checkpoint.assertOriginalCustomPackageMetadata(
+      this.bindDiagnostic,
+    );
     const original = this.checkpoint.pendingPlan.original;
     let parent = this.#directories.get(ROOT)!;
-    for (const component of [
-      original.workspaceId,
-      original.customApplicationId,
-      'dependencies',
+    for (const [component, stage] of [
+      [original.workspaceId, 'stock-storage-directory-workspace'],
+      [original.customApplicationId, 'stock-storage-directory-custom'],
+      ['dependencies', 'stock-storage-directory-dependencies'],
     ]) {
+      if (this.bindDiagnostic) this.bindDiagnostic.stage = stage;
       await this.assertCurrent();
       const named = `${parent.named}/${component}`;
       const directory = await this.acquire(
@@ -104,6 +115,8 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
       this.#directories.set(named, directory);
       parent = directory;
     }
+    if (this.bindDiagnostic)
+      this.bindDiagnostic.stage = 'stock-storage-entries';
     const application = this.#directories.get(
       `${ROOT}/${original.workspaceId}/${original.customApplicationId}`,
     )!;
@@ -117,6 +130,11 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
     )
       throw new PrivateNativeActionUnavailable();
     for (const [name, size, hash] of STOCK_PACKAGE_INPUTS) {
+      const stage =
+        name === 'package.json'
+          ? 'stock-storage-file-package'
+          : 'stock-storage-file-lock';
+      if (this.bindDiagnostic) this.bindDiagnostic.stage = stage;
       let handle: FileHandle | undefined;
       let primary: unknown;
       let failed = false;
@@ -161,8 +179,12 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
       } finally {
         if (handle) {
           try {
+            if (!failed && this.bindDiagnostic)
+              this.bindDiagnostic.stage = 'stock-storage-file-close';
             await handle.close();
             this.#handles.delete(handle);
+            if (!failed && this.bindDiagnostic)
+              this.bindDiagnostic.stage = stage;
           } catch (error) {
             cleanupErrors.push(error);
           }
@@ -174,7 +196,9 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
           cleanupErrors,
         );
     }
-    await this.checkpoint.assertOriginalCustomPackageMetadata();
+    await this.checkpoint.assertOriginalCustomPackageMetadata(
+      this.bindDiagnostic,
+    );
   }
 
   static assertIssued(storage: PrivateNativeStockStorage): void {
@@ -189,27 +213,30 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
   }
 
   private async acquire(path: string, named: string): Promise<Directory> {
-    await this.checkpoint.assertCurrent();
+    await this.checkpoint.assertCurrent(this.bindDiagnostic);
     const handle = await open(
       path,
       constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
     );
     this.#handles.add(handle);
-    await this.checkpoint.assertCurrent();
+    await this.checkpoint.assertCurrent(this.bindDiagnostic);
     const identity = await handle.stat();
-    await this.checkpoint.assertCurrent();
+    await this.checkpoint.assertCurrent(this.bindDiagnostic);
     if (!identity.isDirectory()) throw new PrivateNativeActionUnavailable();
     return { handle, identity, named };
   }
 
   private async assertCurrent(): Promise<void> {
+    const previous = this.bindDiagnostic?.stage;
     if (this.#terminal) throw new PrivateNativeActionUnavailable();
-    await this.checkpoint.assertCurrent();
+    await this.checkpoint.assertCurrent(this.bindDiagnostic);
+    if (this.bindDiagnostic)
+      this.bindDiagnostic.stage = 'stock-storage-directory-current';
     for (const directory of this.#directories.values()) {
       const held = await directory.handle.stat();
-      await this.checkpoint.assertCurrent();
+      await this.checkpoint.assertCurrent(this.bindDiagnostic);
       const named = await lstat(directory.named);
-      await this.checkpoint.assertCurrent();
+      await this.checkpoint.assertCurrent(this.bindDiagnostic);
       if (
         !same(held, directory.identity) ||
         !same(named, directory.identity) ||
@@ -217,6 +244,8 @@ export class PrivateNativeStockStorage extends PrivateNativeStockStorageDenials 
       )
         throw new PrivateNativeActionUnavailable();
     }
+    if (this.bindDiagnostic && previous !== undefined)
+      this.bindDiagnostic.stage = previous;
   }
 
   private components(filePath: string): string[] {

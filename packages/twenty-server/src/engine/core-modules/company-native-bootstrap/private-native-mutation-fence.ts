@@ -197,14 +197,19 @@ export class PrivateNativeMutationFence {
     return original;
   }
 
-  async assertOriginalNativeDatabase(database: DataSource): Promise<void> {
-    await this.assertCurrent();
+  async assertOriginalNativeDatabase(
+    database: DataSource,
+    diagnostic?: { stage: string },
+  ): Promise<void> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-endpoint';
+    await this.assertCurrent(diagnostic);
     const query = `SELECT inet_server_addr()::text AS address,
       inet_server_port() AS port,current_database() AS database`;
     const original: unknown = await this.nativeDatabase.query(query);
-    await this.assertCurrent();
+    await this.assertCurrent(diagnostic);
     const structural: unknown = await database.query(query);
-    await this.assertCurrent();
+    await this.assertCurrent(diagnostic);
     const endpoint = (value: unknown): string => {
       if (
         !Array.isArray(value) ||
@@ -226,6 +231,7 @@ export class PrivateNativeMutationFence {
     };
     if (endpoint(original) !== endpoint(structural))
       throw new PrivateNativeActionUnavailable();
+    if (diagnostic && previous !== undefined) diagnostic.stage = previous;
   }
 
   async assertWorkspaceCurrent(workspaceId: string): Promise<void> {
@@ -255,16 +261,23 @@ export class PrivateNativeMutationFence {
     }
   }
 
-  async assertCurrent(): Promise<void> {
+  async assertCurrent(diagnostic?: { stage: string }): Promise<void> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-deadline';
     this.assertOriginalDeadline();
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-old-role';
     await this.nativeGuard.assertCurrent();
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-deadline';
     this.assertOriginalDeadline();
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-core-authority';
     const current = await this.reader.read(
       this.tuple,
       Math.ceil(this.workDeadline - performance.now()) +
         this.reserveMilliseconds,
     );
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-deadline';
     this.assertOriginalDeadline();
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-owner-lease';
     if (
       current.monotonicDeadline <=
         this.workDeadline + this.reserveMilliseconds ||
@@ -272,5 +285,6 @@ export class PrivateNativeMutationFence {
     ) {
       throw new PrivateNativeActionUnavailable();
     }
+    if (diagnostic && previous !== undefined) diagnostic.stage = previous;
   }
 }

@@ -56,8 +56,12 @@ export class PrivateNativeStockActionCheckpoint {
       throw new PrivateNativeActionUnavailable();
   }
 
-  async assertOriginalCustomPackageMetadata(): Promise<void> {
-    await this.assertNativeDatabase(this.nativeDatabase);
+  async assertOriginalCustomPackageMetadata(diagnostic?: {
+    stage: string;
+  }): Promise<void> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-metadata';
+    await this.assertNativeDatabase(this.nativeDatabase, diagnostic);
     const original = this.pendingPlan.original;
     const rows: unknown = await this.nativeDatabase.query(
       `SELECT a.id AS application_id,
@@ -72,7 +76,7 @@ export class PrivateNativeStockActionCheckpoint {
           WHERE all_files."applicationId"=a.id AND all_files."deletedAt" IS NULL)=2`,
       [original.customApplicationId, original.workspaceId],
     );
-    await this.assertCurrent();
+    await this.assertCurrent(diagnostic);
     if (
       !Array.isArray(rows) ||
       rows.length !== 2 ||
@@ -93,6 +97,7 @@ export class PrivateNativeStockActionCheckpoint {
       ).length !== 1
     )
       throw new PrivateNativeActionUnavailable();
+    if (diagnostic && previous !== undefined) diagnostic.stage = previous;
   }
 
   async readOriginalStockApplications(): Promise<PrivateStockApplicationSnapshot> {
@@ -151,19 +156,28 @@ export class PrivateNativeStockActionCheckpoint {
     return this.originalFence.remainingOriginalWorkMilliseconds();
   }
 
-  async assertCurrent(): Promise<void> {
+  async assertCurrent(diagnostic?: { stage: string }): Promise<void> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-current-issued';
     PrivateNativeStockActionCheckpoint.assertIssued(this);
     // Retains both the original Core lease/action checks and old-role catalog
     // ceilings. No new clock, remaining-life parameter or native status bypass.
-    await this.originalFence.assertCurrent();
+    await this.originalFence.assertCurrent(diagnostic);
+    if (diagnostic && previous !== undefined) diagnostic.stage = previous;
   }
 
-  async assertNativeDatabase(database: DataSource): Promise<void> {
-    await this.assertCurrent();
+  async assertNativeDatabase(
+    database: DataSource,
+    diagnostic?: { stage: string },
+  ): Promise<void> {
+    const previous = diagnostic?.stage;
+    if (diagnostic) diagnostic.stage = 'stock-storage-endpoint';
+    await this.assertCurrent(diagnostic);
     if (database !== this.nativeDatabase)
       throw new PrivateNativeActionUnavailable();
-    await this.originalFence.assertOriginalNativeDatabase(database);
-    await this.assertCurrent();
+    await this.originalFence.assertOriginalNativeDatabase(database, diagnostic);
+    await this.assertCurrent(diagnostic);
+    if (diagnostic && previous !== undefined) diagnostic.stage = previous;
   }
 
   async assertNativeEndpoint(database: DataSource): Promise<void> {
