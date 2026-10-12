@@ -113,7 +113,10 @@ export class PrivateNativeStockSetupSession {
         this.checkpoint,
       );
       stage('stock-prepare-storage');
-      this.#storage = await PrivateNativeStockStorage.bind(this.checkpoint);
+      this.#storage = await PrivateNativeStockStorage.bind(
+        this.checkpoint,
+        diagnostic,
+      );
       stage('stock-prepare-channel');
       this.#channel = await PrivateNativeStockSdkChannel.bind(this.checkpoint);
       stage('stock-prepare-context');

@@ -334,6 +334,79 @@ describe('stock pending plan materialization', () => {
     );
   });
 
+  it.each(['issued', 'deadline', 'old-role', 'core-authority', 'owner-lease'])(
+    'retains the deepest fixed currentness family %s',
+    async (family) => {
+      const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+        await issued(),
+        target,
+      );
+      const diagnostic = { stage: 'stock-storage-file-package' };
+      if (family === 'issued') {
+        jest
+          .spyOn(PrivateNativeStockActionCheckpoint, 'assertIssued')
+          .mockImplementation(() => {
+            throw new PrivateNativeActionUnavailable();
+          });
+      } else if (family === 'deadline') {
+        jest.spyOn(performance, 'now').mockReturnValue(workEnd + 1);
+      } else if (family === 'old-role') {
+        jest
+          .mocked(PrivateNativeDatabaseGuard.prototype.assertCurrent)
+          .mockRejectedValue(new PrivateNativeActionUnavailable());
+      } else if (family === 'core-authority') {
+        revoked = true;
+      } else {
+        // Preserve the reader's issued projection while changing only the
+        // final owner's equality guard after the actual reader returns.
+        const actualRead = PrivateNativeActionReader.prototype.read;
+        jest
+          .spyOn(PrivateNativeActionReader.prototype, 'read')
+          .mockImplementation(async function (
+            this: PrivateNativeActionReader,
+            ...args
+          ) {
+            const result = await actualRead.apply(this, args);
+            return {
+              ...result,
+              authority: { ...result.authority, owner_subject: id('e') },
+            };
+          });
+      }
+      await expect(checkpoint.assertCurrent(diagnostic)).rejects.toBeInstanceOf(
+        PrivateNativeActionUnavailable,
+      );
+      expect(diagnostic.stage).toBe(`stock-storage-current-${family}`);
+      expect(JSON.stringify(diagnostic)).not.toContain('secret');
+    },
+  );
+  it('restores caller stage after successful nested currentness and endpoint checks', async () => {
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      await issued(),
+      target,
+    );
+    const diagnostic = { stage: 'stock-storage-metadata' };
+    await checkpoint.assertCurrent(diagnostic);
+    expect(diagnostic.stage).toBe('stock-storage-metadata');
+    await checkpoint.assertNativeDatabase(target, diagnostic);
+    expect(diagnostic.stage).toBe('stock-storage-metadata');
+  });
+  it('distinguishes endpoint from metadata policy refusal without exposing rows', async () => {
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      await issued(),
+      target,
+    );
+    const diagnostic = { stage: 'stock-prepare-storage' };
+    await expect(
+      checkpoint.assertNativeDatabase({} as DataSource, diagnostic),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(diagnostic.stage).toBe('stock-storage-endpoint');
+    await expect(
+      checkpoint.assertOriginalCustomPackageMetadata(diagnostic),
+    ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(diagnostic.stage).toBe('stock-storage-metadata');
+  });
+
   async function stockRunner() {
     const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
       await issued(),
