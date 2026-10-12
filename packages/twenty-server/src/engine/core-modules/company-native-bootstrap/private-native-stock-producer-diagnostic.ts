@@ -74,3 +74,14 @@ export class PrivateNativeStockProducerDiagnostic {
     }
   }
 }
+
+// Diagnostic callbacks cannot interrupt refusal or independent owner cleanup.
+export function reportPrivateStockProducerFailure(diagnostic?: {
+  reportFailure?: () => void;
+}): void {
+  try {
+    diagnostic?.reportFailure?.();
+  } catch {
+    // Reporting is best-effort even for a throwing optional callback.
+  }
+}

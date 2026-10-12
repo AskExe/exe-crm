@@ -541,6 +541,15 @@ describe('separate stock transport admission', () => {
       '{"kind":"crm-stock-producer-failure-v1","producerStage":"issued-frame"}\n',
     );
   });
+  it('preserves the original command failure when its reporter throws', async () => {
+    descriptor(true, false, 1000);
+    jest
+      .spyOn(PrivateNativeStockProducerDiagnostic.prototype, 'reportFailure')
+      .mockImplementation(() => {
+        throw new Error('private reporter');
+      });
+    await expect(runPrivateNativeStockBootstrap(true)).rejects.toBe(stop);
+  });
   (process.env.CRM_DIAGNOSTIC_CORE_TEST_MODULE ? it : it.skip)(
     'passes actual producer failure through launcher pair into strict Core decoded v3',
     async () => {

@@ -1,3 +1,4 @@
+import { reportPrivateStockProducerFailure } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import { type INestApplicationContext } from '@nestjs/common';
 
 import { type DataSource } from 'typeorm';
@@ -154,7 +155,7 @@ export class PrivateNativeStockSetupSession {
       );
       completed = true;
     } catch (error) {
-      diagnostic?.reportFailure?.();
+      reportPrivateStockProducerFailure(diagnostic);
       failed = true;
       primary = error;
     } finally {
@@ -166,7 +167,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#context.close();
         } catch (error) {
-          diagnostic?.reportFailure?.();
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -174,21 +175,21 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#custody.closeAll();
         } catch (error) {
-          diagnostic?.reportFailure?.();
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
       try {
         await this.parent.closeBusiness();
       } catch (error) {
-        diagnostic?.reportFailure?.();
+        reportPrivateStockProducerFailure(diagnostic);
         cleanupErrors.push(error);
       }
       if (this.#channel) {
         try {
           await this.#channel.close();
         } catch (error) {
-          diagnostic?.reportFailure?.();
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -196,7 +197,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#storage.close();
         } catch (error) {
-          diagnostic?.reportFailure?.();
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -204,7 +205,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.parent.disable();
         } catch (error) {
-          diagnostic?.reportFailure?.();
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
         // A partial stock state stays disabled/quarantined. WITHDRAW requires

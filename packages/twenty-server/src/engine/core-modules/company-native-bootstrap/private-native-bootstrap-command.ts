@@ -6,7 +6,10 @@ import { performance } from 'node:perf_hooks';
 
 import { DataSource } from 'typeorm';
 
-import { PrivateNativeStockProducerDiagnostic } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
+import {
+  PrivateNativeStockProducerDiagnostic,
+  reportPrivateStockProducerFailure,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import {
   PrivateDispatchLifetime,
   readPrivateFirstWriterFrame,
@@ -285,7 +288,7 @@ export async function runPrivateNativeStockBootstrap(enabled = false) {
   try {
     return await runPrivateNativeBootstrapMode(enabled, true, diagnostic);
   } catch (error) {
-    diagnostic.reportFailure();
+    reportPrivateStockProducerFailure(diagnostic);
     throw error;
   }
 }
@@ -687,7 +690,7 @@ async function runPrivateNativeBootstrapMode(
       qualification: 'stock-cold-observation-only' as const,
     });
   } catch (error) {
-    diagnostic?.reportFailure?.();
+    reportPrivateStockProducerFailure(diagnostic);
     failed = true;
     primary = error;
     throw error;

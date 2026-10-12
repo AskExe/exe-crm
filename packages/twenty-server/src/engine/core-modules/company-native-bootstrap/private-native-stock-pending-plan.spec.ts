@@ -1,3 +1,4 @@
+import { PrivateNativeStockSdkChannel } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-channel';
 import * as fileSystem from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
@@ -44,6 +45,48 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
+jest.mock(
+  'src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity',
+  () => {
+    const actual = jest.requireActual(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity',
+    );
+    return {
+      ...actual,
+      createPrivateStockSetupIdentity: jest.fn(
+        actual.createPrivateStockSetupIdentity,
+      ),
+    };
+  },
+);
+jest.mock(
+  'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
+  () => {
+    const actual = jest.requireActual(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
+    );
+    return {
+      ...actual,
+      createPrivateStockProviderContext: jest.fn(
+        actual.createPrivateStockProviderContext,
+      ),
+    };
+  },
+);
+jest.mock(
+  'src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation',
+  () => {
+    const actual = jest.requireActual(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation',
+    );
+    return {
+      ...actual,
+      activateOriginalStockWorkspace: jest.fn(
+        actual.activateOriginalStockWorkspace,
+      ),
+    };
+  },
+);
 jest.mock('node:fs', () => ({
   ...jest.requireActual('node:fs'),
   writeSync: jest.fn(),
@@ -1154,6 +1197,98 @@ describe('stock pending plan materialization', () => {
     expect(close).toHaveBeenCalledTimes(1);
     expect(disable).toHaveBeenCalledTimes(1);
     expect(withdraw).not.toHaveBeenCalled();
+  });
+  it('retains the primary and attempts every acquired cleanup owner when reporting throws', async () => {
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      await issued(),
+      target,
+    );
+    const primary = new Error('private primary');
+    const cleanupError = new Error('private cleanup');
+    const reportFailure = jest.fn(() => {
+      throw new Error('private reporter');
+    });
+    const contextClose = jest.fn().mockRejectedValue(cleanupError);
+    const custodyClose = jest.fn().mockRejectedValue(cleanupError);
+    const storageClose = jest.fn().mockRejectedValue(cleanupError);
+    const channelClose = jest.fn().mockRejectedValue(cleanupError);
+    const lifecycle = Object.create(
+      PrivateNativeStockParentLifecycle.prototype,
+    ) as PrivateNativeStockParentLifecycle;
+    jest.spyOn(lifecycle, 'assertCheckpoint').mockImplementation(() => {});
+    jest
+      .spyOn(PrivateNativeStockParentLifecycle, 'bind')
+      .mockResolvedValue(lifecycle);
+    jest.spyOn(lifecycle, 'begin').mockResolvedValue(target);
+    const closeBusiness = jest
+      .spyOn(lifecycle, 'closeBusiness')
+      .mockRejectedValue(cleanupError);
+    const disable = jest
+      .spyOn(lifecycle, 'disable')
+      .mockRejectedValue(cleanupError);
+    const control = {
+      bindBusinessDatabase: jest.fn().mockResolvedValue(undefined),
+    } as unknown as PrivateNativeStockRoleGuard;
+    jest
+      .spyOn(PrivateNativeStockRoleGuard, 'bindControl')
+      .mockResolvedValue(control);
+    const identity = jest.requireMock<
+      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity')
+    >(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity',
+    );
+    jest
+      .spyOn(identity, 'createPrivateStockSetupIdentity')
+      .mockResolvedValueOnce({ userId, userWorkspaceId, workspaceId });
+    jest.spyOn(PrivateNativeStockPoolCustody, 'bind').mockResolvedValue({
+      closeAll: custodyClose,
+    } as unknown as PrivateNativeStockPoolCustody);
+    jest.spyOn(PrivateNativeStockStorage, 'bind').mockResolvedValue({
+      close: storageClose,
+    } as unknown as PrivateNativeStockStorage);
+    jest.spyOn(PrivateNativeStockSdkChannel, 'bind').mockResolvedValue({
+      close: channelClose,
+    } as unknown as PrivateNativeStockSdkChannel);
+    const provider = jest.requireMock<
+      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context')
+    >(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
+    );
+    jest
+      .spyOn(provider, 'createPrivateStockProviderContext')
+      .mockResolvedValueOnce({ close: contextClose } as unknown as Awaited<
+        ReturnType<typeof provider.createPrivateStockProviderContext>
+      >);
+    const activation = jest.requireMock<
+      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation')
+    >(
+      'src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation',
+    );
+    jest
+      .spyOn(activation, 'activateOriginalStockWorkspace')
+      .mockRejectedValueOnce(primary);
+    const session = await PrivateNativeStockSetupSession.bind(
+      checkpoint,
+      target,
+      target,
+    );
+    const error = await session
+      .prepare({ stage: 'stock-prepare', reportFailure })
+      .catch((value) => value);
+    expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
+    expect(error.primary).toBe(primary);
+    expect(error.cleanupErrors).toEqual(Array(6).fill(cleanupError));
+    for (const close of [
+      contextClose,
+      custodyClose,
+      closeBusiness,
+      channelClose,
+      storageClose,
+      disable,
+    ]) {
+      expect(close).toHaveBeenCalledTimes(1);
+    }
+    expect(reportFailure).toHaveBeenCalledTimes(7);
   });
   it.each([
     undefined,
