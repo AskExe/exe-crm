@@ -915,14 +915,21 @@ describe('stock pending plan materialization', () => {
       ),
     ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
   });
-  it.each([undefined, null, false, 0, ''])(
-    'preserves thrown falsy primary %p and attempts parent closure',
+  it.each([
+    undefined,
+    null,
+    false,
+    0,
+    '',
+    new Error('postgresql://primary-secret@private'),
+  ])(
+    'preserves thrown primary %p and attempts parent closure',
     async (primary) => {
       const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
         await issued(),
         target,
       );
-      const cleanupError = new Error('inert parent closure refusal');
+      const cleanupError = new Error('postgresql://sentinel-secret@private');
       const lifecycle = Object.create(
         PrivateNativeStockParentLifecycle.prototype,
       ) as PrivateNativeStockParentLifecycle;
@@ -946,7 +953,10 @@ describe('stock pending plan materialization', () => {
           target,
           target,
         );
-        const error = await session.prepare().catch((value) => value);
+        const diagnostic = { stage: 'stock-prepare' };
+        const error = await session.prepare(diagnostic).catch((value) => value);
+        expect(diagnostic.stage).toBe('stock-prepare-control');
+        expect(JSON.stringify(diagnostic)).not.toContain('secret');
         expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
         expect(error.primary).toBe(primary);
         expect(error.cleanupErrors).toEqual([cleanupError]);
