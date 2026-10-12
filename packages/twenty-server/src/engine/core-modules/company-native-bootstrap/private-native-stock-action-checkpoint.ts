@@ -66,7 +66,7 @@ export class PrivateNativeStockActionCheckpoint {
     const rows: unknown = await this.nativeDatabase.query(
       `SELECT a.id AS application_id,
       a."packageJsonChecksum" AS package_checksum,a."yarnLockChecksum" AS yarn_checksum,
-      f.id AS file_id,f.path,f.size,f."mimeType" AS mime
+      f.id AS file_id,f.path,f.size::text AS size,f."mimeType" AS mime
       FROM core.application a JOIN core.file f ON f."applicationId"=a.id
       WHERE a.id=$1::uuid AND a."workspaceId"=$2::uuid AND a."universalIdentifier"=a.id
         AND a."deletedAt" IS NULL AND f."workspaceId"=a."workspaceId" AND f."deletedAt" IS NULL
@@ -90,10 +90,11 @@ export class PrivateNativeStockActionCheckpoint {
           row.mime !== 'application/octet-stream',
       ) ||
       rows.filter(
-        (row) => row.path === 'dependencies/package.json' && row.size === 1387,
+        (row) =>
+          row.path === 'dependencies/package.json' && row.size === '1387',
       ).length !== 1 ||
       rows.filter(
-        (row) => row.path === 'dependencies/yarn.lock' && row.size === 112283,
+        (row) => row.path === 'dependencies/yarn.lock' && row.size === '112283',
       ).length !== 1
     )
       throw new PrivateNativeActionUnavailable();
