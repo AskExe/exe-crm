@@ -1,3 +1,4 @@
+import { reportPrivateStockProducerFailure } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import { type INestApplicationContext } from '@nestjs/common';
 
 import { type DataSource } from 'typeorm';
@@ -24,7 +25,10 @@ export type PrivateStockSetupObservation = Readonly<{
   files: Awaited<ReturnType<PrivateNativeStockOutputObserver['observe']>>;
 }>;
 
-export type PrivateStockSetupDiagnostic = { stage: string };
+export type PrivateStockSetupDiagnostic = {
+  stage: string;
+  reportFailure?: () => void;
+};
 
 const issued = new WeakSet<PrivateNativeStockSetupSession>();
 
@@ -151,6 +155,7 @@ export class PrivateNativeStockSetupSession {
       );
       completed = true;
     } catch (error) {
+      reportPrivateStockProducerFailure(diagnostic);
       failed = true;
       primary = error;
     } finally {
@@ -162,6 +167,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#context.close();
         } catch (error) {
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -169,18 +175,21 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#custody.closeAll();
         } catch (error) {
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
       try {
         await this.parent.closeBusiness();
       } catch (error) {
+        reportPrivateStockProducerFailure(diagnostic);
         cleanupErrors.push(error);
       }
       if (this.#channel) {
         try {
           await this.#channel.close();
         } catch (error) {
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -188,6 +197,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#storage.close();
         } catch (error) {
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
       }
@@ -195,6 +205,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.parent.disable();
         } catch (error) {
+          reportPrivateStockProducerFailure(diagnostic);
           cleanupErrors.push(error);
         }
         // A partial stock state stays disabled/quarantined. WITHDRAW requires
