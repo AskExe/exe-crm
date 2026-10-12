@@ -24,7 +24,10 @@ export type PrivateStockSetupObservation = Readonly<{
   files: Awaited<ReturnType<PrivateNativeStockOutputObserver['observe']>>;
 }>;
 
-export type PrivateStockSetupDiagnostic = { stage: string };
+export type PrivateStockSetupDiagnostic = {
+  stage: string;
+  reportFailure?: () => void;
+};
 
 const issued = new WeakSet<PrivateNativeStockSetupSession>();
 
@@ -151,6 +154,7 @@ export class PrivateNativeStockSetupSession {
       );
       completed = true;
     } catch (error) {
+      diagnostic?.reportFailure?.();
       failed = true;
       primary = error;
     } finally {
@@ -162,6 +166,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#context.close();
         } catch (error) {
+          diagnostic?.reportFailure?.();
           cleanupErrors.push(error);
         }
       }
@@ -169,18 +174,21 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#custody.closeAll();
         } catch (error) {
+          diagnostic?.reportFailure?.();
           cleanupErrors.push(error);
         }
       }
       try {
         await this.parent.closeBusiness();
       } catch (error) {
+        diagnostic?.reportFailure?.();
         cleanupErrors.push(error);
       }
       if (this.#channel) {
         try {
           await this.#channel.close();
         } catch (error) {
+          diagnostic?.reportFailure?.();
           cleanupErrors.push(error);
         }
       }
@@ -188,6 +196,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.#storage.close();
         } catch (error) {
+          diagnostic?.reportFailure?.();
           cleanupErrors.push(error);
         }
       }
@@ -195,6 +204,7 @@ export class PrivateNativeStockSetupSession {
         try {
           await this.parent.disable();
         } catch (error) {
+          diagnostic?.reportFailure?.();
           cleanupErrors.push(error);
         }
         // A partial stock state stays disabled/quarantined. WITHDRAW requires

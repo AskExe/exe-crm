@@ -269,9 +269,12 @@ function producerStage(bytes) {
     if (!Buffer.from(text).equals(bytes)) return null;
     const lines = text.split('\n');
     if (
-      lines.length !== 3 ||
-      lines[1] !== 'Private stock command requires reconciliation' ||
-      lines[2] !== ''
+      !(
+        (lines.length === 2 && lines[1] === '') ||
+        (lines.length === 3 &&
+          lines[1] === 'Private stock command requires reconciliation' &&
+          lines[2] === '')
+      )
     )
       return null;
     const value = JSON.parse(lines[0]);

@@ -1,3 +1,4 @@
+import { PrivateNativeStockProducerDiagnostic } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fileSystem from 'node:fs';
@@ -617,5 +618,35 @@ describe('separate stock transport admission', () => {
       .mockRejectedValue(stop);
     descriptor(false, true, 1000);
     await expect(runPrivateNativeBootstrap(true)).rejects.toBe(stop);
+  });
+});
+
+describe('owned producer diagnostic', () => {
+  it('reports an allowlisted stage once across cleanup and outer catches', () => {
+    const write = jest.mocked(fileSystem.writeSync).mockClear();
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    diagnostic.stage = 'stock-prepare-control';
+    diagnostic.reportFailure();
+    diagnostic.stage = 'stock-prepare';
+    diagnostic.reportFailure();
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledWith(
+      2,
+      '{"kind":"crm-stock-producer-failure-v1","producerStage":"stock-prepare-control"}\n',
+    );
+  });
+  it('does not emit an arbitrary stage or retry a failed diagnostic write', () => {
+    const write = jest.mocked(fileSystem.writeSync).mockClear();
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    diagnostic.stage = 'postgresql://secret:password@private/authority';
+    diagnostic.reportFailure();
+    expect(write).not.toHaveBeenCalled();
+    diagnostic.stage = 'stock-prepare-control';
+    write.mockImplementationOnce(() => {
+      throw new Error('private failure');
+    });
+    expect(() => diagnostic.reportFailure()).not.toThrow();
+    diagnostic.reportFailure();
+    expect(write).toHaveBeenCalledTimes(1);
   });
 });

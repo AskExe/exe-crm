@@ -1,4 +1,7 @@
+import * as fileSystem from 'node:fs';
 import { performance } from 'node:perf_hooks';
+
+import { PrivateNativeStockProducerDiagnostic } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 
 import { DataSource } from 'typeorm';
 import { v5 } from 'uuid';
@@ -41,6 +44,10 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
+  writeSync: jest.fn(),
+}));
 jest.mock('src/engine/core-modules/application/application.entity', () => ({
   ApplicationEntity: class {},
 }));
@@ -1118,11 +1125,28 @@ describe('stock pending plan materialization', () => {
       target,
       target,
     );
-    const diagnostic = { stage: 'stock-prepare' };
+    const write = jest
+      .mocked(fileSystem.writeSync)
+      .mockClear()
+      .mockReturnValue(1);
+    let reportedBeforeClose: unknown;
+    close.mockImplementation(async () => {
+      reportedBeforeClose = [...write.mock.calls];
+    });
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    diagnostic.stage = 'stock-prepare';
     const error = await session.prepare(diagnostic).catch((value) => value);
     expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
     expect(error.primary).toBeInstanceOf(PrivateNativeActionUnavailable);
     expect(diagnostic.stage).toBe('stock-prepare-business');
+    expect(reportedBeforeClose).toEqual([
+      [
+        2,
+        '{"kind":"crm-stock-producer-failure-v1","producerStage":"stock-prepare-business"}\n',
+      ],
+    ]);
+    diagnostic.reportFailure();
+    expect(write).toHaveBeenCalledTimes(1);
     expect(roleReads.length).toBeGreaterThan(0);
     expect(roleReads.every(Boolean)).toBe(true);
     expect(begin).toHaveBeenCalledTimes(1);

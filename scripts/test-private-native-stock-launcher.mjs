@@ -29,6 +29,7 @@ function launcher({
   producerDiagnostic = null,
   lateProducerDiagnostic = false,
   stderrNeverEnds = false,
+  cleanupPending = false,
 } = {}) {
   const environment = Object.freeze({
     PATH: '/usr/bin:/bin',
@@ -52,6 +53,7 @@ function launcher({
     children = [],
     diagnostics = [];
   let releaseClosure;
+  const signals = [];
   const boundary = Error('Controlled child spawn boundary');
   const {
     run,
@@ -79,7 +81,14 @@ function launcher({
         execPath: '/usr/bin/node',
         stdin,
         stdout: new PassThrough(),
-        kill: () => {
+        kill: (_pid, signal) => {
+          if (cleanupPending && signal === 'SIGTERM') {
+            signals.push(signal);
+            const child = children[0];
+            child.stderr.once('end', () => child.emit('close', null, signal));
+            child.stderr.end();
+            return;
+          }
           throw Object.assign(Error('absent'), { code: 'ESRCH' });
         },
         env: environment,
@@ -120,12 +129,13 @@ function launcher({
           for (const stream of child.stdio) {
             if (
               stream === child.stderr &&
-              (lateProducerDiagnostic || stderrNeverEnds)
+              (lateProducerDiagnostic || stderrNeverEnds || cleanupPending)
             )
               continue;
             stream.end();
           }
           const close = () => child.emit('close', 1, null);
+          if (cleanupPending) return;
           if (delayedClosure) releaseClosure = close;
           else if (lateProducerDiagnostic)
             setImmediate(() => {
@@ -151,6 +161,7 @@ function launcher({
     diagnostics,
     release: () => releaseClosure?.(),
     children,
+    signals,
   };
 }
 
@@ -515,7 +526,51 @@ for (const [snapshotMode, delivery] of [
     );
   });
 }
+for (const [snapshotMode, delivery] of [
+  [null, 'zero'],
+  ['partial', 'partial'],
+]) {
+  test(`early standalone stage survives termination during pending cleanup: ${delivery}`, async () => {
+    const fixture = launcher({
+      childFailure: true,
+      snapshotMode,
+      cleanupPending: true,
+      producerDiagnostic:
+        producerFailure('stock-prepare-activate').split('\n')[0] + '\n',
+    });
+    let failure;
+    await assert.rejects(fixture.run, (error) => {
+      failure = error;
+      return true;
+    });
+    assert.deepEqual(fixture.signals, ['SIGTERM']);
+    assert.equal(fixture.diagnostics.length, 2);
+    const first = JSON.parse(fixture.diagnostics[0].split('\n')[1]);
+    const last = JSON.parse(fixture.diagnostics[1].split('\n')[1]);
+    assert.equal(first.primaryReason, 'truncated_frame');
+    assert.equal(first.childClosed, false);
+    assert.equal(last.producerStage, 'stock-prepare-activate');
+    assert.equal(last.snapshotDelivery, delivery);
+    const { kind, producerStage, snapshotDelivery, ...primary } = last;
+    assert.deepEqual(primary, (({ kind, ...rest }) => rest)(first));
+    assert.equal(failure.primary.code, 'truncated_frame');
+    assert.equal(failure.closure.closed, true);
+    assert.equal(failure.closure.signal, 'SIGTERM');
+    assert.equal(failure.closure.stderrEof, true);
+    assert.ok(fixture.children[0].stdio.every((stream) => stream.destroyed));
+  });
+}
+
 for (const text of [
+  producerFailure('stock-prepare').split('\n')[0] + '\nextra\n',
+  (producerFailure('stock-prepare').split('\n')[0] + '\n').repeat(2),
+  producerFailure('stock-prepare').replace(
+    'producerStage',
+    'producer\\u0053tage',
+  ),
+  producerFailure('stock-prepare').replace('{', '{ '),
+  Buffer.from([0xff]),
+  Buffer.alloc(513),
   producerFailure('secret'),
   producerFailure('stock-storage-unknown'),
   producerFailure('stock-storage-/app/private'),

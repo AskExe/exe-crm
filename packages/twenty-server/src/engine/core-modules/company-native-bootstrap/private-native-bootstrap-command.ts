@@ -1,11 +1,12 @@
 import { createHash, createPublicKey, verify } from 'node:crypto';
-import { constants, fstatSync, writeSync } from 'node:fs';
+import { constants, fstatSync } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 
 import { DataSource } from 'typeorm';
 
+import { PrivateNativeStockProducerDiagnostic } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import {
   PrivateDispatchLifetime,
   readPrivateFirstWriterFrame,
@@ -280,22 +281,11 @@ export async function runPrivateNativeStockBootstrap(enabled = false) {
       enabled &&
       process.getuid?.() === OWNER_UID,
   );
-  const diagnostic = { stage: 'input-admission' };
+  const diagnostic = new PrivateNativeStockProducerDiagnostic();
   try {
     return await runPrivateNativeBootstrapMode(enabled, true, diagnostic);
   } catch (error) {
-    // Fixed owned stage only: never inspect or serialize the exception.
-    try {
-      writeSync(
-        2,
-        JSON.stringify({
-          kind: 'crm-stock-producer-failure-v1',
-          producerStage: diagnostic.stage,
-        }) + '\n',
-      );
-    } catch {
-      // Diagnostic failure must preserve the original refusal.
-    }
+    diagnostic.reportFailure();
     throw error;
   }
 }
@@ -303,7 +293,7 @@ export async function runPrivateNativeStockBootstrap(enabled = false) {
 async function runPrivateNativeBootstrapMode(
   enabled: boolean,
   stock: boolean,
-  diagnostic?: { stage: string },
+  diagnostic?: { stage: string; reportFailure?: () => void },
 ) {
   const stage = (value: string) => {
     if (diagnostic) diagnostic.stage = value;
@@ -697,6 +687,7 @@ async function runPrivateNativeBootstrapMode(
       qualification: 'stock-cold-observation-only' as const,
     });
   } catch (error) {
+    diagnostic?.reportFailure?.();
     failed = true;
     primary = error;
     throw error;
