@@ -915,6 +915,67 @@ describe('stock pending plan materialization', () => {
       ),
     ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
   });
+  it('creates the setup role before control admission and disables it after business admission fails', async () => {
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      await issued(),
+      target,
+    );
+    let roleCreated = false;
+    const roleReads: boolean[] = [];
+    jest.mocked(target.query).mockImplementation(async (query) => {
+      if (query.includes('inet_server_addr')) return [endpoint];
+      roleReads.push(roleCreated);
+      return roleCreated
+        ? [
+            {
+              role_matches: true,
+              schema_confined: true,
+              functions_confined: true,
+              types_confined: true,
+              relations_confined: true,
+              stock_grants_match: true,
+              public_defaults_denied: true,
+            },
+          ]
+        : [];
+    });
+    const lifecycle = Object.create(
+      PrivateNativeStockParentLifecycle.prototype,
+    ) as PrivateNativeStockParentLifecycle;
+    jest.spyOn(lifecycle, 'assertCheckpoint').mockImplementation(() => {});
+    jest
+      .spyOn(PrivateNativeStockParentLifecycle, 'bind')
+      .mockResolvedValue(lifecycle);
+    const business = {
+      query: jest.fn(async () => [endpoint]),
+    } as unknown as DataSource;
+    const begin = jest
+      .spyOn(lifecycle, 'begin')
+      .mockImplementation(async () => {
+        roleCreated = true;
+        return business;
+      });
+    const close = jest.spyOn(lifecycle, 'closeBusiness').mockResolvedValue();
+    const disable = jest.spyOn(lifecycle, 'disable').mockResolvedValue();
+    const withdraw = jest.spyOn(lifecycle, 'withdraw').mockResolvedValue();
+    const session = await PrivateNativeStockSetupSession.bind(
+      checkpoint,
+      target,
+      target,
+    );
+    const diagnostic = { stage: 'stock-prepare' };
+    const error = await session.prepare(diagnostic).catch((value) => value);
+    expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
+    expect(error.primary).toBeInstanceOf(PrivateNativeActionUnavailable);
+    expect(diagnostic.stage).toBe('stock-prepare-business');
+    expect(roleReads.length).toBeGreaterThan(0);
+    expect(roleReads.every(Boolean)).toBe(true);
+    expect(begin).toHaveBeenCalledTimes(1);
+    expect(business.query).toHaveBeenCalledTimes(2);
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(disable).toHaveBeenCalledTimes(1);
+    expect(withdraw).not.toHaveBeenCalled();
+  });
   it.each([
     undefined,
     null,
@@ -942,6 +1003,8 @@ describe('stock pending plan materialization', () => {
       const bind = jest
         .spyOn(PrivateNativeStockParentLifecycle, 'bind')
         .mockResolvedValue(lifecycle);
+      jest.spyOn(lifecycle, 'begin').mockResolvedValue(target);
+      const disable = jest.spyOn(lifecycle, 'disable').mockResolvedValue();
       const control = jest
         .spyOn(PrivateNativeStockRoleGuard, 'bindControl')
         .mockImplementation(async () => {
@@ -961,6 +1024,7 @@ describe('stock pending plan materialization', () => {
         expect(error.primary).toBe(primary);
         expect(error.cleanupErrors).toEqual([cleanupError]);
         expect(close).toHaveBeenCalledTimes(1);
+        expect(disable).toHaveBeenCalledTimes(1);
         await expect(session.prepare()).rejects.toBeInstanceOf(
           PrivateNativeActionUnavailable,
         );
