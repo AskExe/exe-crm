@@ -407,6 +407,88 @@ describe('stock pending plan materialization', () => {
     expect(diagnostic.stage).toBe('stock-storage-metadata');
   });
 
+  async function packageMetadata() {
+    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+      await issued(),
+      target,
+    );
+    const metadata = [
+      {
+        application_id: applicationId,
+        package_checksum: 'cbe15a5c1c73b15f40d168ee46ce845d',
+        yarn_checksum: 'fefb6d70e11253c793bf94197d615b45',
+        file_id: id('d'),
+        path: 'dependencies/package.json',
+        size: '1387',
+        mime: 'application/octet-stream',
+      },
+      {
+        application_id: applicationId,
+        package_checksum: 'cbe15a5c1c73b15f40d168ee46ce845d',
+        yarn_checksum: 'fefb6d70e11253c793bf94197d615b45',
+        file_id: id('e'),
+        path: 'dependencies/yarn.lock',
+        size: '112283',
+        mime: 'application/octet-stream',
+      },
+    ];
+    jest
+      .mocked(target.query)
+      .mockImplementation(async (sql: string) =>
+        sql.includes('FROM core.application a JOIN core.file')
+          ? metadata
+          : [endpoint],
+      );
+    return { checkpoint, metadata };
+  }
+
+  it('accepts exact stock package byte sizes projected as PostgreSQL decimal text', async () => {
+    const { checkpoint } = await packageMetadata();
+    const diagnostic = { stage: 'stock-prepare-storage' };
+    await checkpoint.assertOriginalCustomPackageMetadata(diagnostic);
+    expect(diagnostic.stage).toBe('stock-prepare-storage');
+  });
+
+  it.each<[number, string]>([
+    [0, '1386'],
+    [1, '112284'],
+    [0, '01387'],
+    [0, '1387.0'],
+    [0, '1387 '],
+    [0, '+1387'],
+    [0, '1387e0'],
+    [0, '9007199254740993'],
+    [0, ''],
+  ])(
+    'rejects wrong or noncanonical package size at row %s: %s',
+    async (index, size) => {
+      const { checkpoint, metadata } = await packageMetadata();
+      metadata[index].size = size;
+      const diagnostic = { stage: 'stock-prepare-storage' };
+      await expect(
+        checkpoint.assertOriginalCustomPackageMetadata(diagnostic),
+      ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+      expect(diagnostic.stage).toBe('stock-storage-metadata');
+    },
+  );
+
+  it.each([
+    'package_checksum',
+    'yarn_checksum',
+    'application_id',
+    'mime',
+    'path',
+  ] as const)(
+    'still refuses changed package metadata field %s',
+    async (field) => {
+      const { checkpoint, metadata } = await packageMetadata();
+      metadata[0][field] = 'foreign';
+      await expect(
+        checkpoint.assertOriginalCustomPackageMetadata(),
+      ).rejects.toBeInstanceOf(PrivateNativeActionUnavailable);
+    },
+  );
+
   async function stockRunner() {
     const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
       await issued(),
