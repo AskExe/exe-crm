@@ -131,6 +131,7 @@ export class PrivateNativeStockSetupSession {
         this.#custody,
         this.#storage,
         this.#channel,
+        diagnostic,
       );
       stage('stock-prepare-activate');
       await activateOriginalStockWorkspace(

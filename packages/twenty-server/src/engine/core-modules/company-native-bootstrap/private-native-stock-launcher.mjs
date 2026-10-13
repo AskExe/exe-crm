@@ -210,7 +210,37 @@ const refusalReason = (error) => {
     return localRefused ? 'Other' : null;
   }
 };
+const contextOperations = [
+  'issued-checkpoint',
+  'issued-custody',
+  'issued-storage',
+  'issued-channel',
+  'binding-custody',
+  'binding-storage',
+  'binding-channel',
+  'authority',
+  'connection',
+  'cache',
+  'checkpoint',
+  'providers',
+  'create-and-initialize',
+  'final-checkpoint',
+];
+const contextCategories = [
+  'unavailable',
+  'dependency',
+  'cycle',
+  'type',
+  'error',
+  'other',
+];
+
 const producerStages = new Set([
+  ...contextOperations.flatMap((operation) =>
+    contextCategories.map(
+      (category) => `stock-context-${operation}-${category}`,
+    ),
+  ),
   'input-admission',
   'issued-frame',
   'operator-trust',

@@ -1,8 +1,15 @@
+import { NestFactory } from '@nestjs/core';
+import { UnknownDependenciesException } from '@nestjs/core/errors/exceptions/unknown-dependencies.exception';
+import { CircularDependencyException } from '@nestjs/core/errors/exceptions/circular-dependency.exception';
+
 import { PrivateNativeStockSdkChannel } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-sdk-channel';
 import * as fileSystem from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
-import { PrivateNativeStockProducerDiagnostic } from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
+import {
+  reportPrivateStockContextFailure,
+  PrivateNativeStockProducerDiagnostic,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 
 import { DataSource } from 'typeorm';
 import { v5 } from 'uuid';
@@ -1198,98 +1205,293 @@ describe('stock pending plan materialization', () => {
     expect(disable).toHaveBeenCalledTimes(1);
     expect(withdraw).not.toHaveBeenCalled();
   });
-  it('retains the primary and attempts every acquired cleanup owner when reporting throws', async () => {
-    const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
-      await issued(),
-      target,
+  it.each([
+    [new PrivateNativeActionUnavailable(), 'unavailable'],
+    [
+      new UnknownDependenciesException('private-provider', {
+        index: 0,
+        dependencies: [],
+      }),
+      'dependency',
+    ],
+    [new CircularDependencyException('private-provider'), 'cycle'],
+    [new TypeError('postgresql://secret@private'), 'type'],
+    [new Error('postgresql://secret@private'), 'error'],
+    [
+      Object.create(Error.prototype, {
+        constructor: {
+          get() {
+            throw Error('getter');
+          },
+        },
+      }),
+      'error',
+    ],
+    [Object.create(null), 'other'],
+    [undefined, 'other'],
+  ])('reports closed context exception category %s', (primary, category) => {
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    reportPrivateStockContextFailure(
+      diagnostic,
+      'create-and-initialize',
+      primary,
     );
-    const primary = new Error('private primary');
-    const cleanupError = new Error('private cleanup');
-    const reportFailure = jest.fn(() => {
-      throw new Error('private reporter');
-    });
-    const contextClose = jest.fn().mockRejectedValue(cleanupError);
-    const custodyClose = jest.fn().mockRejectedValue(cleanupError);
-    const storageClose = jest.fn().mockRejectedValue(cleanupError);
-    const channelClose = jest.fn().mockRejectedValue(cleanupError);
-    const lifecycle = Object.create(
-      PrivateNativeStockParentLifecycle.prototype,
-    ) as PrivateNativeStockParentLifecycle;
-    jest.spyOn(lifecycle, 'assertCheckpoint').mockImplementation(() => {});
-    jest
-      .spyOn(PrivateNativeStockParentLifecycle, 'bind')
-      .mockResolvedValue(lifecycle);
-    jest.spyOn(lifecycle, 'begin').mockResolvedValue(target);
-    const closeBusiness = jest
-      .spyOn(lifecycle, 'closeBusiness')
-      .mockRejectedValue(cleanupError);
-    const disable = jest
-      .spyOn(lifecycle, 'disable')
-      .mockRejectedValue(cleanupError);
-    const control = {
-      bindBusinessDatabase: jest.fn().mockResolvedValue(undefined),
-    } as unknown as PrivateNativeStockRoleGuard;
-    jest
-      .spyOn(PrivateNativeStockRoleGuard, 'bindControl')
-      .mockResolvedValue(control);
-    const identity = jest.requireMock<
-      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity')
-    >(
-      'src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity',
+    expect(fileSystem.writeSync).toHaveBeenLastCalledWith(
+      2,
+      JSON.stringify({
+        kind: 'crm-stock-producer-failure-v1',
+        producerStage: `stock-context-create-and-initialize-${category}`,
+      }) + '\n',
     );
-    jest
-      .spyOn(identity, 'createPrivateStockSetupIdentity')
-      .mockResolvedValueOnce({ userId, userWorkspaceId, workspaceId });
-    jest.spyOn(PrivateNativeStockPoolCustody, 'bind').mockResolvedValue({
-      closeAll: custodyClose,
-    } as unknown as PrivateNativeStockPoolCustody);
-    jest.spyOn(PrivateNativeStockStorage, 'bind').mockResolvedValue({
-      close: storageClose,
-    } as unknown as PrivateNativeStockStorage);
-    jest.spyOn(PrivateNativeStockSdkChannel, 'bind').mockResolvedValue({
-      close: channelClose,
-    } as unknown as PrivateNativeStockSdkChannel);
-    const provider = jest.requireMock<
-      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context')
-    >(
-      'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
-    );
-    jest
-      .spyOn(provider, 'createPrivateStockProviderContext')
-      .mockResolvedValueOnce({ close: contextClose } as unknown as Awaited<
-        ReturnType<typeof provider.createPrivateStockProviderContext>
-      >);
-    const activation = jest.requireMock<
-      typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation')
-    >(
-      'src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation',
-    );
-    jest
-      .spyOn(activation, 'activateOriginalStockWorkspace')
-      .mockRejectedValueOnce(primary);
-    const session = await PrivateNativeStockSetupSession.bind(
-      checkpoint,
-      target,
-      target,
-    );
-    const error = await session
-      .prepare({ stage: 'stock-prepare', reportFailure })
-      .catch((value) => value);
-    expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
-    expect(error.primary).toBe(primary);
-    expect(error.cleanupErrors).toEqual(Array(6).fill(cleanupError));
-    for (const close of [
-      contextClose,
-      custodyClose,
-      closeBusiness,
-      channelClose,
-      storageClose,
-      disable,
-    ]) {
-      expect(close).toHaveBeenCalledTimes(1);
-    }
-    expect(reportFailure).toHaveBeenCalledTimes(7);
+    diagnostic.reportFailure();
+    expect(fileSystem.writeSync).toHaveBeenCalledTimes(1);
   });
+  it.each([
+    [
+      'throwing prototype trap',
+      () =>
+        new Proxy(
+          {},
+          {
+            getPrototypeOf() {
+              throw new Error('postgresql://secret@private');
+            },
+            get() {
+              throw new Error('private property read');
+            },
+          },
+        ),
+    ],
+    [
+      'revoked proxy',
+      () => {
+        const { proxy, revoke } = Proxy.revocable({}, {});
+        revoke();
+        return proxy;
+      },
+    ],
+  ])('retains the context operation for %s', (_name, createPrimary) => {
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    diagnostic.stage = 'stock-prepare-context';
+    reportPrivateStockContextFailure(
+      diagnostic,
+      'create-and-initialize',
+      createPrimary(),
+    );
+    expect(diagnostic.stage).toBe('stock-context-create-and-initialize-other');
+    expect(fileSystem.writeSync).toHaveBeenCalledWith(
+      2,
+      '{"kind":"crm-stock-producer-failure-v1","producerStage":"stock-context-create-and-initialize-other"}\n',
+    );
+    diagnostic.reportFailure();
+    expect(fileSystem.writeSync).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    'authority',
+    'connection',
+    'checkpoint',
+    'providers',
+    'create-and-initialize',
+    'final-checkpoint',
+  ])(
+    'reports actual context boundary %s and preserves primary/cleanup',
+    async (failureAt) => {
+      const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+        await issued(),
+        target,
+      );
+      const primary = new TypeError('postgresql://secret@private');
+      const cleanup = new Error('private cleanup');
+      const diagnostic = new PrivateNativeStockProducerDiagnostic();
+      const custody = {
+        assertBinding: jest.fn(),
+      } as unknown as PrivateNativeStockPoolCustody;
+      const storage = {
+        assertCheckpoint: jest.fn(),
+      } as unknown as PrivateNativeStockStorage;
+      const channel = {
+        assertCheckpoint: jest.fn(),
+      } as unknown as PrivateNativeStockSdkChannel;
+      for (const owner of [
+        PrivateNativeStockPoolCustody,
+        PrivateNativeStockStorage,
+        PrivateNativeStockSdkChannel,
+      ])
+        jest.spyOn(owner, 'assertIssued').mockImplementation(() => {});
+      const control = {
+        assertBusinessDatabase: jest.fn(async () => {
+          if (failureAt === 'authority') throw primary;
+        }),
+        readBusinessConnectionString: jest.fn(async () => {
+          if (failureAt === 'connection') throw primary;
+          return 'postgresql://exe_crm_native_stock_provisioner:test-only@localhost/db';
+        }),
+      } as unknown as PrivateNativeStockRoleGuard;
+      let checks = 0;
+      jest
+        .spyOn(PrivateNativeStockActionCheckpoint.prototype, 'assertCurrent')
+        .mockImplementation(async () => {
+          checks++;
+          if (
+            (failureAt === 'checkpoint' && checks === 1) ||
+            (failureAt === 'final-checkpoint' && checks === 2)
+          )
+            throw primary;
+        });
+      jest.spyOn(target, 'getRepository').mockImplementation(() => {
+        if (failureAt === 'providers') throw primary;
+        return {} as ReturnType<typeof target.getRepository>;
+      });
+      const close = jest.fn().mockRejectedValue(cleanup);
+      jest
+        .spyOn(NestFactory, 'createApplicationContext')
+        .mockImplementation(async () => {
+          if (failureAt === 'create-and-initialize') throw primary;
+          return { close } as unknown as Awaited<
+            ReturnType<typeof NestFactory.createApplicationContext>
+          >;
+        });
+      const actual = jest.requireActual<
+        typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context')
+      >(
+        'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
+      );
+      const error = await actual
+        .createPrivateStockProviderContext(
+          checkpoint,
+          target,
+          control,
+          custody,
+          storage,
+          channel,
+          diagnostic,
+        )
+        .catch((value) => value);
+      expect(diagnostic.stage).toBe(`stock-context-${failureAt}-type`);
+      expect(fileSystem.writeSync).toHaveBeenCalledTimes(1);
+      if (failureAt === 'final-checkpoint') {
+        expect(error.primary).toBe(primary);
+        expect(error.cleanupErrors).toEqual([cleanup]);
+        expect(close).toHaveBeenCalledTimes(1);
+      } else {
+        expect(error).toBe(primary);
+        expect(close).not.toHaveBeenCalled();
+      }
+    },
+  );
+  it.each(['activation', 'nested-context'])(
+    'retains the primary and cleanup when reporting throws at %s',
+    async (failureAt) => {
+      const checkpoint = await PrivateNativeStockActionCheckpoint.bindPending(
+        await issued(),
+        target,
+      );
+      const primary = new Error('private primary');
+      const cleanupError = new Error('private cleanup');
+      const reportFailure = jest.fn(() => {
+        throw new Error('private reporter');
+      });
+      const contextClose = jest.fn().mockRejectedValue(cleanupError);
+      const custodyClose = jest.fn().mockRejectedValue(cleanupError);
+      const storageClose = jest.fn().mockRejectedValue(cleanupError);
+      const channelClose = jest.fn().mockRejectedValue(cleanupError);
+      const lifecycle = Object.create(
+        PrivateNativeStockParentLifecycle.prototype,
+      ) as PrivateNativeStockParentLifecycle;
+      jest.spyOn(lifecycle, 'assertCheckpoint').mockImplementation(() => {});
+      jest
+        .spyOn(PrivateNativeStockParentLifecycle, 'bind')
+        .mockResolvedValue(lifecycle);
+      jest.spyOn(lifecycle, 'begin').mockResolvedValue(target);
+      const closeBusiness = jest
+        .spyOn(lifecycle, 'closeBusiness')
+        .mockRejectedValue(cleanupError);
+      const disable = jest
+        .spyOn(lifecycle, 'disable')
+        .mockRejectedValue(cleanupError);
+      const control = {
+        bindBusinessDatabase: jest.fn().mockResolvedValue(undefined),
+      } as unknown as PrivateNativeStockRoleGuard;
+      jest
+        .spyOn(PrivateNativeStockRoleGuard, 'bindControl')
+        .mockResolvedValue(control);
+      const identity = jest.requireMock<
+        typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity')
+      >(
+        'src/engine/core-modules/company-native-bootstrap/private-native-stock-setup-identity',
+      );
+      jest
+        .spyOn(identity, 'createPrivateStockSetupIdentity')
+        .mockResolvedValueOnce({ userId, userWorkspaceId, workspaceId });
+      jest.spyOn(PrivateNativeStockPoolCustody, 'bind').mockResolvedValue({
+        closeAll: custodyClose,
+      } as unknown as PrivateNativeStockPoolCustody);
+      jest.spyOn(PrivateNativeStockStorage, 'bind').mockResolvedValue({
+        close: storageClose,
+      } as unknown as PrivateNativeStockStorage);
+      jest.spyOn(PrivateNativeStockSdkChannel, 'bind').mockResolvedValue({
+        close: channelClose,
+      } as unknown as PrivateNativeStockSdkChannel);
+      const provider = jest.requireMock<
+        typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context')
+      >(
+        'src/engine/core-modules/company-native-bootstrap/private-native-stock-provider-context',
+      );
+      jest
+        .spyOn(provider, 'createPrivateStockProviderContext')
+        .mockImplementationOnce(async (...args) => {
+          if (failureAt === 'nested-context') {
+            reportPrivateStockContextFailure(
+              args[6],
+              'create-and-initialize',
+              primary,
+            );
+            throw primary;
+          }
+          return { close: contextClose } as unknown as Awaited<
+            ReturnType<typeof provider.createPrivateStockProviderContext>
+          >;
+        });
+      const activation = jest.requireMock<
+        typeof import('src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation')
+      >(
+        'src/engine/core-modules/company-native-bootstrap/private-native-stock-workspace-operation',
+      );
+      jest
+        .spyOn(activation, 'activateOriginalStockWorkspace')
+        .mockRejectedValueOnce(primary);
+      const session = await PrivateNativeStockSetupSession.bind(
+        checkpoint,
+        target,
+        target,
+      );
+      const diagnostic = { stage: 'stock-prepare', reportFailure };
+      const error = await session.prepare(diagnostic).catch((value) => value);
+      expect(error).toBeInstanceOf(PrivateNativeStockSessionUncertain);
+      expect(error.primary).toBe(primary);
+      expect(diagnostic.stage).toBe(
+        failureAt === 'nested-context'
+          ? 'stock-context-create-and-initialize-error'
+          : 'stock-prepare-activate',
+      );
+      expect(error.cleanupErrors).toEqual(
+        Array(failureAt === 'nested-context' ? 5 : 6).fill(cleanupError),
+      );
+      expect(contextClose).toHaveBeenCalledTimes(
+        failureAt === 'nested-context' ? 0 : 1,
+      );
+      for (const close of [
+        custodyClose,
+        closeBusiness,
+        channelClose,
+        storageClose,
+        disable,
+      ]) {
+        expect(close).toHaveBeenCalledTimes(1);
+      }
+      expect(reportFailure).toHaveBeenCalledTimes(7);
+    },
+  );
   it.each([
     undefined,
     null,
