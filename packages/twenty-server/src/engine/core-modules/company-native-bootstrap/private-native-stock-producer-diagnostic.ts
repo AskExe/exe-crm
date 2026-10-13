@@ -140,10 +140,14 @@ export function reportPrivateStockContextFailure(
 ): void {
   try {
     if (!diagnostic || !contextOperations.includes(operation)) return;
-    const category =
-      primary !== null && typeof primary === 'object'
-        ? (contextExceptions.get(Object.getPrototypeOf(primary)) ?? 'other')
-        : 'other';
+    let category = 'other';
+    try {
+      if (primary !== null && typeof primary === 'object')
+        category =
+          contextExceptions.get(Object.getPrototypeOf(primary)) ?? 'other';
+    } catch {
+      // Uninspectable exceptions still retain the operation that failed.
+    }
     diagnostic.stage = `stock-context-${operation}-${category}`;
     reportPrivateStockProducerFailure(diagnostic);
   } catch {

@@ -1247,6 +1247,46 @@ describe('stock pending plan materialization', () => {
     expect(fileSystem.writeSync).toHaveBeenCalledTimes(1);
   });
   it.each([
+    [
+      'throwing prototype trap',
+      () =>
+        new Proxy(
+          {},
+          {
+            getPrototypeOf() {
+              throw new Error('postgresql://secret@private');
+            },
+            get() {
+              throw new Error('private property read');
+            },
+          },
+        ),
+    ],
+    [
+      'revoked proxy',
+      () => {
+        const { proxy, revoke } = Proxy.revocable({}, {});
+        revoke();
+        return proxy;
+      },
+    ],
+  ])('retains the context operation for %s', (_name, createPrimary) => {
+    const diagnostic = new PrivateNativeStockProducerDiagnostic();
+    diagnostic.stage = 'stock-prepare-context';
+    reportPrivateStockContextFailure(
+      diagnostic,
+      'create-and-initialize',
+      createPrimary(),
+    );
+    expect(diagnostic.stage).toBe('stock-context-create-and-initialize-other');
+    expect(fileSystem.writeSync).toHaveBeenCalledWith(
+      2,
+      '{"kind":"crm-stock-producer-failure-v1","producerStage":"stock-context-create-and-initialize-other"}\n',
+    );
+    diagnostic.reportFailure();
+    expect(fileSystem.writeSync).toHaveBeenCalledTimes(1);
+  });
+  it.each([
     'authority',
     'connection',
     'checkpoint',
