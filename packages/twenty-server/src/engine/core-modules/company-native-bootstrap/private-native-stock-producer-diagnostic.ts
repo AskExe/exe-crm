@@ -1,6 +1,43 @@
 import { writeSync } from 'node:fs';
 
+import { CircularDependencyException } from '@nestjs/core/errors/exceptions/circular-dependency.exception';
+import { UnknownDependenciesException } from '@nestjs/core/errors/exceptions/unknown-dependencies.exception';
+
+import { PrivateNativeActionUnavailable } from 'src/engine/core-modules/company-native-bootstrap/private-native-action-reader';
+
+const contextOperations = [
+  'issued-checkpoint',
+  'issued-custody',
+  'issued-storage',
+  'issued-channel',
+  'binding-custody',
+  'binding-storage',
+  'binding-channel',
+  'authority',
+  'connection',
+  'cache',
+  'checkpoint',
+  'providers',
+  'create-and-initialize',
+  'final-checkpoint',
+] as const;
+const contextCategories = [
+  'unavailable',
+  'dependency',
+  'cycle',
+  'type',
+  'error',
+  'other',
+] as const;
+
+export type PrivateStockContextOperation = (typeof contextOperations)[number];
+
 const producerStages = new Set([
+  ...contextOperations.flatMap((operation) =>
+    contextCategories.map(
+      (category) => `stock-context-${operation}-${category}`,
+    ),
+  ),
   'input-admission',
   'issued-frame',
   'operator-trust',
@@ -83,5 +120,33 @@ export function reportPrivateStockProducerFailure(diagnostic?: {
     diagnostic?.reportFailure?.();
   } catch {
     // Reporting is best-effort even for a throwing optional callback.
+  }
+}
+
+// Exact trusted prototypes only; no message, constructor/name/stack getters or
+// caller-defined exception names enter the diagnostic channel.
+const contextExceptions = new Map<object, string>([
+  [PrivateNativeActionUnavailable.prototype, 'unavailable'],
+  [UnknownDependenciesException.prototype, 'dependency'],
+  [CircularDependencyException.prototype, 'cycle'],
+  [TypeError.prototype, 'type'],
+  [Error.prototype, 'error'],
+]);
+
+export function reportPrivateStockContextFailure(
+  diagnostic: { stage: string; reportFailure?: () => void } | undefined,
+  operation: PrivateStockContextOperation,
+  primary: unknown,
+): void {
+  try {
+    if (!diagnostic || !contextOperations.includes(operation)) return;
+    const category =
+      primary !== null && typeof primary === 'object'
+        ? (contextExceptions.get(Object.getPrototypeOf(primary)) ?? 'other')
+        : 'other';
+    diagnostic.stage = `stock-context-${operation}-${category}`;
+    reportPrivateStockProducerFailure(diagnostic);
+  } catch {
+    // Even a hostile diagnostic/proxy cannot replace the original exception.
   }
 }

@@ -1,3 +1,7 @@
+import {
+  reportPrivateStockContextFailure,
+  type PrivateStockContextOperation,
+} from 'src/engine/core-modules/company-native-bootstrap/private-native-stock-producer-diagnostic';
 import { KeyValuePairService } from 'src/engine/core-modules/key-value-pair/key-value-pair.service';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 
@@ -98,166 +102,184 @@ export async function createPrivateStockProviderContext(
   custody: PrivateNativeStockPoolCustody,
   storage: PrivateNativeStockStorage,
   channel: PrivateNativeStockSdkChannel,
+  diagnostic?: { stage: string; reportFailure?: () => void },
 ): Promise<INestApplicationContext> {
-  PrivateNativeStockActionCheckpoint.assertIssued(checkpoint);
-  PrivateNativeStockPoolCustody.assertIssued(custody);
-  PrivateNativeStockStorage.assertIssued(storage);
-  PrivateNativeStockSdkChannel.assertIssued(channel);
-  custody.assertBinding(database, control, checkpoint);
-  storage.assertCheckpoint(checkpoint);
-  channel.assertCheckpoint(checkpoint);
-  await control.assertBusinessDatabase(database, checkpoint);
-  const databaseUrl = await control.readBusinessConnectionString(
-    database,
-    checkpoint,
-  );
-  const cache = await caching('memory', { max: 500, ttl: 120000 });
-  await checkpoint.assertCurrent();
-  const providers: Provider[] = [
-    KeyValuePairService,
-    UserVarsService,
-    ...PRIVATE_STOCK_ACTIONS,
-    ...PRIVATE_STOCK_CACHES,
-    ...[...PRIVATE_STOCK_SERVICES1, ...PRIVATE_STOCK_SERVICES2].filter(
-      (provider) => provider !== EnvironmentConfigDriver,
-    ),
-    { provide: DataSource, useValue: database },
-    ...PRIVATE_NATIVE_STOCK_ENTITIES.map((entity) => ({
-      provide: getRepositoryToken(entity),
-      useValue: database.getRepository(entity),
-    })),
-    {
-      provide: EnvironmentConfigDriver,
-      useValue: new PrivateNativeStockEnvironment(databaseUrl),
-    },
-    { provide: PRIVATE_NATIVE_STOCK_POOL_CUSTODY, useValue: custody },
-    { provide: PRIVATE_NATIVE_STOCK_STORAGE, useValue: storage },
-    { provide: CACHE_MANAGER, useValue: cache },
-    { provide: EventEmitter2, useValue: new EventEmitter2() },
-    { provide: LOGGER_DRIVER, useValue: new ConsoleLogger() },
-    ...Object.values(CacheStorageNamespace).map((namespace) => ({
-      provide: namespace,
-      useValue: new CacheStorageService(cache, namespace),
-    })),
-    {
-      provide: StockWorkspaceMemberCreationService,
-      useFactory: (orm: GlobalWorkspaceOrmManager) =>
-        new StockWorkspaceMemberCreationService(
-          database.getRepository(UserWorkspaceEntity),
-          orm,
-        ),
-      inject: [GlobalWorkspaceOrmManager],
-    },
-    {
-      provide: StockUserWorkspaceRemovalService,
-      useValue: new StockUserWorkspaceRemovalService(
-        database.getRepository(UserWorkspaceEntity),
-        database.getRepository(RoleTargetEntity),
-      ),
-    },
-    {
-      provide: StockUserSoftDeletionService,
-      useFactory: (core: CoreEntityCacheService) =>
-        new StockUserSoftDeletionService(
-          database.getRepository(UserEntity),
-          core,
-        ),
-      inject: [CoreEntityCacheService],
-    },
-    {
-      provide: StockWorkspaceSchemaPartsService,
-      useFactory: (
-        scalars: ScalarsExplorerService,
-        generator: WorkspaceGraphQLSchemaGenerator,
-        cacheStorage: WorkspaceCacheStorageService,
-        maps: WorkspaceManyOrAllFlatEntityMapsCacheService,
-        features: FeatureFlagService,
-        sources: DataSourceService,
-      ) =>
-        new StockWorkspaceSchemaPartsService(
-          scalars,
-          generator,
-          cacheStorage,
-          maps,
-          features,
-          sources,
-        ),
-      inject: [
-        ScalarsExplorerService,
-        WorkspaceGraphQLSchemaGenerator,
-        WorkspaceCacheStorageService,
-        WorkspaceManyOrAllFlatEntityMapsCacheService,
-        FeatureFlagService,
-        DataSourceService,
-      ],
-    },
-    {
-      provide: StockSdkSchemaFactory,
-      useFactory: (
-        parts: StockWorkspaceSchemaPartsService,
-        scalars: ScalarsExplorerService,
-      ) => new StockSdkSchemaFactory(parts, scalars),
-      inject: [StockWorkspaceSchemaPartsService, ScalarsExplorerService],
-    },
-    {
-      provide: SdkClientGenerationService,
-      useFactory: (
-        schema: StockSdkSchemaFactory,
-        files: FileStorageService,
-        workspaceCache: WorkspaceCacheService,
-      ) =>
-        new PrivateNativeStockSdkService(
-          checkpoint,
-          database,
-          control,
-          schema,
-          channel,
-          files,
-          workspaceCache,
-        ),
-      inject: [
-        StockSdkSchemaFactory,
-        FileStorageService,
-        WorkspaceCacheService,
-      ],
-    },
-    {
-      provide: LogicFunctionFromSourceService,
-      useFactory: (
-        resource: LogicFunctionResourceService,
-        applications: ApplicationService,
-        helper: LogicFunctionFromSourceHelperService,
-        maps: WorkspaceManyOrAllFlatEntityMapsCacheService,
-      ) =>
-        new StockLogicFunctionCreationService(
-          resource,
-          applications,
-          helper,
-          maps,
-        ),
-      inject: [
-        LogicFunctionResourceService,
-        ApplicationService,
-        LogicFunctionFromSourceHelperService,
-        WorkspaceManyOrAllFlatEntityMapsCacheService,
-      ],
-    },
-  ];
-  const context = await NestFactory.createApplicationContext(
-    {
-      module: PrivateStockProviderModule,
-      imports: [DiscoveryModule],
-      providers,
-    },
-    { logger: false, abortOnError: false },
-  );
+  let operation: PrivateStockContextOperation = 'issued-checkpoint';
+  let context: INestApplicationContext | undefined;
   try {
+    PrivateNativeStockActionCheckpoint.assertIssued(checkpoint);
+    operation = 'issued-custody';
+    PrivateNativeStockPoolCustody.assertIssued(custody);
+    operation = 'issued-storage';
+    PrivateNativeStockStorage.assertIssued(storage);
+    operation = 'issued-channel';
+    PrivateNativeStockSdkChannel.assertIssued(channel);
+    operation = 'binding-custody';
+    custody.assertBinding(database, control, checkpoint);
+    operation = 'binding-storage';
+    storage.assertCheckpoint(checkpoint);
+    operation = 'binding-channel';
+    channel.assertCheckpoint(checkpoint);
+    operation = 'authority';
+    await control.assertBusinessDatabase(database, checkpoint);
+    operation = 'connection';
+    const databaseUrl = await control.readBusinessConnectionString(
+      database,
+      checkpoint,
+    );
+    operation = 'cache';
+    const cache = await caching('memory', { max: 500, ttl: 120000 });
+    operation = 'checkpoint';
+    await checkpoint.assertCurrent();
+    operation = 'providers';
+    const providers: Provider[] = [
+      KeyValuePairService,
+      UserVarsService,
+      ...PRIVATE_STOCK_ACTIONS,
+      ...PRIVATE_STOCK_CACHES,
+      ...[...PRIVATE_STOCK_SERVICES1, ...PRIVATE_STOCK_SERVICES2].filter(
+        (provider) => provider !== EnvironmentConfigDriver,
+      ),
+      { provide: DataSource, useValue: database },
+      ...PRIVATE_NATIVE_STOCK_ENTITIES.map((entity) => ({
+        provide: getRepositoryToken(entity),
+        useValue: database.getRepository(entity),
+      })),
+      {
+        provide: EnvironmentConfigDriver,
+        useValue: new PrivateNativeStockEnvironment(databaseUrl),
+      },
+      { provide: PRIVATE_NATIVE_STOCK_POOL_CUSTODY, useValue: custody },
+      { provide: PRIVATE_NATIVE_STOCK_STORAGE, useValue: storage },
+      { provide: CACHE_MANAGER, useValue: cache },
+      { provide: EventEmitter2, useValue: new EventEmitter2() },
+      { provide: LOGGER_DRIVER, useValue: new ConsoleLogger() },
+      ...Object.values(CacheStorageNamespace).map((namespace) => ({
+        provide: namespace,
+        useValue: new CacheStorageService(cache, namespace),
+      })),
+      {
+        provide: StockWorkspaceMemberCreationService,
+        useFactory: (orm: GlobalWorkspaceOrmManager) =>
+          new StockWorkspaceMemberCreationService(
+            database.getRepository(UserWorkspaceEntity),
+            orm,
+          ),
+        inject: [GlobalWorkspaceOrmManager],
+      },
+      {
+        provide: StockUserWorkspaceRemovalService,
+        useValue: new StockUserWorkspaceRemovalService(
+          database.getRepository(UserWorkspaceEntity),
+          database.getRepository(RoleTargetEntity),
+        ),
+      },
+      {
+        provide: StockUserSoftDeletionService,
+        useFactory: (core: CoreEntityCacheService) =>
+          new StockUserSoftDeletionService(
+            database.getRepository(UserEntity),
+            core,
+          ),
+        inject: [CoreEntityCacheService],
+      },
+      {
+        provide: StockWorkspaceSchemaPartsService,
+        useFactory: (
+          scalars: ScalarsExplorerService,
+          generator: WorkspaceGraphQLSchemaGenerator,
+          cacheStorage: WorkspaceCacheStorageService,
+          maps: WorkspaceManyOrAllFlatEntityMapsCacheService,
+          features: FeatureFlagService,
+          sources: DataSourceService,
+        ) =>
+          new StockWorkspaceSchemaPartsService(
+            scalars,
+            generator,
+            cacheStorage,
+            maps,
+            features,
+            sources,
+          ),
+        inject: [
+          ScalarsExplorerService,
+          WorkspaceGraphQLSchemaGenerator,
+          WorkspaceCacheStorageService,
+          WorkspaceManyOrAllFlatEntityMapsCacheService,
+          FeatureFlagService,
+          DataSourceService,
+        ],
+      },
+      {
+        provide: StockSdkSchemaFactory,
+        useFactory: (
+          parts: StockWorkspaceSchemaPartsService,
+          scalars: ScalarsExplorerService,
+        ) => new StockSdkSchemaFactory(parts, scalars),
+        inject: [StockWorkspaceSchemaPartsService, ScalarsExplorerService],
+      },
+      {
+        provide: SdkClientGenerationService,
+        useFactory: (
+          schema: StockSdkSchemaFactory,
+          files: FileStorageService,
+          workspaceCache: WorkspaceCacheService,
+        ) =>
+          new PrivateNativeStockSdkService(
+            checkpoint,
+            database,
+            control,
+            schema,
+            channel,
+            files,
+            workspaceCache,
+          ),
+        inject: [
+          StockSdkSchemaFactory,
+          FileStorageService,
+          WorkspaceCacheService,
+        ],
+      },
+      {
+        provide: LogicFunctionFromSourceService,
+        useFactory: (
+          resource: LogicFunctionResourceService,
+          applications: ApplicationService,
+          helper: LogicFunctionFromSourceHelperService,
+          maps: WorkspaceManyOrAllFlatEntityMapsCacheService,
+        ) =>
+          new StockLogicFunctionCreationService(
+            resource,
+            applications,
+            helper,
+            maps,
+          ),
+        inject: [
+          LogicFunctionResourceService,
+          ApplicationService,
+          LogicFunctionFromSourceHelperService,
+          WorkspaceManyOrAllFlatEntityMapsCacheService,
+        ],
+      },
+    ];
+    // NestFactory includes dependency creation and lifecycle initialization.
+    operation = 'create-and-initialize';
+    context = await NestFactory.createApplicationContext(
+      {
+        module: PrivateStockProviderModule,
+        imports: [DiscoveryModule],
+        providers,
+      },
+      { logger: false, abortOnError: false },
+    );
+    operation = 'final-checkpoint';
     await checkpoint.assertCurrent();
     issuedContexts.set(context, Object.freeze({ checkpoint, database }));
     return context;
   } catch (primary) {
+    reportPrivateStockContextFailure(diagnostic, operation, primary);
     try {
-      await context.close();
+      if (context) await context.close();
     } catch (cleanup) {
       throw new PrivateStockProviderContextFailure(primary, [cleanup]);
     }
