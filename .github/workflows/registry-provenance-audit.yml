@@ -1,0 +1,183 @@
+# Registry provenance audit (bug 615c14d9).
+#
+# The detection half of "registry write restricted to CI". The forensic doc
+# docs/provenance/exe-crm-historical-images-615c14d9.md (and the allowlist
+# .github/known-unprovenanced-tags.txt) promised that this exact file audits
+# every published ghcr.io/askexe/exe-crm tag daily and alerts on any tag
+# lacking provenance — but the file never landed, leaving the audit script
+# .github/scripts/audit-registry-provenance.py as dead code and the doc's
+# claim false. This workflow makes the claim true: list the tags actually
+# published on the package via the GHCR versions API, read each image's
+# labels (the same `docker buildx imagetools inspect` path
+# verify-image-provenance.py uses), and page a human on any tag that carries
+# NO provenance information at all and is NOT on the known-legacy allowlist.
+
+name: Registry provenance audit
+
+on:
+  schedule:
+    # Daily, matching the detection SLA the forensic doc promises. 03:17 UTC,
+    # off the top of the hour so it does not pile onto the same instant as the
+    # top-of-hour crons (release-run-health's */15 among them).
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read # checkout
+  packages: read # list GHCR package versions + pull for the label reads
+  issues: write # open/update the tracking alert issue
+
+jobs:
+  registry-provenance-audit:
+    # Same lane choice as release-run-health.yml (this bug's sibling fix): an
+    # alerter must not compete with the resource it watches. This audit polices
+    # the release pipeline's registry, and release-stack-image.yml builds and
+    # pushes from the Linux self-hosted pool — an audit queued behind that pool
+    # could be starved by the very activity it monitors. The macOS mac-fast
+    # runner is a different physical host. Docker is proven on it: ci.yml's
+    # security-scan job runs `docker run` on mac-m4-exe-crm every CI run, and
+    # `docker buildx imagetools` is a registry-side CLI plugin shipped with
+    # that same Docker install — it talks straight to ghcr.io and needs no
+    # daemon or builder instance.
+    runs-on: [self-hosted, macOS, ARM64, mac-fast]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch published exe-crm image tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Registry tags, not git tags: the doc audits "every published tag",
+          # and a tag can exist in the registry with no git tag at all (v0.9.53
+          # did). Versions can carry zero tags (sha- only rows return empty
+          # arrays), so iterate null-safely.
+          gh api --paginate \
+            "/orgs/${{ github.repository_owner }}/packages/container/exe-crm/versions?per_page=100" \
+            --jq '.[] | .metadata.container_tags[]?' | sort -u > tags.txt
+
+          # Guard the guard: an audit over an EMPTY tag list trivially passes
+          # forever. Zero tags means the fetch is broken (missing packages:read
+          # on GITHUB_TOKEN, the package's Actions access no longer includes
+          # this repo, or the package was renamed) — fail loud, not green.
+          if [ ! -s tags.txt ]; then
+            echo "::error::Fetched ZERO published tags for ghcr.io/askexe/exe-crm."
+            echo "::error::The audit cannot run against nothing; refusing to report a vacuous all-clear."
+            exit 1
+          fi
+
+          echo "Auditing $(wc -l < tags.txt | tr -d ' ') published tag(s):"
+          cat tags.txt
+
+      - name: Isolate Docker credentials for this job
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          task_repo_slug="${GITHUB_REPOSITORY//\//-}"
+          task_docker_config="${RUNNER_TEMP}/docker-config-${task_repo_slug}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          mkdir -p "$task_docker_config"
+          chmod 700 "$task_docker_config"
+          printf 'DOCKER_CONFIG=%s\n' "$task_docker_config" >> "$GITHUB_ENV"
+
+      # The package is PRIVATE — anonymous ghcr.io token requests are refused
+      # (401), unlike at the time of the forensic doc's anonymous inspection —
+      # so the imagetools reads inside the audit script need an authenticated
+      # session. The job-scoped GITHUB_TOKEN covers it via packages:read,
+      # because the org package's Actions access grants this repo (the founder
+      # step in the forensic doc). The DOCKER_CONFIG isolation above keeps this
+      # short-lived token out of the shared Docker Desktop credential helper on
+      # the mac host, same as release-stack-image.yml.
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # Fail fast and legibly if the registry read path is broken. The audit
+      # script deliberately records per-tag read failures as WARN (a transient
+      # registry hiccup must not page) — but if EVERY read fails, that design
+      # would report a green all-clear over zero actual evidence, which is the
+      # exact silent-dead-detector failure mode of bug 615c14d9. Prove one
+      # authenticated read works before trusting the sweep. This can only FAIL
+      # the job, never skip the audit.
+      - name: Preflight — authenticated registry read works
+        run: |
+          set -euo pipefail
+          first_tag="$(head -n 1 tags.txt)"
+          if ! docker buildx imagetools inspect "ghcr.io/askexe/exe-crm:${first_tag}" --raw >/dev/null; then
+            echo "::error::Cannot read ghcr.io/askexe/exe-crm:${first_tag} via docker buildx imagetools."
+            echo "::error::Every tag would classify as error/WARN and the audit would pass vacuously."
+            echo "::error::Check the GHCR login above and that the package's Actions access includes this repo."
+            exit 1
+          fi
+          echo "✓ authenticated registry read works (${first_tag})"
+
+      - name: Audit image tag provenance
+        id: audit
+        # continue-on-error: a detected alert exits 1 by design; it must
+        # not abort the job before the tracking issue is filed below.
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/audit-registry-provenance.py --self-test
+          # One whitespace-free tag name per line, one argv entry per tag.
+          mapfile -t image_tags < tags.txt
+          python3 .github/scripts/audit-registry-provenance.py \
+            --repo ghcr.io/askexe/exe-crm \
+            --tags "${image_tags[@]}" \
+            --allowlist .github/known-unprovenanced-tags.txt \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Open or update tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ALERT_BODY: ${{ steps.audit.outputs.alert_body }}
+          ISSUE_TITLE: Registry provenance alert
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # Read the output directly rather than via an env alias: this must be
+        # unambiguous, because the step is the whole point of the bug fix.
+        if: steps.audit.outputs.alert_count != '' && steps.audit.outputs.alert_count != '0'
+        run: |
+          set -euo pipefail
+
+          # Exact title match. `gh issue list --search` is a fuzzy full-text
+          # search and will happily return an unrelated issue, which would
+          # send this alert as a comment on someone else's thread.
+          existing="$(gh issue list --repo "${{ github.repository }}" \
+            --state open --limit 100 --json number,title \
+            --jq "[.[] | select(.title == \"${ISSUE_TITLE}\")][0].number // empty")"
+
+          # Built with printf, NOT an indented shell string: leading spaces of
+          # four or more turn every line into a Markdown code block, which
+          # would render the alert as an unreadable blob.
+          body="$(printf '%s\n\n%s\n\n%s\n' \
+            "Bug 615c14d9: a ghcr.io/askexe/exe-crm image tag with NO provenance labels was found (and it is not on the known-legacy allowlist). Detected at $(date -u +%Y-%m-%dT%H:%M:%SZ)." \
+            "${ALERT_BODY}" \
+            "See the failing **Registry provenance audit** run for details: ${RUN_URL}")"
+
+          if [ -n "$existing" ]; then
+            echo "Open tracking issue #$existing found — commenting instead of duplicating."
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            # The `security` label may not exist in this repo. `gh issue create`
+            # FAILS HARD on an unknown label, which would break the alerter at
+            # exactly the moment it is needed — so fall back to no label rather
+            # than lose the page.
+            if ! gh issue create --repo "${{ github.repository }}" \
+              --title "${ISSUE_TITLE}" --label "security" --body "$body"; then
+              echo "::warning::Could not apply the 'security' label; filing without it."
+              gh issue create --repo "${{ github.repository }}" \
+                --title "${ISSUE_TITLE}" --body "$body"
+            fi
+          fi
+
+      - name: Fail the job when alerts were detected
+        # Makes the workflow itself show red, not just the audit step.
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo "Registry provenance audit: alerts detected (alert_count=${{ steps.audit.outputs.alert_count }}). Failing the job."
+          exit 1
