@@ -56,7 +56,7 @@ jobs:
           # arrays), so iterate null-safely.
           gh api --paginate \
             "/orgs/${{ github.repository_owner }}/packages/container/exe-crm/versions?per_page=100" \
-            --jq '.[] | .metadata.container_tags[]?' | sort -u > tags.txt
+            --jq '.[] | .metadata.container.tags[]?' | sort -u > tags.txt
 
           # Guard the guard: an audit over an EMPTY tag list trivially passes
           # forever. Zero tags means the fetch is broken (missing packages:read
