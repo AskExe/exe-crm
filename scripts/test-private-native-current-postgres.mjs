@@ -73,8 +73,8 @@ try {
   assert.equal(schema, 'workspace_1wgvd1injqtife6y4rvfbu3h5');
   assert.match(applicationId, /^[0-9a-f-]{36}$/);
   const memberships = await admin.query(
-    'SELECT id,"userId" FROM core."userWorkspace" WHERE "workspaceId"=$1',
-    [workspaceId],
+    'SELECT id,"userId" FROM core."userWorkspace" WHERE "workspaceId"=$1 AND id=$2',
+    [workspaceId, '20202020-9e3b-46d4-a556-88b9ddc2b035'],
   );
   assert.equal(memberships.length, 1);
   const [{ id: userWorkspaceId, userId }] = memberships;
