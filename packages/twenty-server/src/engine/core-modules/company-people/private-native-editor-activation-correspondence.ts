@@ -6,11 +6,12 @@ import { v5 } from 'uuid';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 
 import {
-  OwnedCoreNativeAccessTransaction,
   type PrivateNativeAccessSnapshot,
   type PrivateNativeCorrespondenceRunner,
   verifyPrivateNativeActivationReceipt,
 } from './private-native-activation-correspondence';
+import { OwnedCoreNativeAccessTransaction } from './private-native-access-transaction';
+import { assertPrivateNativeCurrentIsolation } from './private-native-current-isolation';
 import { type PrivatePeopleDeadline } from './private-people-contract';
 
 export type NativeEditorScopes =
@@ -76,8 +77,8 @@ function selectedRole(source: PrivateNativeEditorAccessSnapshot): string {
     : roles.readerRoleId;
 }
 
-// V1 reader and its deliberately unavailable isolation producer stay unchanged.
-// This V2 reader neither assigns a native role nor admits a browser principal.
+// Ledger correspondence neither assigns a role nor admits a principal. Both
+// identity versions separately require the issued native current-lock custody.
 export async function readPrivateNativeEditorActivationLedger(
   runner: PrivateNativeCorrespondenceRunner,
   authority: OwnedCoreNativeEditorAccessTransaction,
@@ -186,6 +187,7 @@ export async function verifyPrivateNativeEditorCurrentRole(
   authority: OwnedCoreNativeEditorAccessTransaction,
   end: PrivatePeopleDeadline,
 ) {
+  assertPrivateNativeCurrentIsolation(runner, authority, end);
   const verified = await readPrivateNativeEditorActivationLedger(
     runner,
     authority,

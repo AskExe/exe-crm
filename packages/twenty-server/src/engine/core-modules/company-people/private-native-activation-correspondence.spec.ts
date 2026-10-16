@@ -329,7 +329,7 @@ describe('private native owned correspondence sequencing', () => {
       readPrivateNativeActivationLedger(f.runner, f.authority, f.end),
     ).rejects.toThrow();
   });
-  it('hard-refuses initial identity IO while real native isolation is unavailable', async () => {
+  it('refuses initial identity IO for an unissued native transaction', async () => {
     const f = setup();
     const config = {
       companyId: id(2),

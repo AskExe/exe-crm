@@ -5,6 +5,11 @@ import { type QueryRunner } from 'typeorm';
 
 import { type CompanyAuthConfiguration } from '../company-auth/company-auth.config';
 
+import { type OwnedCoreNativeAccessTransaction } from './private-native-access-transaction';
+export { OwnedCoreNativeAccessTransaction } from './private-native-access-transaction';
+
+import { assertPrivateNativeCurrentIsolation } from './private-native-current-isolation';
+
 import { type PrivatePeopleDeadline } from './private-people-contract';
 
 export type PrivateNativeCorrespondenceRunner = Pick<
@@ -72,15 +77,6 @@ export type PrivateNativeAccessSnapshot = Readonly<{
   profileSha256: string;
   databaseAssociationSha256: string;
 }>;
-
-// No producer exists yet. Only protected Core composition may implement this
-// retained transaction; a passive settlement JSON is not an admission handle.
-export abstract class OwnedCoreNativeAccessTransaction {
-  abstract assertCurrent(
-    end: PrivatePeopleDeadline,
-  ): Promise<PrivateNativeAccessSnapshot>;
-  abstract assertHeld(end: PrivatePeopleDeadline): void;
-}
 
 const data = (value: unknown, fields: readonly string[]) => {
   if (typeof value !== 'object' || value === null || types.isProxy(value))
@@ -204,8 +200,8 @@ export const verifyPrivateNativeActivationReceipt = (
   return Object.freeze({ ack, ackSha256: digest(originalAck) });
 };
 
-// Unregistered fixed reader; the existing private V2 factory still refuses
-// before IO. Actual least-privilege column/RLS and Core producer are missing.
+// Fixed ledger correspondence is not an admission handle. Protected composition
+// must separately retain native isolation and the original current Core locks.
 export const readPrivateNativeActivationLedger = async (
   runner: PrivateNativeCorrespondenceRunner,
   authority: OwnedCoreNativeAccessTransaction,
@@ -318,13 +314,6 @@ export const readPrivateNativeActivationLedger = async (
   return verified;
 };
 
-// Core locks do not stop native administrator changes. The fixed native
-// row-lock/current-isolation producer is absent, so initial native identity IO
-// remains hard-refused. No UPDATE grant or unchecked definer is substituted.
-const requirePrivateNativeIdentityIsolation = (): never => {
-  throw new Error('Private native identity isolation unavailable');
-};
-
 // Same native transaction and the same still-held Core authority. This checks
 // existing identity rows only; it does not activate a user or grant permissions.
 export const verifyPrivateNativeActivationIdentity = async (
@@ -334,7 +323,7 @@ export const verifyPrivateNativeActivationIdentity = async (
   ack: PrivateNativeActivationAck,
   end: PrivatePeopleDeadline,
 ) => {
-  requirePrivateNativeIdentityIsolation();
+  assertPrivateNativeCurrentIsolation(runner, authority, end);
   const nativeSchema = configuration.nativeSchema;
   if (!/^[a-z_][a-z0-9_]{0,62}$/.test(nativeSchema))
     throw new Error('Private native correspondence unavailable');

@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
 
+import { DataSource, type QueryRunner } from 'typeorm';
+
+import { PrivateNativeCurrentIsolation } from './private-native-current-isolation';
+import { PRIVATE_NATIVE_CURRENT_BODY } from './private-native-current-policy';
+
 import { v5 } from 'uuid';
 
 import {
@@ -116,18 +121,82 @@ const setup = (write = false) => {
   };
   const query = jest.fn(
     async (sql: string, _parameters?: unknown[]): Promise<unknown> =>
-      sql.includes('privateNativeIdentityActivation') ? [row] : [nativeRow],
+      sql.includes('pg_current_xact_id()')
+        ? [{ backend: '123', transaction: '456' }]
+        : sql.includes('privateNativeIdentityActivation')
+          ? [row]
+          : [nativeRow],
   );
-  const runner = { isTransactionActive: true, isReleased: false, query };
+  const runner = {
+    isTransactionActive: true,
+    isReleased: false,
+    query,
+    connect: jest.fn(async () => {}),
+    startTransaction: jest.fn(async () => {}),
+    rollbackTransaction: jest.fn(async () => {
+      runner.isTransactionActive = false;
+    }),
+    release: jest.fn(async () => {
+      runner.isReleased = true;
+    }),
+  };
   const end = { signal: new AbortController().signal, remaining: () => 50 };
+  const authority = new Authority();
+  let lockReply: unknown = [{ locked: true }];
   return {
+    lockReply: (reply: unknown) => {
+      lockReply = reply;
+    },
+    lock: async () => {
+      const database = new DataSource({
+        type: 'postgres',
+        url: 'postgres://exe_crm_native_current_reader@127.0.0.1/native',
+        connectTimeoutMS: 500,
+      });
+      jest.replaceProperty(database, 'isInitialized', true);
+      jest
+        .spyOn(database, 'createQueryRunner')
+        .mockReturnValue(runner as unknown as QueryRunner);
+      const originalQuery = query.getMockImplementation()!;
+      query.mockImplementation(async (sql, parameters) => {
+        if (sql.includes('FROM pg_proc p'))
+          return [
+            {
+              identity: true,
+              helper: true,
+              ceiling: true,
+              body: PRIVATE_NATIVE_CURRENT_BODY,
+            },
+          ];
+        if (sql.includes('lock_original_crm_current_identity'))
+          return lockReply;
+        if (sql.startsWith('SELECT set_config')) return [];
+        return originalQuery(sql, parameters);
+      });
+      const lock = await PrivateNativeCurrentIsolation.acquire(
+        database,
+        {
+          actionId: recordRoles.actionId,
+          companyId: source.companyId,
+          subjectId: source.subjectId,
+          workspaceId: source.workspaceId,
+          profileSha256: source.profileSha256,
+          databaseAssociationSha256: source.databaseAssociationSha256,
+        },
+        authority,
+        end,
+      );
+      query.mockImplementation(originalQuery);
+      query.mockClear();
+      return lock;
+    },
     source,
     row,
     nativeRow,
     query,
     runner,
     end,
-    authority: new Authority(),
+    authority,
     change: (next: PrivateNativeEditorAccessSnapshot) => {
       current = next;
     },
@@ -142,6 +211,7 @@ describe('V2 current native scoped correspondence', () => {
     'selects only the frozen role for current write=%s',
     async (write) => {
       const f = setup(write);
+      const lock = await f.lock();
       const result = await verifyPrivateNativeEditorCurrentRole(
         f.runner,
         f.authority,
@@ -160,8 +230,115 @@ describe('V2 current native scoped correspondence', () => {
         id(21),
         id(22),
       ]);
+      await lock.close();
     },
   );
+  it('requires independently issued native custody before current-role IO', async () => {
+    const f = setup();
+    await expect(
+      verifyPrivateNativeEditorCurrentRole(f.runner, f.authority, f.end),
+    ).rejects.toThrow('Private native identity isolation unavailable');
+    expect(f.query).not.toHaveBeenCalled();
+  });
+  it('does not admit a provider before current correspondence', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    const provider = jest.fn(async () => true);
+    await expect(lock.admit(provider)).rejects.toThrow();
+    expect(provider).not.toHaveBeenCalled();
+    await lock.close();
+  });
+  it('poisons prior verification after a failed native ledger recheck', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    await lock.verifyEditor(f.authority);
+    f.query.mockRejectedValueOnce(new Error('native SQL transaction aborted'));
+    await expect(lock.verifyIdentity({} as never)).rejects.toThrow(
+      'native SQL transaction aborted',
+    );
+    const provider = jest.fn(async () => true);
+    await expect(lock.admit(provider)).rejects.toThrow();
+    await expect(lock.verifyEditor(f.authority)).rejects.toThrow();
+    expect(provider).not.toHaveBeenCalled();
+    expect(f.runner.release).not.toHaveBeenCalled();
+    await lock.close();
+  });
+  it.each(['aborted', 'replaced'])(
+    'refuses admission after server transaction custody is %s despite active driver flags',
+    async (mode) => {
+      const f = setup(),
+        lock = await f.lock();
+      await lock.verifyEditor(f.authority);
+      if (mode === 'aborted') f.query.mockRejectedValueOnce(new Error('25P02'));
+      else
+        f.query.mockResolvedValueOnce([{ backend: '123', transaction: '999' }]);
+      const provider = jest.fn(async () => true);
+      await expect(lock.admit(provider)).rejects.toThrow();
+      expect(f.runner.isTransactionActive).toBe(true);
+      expect(provider).not.toHaveBeenCalled();
+      await expect(lock.admit(provider)).rejects.toThrow();
+      await lock.close();
+    },
+  );
+  it('keeps native locks until an in-flight admission settles during close', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    await lock.verifyEditor(f.authority);
+    let finish!: () => void, entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const admission = lock.admit(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+          entered();
+        }),
+    );
+    await started;
+    const closing = lock.close();
+    expect(f.runner.rollbackTransaction).not.toHaveBeenCalled();
+    expect(f.runner.release).not.toHaveBeenCalled();
+    finish();
+    await expect(admission).rejects.toThrow();
+    await closing;
+    expect(f.runner.rollbackTransaction).toHaveBeenCalledTimes(1);
+    expect(f.runner.release).toHaveBeenCalledTimes(1);
+    await expect(lock.admit(async () => true)).rejects.toThrow();
+  });
+  it('retains a failed rollback without releasing or reporting closed', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    const failure = new Error('rollback unknown');
+    f.runner.rollbackTransaction.mockRejectedValue(failure);
+    await expect(lock.close()).rejects.toBe(failure);
+    await expect(lock.close()).rejects.toBe(failure);
+    expect(f.runner.release).not.toHaveBeenCalled();
+    expect(f.runner.rollbackTransaction).toHaveBeenCalledTimes(1);
+  });
+  it('revalidates the current parent after provider admission and refuses retry', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    await lock.verifyEditor(f.authority);
+    const provider = jest.fn(async () => {
+      f.change({ ...f.source, currentParentSessionId: id(99) });
+      return true;
+    });
+    await expect(lock.admit(provider)).rejects.toThrow();
+    await expect(lock.admit(provider)).rejects.toThrow();
+    expect(provider).toHaveBeenCalledTimes(1);
+    await lock.close();
+  });
+  it('rolls back a lost native-lock acknowledgment without issuing custody', async () => {
+    const f = setup();
+    f.lockReply([]);
+    await expect(f.lock()).rejects.toThrow();
+    expect(f.runner.rollbackTransaction).toHaveBeenCalledTimes(1);
+    expect(f.runner.release).toHaveBeenCalledTimes(1);
+    await expect(
+      verifyPrivateNativeEditorCurrentRole(f.runner, f.authority, f.end),
+    ).rejects.toThrow();
+  });
   it('refuses an historical writer receipt after current scopes downgrade', async () => {
     const f = setup(true);
     f.change({ ...f.source, activationScopes: ['crm:read'] });
@@ -190,6 +367,7 @@ describe('V2 current native scoped correspondence', () => {
   });
   it('refuses authority change during the native read', async () => {
     const f = setup();
+    await f.lock();
     f.query.mockImplementation(async (sql) => {
       if (sql.includes('privateNativeIdentityActivation')) return [f.row];
       f.change({ ...f.source, authzEpoch: '2' });
@@ -201,6 +379,7 @@ describe('V2 current native scoped correspondence', () => {
   });
   it('refuses missing native correspondence instead of treating receipt as current access', async () => {
     const f = setup();
+    await f.lock();
     f.query.mockImplementation(async (sql) =>
       sql.includes('privateNativeIdentityActivation') ? [f.row] : [],
     );

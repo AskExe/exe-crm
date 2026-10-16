@@ -15,6 +15,8 @@ import {
   type NativeEditorActivationProjection,
 } from './private-native-editor-activation-projection';
 export { type NativeEditorActivationProjection } from './private-native-editor-activation-projection';
+import { PrivateNativeCurrentIsolation } from './private-native-current-isolation';
+import { type OwnedCoreNativeEditorAccessTransaction } from './private-native-editor-activation-correspondence';
 import { PrivateNativeEditorActivationTransaction } from './private-native-editor-activation-transaction';
 import { nativeEditorActivationUnavailable as unavailable } from './private-native-editor-activation-errors';
 
@@ -208,6 +210,7 @@ export async function bindPrivateNativeEditorActivationAdapter(
   workspaceCache: WorkspaceCacheService,
   entityCache: CoreEntityCacheService,
   end: PrivatePeopleDeadline,
+  currentDatabase?: DataSource,
 ) {
   if (enabled !== true) throw unavailable();
   const credential = await PrivateNativeEditorActivationCredential.bind(
@@ -220,6 +223,7 @@ export async function bindPrivateNativeEditorActivationAdapter(
       credential,
       workspaceCache,
       entityCache,
+      currentDatabase,
     ),
   );
 }
@@ -229,7 +233,21 @@ class PrivateNativeEditorActivationAdapter {
     private readonly credential: PrivateNativeEditorActivationCredential,
     private readonly workspaceCache: WorkspaceCacheService,
     private readonly entityCache: CoreEntityCacheService,
+    private readonly currentDatabase?: DataSource,
   ) {}
+
+  openCurrent(
+    authority: OwnedCoreNativeEditorAccessTransaction,
+    end: PrivatePeopleDeadline,
+  ): Promise<PrivateNativeCurrentIsolation> {
+    if (!this.currentDatabase) throw unavailable();
+    return PrivateNativeCurrentIsolation.acquire(
+      this.currentDatabase,
+      this.credential.association,
+      authority,
+      end,
+    );
+  }
 
   createHandle(
     source: NativeEditorActivationProjection,
