@@ -72,3 +72,34 @@ CRM's selected configuration has exactly the ordered fields `version`, `product`
 The closed ordered v1 intent binds the actual company, job, deployment, CRM product, request and initializer hash. The parent's shared trust verifies the canonical intent digest. CRM keeps its existing local operator-trust grammar, signature verification, protected-file custody, command-context hash, distinct native writer/observer roles, bounded DSNs, storage identity, original action/owner reads, deadlines and independent observer. The profile does not authorize a start by itself. No public route, native activation, hosted SSO mapping, receipt or readiness claim is added.
 
 The selected-profile controls use inert byte/tuple inputs and do not run SQL, native allocation or the application. The allocator entity graph is not loaded by this admission-only suite. A new exact-source package and genuine restricted native PostgreSQL/bootstrap qualification remain prerequisites; the historical package, issuer and hosted REST fixtures do not prove this source executed.
+
+## Retained native identity isolation
+
+The separate `exe_crm_native_current_reader` login has SELECT on the fixed
+native policy/ledger tables and the bound workspace-member table. It has no
+activation EXECUTE or UPDATE grant. Protected setup may install the fixed lock
+helper using `installPrivateNativeCurrentFunction`; issuance checks its exact
+body, signature, owner and ACL plus the reader's effective privilege ceiling.
+Neither the installer nor the reader is registered in a public module.
+
+Protected composition supplies that separate DataSource as the final argument
+to `bindPrivateNativeEditorActivationAdapter`. `openCurrent` binds the original
+profile/database association and still-held Core transaction. Its identity
+verification requires the immutable native ledger and original ACK bytes. Only
+successful current correspondence enables one `admit` callback. Retain the
+handle until that actual provider admission settles, then await `close`.
+Failed/late acquisition never issues custody; failed rollback keeps its exact
+unreleased handle. This source does not open Core quarantine or establish a
+training authority.
+
+The focused real PostgreSQL script is
+`scripts/test-private-native-current-postgres.mjs`. After the normal server
+build, set `PRIVATE_NATIVE_CURRENT_COMPILED_ROOT` to the built
+`engine/core-modules/company-people` directory and
+`PRIVATE_NATIVE_CURRENT_TEST_DSN` to a disposable stock-migrated, light-seeded
+`crm_training` database whose initial OID10 login is `crm_setup_operator`.
+The script creates test-only action/role fixtures and separate restricted
+logins; it must run against a fresh disposable database. It verifies native
+commit, retained policy/identity locks, revocation, foreign associations,
+latest-request quarantine and reader grant boundaries. These fixtures are not
+Core resource enrollment, acceptance evidence or a real user login.
