@@ -440,8 +440,48 @@ try {
   await revoker.rollbackTransaction();
   await revoker.release();
   passed.push('native-revocation-and-phantoms-blocked');
+  assert.equal(await lock.admit(async () => 'admitted'), 'admitted');
+  passed.push('same-native-transaction-provider-admission');
   await lock.close();
   await assert.rejects(lock.verifyEditor(authority));
+  // Capture only this disposable fixture's exact runner to simulate server-side
+  // abort/replacement without changing the driver's active transaction flag.
+  const createReaderRunner = reader.createQueryRunner.bind(reader);
+  for (const mode of ['aborted', 'replaced']) {
+    let nativeRunner;
+    reader.createQueryRunner = (...args) => {
+      nativeRunner = createReaderRunner(...args);
+      return nativeRunner;
+    };
+    lock = await openCurrent();
+    reader.createQueryRunner = createReaderRunner;
+    await lock.verifyEditor(authority);
+    if (mode === 'aborted') {
+      await assert.rejects(
+        nativeRunner.query('SELECT 1/0'),
+        (error) => error.code === '22012',
+      );
+      await assert.rejects(
+        lock.verifyIdentity({}),
+        (error) => error.code === '25P02',
+      );
+    } else {
+      await nativeRunner.query('ROLLBACK');
+      await nativeRunner.query('BEGIN');
+    }
+    assert.equal(nativeRunner.isTransactionActive, true);
+    let providerCalled = false;
+    await assert.rejects(
+      lock.admit(async () => {
+        providerCalled = true;
+      }),
+    );
+    assert.equal(providerCalled, false);
+    assert.equal(nativeRunner.isReleased, false);
+    await lock.close();
+    assert.equal(nativeRunner.isReleased, true);
+    passed.push(`actual-${mode}-native-transaction-denies-provider`);
+  }
   await admin.query('UPDATE core."user" SET disabled=true WHERE id=$1', [
     userId,
   ]);
@@ -468,7 +508,7 @@ try {
       ),
     );
   }
-  passed.push('bidirectional-foreign-association-denials');
+  passed.push('foreign-association-denials');
   lock = await openCurrent();
   revoked = true;
   await assert.rejects(lock.verifyEditor(authority), /core-revoked/);

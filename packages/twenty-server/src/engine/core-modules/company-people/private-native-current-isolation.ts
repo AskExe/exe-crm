@@ -46,6 +46,8 @@ export function assertPrivateNativeCurrentIsolation(
 export class PrivateNativeCurrentIsolation {
   private active = false;
   private verified = false;
+  private failed = false;
+  private nativeTransaction?: string;
   private admissionAttempted = false;
   private closing?: Promise<void>;
   private pending?: Promise<unknown>;
@@ -138,6 +140,7 @@ export class PrivateNativeCurrentIsolation {
       end.remaining();
       const after = await authority.assertCurrent(end);
       if (JSON.stringify(before) !== JSON.stringify(after)) throw unavailable();
+      owner.nativeTransaction = await readNativeTransaction(runner);
       owner.active = true;
       held.set(runner, owner);
       owner.assertHeld(authority, end);
@@ -163,6 +166,7 @@ export class PrivateNativeCurrentIsolation {
       end !== this.deadline ||
       end.signal.aborted ||
       !this.active ||
+      this.failed ||
       this.closing ||
       this.runner.isReleased ||
       !this.runner.isTransactionActive ||
@@ -172,13 +176,13 @@ export class PrivateNativeCurrentIsolation {
   }
 
   verifyIdentity(configuration: CompanyAuthConfiguration): Promise<void> {
+    this.verified = false;
     return this.own(async () => {
       const verified = await readPrivateNativeActivationLedger(
         this.runner,
         this.authority,
         this.deadline,
       );
-      this.verified = false;
       await verifyPrivateNativeActivationIdentity(
         this.runner,
         this.authority,
@@ -192,9 +196,9 @@ export class PrivateNativeCurrentIsolation {
   }
 
   verifyEditor(authority: OwnedCoreNativeEditorAccessTransaction) {
+    this.verified = false;
     if (authority !== this.authority) throw unavailable();
     return this.own(async () => {
-      this.verified = false;
       const result = await verifyPrivateNativeEditorCurrentRole(
         this.runner,
         authority,
@@ -214,11 +218,19 @@ export class PrivateNativeCurrentIsolation {
     return this.own(async () => {
       const before = await this.authority.assertCurrent(this.deadline);
       if (JSON.stringify(before) !== this.originalCurrent) throw unavailable();
+      await this.assertNativeTransaction();
       const result = await operation();
+      await this.assertNativeTransaction();
       const after = await this.authority.assertCurrent(this.deadline);
       if (JSON.stringify(after) !== this.originalCurrent) throw unavailable();
       return result;
     });
+  }
+
+  private async assertNativeTransaction(): Promise<void> {
+    if ((await readNativeTransaction(this.runner)) !== this.nativeTransaction)
+      throw unavailable();
+    this.assertHeld(this.authority, this.deadline);
   }
 
   private async own<T>(operation: () => Promise<T>): Promise<T> {
@@ -230,6 +242,12 @@ export class PrivateNativeCurrentIsolation {
       const result = await pending;
       this.assertHeld(this.authority, this.deadline);
       return result;
+    } catch (error) {
+      // A failed native operation can abort the server transaction while the
+      // driver still reports it active. Never reuse that owner for admission.
+      this.failed = true;
+      this.verified = false;
+      throw error;
     } finally {
       if (this.pending === pending) this.pending = undefined;
     }
@@ -267,6 +285,20 @@ export class PrivateNativeCurrentIsolationFailure extends Error {
     for (const field of ['primary', 'cleanup', 'retained'])
       Object.defineProperty(this, field, { enumerable: false });
   }
+}
+
+async function readNativeTransaction(runner: QueryRunner): Promise<string> {
+  const rows: unknown = await runner.query(
+    'SELECT pg_backend_pid()::text AS backend, pg_current_xact_id()::text AS transaction',
+  );
+  if (
+    !Array.isArray(rows) ||
+    rows.length !== 1 ||
+    !/^[1-9][0-9]*$/.test(rows[0]?.backend) ||
+    !/^[1-9][0-9]*$/.test(rows[0]?.transaction)
+  )
+    throw unavailable();
+  return JSON.stringify([rows[0].backend, rows[0].transaction]);
 }
 
 async function assertCatalog(

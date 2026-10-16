@@ -121,7 +121,11 @@ const setup = (write = false) => {
   };
   const query = jest.fn(
     async (sql: string, _parameters?: unknown[]): Promise<unknown> =>
-      sql.includes('privateNativeIdentityActivation') ? [row] : [nativeRow],
+      sql.includes('pg_current_xact_id()')
+        ? [{ backend: '123', transaction: '456' }]
+        : sql.includes('privateNativeIdentityActivation')
+          ? [row]
+          : [nativeRow],
   );
   const runner = {
     isTransactionActive: true,
@@ -244,6 +248,38 @@ describe('V2 current native scoped correspondence', () => {
     expect(provider).not.toHaveBeenCalled();
     await lock.close();
   });
+  it('poisons prior verification after a failed native ledger recheck', async () => {
+    const f = setup(),
+      lock = await f.lock();
+    await lock.verifyEditor(f.authority);
+    f.query.mockRejectedValueOnce(new Error('native SQL transaction aborted'));
+    await expect(lock.verifyIdentity({} as never)).rejects.toThrow(
+      'native SQL transaction aborted',
+    );
+    const provider = jest.fn(async () => true);
+    await expect(lock.admit(provider)).rejects.toThrow();
+    await expect(lock.verifyEditor(f.authority)).rejects.toThrow();
+    expect(provider).not.toHaveBeenCalled();
+    expect(f.runner.release).not.toHaveBeenCalled();
+    await lock.close();
+  });
+  it.each(['aborted', 'replaced'])(
+    'refuses admission after server transaction custody is %s despite active driver flags',
+    async (mode) => {
+      const f = setup(),
+        lock = await f.lock();
+      await lock.verifyEditor(f.authority);
+      if (mode === 'aborted') f.query.mockRejectedValueOnce(new Error('25P02'));
+      else
+        f.query.mockResolvedValueOnce([{ backend: '123', transaction: '999' }]);
+      const provider = jest.fn(async () => true);
+      await expect(lock.admit(provider)).rejects.toThrow();
+      expect(f.runner.isTransactionActive).toBe(true);
+      expect(provider).not.toHaveBeenCalled();
+      await expect(lock.admit(provider)).rejects.toThrow();
+      await lock.close();
+    },
+  );
   it('keeps native locks until an in-flight admission settles during close', async () => {
     const f = setup(),
       lock = await f.lock();
