@@ -85,9 +85,15 @@ Neither the installer nor the reader is registered in a public module.
 Protected composition supplies that separate DataSource as the final argument
 to `bindPrivateNativeEditorActivationAdapter`. `openCurrent` binds the original
 profile/database association and still-held Core transaction. Its identity
-verification requires the immutable native ledger and original ACK bytes. Only
-successful current correspondence enables one `admit` callback. Retain the
-handle until that actual provider admission settles, then await `close`.
+verification requires the immutable native ledger and original ACK bytes.
+Generic `admit(operation)` always rejects before callback invocation or I/O,
+even after successful current correspondence. The native idle transaction
+timeout can release locks while arbitrary callback work continues; checking
+custody afterward cannot undo provider side effects. Admission stays quarantined
+until a concrete provider guarantees completion or cancellation while retaining
+original Core and native custody. Read verification checks the original native
+backend/transaction before and after SQL and latches failures closed. Await
+`close` to drain pending reads and release its retained native handle.
 Failed/late acquisition never issues custody; failed rollback keeps its exact
 unreleased handle. This source does not open Core quarantine or establish a
 training authority.
@@ -101,5 +107,6 @@ build, set `PRIVATE_NATIVE_CURRENT_COMPILED_ROOT` to the built
 The script creates test-only action/role fixtures and separate restricted
 logins; it must run against a fresh disposable database. It verifies native
 commit, retained policy/identity locks, revocation, foreign associations,
-latest-request quarantine and reader grant boundaries. These fixtures are not
+latest-request quarantine, generic provider admission denial before callback
+invocation, and reader grant boundaries. These fixtures are not
 Core resource enrollment, acceptance evidence or a real user login.

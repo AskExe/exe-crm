@@ -45,17 +45,14 @@ export function assertPrivateNativeCurrentIsolation(
 
 export class PrivateNativeCurrentIsolation {
   private active = false;
-  private verified = false;
   private failed = false;
   private nativeTransaction?: string;
-  private admissionAttempted = false;
   private closing?: Promise<void>;
   private pending?: Promise<unknown>;
   private constructor(
     private readonly runner: QueryRunner,
     private readonly authority: OwnedCoreNativeAccessTransaction,
     private readonly deadline: PrivatePeopleDeadline,
-    private readonly originalCurrent: string,
   ) {}
 
   static async acquire(
@@ -108,12 +105,7 @@ export class PrivateNativeCurrentIsolation {
     )
       throw unavailable();
     const runner = database.createQueryRunner();
-    const owner = new PrivateNativeCurrentIsolation(
-      runner,
-      authority,
-      end,
-      JSON.stringify(before),
-    );
+    const owner = new PrivateNativeCurrentIsolation(runner, authority, end);
     // Retain the exact acquisition promise until it settles, including a late
     // connect/lock response. No timeout race releases a still-running operation.
     try {
@@ -176,7 +168,6 @@ export class PrivateNativeCurrentIsolation {
   }
 
   verifyIdentity(configuration: CompanyAuthConfiguration): Promise<void> {
-    this.verified = false;
     return this.own(async () => {
       const verified = await readPrivateNativeActivationLedger(
         this.runner,
@@ -196,7 +187,6 @@ export class PrivateNativeCurrentIsolation {
   }
 
   verifyEditor(authority: OwnedCoreNativeEditorAccessTransaction) {
-    this.verified = false;
     if (authority !== this.authority) throw unavailable();
     return this.own(async () => {
       const result = await verifyPrivateNativeEditorCurrentRole(
@@ -204,27 +194,17 @@ export class PrivateNativeCurrentIsolation {
         authority,
         this.deadline,
       );
-      this.verified = true;
       return result;
     });
   }
 
-  // Only the protected composition supplies the actual provider admission.
-  // The raw runner never escapes; COMMIT/ROLLBACK cannot release these locks.
-  admit<T>(operation: () => Promise<T>): Promise<T> {
-    if (!this.verified || this.admissionAttempted)
-      return Promise.reject(unavailable());
-    this.admissionAttempted = true;
-    return this.own(async () => {
-      const before = await this.authority.assertCurrent(this.deadline);
-      if (JSON.stringify(before) !== this.originalCurrent) throw unavailable();
-      await this.assertNativeTransaction();
-      const result = await operation();
-      await this.assertNativeTransaction();
-      const after = await this.authority.assertCurrent(this.deadline);
-      if (JSON.stringify(after) !== this.originalCurrent) throw unavailable();
-      return result;
-    });
+  // Arbitrary callbacks cannot guarantee completion or cancellation before the
+  // original Core/native custody expires. Keep provider admission quarantined
+  // until a concrete provider owns that contract, even after successful reads.
+  admit<T>(_operation: () => Promise<T>): Promise<T> {
+    return Promise.reject(
+      new Error('Private native provider admission quarantined'),
+    );
   }
 
   private async assertNativeTransaction(): Promise<void> {
@@ -236,7 +216,12 @@ export class PrivateNativeCurrentIsolation {
   private async own<T>(operation: () => Promise<T>): Promise<T> {
     this.assertHeld(this.authority, this.deadline);
     if (this.pending) throw unavailable();
-    const pending = Promise.resolve().then(operation);
+    const pending = Promise.resolve().then(async () => {
+      await this.assertNativeTransaction();
+      const result = await operation();
+      await this.assertNativeTransaction();
+      return result;
+    });
     this.pending = pending;
     try {
       const result = await pending;
@@ -244,9 +229,8 @@ export class PrivateNativeCurrentIsolation {
       return result;
     } catch (error) {
       // A failed native operation can abort the server transaction while the
-      // driver still reports it active. Never reuse that owner for admission.
+      // driver still reports it active. Never reuse that owner for verification.
       this.failed = true;
-      this.verified = false;
       throw error;
     } finally {
       if (this.pending === pending) this.pending = undefined;
