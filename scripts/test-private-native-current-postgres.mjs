@@ -440,8 +440,15 @@ try {
   await revoker.rollbackTransaction();
   await revoker.release();
   passed.push('native-revocation-and-phantoms-blocked');
-  assert.equal(await lock.admit(async () => 'admitted'), 'admitted');
-  passed.push('same-native-transaction-provider-admission');
+  let providerCalled = false;
+  await assert.rejects(
+    lock.admit(async () => {
+      providerCalled = true;
+    }),
+    { message: 'Private native provider admission quarantined' },
+  );
+  assert.equal(providerCalled, false);
+  passed.push('verified-current-provider-admission-quarantined');
   await lock.close();
   await assert.rejects(lock.verifyEditor(authority));
   // Capture only this disposable fixture's exact runner to simulate server-side
@@ -468,6 +475,7 @@ try {
     } else {
       await nativeRunner.query('ROLLBACK');
       await nativeRunner.query('BEGIN');
+      await assert.rejects(lock.verifyEditor(authority));
     }
     assert.equal(nativeRunner.isTransactionActive, true);
     let providerCalled = false;

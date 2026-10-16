@@ -264,7 +264,7 @@ describe('V2 current native scoped correspondence', () => {
     await lock.close();
   });
   it.each(['aborted', 'replaced'])(
-    'refuses admission after server transaction custody is %s despite active driver flags',
+    'refuses current verification after server transaction custody is %s despite active driver flags',
     async (mode) => {
       const f = setup(),
         lock = await f.lock();
@@ -272,39 +272,55 @@ describe('V2 current native scoped correspondence', () => {
       if (mode === 'aborted') f.query.mockRejectedValueOnce(new Error('25P02'));
       else
         f.query.mockResolvedValueOnce([{ backend: '123', transaction: '999' }]);
+      await expect(lock.verifyEditor(f.authority)).rejects.toThrow();
       const provider = jest.fn(async () => true);
-      await expect(lock.admit(provider)).rejects.toThrow();
+      await expect(lock.admit(provider)).rejects.toThrow('quarantined');
       expect(f.runner.isTransactionActive).toBe(true);
       expect(provider).not.toHaveBeenCalled();
       await expect(lock.admit(provider)).rejects.toThrow();
       await lock.close();
     },
   );
-  it('keeps native locks until an in-flight admission settles during close', async () => {
+  it('does not return a current verification if the native transaction changes during its reads', async () => {
     const f = setup(),
       lock = await f.lock();
-    await lock.verifyEditor(f.authority);
+    const query = f.query.getMockImplementation()!;
+    let probes = 0;
+    f.query.mockImplementation(async (sql, parameters) => {
+      if (sql.includes('pg_current_xact_id()') && ++probes === 2)
+        return [{ backend: '123', transaction: '999' }];
+      return query(sql, parameters);
+    });
+    await expect(lock.verifyEditor(f.authority)).rejects.toThrow();
+    await expect(lock.verifyEditor(f.authority)).rejects.toThrow();
+    expect(f.runner.release).not.toHaveBeenCalled();
+    await lock.close();
+  });
+  it('keeps native locks until an in-flight verification settles during close', async () => {
+    const f = setup(),
+      lock = await f.lock();
     let finish!: () => void, entered!: () => void;
     const started = new Promise<void>((resolve) => {
       entered = resolve;
     });
-    const admission = lock.admit(
+    f.query.mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
-          finish = resolve;
+        new Promise((resolve) => {
+          finish = () => resolve([{ backend: '123', transaction: '456' }]);
           entered();
         }),
     );
+    const verification = lock.verifyEditor(f.authority);
     await started;
     const closing = lock.close();
     expect(f.runner.rollbackTransaction).not.toHaveBeenCalled();
     expect(f.runner.release).not.toHaveBeenCalled();
     finish();
-    await expect(admission).rejects.toThrow();
+    await expect(verification).rejects.toThrow();
     await closing;
     expect(f.runner.rollbackTransaction).toHaveBeenCalledTimes(1);
     expect(f.runner.release).toHaveBeenCalledTimes(1);
-    await expect(lock.admit(async () => true)).rejects.toThrow();
+    await expect(lock.admit(async () => true)).rejects.toThrow('quarantined');
   });
   it('retains a failed rollback without releasing or reporting closed', async () => {
     const f = setup(),
@@ -316,19 +332,27 @@ describe('V2 current native scoped correspondence', () => {
     expect(f.runner.release).not.toHaveBeenCalled();
     expect(f.runner.rollbackTransaction).toHaveBeenCalledTimes(1);
   });
-  it('revalidates the current parent after provider admission and refuses retry', async () => {
-    const f = setup(),
-      lock = await f.lock();
-    await lock.verifyEditor(f.authority);
-    const provider = jest.fn(async () => {
-      f.change({ ...f.source, currentParentSessionId: id(99) });
-      return true;
-    });
-    await expect(lock.admit(provider)).rejects.toThrow();
-    await expect(lock.admit(provider)).rejects.toThrow();
-    expect(provider).toHaveBeenCalledTimes(1);
-    await lock.close();
-  });
+  it.each([false, true])(
+    'quarantines arbitrary provider callbacks without I/O after successful write=%s verification',
+    async (write) => {
+      const f = setup(write),
+        lock = await f.lock();
+      await lock.verifyEditor(f.authority);
+      f.query.mockClear();
+      const current = jest.spyOn(f.authority, 'assertCurrent');
+      const held = jest.spyOn(f.authority, 'assertHeld');
+      const provider = jest.fn(async () => {
+        throw new Error('provider side effect must never start');
+      });
+      await expect(lock.admit(provider)).rejects.toThrow('quarantined');
+      await expect(lock.admit(provider)).rejects.toThrow('quarantined');
+      expect(provider).not.toHaveBeenCalled();
+      expect(f.query).not.toHaveBeenCalled();
+      expect(current).not.toHaveBeenCalled();
+      expect(held).not.toHaveBeenCalled();
+      await lock.close();
+    },
+  );
   it('rolls back a lost native-lock acknowledgment without issuing custody', async () => {
     const f = setup();
     f.lockReply([]);
