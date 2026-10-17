@@ -2,7 +2,7 @@ name: exe-crm
 
 services:
   server:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}@${CRM_IMAGE_DIGEST:?CRM_IMAGE_DIGEST is required - supply the verified sha256 digest for CRM_IMAGE_TAG}
     # Hardening: the server runs as uid 1000 and needs no Linux capabilities.
     security_opt:
       - no-new-privileges:true
@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}@${CRM_IMAGE_DIGEST:?CRM_IMAGE_DIGEST is required - supply the verified sha256 digest for CRM_IMAGE_TAG}
     # Hardening: the worker runs as uid 1000 and needs no Linux capabilities.
     security_opt:
       - no-new-privileges:true
