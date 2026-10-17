@@ -9,7 +9,7 @@
  * Ported from exe-wiki's proven offline-cache.js pattern.
  */
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const SHELL_CACHE = `exe-crm-shell-v${CACHE_VERSION}`;
 const API_CACHE = "exe-crm-api-v1";
 const OFFLINE_URL = "/offline.html";
@@ -53,6 +53,12 @@ self.addEventListener("fetch", (event) => {
   // GraphQL: always network-first (CRM data must be fresh)
   if (url.pathname === "/graphql" || url.pathname.startsWith("/api/")) {
     event.respondWith(networkFirst(request, API_CACHE));
+    return;
+  }
+
+  // Mutable compatibility URL must not remain pinned in a cache-first shell.
+  if (url.pathname === "/exe-service-switcher.js" && !url.searchParams.has("v")) {
+    event.respondWith(fetch(request));
     return;
   }
 

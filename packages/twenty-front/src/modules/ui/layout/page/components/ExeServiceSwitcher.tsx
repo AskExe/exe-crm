@@ -1,3 +1,4 @@
+import { getDemoWorkspaceId } from '@/auth/utils/goTrueBridge';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { signOutViaCentralPage } from '@/auth/utils/signOutViaCentralPage';
 import { currentUserState } from '@/auth/states/currentUserState';
@@ -35,7 +36,7 @@ export const ExeServiceSwitcher = () => {
   useEffect(() => {
     if (customElements.get('exe-service-switcher')) return;
     const script = document.createElement('script');
-    script.src = '/exe-service-switcher.js';
+    script.src = '/exe-service-switcher.js?v=f7585e9403d500fa';
     document.head.appendChild(script);
   }, []);
 
@@ -46,6 +47,7 @@ export const ExeServiceSwitcher = () => {
     <exe-service-switcher
       ref={switcherRef}
       current="CRM"
+      static-context={getDemoWorkspaceId() ? 'demo' : undefined}
       user={currentUser?.email ?? ''}
     />
   );
