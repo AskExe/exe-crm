@@ -22,6 +22,7 @@ declare global {
           current?: string;
           user?: string;
           'base-url'?: string;
+          'static-context'?: 'demo';
         },
         HTMLElement
       >;
