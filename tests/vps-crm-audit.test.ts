@@ -18,6 +18,7 @@ describe('exe-crm VPS regression audit', () => {
   );
   // Synthetic config-only fixture: never a published release digest.
   const fixtureDigest = `sha256:${'a'.repeat(64)}`;
+  const fixtureAppSecret = 'config-only-fixture-'.repeat(2);
   const stackRelease = JSON.parse(read('stack.release.json')) as {
     version: string;
     image: string;
@@ -91,8 +92,7 @@ describe('exe-crm VPS regression audit', () => {
           ...process.env,
           CRM_IMAGE_DIGEST: fixtureDigest,
           REDIS_PASSWORD: 'test_redis_password',
-          APP_SECRET:
-            process.env.APP_SECRET || '0123456789abcdef0123456789abcdef',
+          APP_SECRET: process.env.APP_SECRET || fixtureAppSecret,
           EXE_LICENSE_KEY:
             process.env.EXE_LICENSE_KEY || 'exe_sk_test_license_key',
           PG_DATABASE_PASSWORD:
@@ -164,7 +164,7 @@ describe('exe-crm VPS regression audit', () => {
         const env: NodeJS.ProcessEnv = {
           ...process.env,
           CRM_IMAGE_TAG: `v${stackRelease.version}`,
-          APP_SECRET: '0123456789abcdef0123456789abcdef',
+          APP_SECRET: fixtureAppSecret,
           EXE_LICENSE_KEY: 'exe_sk_test_license_key',
           PG_DATABASE_PASSWORD: 'test_password',
           REDIS_PASSWORD: 'test_redis_password',
