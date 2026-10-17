@@ -2,7 +2,7 @@ name: exe-crm
 
 services:
   server:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}
     # Hardening: the server runs as uid 1000 and needs no Linux capabilities.
     security_opt:
       - no-new-privileges:true
@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.51}
+    image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v0.9.77}
     # Hardening: the worker runs as uid 1000 and needs no Linux capabilities.
     security_opt:
       - no-new-privileges:true

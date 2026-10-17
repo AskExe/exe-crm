@@ -136,11 +136,13 @@ describe('exe-crm VPS regression audit', () => {
   });
 
   it('uses CRM_IMAGE_TAG as the stack-update image contract', () => {
-    const matches = compose.match(
-      /image: ghcr\.io\/askexe\/exe-crm:\$\{CRM_IMAGE_TAG:-v0\.9\.3\}/g,
-    );
+    const expectedImage =
+      'image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v' +
+      stackRelease.version +
+      '}';
+    const matches = compose.split(expectedImage).length - 1;
 
-    expect(matches?.length).toBe(2);
+    expect(matches).toBe(2);
     expect(compose).not.toContain('${TAG:-');
   });
 

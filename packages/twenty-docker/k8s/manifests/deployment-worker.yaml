@@ -35,7 +35,7 @@ spec:
           emptyDir: {}
       containers:
         - name: twentycrm
-          image: ghcr.io/askexe/exe-crm:v0.9.51
+          image: ghcr.io/askexe/exe-crm:v0.9.77
           imagePullPolicy: Always
           securityContext:
             runAsNonRoot: true
