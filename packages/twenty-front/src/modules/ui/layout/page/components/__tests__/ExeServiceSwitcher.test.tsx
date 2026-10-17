@@ -1,3 +1,7 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 let mockEditorEnabled = false;
 jest.mock('~/config', () => ({
   ...jest.requireActual('~/config'),
@@ -58,4 +62,23 @@ it('uses the editor hook central logout exactly once instead of wrapping it twic
   } finally {
     mockEditorEnabled = false;
   }
+});
+
+it('uses the content fingerprint of the shipped public switcher', () => {
+  const hash = createHash('sha256')
+    .update(
+      readFileSync(
+        resolve(
+          __dirname,
+          '../../../../../../../public/exe-service-switcher.js',
+        ),
+      ),
+    )
+    .digest('hex')
+    .slice(0, 16);
+  const wrapper = readFileSync(
+    resolve(__dirname, '../ExeServiceSwitcher.tsx'),
+    'utf8',
+  );
+  expect(wrapper).toContain(`/exe-service-switcher.js?v=${hash}`);
 });

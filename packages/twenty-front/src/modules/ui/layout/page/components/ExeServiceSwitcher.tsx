@@ -38,7 +38,7 @@ export const ExeServiceSwitcher = () => {
   useEffect(() => {
     if (customElements.get('exe-service-switcher')) return;
     const script = document.createElement('script');
-    script.src = '/exe-service-switcher.js';
+    script.src = '/exe-service-switcher.js?v=3479bd6c22b61dd8';
     document.head.appendChild(script);
   }, []);
 
