@@ -32,7 +32,7 @@ describe('exe-crm VPS regression audit', () => {
     'packages/twenty-server/src/engine/core-modules/auth/token/services/access-token.service.ts',
   );
 
-  it('entrypoint hard-gates EXE_LICENSE_KEY and rejects placeholder values', () => {
+  it('entrypoint validates normal-mode license, rejects placeholders, and guards company mode', () => {
     expect(entrypoint).toContain('assert_exe_license_key()');
     expect(entrypoint).toContain(
       'license_key="${EXE_LICENSE_KEY:-${ENTERPRISE_KEY:-}}"',
@@ -48,11 +48,11 @@ describe('exe-crm VPS regression audit', () => {
       'export ENTERPRISE_KEY="${ENTERPRISE_KEY:-$license_key}"',
     );
     expect(entrypoint).toMatch(
-      /assert_exe_license_key\s*\nsetup_and_migrate_db\s*\nregister_background_jobs/,
+      /case "\$\{CRM_COMPANY_MODE:-false\}" in\s*true\)\s*(?:#[^\n]*\n\s*)*;;\s*false\)\s*assert_exe_license_key\s*;;\s*\*\)[\s\S]*?exit 1\s*;;\s*esac\s*setup_and_migrate_db\s*register_background_jobs/,
     );
   });
 
-  it('main.ts boot path asserts EXE_LICENSE_KEY before Nest startup', () => {
+  it('main.ts validates company configuration and normal-mode license before Nest startup', () => {
     expect(mainTs).toContain('const assertExeLicenseKey = () => {');
     expect(mainTs).toContain(
       'const licenseKey = process.env.EXE_LICENSE_KEY ?? process.env.ENTERPRISE_KEY;',
@@ -68,7 +68,7 @@ describe('exe-crm VPS regression audit', () => {
       'process.env.ENTERPRISE_KEY = process.env.ENTERPRISE_KEY ?? licenseKey;',
     );
     expect(mainTs).toMatch(
-      /const bootstrap = async \(\) => \{[\s\S]*assertAppSecret\(\);\s*assertExeLicenseKey\(\);/,
+      /const bootstrap = async \(\) => \{\s*assertAppSecret\(\);\s*const companyConfiguration = readCompanyAuthConfiguration\(\);\s*companyMcpEnabled\(\);\s*readCompanyBrowserConfiguration\(companyConfiguration\);\s*if \(!companyConfiguration\) assertExeLicenseKey\(\);[\s\S]*?const app = await NestFactory\.create/,
     );
   });
 
