@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
   merge_group:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Immutable release base commit for the brand comparison
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -91,7 +97,7 @@ jobs:
     # of git diff and cannot get slower. Enforced by the slot-budget check
     # below so this cannot silently regress (bug 9e92b1c7).
     timeout-minutes: 30
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -99,13 +105,13 @@ jobs:
           fetch-depth: 1
           filter: blob:none
           fetch-tags: false
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Fetch exact PR comparison history
         timeout-minutes: 5
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           GIT_TERMINAL_PROMPT: '0'
         run: |
           set -euo pipefail
@@ -141,12 +147,21 @@ jobs:
 
       - name: Detect "twenty" in PR-added lines
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
           ALLOWLIST_FILE: .brand-drift-allowlist.txt
           SCAN_PATHS: 'packages/ README.md NOTICE'
         run: |
           set -euo pipefail
+
+          [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" = "${HEAD_SHA}" ]]
+          if [ "${EVENT_NAME}" = workflow_dispatch ]; then
+            [[ "${BASE_SHA}" != "${HEAD_SHA}" ]]
+            git merge-base --is-ancestor "${BASE_SHA}" "${HEAD_SHA}"
+          fi
 
           if [ ! -f "${ALLOWLIST_FILE}" ]; then
             echo "::error::Missing ${ALLOWLIST_FILE} at repo root."
@@ -166,6 +181,9 @@ jobs:
           }
 
           MERGE_BASE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          # Fail closed before the existing scanner's suppressed diff calls.
+          # shellcheck disable=SC2086
+          git diff -U0 "${MERGE_BASE}" "${HEAD_SHA}" -- ${SCAN_PATHS} >/dev/null
           # shellcheck disable=SC2086
           CHANGED_FILES=$(git diff --name-only --diff-filter=AM \
             "${MERGE_BASE}" "${HEAD_SHA}" -- ${SCAN_PATHS} || true)
@@ -207,13 +225,14 @@ jobs:
           echo "Brand drift check passed."
 
   # MAIN LANE — full Linux server test coverage, unchanged, but now runs ONLY
-  # on push to main. PRs and the merge queue get the same suite on the mac
+  # on push to main or exact-commit dispatch. PRs and the merge queue get the
+  # same suite on the mac
   # runner via `server-tests-mac` below (the PR-lane primary gate). Linux test
   # coverage is NOT lost — every merge to main still runs this full job on the
   # existing [self-hosted, linux, x64] runners.
   server-tests:
     name: Server unit tests
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     # Dependabot branches used to get ubuntu-latest here; GitHub-hosted runners
     # are banned by founder directive 2026-09-02, so every actor gets the same
     # local Linux lane (mac-vm-crm-1 in the ci-linux VM).
