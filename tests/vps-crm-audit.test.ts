@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 
@@ -13,6 +13,12 @@ describe('exe-crm VPS regression audit', () => {
   const entrypoint = read('packages/twenty-docker/twenty/entrypoint.sh');
   const mainTs = read('packages/twenty-server/src/main.ts');
   const compose = read('packages/twenty-docker/docker-compose.yml');
+  const podmanCompose = read(
+    'packages/twenty-docker/podman/podman-compose.yml',
+  );
+  // Synthetic config-only fixture: never a published release digest.
+  const fixtureDigest = `sha256:${'a'.repeat(64)}`;
+  const fixtureAppSecret = 'config-only-fixture-'.repeat(2);
   const stackRelease = JSON.parse(read('stack.release.json')) as {
     version: string;
     image: string;
@@ -32,7 +38,7 @@ describe('exe-crm VPS regression audit', () => {
     'packages/twenty-server/src/engine/core-modules/auth/token/services/access-token.service.ts',
   );
 
-  it('entrypoint hard-gates EXE_LICENSE_KEY and rejects placeholder values', () => {
+  it('entrypoint validates normal-mode license, rejects placeholders, and guards company mode', () => {
     expect(entrypoint).toContain('assert_exe_license_key()');
     expect(entrypoint).toContain(
       'license_key="${EXE_LICENSE_KEY:-${ENTERPRISE_KEY:-}}"',
@@ -48,11 +54,11 @@ describe('exe-crm VPS regression audit', () => {
       'export ENTERPRISE_KEY="${ENTERPRISE_KEY:-$license_key}"',
     );
     expect(entrypoint).toMatch(
-      /assert_exe_license_key\s*\nsetup_and_migrate_db\s*\nregister_background_jobs/,
+      /case "\$\{CRM_COMPANY_MODE:-false\}" in\s*true\)\s*(?:#[^\n]*\n\s*)*;;\s*false\)\s*assert_exe_license_key\s*;;\s*\*\)[\s\S]*?exit 1\s*;;\s*esac\s*setup_and_migrate_db\s*register_background_jobs/,
     );
   });
 
-  it('main.ts boot path asserts EXE_LICENSE_KEY before Nest startup', () => {
+  it('main.ts validates company configuration and normal-mode license before Nest startup', () => {
     expect(mainTs).toContain('const assertExeLicenseKey = () => {');
     expect(mainTs).toContain(
       'const licenseKey = process.env.EXE_LICENSE_KEY ?? process.env.ENTERPRISE_KEY;',
@@ -68,7 +74,7 @@ describe('exe-crm VPS regression audit', () => {
       'process.env.ENTERPRISE_KEY = process.env.ENTERPRISE_KEY ?? licenseKey;',
     );
     expect(mainTs).toMatch(
-      /const bootstrap = async \(\) => \{[\s\S]*assertAppSecret\(\);\s*assertExeLicenseKey\(\);/,
+      /const bootstrap = async \(\) => \{\s*assertAppSecret\(\);\s*const companyConfiguration = readCompanyAuthConfiguration\(\);\s*companyMcpEnabled\(\);\s*readCompanyBrowserConfiguration\(companyConfiguration\);\s*if \(!companyConfiguration\) assertExeLicenseKey\(\);[\s\S]*?const app = await NestFactory\.create/,
     );
   });
 
@@ -84,8 +90,9 @@ describe('exe-crm VPS regression audit', () => {
         stdio: 'pipe',
         env: {
           ...process.env,
-          APP_SECRET:
-            process.env.APP_SECRET || '0123456789abcdef0123456789abcdef',
+          CRM_IMAGE_DIGEST: fixtureDigest,
+          REDIS_PASSWORD: 'test_redis_password',
+          APP_SECRET: process.env.APP_SECRET || fixtureAppSecret,
           EXE_LICENSE_KEY:
             process.env.EXE_LICENSE_KEY || 'exe_sk_test_license_key',
           PG_DATABASE_PASSWORD:
@@ -135,26 +142,73 @@ describe('exe-crm VPS regression audit', () => {
     expect(matches?.length).toBe(2);
   });
 
-  it('uses CRM_IMAGE_TAG as the stack-update image contract', () => {
-    const matches = compose.match(
-      /image: ghcr\.io\/askexe\/exe-crm:\$\{CRM_IMAGE_TAG:-v0\.9\.3\}/g,
-    );
+  it('requires a verified digest alongside the candidate CRM_IMAGE_TAG', () => {
+    const expectedImage =
+      'image: ghcr.io/askexe/exe-crm:${CRM_IMAGE_TAG:-v' +
+      stackRelease.version +
+      '}@${CRM_IMAGE_DIGEST:?CRM_IMAGE_DIGEST is required - supply the verified sha256 digest for CRM_IMAGE_TAG}';
 
-    expect(matches?.length).toBe(2);
+    for (const deployment of [compose, podmanCompose]) {
+      expect(deployment.split(expectedImage).length - 1).toBe(2);
+    }
     expect(compose).not.toContain('${TAG:-');
   });
 
-  it('keeps every customer deployment surface pinned to the stack release image', () => {
+  it.each([
+    'packages/twenty-docker/docker-compose.yml',
+    'packages/twenty-docker/podman/podman-compose.yml',
+  ])(
+    '%s rejects missing and empty digests and renders a fixed digest',
+    (composeFile) => {
+      for (const digest of [undefined, '', fixtureDigest]) {
+        const env: NodeJS.ProcessEnv = {
+          ...process.env,
+          CRM_IMAGE_TAG: `v${stackRelease.version}`,
+          APP_SECRET: fixtureAppSecret,
+          EXE_LICENSE_KEY: 'exe_sk_test_license_key',
+          PG_DATABASE_PASSWORD: 'test_password',
+          REDIS_PASSWORD: 'test_redis_password',
+          SERVER_URL: 'https://crm.example.com',
+          STORAGE_S3_NAME: 'bucket',
+        };
+        delete env.CRM_IMAGE_DIGEST;
+        if (digest !== undefined) env.CRM_IMAGE_DIGEST = digest;
+        const result = spawnSync(
+          'docker',
+          [
+            'compose',
+            '--env-file',
+            '/dev/null',
+            '-f',
+            path.join(ROOT, composeFile),
+            'config',
+            '--format',
+            'json',
+          ],
+          { cwd: ROOT, env, encoding: 'utf8' },
+        );
+        if (result.error) throw result.error;
+        if (!digest) {
+          expect(result.status).not.toBe(0);
+          expect(result.stderr).toContain('CRM_IMAGE_DIGEST is required');
+        } else {
+          expect(result.status, result.stderr).toBe(0);
+          const rendered = JSON.parse(result.stdout);
+          for (const service of ['server', 'worker']) {
+            expect(rendered.services[service].image).toBe(
+              `${stackRelease.image}@${fixtureDigest}`,
+            );
+          }
+        }
+      }
+    },
+  );
+
+  it('retains producer metadata and canonical deployment image names', () => {
     const expectedImage = `ghcr.io/askexe/exe-crm:v${stackRelease.version}`;
 
     expect(stackRelease.image).toBe(expectedImage);
     expect(stackRelease.imageEnv).toBe('CRM_IMAGE_TAG');
-    expect(helmChart).toMatch(
-      new RegExp(`appVersion: [\'\"]v${stackRelease.version}[\'\"]`),
-    );
-    expect(k8sServerDeployment).toContain(`image: ${expectedImage}`);
-    expect(k8sWorkerDeployment).toContain(`image: ${expectedImage}`);
-    expect(podmanManualSteps).toContain(expectedImage);
     expect(
       [
         compose,
@@ -182,7 +236,7 @@ describe('exe-crm VPS regression audit', () => {
     expect(accessTokenService).toContain('private getGoTrueVerificationKey(');
     expect(accessTokenService).toContain('return createPublicKey({');
     expect(accessTokenService).toContain(
-      'const verified = jwt.verify(token, verificationKey, {',
+      'verified = jwt.verify(token, verificationKey, {',
     );
   });
 

@@ -58,7 +58,29 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
-echo "🚀 Using CRM image tag $version and GitHub branch $branch"
+# A candidate manifest may retain an older release's digest as historical evidence.
+# Require the operator's verified pin and check the selected tag without pulling layers.
+if [[ ! "$version" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$ ]]; then
+  echo "❌ CRM_IMAGE_TAG must be a valid image tag."
+  exit 1
+fi
+image_digest=${CRM_IMAGE_DIGEST:-}
+if [[ ! "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+  echo "❌ CRM_IMAGE_DIGEST is required: supply the verified sha256 digest for $version."
+  exit 1
+fi
+if ! image_metadata=$(docker buildx imagetools inspect "ghcr.io/askexe/exe-crm:$version"); then
+  echo "❌ Could not verify the selected CRM image tag. Check registry access and Docker Buildx."
+  exit 1
+fi
+# The first Digest line is the index (or single manifest), never a platform child.
+registry_digest=$(printf '%s\n' "$image_metadata" | awk '$1 == "Digest:" {print $2; exit}')
+if [ "$registry_digest" != "$image_digest" ]; then
+  echo "❌ CRM_IMAGE_DIGEST does not match the published digest for $version."
+  exit 1
+fi
+
+echo "🚀 Using verified CRM image ghcr.io/askexe/exe-crm:$version@$image_digest and GitHub branch $branch"
 
 dir_name="exe-crm"
 function ask_directory {
@@ -91,14 +113,15 @@ curl -sLo docker-compose.yml https://raw.githubusercontent.com/AskExe/exe-crm/$b
 echo -e "\t• Setting up .env file"
 curl -sLo .env https://raw.githubusercontent.com/AskExe/exe-crm/$branch/packages/twenty-docker/.env.example
 
-# Pin CRM image tag from stack.release.json or caller-provided CRM_IMAGE_TAG/VERSION.
+# Replace both image inputs, including blank/missing example values, before Compose.
 if [[ $(uname) == "Darwin" ]]; then
-  # Running on macOS
-  sed -i '' "s/^CRM_IMAGE_TAG=.*/CRM_IMAGE_TAG=$version/g" .env
+  sed -i '' '/^CRM_IMAGE_TAG=/d; /^CRM_IMAGE_DIGEST=/d' .env
 else
-  # Assuming Linux
-  sed -i'' "s/^CRM_IMAGE_TAG=.*/CRM_IMAGE_TAG=$version/g" .env
+  sed -i'' '/^CRM_IMAGE_TAG=/d; /^CRM_IMAGE_DIGEST=/d' .env
 fi
+printf '\nCRM_IMAGE_TAG=%s\nCRM_IMAGE_DIGEST=%s\n' "$version" "$image_digest" >> .env
+# Compose's process environment takes precedence over .env, including empty inputs.
+export CRM_IMAGE_TAG="$version" CRM_IMAGE_DIGEST="$image_digest"
 
 # Generate random strings for secrets
 echo "# === Randomly generated secret ===" >> .env

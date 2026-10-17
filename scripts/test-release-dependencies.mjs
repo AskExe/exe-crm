@@ -1,10 +1,185 @@
 import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
+const serverRequire = createRequire(
+  new URL('../packages/twenty-server/package.json', import.meta.url),
+);
+
+test('GraphQL consumers preserve variables, fragments and middleware after delegation', async () => {
+  require('reflect-metadata');
+  assert.equal(
+    typeof serverRequire('@nestjs/graphql').GraphQLModule,
+    'function',
+  );
+  const { makeExecutableSchema } = require('@graphql-tools/schema');
+  const { wrapSchema } = require('@graphql-tools/wrap');
+  const { applyMiddleware } = require('graphql-middleware');
+  const { createYoga } = require('graphql-yoga');
+  const { execute } = require('@graphql-tools/executor');
+  const schema = makeExecutableSchema({
+    typeDefs: 'type Query { greeting(name: String!): String! }',
+    resolvers: { Query: { greeting: (_, { name }) => `Hello ${name}` } },
+  });
+  const delegatedSchema = wrapSchema({
+    schema,
+    executor: (request) =>
+      execute({
+        schema,
+        document: request.document,
+        variableValues: request.variables,
+        contextValue: request.context,
+      }),
+  });
+  let calls = 0;
+  const yoga = createYoga({
+    schema: applyMiddleware(
+      delegatedSchema,
+      async (resolve, root, args, context, info) => {
+        calls++;
+        return resolve(root, args, context, info);
+      },
+    ),
+    logging: false,
+  });
+  for (const show of [true, false]) {
+    const response = await yoga.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        query:
+          'query($name: String!, $show: Boolean!) { ...Fields } fragment Fields on Query { message: greeting(name: $name) @include(if: $show) }',
+        variables: { name: 'CRM', show },
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      data: show ? { message: 'Hello CRM' } : {},
+    });
+  }
+  assert.equal(calls, 1);
+});
+
+test('GraphQL deep merge rejects prototype pollution while retaining nested values', () => {
+  const { mergeDeep } = require('@graphql-tools/utils');
+  const merged = mergeDeep([
+    { settings: { enabled: true } },
+    JSON.parse(
+      '{"settings":{"label":"CRM"},"constructor":{"prototype":{"releasePolluted":true}}}',
+    ),
+  ]);
+  assert.deepEqual(merged.settings, { enabled: true, label: 'CRM' });
+  assert.equal(Object.prototype.releasePolluted, undefined);
+});
+
+test('GraphQL code generation loads schema files and reports invalid documents', async () => {
+  const { generate } = require('@graphql-codegen/cli');
+  const directory = await mkdtemp(join(tmpdir(), 'crm-codegen-'));
+  try {
+    const schema = join(directory, 'schema.graphql');
+    const documents = join(directory, 'query.graphql');
+    await writeFile(schema, 'type Query { greeting(name: String!): String! }');
+    await writeFile(
+      documents,
+      'query Greeting($name: String!) { greeting(name: $name) }',
+    );
+    const config = {
+      schema,
+      documents,
+      generates: {
+        [join(directory, 'types.ts')]: {
+          plugins: ['typescript', 'typescript-operations'],
+        },
+      },
+      silent: true,
+    };
+    const output = await generate(config, false);
+    assert.match(output[0].content, /export type GreetingQuery/);
+    await writeFile(documents, 'query Invalid { missingField }');
+    await assert.rejects(
+      generate(config, false),
+      /Cannot query field "missingField"/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('Axios preserves JSON and request transforms through its adapter', async () => {
+  const axios = require('axios');
+  const response = await axios.post(
+    'https://qa.example.invalid/records',
+    { name: 'CRM' },
+    {
+      adapter: async (config) => {
+        assert.equal(config.method, 'post');
+        assert.equal(config.data, '{"name":"CRM"}');
+        return {
+          data: '{"id":"fixture"}',
+          status: 201,
+          statusText: 'Created',
+          headers: {},
+          config,
+        };
+      },
+    },
+  );
+  assert.equal(response.status, 201);
+  assert.deepEqual(response.data, { id: 'fixture' });
+});
+
+test('Handlebars escapes values and denies inherited template properties', () => {
+  const handlebars = require('handlebars');
+  const template = handlebars.compile('{{name}} {{inherited}}');
+  const value = Object.assign(Object.create({ inherited: 'private' }), {
+    name: '<CRM>',
+  });
+  assert.equal(template(value, { logger: { log() {} } }), '&lt;CRM&gt; ');
+});
+
+test('Proxy trust keeps the first untrusted address as the client', () => {
+  const proxyaddr = require('proxy-addr');
+  const request = {
+    socket: { remoteAddress: '127.0.0.1' },
+    headers: { 'x-forwarded-for': '198.51.100.1, 203.0.113.2' },
+  };
+  assert.equal(
+    proxyaddr(request, proxyaddr.compile('loopback')),
+    '203.0.113.2',
+  );
+});
+
+test('PostCSS generates a consumable source map', async () => {
+  const postcss = require('postcss');
+  const { SourceMapConsumer } = require('source-map-js');
+  const result = await postcss([]).process('a { color: red }', {
+    from: 'input.css',
+    to: 'output.css',
+    map: { inline: false },
+  });
+  const consumer = new SourceMapConsumer(result.map.toJSON());
+  assert.equal(
+    consumer.originalPositionFor({ line: 1, column: 0 }).source,
+    'input.css',
+  );
+});
+
+test('gRPC can create and close a channel without connecting', () => {
+  const { Channel, ChannelCredentials } = require('@grpc/grpc-js');
+  const channel = new Channel(
+    'localhost:1',
+    ChannelCredentials.createInsecure(),
+    {},
+  );
+  assert.equal(channel.getTarget(), 'dns:localhost:1');
+  channel.close();
+});
 
 test('BlockNote preserves rich text through HTML and Markdown conversion', async () => {
   const { ServerBlockNoteEditor } = await import('@blocknote/server-util');
