@@ -187,10 +187,7 @@ describe('exe-crm VPS regression audit', () => {
           ],
           { cwd: ROOT, env, encoding: 'utf8' },
         );
-        if (result.error?.code === 'ENOENT') {
-          expect(read(composeFile)).toContain('${CRM_IMAGE_DIGEST:?');
-          return;
-        }
+        if (result.error) throw result.error;
         if (!digest) {
           expect(result.status).not.toBe(0);
           expect(result.stderr).toContain('CRM_IMAGE_DIGEST is required');
