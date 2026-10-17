@@ -184,7 +184,7 @@ describe('exe-crm VPS regression audit', () => {
     expect(accessTokenService).toContain('private getGoTrueVerificationKey(');
     expect(accessTokenService).toContain('return createPublicKey({');
     expect(accessTokenService).toContain(
-      'const verified = jwt.verify(token, verificationKey, {',
+      'verified = jwt.verify(token, verificationKey, {',
     );
   });
 
