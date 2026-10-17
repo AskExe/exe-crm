@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  assertCompanyReadShape,
+  withCompanyReadLease,
+  type CompanyReadLease,
+} from 'src/engine/core-modules/company-mcp/company-read-lease';
 
 import { isDefined } from 'class-validator';
 import {
@@ -56,6 +61,22 @@ export class CommonFindManyQueryRunnerService extends CommonBaseQueryRunnerServi
     args: CommonExtendedInput<FindManyQueryArgs>,
     queryRunnerContext: CommonExtendedQueryRunnerContext,
   ): Promise<CommonFindManyOutput> {
+    assertCompanyReadShape(
+      'many',
+      queryRunnerContext.flatObjectMetadata.namePlural,
+      args,
+    );
+    return withCompanyReadLease(
+      queryRunnerContext.workspaceDataSource,
+      (lease) => this.runRead(args, queryRunnerContext, lease),
+    );
+  }
+
+  private async runRead(
+    args: CommonExtendedInput<FindManyQueryArgs>,
+    queryRunnerContext: CommonExtendedQueryRunnerContext,
+    lease?: CompanyReadLease,
+  ): Promise<CommonFindManyOutput> {
     const {
       repository,
       authContext,
@@ -69,6 +90,7 @@ export class CommonFindManyQueryRunnerService extends CommonBaseQueryRunnerServi
 
     const queryBuilder = repository.createQueryBuilder(
       flatObjectMetadata.nameSingular,
+      lease?.runner,
     );
 
     const aggregateQueryBuilder = queryBuilder.clone();
@@ -178,7 +200,10 @@ export class CommonFindManyQueryRunnerService extends CommonBaseQueryRunnerServi
       columnsToSelect,
     );
 
-    const objectRecords = (await queryBuilder.getMany()) as ObjectRecord[];
+    const readRecords = () => queryBuilder.getMany();
+    const objectRecords = (await (lease
+      ? lease.terminal(readRecords)
+      : readRecords())) as ObjectRecord[];
 
     const pageInfo = getPageInfo(
       objectRecords,
@@ -194,11 +219,12 @@ export class CommonFindManyQueryRunnerService extends CommonBaseQueryRunnerServi
     const hasAggregatedFields =
       Object.keys(args.selectedFieldsResult.aggregate ?? {}).length > 0;
 
+    const readCount = () => aggregateQueryBuilder.getRawOne();
     const parentObjectRecordsAggregatedValues = hasAggregatedFields
-      ? await aggregateQueryBuilder.getRawOne()
+      ? await (lease ? lease.terminal(readCount) : readCount())
       : undefined;
 
-    if (isDefined(args.selectedFieldsResult.relations)) {
+    if (!lease && isDefined(args.selectedFieldsResult.relations)) {
       await this.processNestedRelationsHelper.processNestedRelations({
         flatObjectMetadataMaps,
         flatFieldMetadataMaps,

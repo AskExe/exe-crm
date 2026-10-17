@@ -1,10 +1,16 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import { readExeLicense } from './exe-license-authority';
 
 @Injectable()
 export class EnterprisePlanService {
   async isValid(): Promise<boolean> {
+    // Company read access uses current technical + subscription authority.
+    // No unreviewed enterprise feature or legacy cloud activation is enabled.
+    if (companyAuthEnabled()) return false;
+
     return (await readExeLicense())?.plan === 'enterprise';
   }
 

@@ -1,6 +1,8 @@
 /* @license Enterprise */
 
 import { FeatureFlagKey } from 'twenty-shared/types';
+
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
 import {
   Brackets,
   NotBrackets,
@@ -34,6 +36,7 @@ export const applyRowLevelPermissionPredicates = <T extends ObjectLiteral>({
   featureFlagMap,
 }: ApplyRowLevelPermissionPredicatesArgs<T>): void => {
   if (
+    !companyAuthEnabled() &&
     featureFlagMap[
       FeatureFlagKey.IS_ROW_LEVEL_PERMISSION_PREDICATES_ENABLED
     ] !== true

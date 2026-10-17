@@ -173,6 +173,34 @@ describe('turnRecordFilterIntoRecordGqlOperationFilter', () => {
   });
 
   describe('TEXT filter', () => {
+    it('rejects IS for a TEXT row predicate', () => {
+      expect(() =>
+        turnRecordFilterIntoRecordGqlOperationFilter({
+          filterValueDependencies,
+          recordFilter: makeFilter(
+            'f-text',
+            RecordFilterOperand.IS,
+            'no-native-record-has-this-value',
+          ),
+          fieldMetadataItems: fields,
+        }),
+      ).toThrow('Unknown operand IS for TEXT filter');
+    });
+
+    it('builds the native TEXT row predicate as an ilike filter', () => {
+      expect(
+        turnRecordFilterIntoRecordGqlOperationFilter({
+          filterValueDependencies,
+          recordFilter: makeFilter(
+            'f-text',
+            RecordFilterOperand.CONTAINS,
+            'no-native-record-has-this-value',
+          ),
+          fieldMetadataItems: fields,
+        }),
+      ).toEqual({ name: { ilike: '%no-native-record-has-this-value%' } });
+    });
+
     it('should handle CONTAINS operand', () => {
       const result = turnRecordFilterIntoRecordGqlOperationFilter({
         filterValueDependencies,

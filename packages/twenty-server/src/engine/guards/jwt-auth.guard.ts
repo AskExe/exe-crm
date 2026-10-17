@@ -2,8 +2,11 @@ import {
   type CanActivate,
   type ExecutionContext,
   Injectable,
+  HttpException,
   Logger,
 } from '@nestjs/common';
+
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
 
 import { isDefined } from 'twenty-shared/utils';
 
@@ -53,6 +56,7 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
+      if (companyAuthEnabled() && error instanceof HttpException) throw error;
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 

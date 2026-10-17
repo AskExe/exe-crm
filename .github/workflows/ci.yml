@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, codex/crm-company-producer-integration, 'codex/**']
   push:
     branches: [main]
   merge_group:
@@ -15,6 +15,11 @@ on:
 
 permissions:
   contents: read
+
+env:
+  # Shared runners can inherit a developer's loopback registry. Resolve the
+  # committed lockfile and hardened metadata against the public registry in CI.
+  YARN_NPM_REGISTRY_SERVER: https://registry.npmjs.org
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -97,8 +102,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          fetch-tags: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Fetch exact PR comparison history
+        timeout-minutes: 5
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -euo pipefail
+          [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" = "${HEAD_SHA}" ]]
+          if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+            git fetch --no-tags --filter=blob:none --unshallow --refmap= \
+              --recurse-submodules=no --no-auto-maintenance \
+              origin "${BASE_SHA}" "${HEAD_SHA}"
+          else
+            git fetch --no-tags --filter=blob:none --refmap= \
+              --recurse-submodules=no --no-auto-maintenance \
+              origin "${BASE_SHA}" "${HEAD_SHA}"
+          fi
+          [[ "$(git rev-parse --is-shallow-repository)" = false ]]
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          MERGE_BASE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          # Materialize every scoped diff blob with checked status before the
+          # unchanged scanner's suppressed per-file diff calls can run.
+          git diff -U0 "${MERGE_BASE}" "${HEAD_SHA}" -- \
+            packages/ README.md NOTICE >/dev/null
 
       # Fails closed if any self-hosted job's timeout-minutes drops to or below
       # the limiter's BUILD_MY_CI_MAXWAIT ceiling, which would let that job be
@@ -368,13 +404,25 @@ jobs:
         # comment for the coverage-threshold / continue-on-error history) — the
         # ONLY difference from the full command below is `--changedSince`, which
         # narrows jest to the specs that transitively import a changed file.
-        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }}
+        run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
+          export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
+          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --changedSince=${{ steps.scope.outputs.merge_base }} --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
 
       - name: Run server tests (full suite)
         if: steps.scope.outputs.scope == 'full'
         # KEEP IN SYNC with the main-lane `server-tests` command apart from
         # --maxWorkers.
-        run: npx nx test twenty-server --configuration=ci --maxWorkers=6 -- --passWithNoTests
+        run: |
+          node scripts/ci-observe-child-exits.cjs --initialize
+          export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require=\"$GITHUB_WORKSPACE/scripts/ci-observe-child-exits.cjs\""
+          npx nx test twenty-server --configuration=ci --maxWorkers=6 --outputStyle=stream -- --passWithNoTests --json --outputFile="$RUNNER_TEMP/server-unit-test-results.json"
+
+      - name: Report server test termination and result
+        if: always() && (steps.scope.outputs.scope == 'changed' || steps.scope.outputs.scope == 'full')
+        # The test step keeps its original Nx exit code. This separate report
+        # refuses a missing result and projects bounded failures, not coverageMap.
+        run: node scripts/ci-observe-child-exits.cjs
 
   # Runs on the repo's dedicated macOS runner (mac-m4-exe-crm), NOT on the
   # shared Linux build-my host.
@@ -473,8 +521,34 @@ jobs:
       # scan stays scoped to code we actually own even if this ever runs on a
       # tree that already has dependencies installed.
       - name: Secret scan (gitleaks)
+        timeout-minutes: 5
+        shell: bash
         run: |
-          docker run --rm -v "$PWD:/repo" \
+          set -euo pipefail
+          # Public pinned image: never invoke the shared Desktop credential helper.
+          # Capture this runner's existing endpoint before isolating CLI config.
+          if [ -n "${DOCKER_CONTEXT:-}" ]; then
+            task_docker_endpoint="$(docker context inspect "$DOCKER_CONTEXT" --format '{{.Endpoints.docker.Host}}')"
+          elif [ -n "${DOCKER_HOST:-}" ]; then
+            task_docker_endpoint="$DOCKER_HOST"
+          else
+            task_docker_endpoint="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+          fi
+          case "$task_docker_endpoint" in
+            unix://*) ;;
+            *) echo "::error::Security scan requires this runner's local Docker socket."; exit 1 ;;
+          esac
+          task_docker_config="$(mktemp -d "${RUNNER_TEMP}/crm-gitleaks-docker.XXXXXX")"
+          task_scan_container="crm-gitleaks-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          trap 'docker rm -f "$task_scan_container" >/dev/null 2>&1 || true; rm -rf "$task_docker_config"' EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          chmod 700 "$task_docker_config"
+          (umask 077; printf '{}\n' > "$task_docker_config/config.json")
+          unset DOCKER_CONTEXT
+          export DOCKER_CONFIG="$task_docker_config"
+          export DOCKER_HOST="$task_docker_endpoint"
+          docker run --rm --name "$task_scan_container" --network none --read-only -v "$PWD:/repo:ro" \
             ghcr.io/gitleaks/gitleaks:v8.21.2@sha256:0e99e8821643ea5b235718642b93bb32486af9c8162c8b8731f7cbdc951a7f46 \
             detect --source=/repo --no-git --redact --no-banner --verbose \
             --config=/repo/.gitleaks.toml
@@ -635,3 +709,5 @@ jobs:
           format: table
           exit-code: '1'
           severity: CRITICAL,HIGH
+          # Avoid the optional cache transfer that consumed the setup deadline.
+          cache: false

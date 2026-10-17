@@ -75,6 +75,80 @@ describe('WorkspaceCacheService', () => {
     jest.clearAllMocks();
   });
 
+  describe('company current permissions', () => {
+    const originalMode = process.env.CRM_COMPANY_MODE;
+
+    afterEach(() => {
+      if (originalMode === undefined) delete process.env.CRM_COMPANY_MODE;
+      else process.env.CRM_COMPANY_MODE = originalMode;
+    });
+
+    it('reads changed native permissions without reusing shared caches', async () => {
+      process.env.CRM_COMPANY_MODE = 'true';
+      const provider = new MockRolesPermissionsCacheProvider();
+      const compute = jest.spyOn(provider, 'computeForCache');
+
+      discoveryService.getProviders.mockReturnValue([
+        { instance: provider },
+      ] as ReturnType<DiscoveryService['getProviders']>);
+      reflector.get.mockImplementation((key) =>
+        key === WORKSPACE_CACHE_KEY ? 'rolesPermissions' : undefined,
+      );
+      await service.onModuleInit();
+      compute.mockResolvedValueOnce({ testData: 'allowed' });
+      expect(
+        await service.getOrRecompute(WORKSPACE_ID, ['rolesPermissions']),
+      ).toEqual({ rolesPermissions: { testData: 'allowed' } });
+      compute.mockResolvedValueOnce({ testData: 'denied' });
+      expect(
+        await service.getOrRecompute(WORKSPACE_ID, ['rolesPermissions']),
+      ).toEqual({ rolesPermissions: { testData: 'denied' } });
+      expect(compute).toHaveBeenCalledTimes(2);
+      expect(cacheStorageService.mget).not.toHaveBeenCalled();
+      expect(cacheStorageService.mset).not.toHaveBeenCalled();
+      compute.mockRejectedValueOnce(new Error('native repository unavailable'));
+      await expect(
+        service.getOrRecompute(WORKSPACE_ID, ['rolesPermissions']),
+      ).rejects.toThrow('native repository unavailable');
+    });
+
+    it('does not publish a delayed stale permission result to subsequent requests', async () => {
+      process.env.CRM_COMPANY_MODE = 'true';
+      const provider = new MockRolesPermissionsCacheProvider();
+      const compute = jest.spyOn(provider, 'computeForCache');
+
+      discoveryService.getProviders.mockReturnValue([
+        { instance: provider },
+      ] as ReturnType<DiscoveryService['getProviders']>);
+      reflector.get.mockImplementation((key) =>
+        key === WORKSPACE_CACHE_KEY ? 'rolesPermissions' : undefined,
+      );
+      await service.onModuleInit();
+      let finish: (value: { testData: string }) => void = () => undefined;
+
+      compute.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const delayed = service.getOrRecompute(WORKSPACE_ID, [
+        'rolesPermissions',
+      ]);
+
+      compute.mockResolvedValue({ testData: 'denied' });
+      expect(
+        await service.getOrRecompute(WORKSPACE_ID, ['rolesPermissions']),
+      ).toEqual({ rolesPermissions: { testData: 'denied' } });
+      finish({ testData: 'old' });
+      await delayed;
+      expect(
+        await service.getOrRecompute(WORKSPACE_ID, ['rolesPermissions']),
+      ).toEqual({ rolesPermissions: { testData: 'denied' } });
+      expect(cacheStorageService.mset).not.toHaveBeenCalled();
+    });
+  });
+
   describe('onModuleInit', () => {
     it('should register workspace cache providers', async () => {
       discoveryService.getProviders.mockReturnValue([

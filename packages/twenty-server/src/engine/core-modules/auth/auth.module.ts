@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+
+import { CompanyAuthModule } from 'src/engine/core-modules/company-auth/company-auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
@@ -79,6 +81,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
 @Module({
   imports: [
+    CompanyAuthModule,
     JwtModule,
     WorkspaceDomainsModule,
     TokenModule,

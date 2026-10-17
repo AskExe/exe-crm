@@ -10,6 +10,7 @@ import { Like, Repository, type QueryRunner } from 'typeorm';
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
 import { FileStorageDriverFactory } from 'src/engine/core-modules/file-storage/file-storage-driver.factory';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
+import { writeTransactionalApplicationFile } from 'src/engine/core-modules/file-storage/write-transactional-application-file';
 import { FileSettings } from 'src/engine/core-modules/file/types/file-settings.types';
 
 export type ResourceIdentifier = {
@@ -62,12 +63,21 @@ export class FileStorageService {
   }): Promise<FileEntity> {
     const driver = this.fileStorageDriverFactory.getCurrentDriver();
 
-    const applicationRepository = queryRunner
-      ? queryRunner.manager.getRepository(ApplicationEntity)
-      : this.applicationRepository;
-    const fileRepository = queryRunner
-      ? queryRunner.manager.getRepository(FileEntity)
-      : this.fileRepository;
+    if (queryRunner) {
+      return writeTransactionalApplicationFile(driver, queryRunner, {
+        sourceFile,
+        mimeType,
+        fileFolder,
+        applicationUniversalIdentifier,
+        workspaceId,
+        resourcePath,
+        fileId,
+        settings,
+      });
+    }
+
+    const applicationRepository = this.applicationRepository;
+    const fileRepository = this.fileRepository;
 
     const application = await applicationRepository.findOneOrFail({
       where: {

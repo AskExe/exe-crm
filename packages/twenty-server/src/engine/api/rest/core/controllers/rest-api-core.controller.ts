@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 
 import { Response } from 'express';
+import { CompanyRestReadService } from 'src/engine/core-modules/company-auth/company-rest-read.service';
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
 
 import { RestApiCoreService } from 'src/engine/api/rest/core/services/rest-api-core.service';
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
@@ -26,7 +28,10 @@ import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 @UseFilters(RestApiExceptionFilter)
 export class RestApiCoreController {
   private readonly logger = new Logger(RestApiCoreController.name);
-  constructor(private readonly restApiCoreService: RestApiCoreService) {}
+  constructor(
+    private readonly restApiCoreService: RestApiCoreService,
+    private readonly companyRestReadService: CompanyRestReadService,
+  ) {}
 
   @Post('batch/*path')
   async handleApiPostBatch(
@@ -85,6 +90,27 @@ export class RestApiCoreController {
     @Req() request: AuthenticatedRequest,
     @Res() res: Response,
   ) {
+    if (companyAuthEnabled()) {
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      request.once('aborted', abort);
+      const close = () => {
+        if (!res.writableEnded) abort();
+      };
+      res.once('close', close);
+      if (request.aborted || res.destroyed) abort();
+      try {
+        await this.companyRestReadService.handle(
+          request,
+          res,
+          controller.signal,
+        );
+      } finally {
+        request.off('aborted', abort);
+        res.off('close', close);
+      }
+      return;
+    }
     this.logger.log(
       `[REST API] Processing GET request to ${request.path} on workspace ${request.workspaceId}`,
     );

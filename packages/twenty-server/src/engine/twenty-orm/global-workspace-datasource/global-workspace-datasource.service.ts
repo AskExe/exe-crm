@@ -1,5 +1,7 @@
 import {
   Injectable,
+  Inject,
+  Optional,
   OnApplicationShutdown,
   OnModuleInit,
 } from '@nestjs/common';
@@ -11,6 +13,11 @@ import { DataSource } from 'typeorm';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { GlobalWorkspaceDataSource } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
+
+import {
+  PRIVATE_PEOPLE_POOL_CUSTODY,
+  type PrivatePeoplePoolCustody,
+} from 'src/engine/core-modules/company-people/private-people-io-custody';
 
 @Injectable()
 export class GlobalWorkspaceDataSourceService
@@ -25,6 +32,9 @@ export class GlobalWorkspaceDataSourceService
     private readonly workspaceEventEmitter: WorkspaceEventEmitter,
     @InjectDataSource()
     private readonly coreDataSource: DataSource,
+    @Optional()
+    @Inject(PRIVATE_PEOPLE_POOL_CUSTODY)
+    private readonly privatePoolCustody?: PrivatePeoplePoolCustody,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -56,7 +66,9 @@ export class GlobalWorkspaceDataSourceService
       this.coreDataSource,
     );
 
-    await this.globalWorkspaceDataSource.initialize();
+    await (this.privatePoolCustody
+      ? this.privatePoolCustody.initialize(this.globalWorkspaceDataSource)
+      : this.globalWorkspaceDataSource.initialize());
 
     const shouldInitializeReplicaDataSource = isDefined(
       this.twentyConfigService.get('PG_DATABASE_REPLICA_URL'),
@@ -90,7 +102,11 @@ export class GlobalWorkspaceDataSourceService
         this.workspaceEventEmitter,
         this.coreDataSource,
       );
-      await this.globalWorkspaceDataSourceReplica.initialize();
+      await (this.privatePoolCustody
+        ? this.privatePoolCustody.initialize(
+            this.globalWorkspaceDataSourceReplica,
+          )
+        : this.globalWorkspaceDataSourceReplica.initialize());
     }
   }
 
@@ -114,11 +130,15 @@ export class GlobalWorkspaceDataSourceService
 
   async onApplicationShutdown(): Promise<void> {
     if (this.globalWorkspaceDataSource) {
-      await this.globalWorkspaceDataSource.destroy();
+      await (this.privatePoolCustody
+        ? this.privatePoolCustody.close(this.globalWorkspaceDataSource)
+        : this.globalWorkspaceDataSource.destroy());
       this.globalWorkspaceDataSource = null;
     }
     if (this.globalWorkspaceDataSourceReplica) {
-      await this.globalWorkspaceDataSourceReplica.destroy();
+      await (this.privatePoolCustody
+        ? this.privatePoolCustody.close(this.globalWorkspaceDataSourceReplica)
+        : this.globalWorkspaceDataSourceReplica.destroy());
       this.globalWorkspaceDataSourceReplica = null;
     }
   }

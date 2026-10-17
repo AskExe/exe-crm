@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import {
   type QueueCronJobOptions,
   type QueueJobOptions,
@@ -32,6 +34,9 @@ export class MessageQueueService {
     data: T,
     options?: QueueJobOptions,
   ): Promise<void> {
+    if (companyAuthEnabled())
+      throw new Error('Company jobs require separately reviewed authority');
+
     return this.driver.add(this.queueName, jobName, data, options);
   }
 
@@ -46,6 +51,9 @@ export class MessageQueueService {
     options: QueueCronJobOptions;
     jobId?: string;
   }): Promise<void> {
+    if (companyAuthEnabled())
+      throw new Error('Company jobs require separately reviewed authority');
+
     return Promise.resolve(
       this.driver.addCron({
         queueName: this.queueName,
@@ -77,6 +85,9 @@ export class MessageQueueService {
     handler: (job: MessageQueueJob<T>) => Promise<void> | void,
     options?: MessageQueueWorkerOptions,
   ) {
+    if (companyAuthEnabled())
+      throw new Error('Company jobs require separately reviewed authority');
+
     return this.driver.work(this.queueName, handler, options);
   }
 }

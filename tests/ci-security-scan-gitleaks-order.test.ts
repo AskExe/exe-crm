@@ -51,7 +51,9 @@ const extractJobSteps = (workflowYaml: string, jobName: string): Step[] => {
     );
   }
 
-  const rest = workflowYaml.slice(jobStart + workflowYaml.slice(jobStart).indexOf('\n') + 1);
+  const rest = workflowYaml.slice(
+    jobStart + workflowYaml.slice(jobStart).indexOf('\n') + 1,
+  );
   const nextJobRe = /^  [A-Za-z0-9_-]+:\s*$/m;
   const nextJobMatch = rest.match(nextJobRe);
   const jobBody = nextJobMatch ? rest.slice(0, nextJobMatch.index) : rest;
@@ -99,5 +101,20 @@ describe('security-scan job: gitleaks runs before dependency install (bug d85957
   it('excludes node_modules/ from the gitleaks scan as a belt-and-braces guard', () => {
     const gitleaksConfig = read('.gitleaks.toml');
     expect(gitleaksConfig).toMatch(/node_modules/);
+  });
+
+  it('bounds the public-image scan and isolates Docker credentials without bypassing it', () => {
+    const scan = workflowYaml
+      .split('      - name: Secret scan (gitleaks)')[1]
+      .split('\n      - name:')[0];
+    expect(scan).toMatch(/timeout-minutes: 5/);
+    expect(scan).toMatch(/mktemp -d "\$\{RUNNER_TEMP\}\/crm-gitleaks-docker/);
+    expect(scan).toMatch(/export DOCKER_CONFIG="\$task_docker_config"/);
+    expect(scan).toMatch(/export DOCKER_HOST="\$task_docker_endpoint"/);
+    expect(scan).toMatch(/unset DOCKER_CONTEXT/);
+    expect(scan).toMatch(/trap .*rm -rf "\$task_docker_config".* EXIT/);
+    expect(scan).toMatch(/docker run --rm/);
+    expect(scan).toMatch(/detect --source=\/repo --no-git --redact/);
+    expect(scan).not.toMatch(/GITHUB_ENV|continue-on-error|docker login/);
   });
 });

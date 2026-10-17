@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import merge from 'lodash.merge';
 
 import { type QueryResultFieldValue } from 'src/engine/api/graphql/workspace-query-runner/factories/query-result-getters/interfaces/query-result-field-value';
@@ -33,6 +35,10 @@ export class WorkspaceQueryHookService {
     const preHookInstances =
       this.workspaceQueryHookStorage.getWorkspaceQueryPreHookInstances(key);
 
+    if (companyAuthEnabled() && preHookInstances?.length) {
+      throw new Error('Company read hooks require separate review');
+    }
+
     if (!preHookInstances) {
       return payload;
     }
@@ -65,6 +71,10 @@ export class WorkspaceQueryHookService {
     const key: WorkspaceQueryHookKey = `${objectName}.${methodName}`;
     const postHookInstances =
       this.workspaceQueryHookStorage.getWorkspacePostQueryHookInstances(key);
+
+    if (companyAuthEnabled() && postHookInstances?.length) {
+      throw new Error('Company read hooks require separate review');
+    }
 
     if (!postHookInstances) {
       return;

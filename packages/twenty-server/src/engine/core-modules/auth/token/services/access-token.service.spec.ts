@@ -1,4 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+
+import { CompanyAuthService } from 'src/engine/core-modules/company-auth/company-auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { generateKeyPairSync, randomUUID } from 'crypto';
@@ -63,6 +65,7 @@ describe('AccessTokenService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccessTokenService,
+        { provide: CompanyAuthService, useValue: { configuration: null } },
         {
           provide: JwtWrapperService,
           useValue: {

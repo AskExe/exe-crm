@@ -253,7 +253,11 @@ export class InternalServerError extends BaseGraphQLError {
 export const convertGraphQLErrorToBaseGraphQLError = (
   error: GraphQLError,
 ): BaseGraphQLError => {
-  const httpStatus = error.extensions?.http?.status;
+  const http = error.extensions?.http;
+  const httpStatus =
+    typeof http === 'object' && http !== null && 'status' in http
+      ? http.status
+      : undefined;
   let errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
 
   if (httpStatus && typeof httpStatus === 'number') {

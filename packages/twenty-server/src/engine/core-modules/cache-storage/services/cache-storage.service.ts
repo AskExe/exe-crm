@@ -1,18 +1,50 @@
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { type Milliseconds } from 'cache-manager';
 import { type RedisCache } from 'cache-manager-redis-yet';
+
+import {
+  privatePeopleBoundRedisKey,
+  assertPrivatePeopleRoleBinding,
+  derivePrivatePeopleRoleBinding,
+  type PrivatePeopleRoleBinding,
+} from 'src/engine/core-modules/company-people/private-people-role-binding';
 
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
 @Injectable()
 export class CacheStorageService {
+  private readonly privatePeopleBinding?: PrivatePeopleRoleBinding;
+  private readonly privatePeopleRedisStore?: Cache['store'];
+  private privatePeopleCacheUnavailable = false;
+
   constructor(
     @Inject(CACHE_MANAGER)
     private readonly cache: Cache,
     private readonly namespace: CacheStorageNamespace,
-  ) {}
+    @Optional() privatePeopleBinding?: PrivatePeopleRoleBinding,
+  ) {
+    if (privatePeopleBinding) {
+      assertPrivatePeopleRoleBinding(
+        privatePeopleBinding,
+        privatePeopleBinding.companyId,
+        privatePeopleBinding.workspaceId,
+      );
+      if (
+        !this.isRedisCache() ||
+        namespace !== CacheStorageNamespace.EngineWorkspace
+      ) {
+        throw new Error('Private people Redis cache unavailable');
+      }
+      // Retain a fresh immutable snapshot; caller mutation cannot redirect keys.
+      this.privatePeopleRedisStore = this.cache.store;
+      this.privatePeopleBinding = derivePrivatePeopleRoleBinding(
+        privatePeopleBinding.companyId,
+        privatePeopleBinding.workspaceId,
+      );
+    }
+  }
 
   async get<T>(key: string): Promise<T | undefined> {
     const value = await this.cache.get<T>(this.getKey(key));
@@ -178,10 +210,16 @@ export class CacheStorageService {
   }
 
   async flush() {
+    if (this.privatePeopleBinding) {
+      throw new Error('Private people unbounded cache operation unavailable');
+    }
     return this.cache.reset();
   }
 
   async flushByPattern(scanPattern: string): Promise<void> {
+    if (this.privatePeopleBinding) {
+      throw new Error('Private people unbounded cache operation unavailable');
+    }
     if (!this.isRedisCache()) {
       throw new Error('flushByPattern is only supported with Redis cache');
     }
@@ -207,6 +245,9 @@ export class CacheStorageService {
   }
 
   async scanAndCountSetMembers(scanPattern: string): Promise<number> {
+    if (this.privatePeopleBinding) {
+      throw new Error('Private people unbounded cache operation unavailable');
+    }
     if (!this.isRedisCache()) {
       throw new Error(
         'scanAndCountSetMembers is only supported with Redis cache',
@@ -306,11 +347,29 @@ export class CacheStorageService {
   }
 
   private isRedisCache() {
-    // oxlint-disable-next-line @typescripttypescript/no-explicit-any
-    return (this.cache.store as any)?.name === 'redis';
+    const store: Cache['store'] & { name?: unknown } = this.cache.store;
+    const isRedis = store?.name === 'redis';
+    if (
+      this.privatePeopleBinding &&
+      (!isRedis ||
+        this.cache.store !== this.privatePeopleRedisStore ||
+        this.privatePeopleCacheUnavailable)
+    ) {
+      this.privatePeopleCacheUnavailable = true;
+      throw new Error('Private people Redis cache unavailable');
+    }
+    return isRedis;
   }
 
   private getKey(key: string) {
+    if (this.privatePeopleBinding) {
+      this.isRedisCache();
+      return privatePeopleBoundRedisKey(
+        this.privatePeopleBinding,
+        this.namespace,
+        key,
+      );
+    }
     const formattedKey = `${this.namespace}:${key}`;
 
     if (process.env.NODE_ENV === 'test') {

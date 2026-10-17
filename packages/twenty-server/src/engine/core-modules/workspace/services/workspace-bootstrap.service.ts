@@ -1,7 +1,11 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 
+import { companyAuthEnabled } from 'src/engine/core-modules/company-auth/company-auth.config';
+
 import { v4 } from 'uuid';
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
+
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectDataSource } from '@nestjs/typeorm';
 
 /**
@@ -90,6 +94,26 @@ export class WorkspaceBootstrapService implements OnModuleInit {
   }
 
   private async bootstrapIfEmpty(): Promise<void> {
+    if (companyAuthEnabled()) {
+      const workspace = await this.dataSource
+        .getRepository(WorkspaceEntity)
+        .find({
+          where: { deletedAt: IsNull() },
+        });
+
+      if (
+        workspace.length !== 1 ||
+        workspace[0].id !== process.env.CRM_COMPANY_WORKSPACE_ID ||
+        workspace[0].activationStatus !== 'ACTIVE'
+      ) {
+        throw new Error(
+          'Company mode requires one operator-provisioned active workspace',
+        );
+      }
+
+      return;
+    }
+
     const [{ count }] = await this.dataSource.query(
       `SELECT COUNT(*)::int AS count FROM core.workspace WHERE "deletedAt" IS NULL`,
     );
@@ -131,16 +155,8 @@ export class WorkspaceBootstrapService implements OnModuleInit {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Create the application record (workspace FK requires it)
-      // universalIdentifier is a uuid column — must be a valid UUID, not a slug
-      await queryRunner.query(
-        `INSERT INTO core.application (id, name, "universalIdentifier")
-         VALUES ($1, $2, $3)
-         ON CONFLICT DO NOTHING`,
-        [applicationId, 'Exe CRM', applicationId],
-      );
-
-      // 2. Create the workspace
+      // The workspace-to-application FK is initially deferred; application-to-
+      // workspace is immediate. Create the workspace first within this transaction.
       await queryRunner.query(
         `INSERT INTO core.workspace (
            id, subdomain, "displayName", "inviteHash",
@@ -160,6 +176,23 @@ export class WorkspaceBootstrapService implements OnModuleInit {
           true,
           true,
           1,
+        ],
+      );
+
+      // Match the canonical workspace-custom application identity and required fields.
+      await queryRunner.query(
+        `INSERT INTO core.application (
+           id, name, "universalIdentifier", "sourcePath", "workspaceId",
+           version, "canBeUninstalled"
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          applicationId,
+          'Exe CRM',
+          applicationId,
+          'workspace-custom',
+          workspaceId,
+          '1.0.0',
+          false,
         ],
       );
 
