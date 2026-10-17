@@ -39,6 +39,7 @@
       "envExample": "packages/twenty-docker/.env.example",
       "requiredEnv": [
         "CRM_IMAGE_TAG",
+        "CRM_IMAGE_DIGEST",
         "SERVER_URL",
         "APP_SECRET",
         "PG_DATABASE_URL",
@@ -51,7 +52,7 @@
         "EXE_LICENSE_URL",
         "EXE_DEMO_WORKSPACE_ID"
       ],
-      "note": "EXE_DEMO_WORKSPACE_ID is opt-in. Setting it enables public, explicit read-only DEMO admission to that exact pre-bootstrapped workspace and requires an HTTPS GOTRUE_URL for fresh identity confirmation; leave it unset to keep public DEMO admission disabled."
+      "note": "CRM_IMAGE_TAG and CRM_IMAGE_DIGEST configure standalone Docker Compose and Podman Compose; supply a verified published digest matching the selected tag. The standalone installer validates that pair against the registry and persists both in .env before Compose. Managed signed-stack references already include the authoritative digest and do not consume this standalone digest variable. EXE_DEMO_WORKSPACE_ID is opt-in. Setting it enables public, explicit read-only DEMO admission to that exact pre-bootstrapped workspace and requires an HTTPS GOTRUE_URL for fresh identity confirmation; leave it unset to keep public DEMO admission disabled."
     },
     "breakingChanges": [],
     "dataSovereignty": "CRM customer/deal/contact data stays in the customer VPS Postgres/ClickHouse volumes. Updates must not reset local storage or branding config.",
