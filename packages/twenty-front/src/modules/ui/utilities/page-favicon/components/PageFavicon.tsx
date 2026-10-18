@@ -5,7 +5,7 @@ export const PageFavicon = () => (
     <link
       rel="icon"
       type="image/svg+xml"
-      href="/images/icons/exe/exe-favicon.svg?v=exe-1"
+      href="/images/icons/exe/exe-favicon.svg?v=exe-2"
     />
   </Helmet>
 );
