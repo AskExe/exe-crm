@@ -3,7 +3,7 @@ import {
   clearDemoWorkspaceSession,
   markDemoWorkspaceSession,
 } from '@/auth/utils/goTrueBridge';
-import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStorageKeys';
+import { clearAllSessionLocalStorageKeys } from '@/auth/utils/clearAllSessionLocalStorageKeys';
 import { replaceWorkspaceDocument } from '@/auth/utils/replaceWorkspaceDocument';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useLingui } from '@lingui/react/macro';
@@ -34,7 +34,7 @@ export const useVerifyLogin = () => {
       }
       // Workspace metadata, cached records and view IDs belong to the previous
       // native session. Start a clean document only after the exchange succeeds.
-      clearSessionLocalStorageKeys();
+      clearAllSessionLocalStorageKeys();
       replaceWorkspaceDocument();
     } catch {
       enqueueErrorSnackBar({
