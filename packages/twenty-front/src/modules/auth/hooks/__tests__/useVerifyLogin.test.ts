@@ -9,6 +9,7 @@ import { useAuth } from '@/auth/hooks/useAuth';
 import { useVerifyLogin } from '@/auth/hooks/useVerifyLogin';
 import { getDemoWorkspaceId } from '@/auth/utils/goTrueBridge';
 import { replaceWorkspaceDocument } from '@/auth/utils/replaceWorkspaceDocument';
+import { ALL_METADATA_ENTITY_KEYS } from '@/metadata-store/states/metadataStoreState';
 
 jest.mock('@/auth/utils/replaceWorkspaceDocument', () => ({
   replaceWorkspaceDocument: jest.fn(),
@@ -93,15 +94,57 @@ describe('useVerifyLogin', () => {
     expect(replaceWorkspaceDocument).toHaveBeenCalledTimes(2);
   });
 
+  it.each([true, false])(
+    'clears previous workspace metadata before reloading after successful login (DEMO: %s)',
+    async (isDemoLogin) => {
+      const metadataKeys = ALL_METADATA_ENTITY_KEYS.map(
+        (key) => `metadataStoreState__${key}`,
+      );
+      for (const key of metadataKeys) {
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            current: [{ id: 'previous-workspace-metadata' }],
+            status: 'up-to-date',
+          }),
+        );
+      }
+      localStorage.setItem('tokenPairState', 'new-workspace-tokens');
+      localStorage.setItem('unrelated-preference', 'preserved');
+      mockGetAuthTokensFromLoginToken.mockResolvedValueOnce('new-workspace');
+      const { result } = renderHooks();
+      (replaceWorkspaceDocument as jest.Mock).mockImplementationOnce(() => {
+        expect(metadataKeys.map((key) => localStorage.getItem(key))).toEqual(
+          metadataKeys.map(() => null),
+        );
+        expect(localStorage.getItem('tokenPairState')).toBe(
+          'new-workspace-tokens',
+        );
+        expect(localStorage.getItem('unrelated-preference')).toBe('preserved');
+        expect(getDemoWorkspaceId()).toBe(isDemoLogin ? 'new-workspace' : null);
+      });
+
+      await result.current.verifyLoginToken('login-token', isDemoLogin);
+
+      expect(replaceWorkspaceDocument).toHaveBeenCalledTimes(1);
+      expect(mockEnqueueErrorSnackBar).not.toHaveBeenCalled();
+    },
+  );
+
   it('does not reload or mark DEMO while MFA has not completed', async () => {
+    localStorage.setItem('metadataStoreState__objectMetadataItems', 'existing');
     mockGetAuthTokensFromLoginToken.mockResolvedValueOnce(undefined);
     const { result } = renderHooks();
     await result.current.verifyLoginToken('mfa-token', true);
     expect(getDemoWorkspaceId()).toBeNull();
+    expect(
+      localStorage.getItem('metadataStoreState__objectMetadataItems'),
+    ).toBe('existing');
     expect(replaceWorkspaceDocument).not.toHaveBeenCalled();
   });
 
   it('should handle verification error', async () => {
+    localStorage.setItem('metadataStoreState__objectMetadataItems', 'existing');
     const error = new Error('Verification failed');
     mockGetAuthTokensFromLoginToken.mockRejectedValueOnce(error);
 
@@ -112,6 +155,9 @@ describe('useVerifyLogin', () => {
     expect(mockEnqueueErrorSnackBar).toHaveBeenCalledWith({
       message: 'Authentication failed',
     });
+    expect(
+      localStorage.getItem('metadataStoreState__objectMetadataItems'),
+    ).toBe('existing');
     expect(mockNavigate).toHaveBeenCalledWith(AppPath.SignInUp);
     expect(replaceWorkspaceDocument).not.toHaveBeenCalled();
   });
